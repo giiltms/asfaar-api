@@ -1,0 +1,3 @@
+CREATE DATABASE fleetdb;
+CREATE USER fleetpg;
+GRANT ALL PRIVILEGES ON DATABASE fleetdb TO fleetpg;

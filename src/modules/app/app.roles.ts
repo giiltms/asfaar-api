@@ -1,0 +1,7 @@
+
+export enum Roles {
+  SYSTEM_ADMIN = 'SYSTEM_ADMIN',
+  ADMIN = 'ADMIN',
+  DRIVER = 'DRIVER',
+  PASSENGER = 'PASSENGER',
+}

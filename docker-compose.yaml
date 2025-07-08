@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    volumes:
+      - /var/lib/dlapp/db:/var/lib/postgresql/data
+      - ./docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+    env_file:
+      - .env
+    ports:
+      - '5432:5432'
+
+  redis-starter:
+    image: 'redis:6.2-alpine'
+    restart: always
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    command: /bin/sh -c "redis-server --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81"
+    ports:
+      - '6379:6379'
+    volumes:
+      - '/var/lib/dlapp/cache:/bitnami/redis-starter/data'
+
+  fleet-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - /var/lib/dlapp/uploads:/app/uploads
+      - /tmp:/tmp
+      - ./src:/app/src
+    depends_on:
+      postgres:
+        condition: service_started
+      redis-starter:
+        condition: service_started
+    ports:
+      - 8000:3000
+    restart: always

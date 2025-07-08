@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  timestamp    DateTime @default(now())
+  resourceId   String?
+  resourceType String?
+  changes      Json?
+  url          String?
+
+  user User? @relation(fields: [userId], references: [id], name: "UserAudit")
+}
+
+model User {
+  id         String     @id @default(uuid())
+  email      String     @unique
+  phone      String?
+  firstName  String?
+  middleName String?
+  lastName   String?
+  gender     Gender?
+  password   String
+  avatar     String?
+  roles      Roles[]    @default([PASSENGER])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  isVerified Boolean?   @default(false)
+  isActive   Boolean?   @default(false)
+  tokens     Token[]
+  auditLogs  AuditLog[] @relation("UserAudit")
+}
+
+model TokenWhiteList {
+  id             String   @id @default(uuid())
+  userId         String
+  accessToken    String?
+  refreshToken   String?
+  refreshTokenId String?
+  expiredAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum Roles {
+  DRIVER
+  PASSENGER
+  SYSTEM_ADMIN
+  ADMIN
+}
+
+model Token {
+  id        String       @id @default(uuid())
+  owner     User         @relation(fields: [userId], references: [id])
+  userId    String
+  code      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  expiresAt DateTime     @db.Timestamp()
+  useCase   TokenUseCase
+  type      TokenType    @default(value: OTP)
+}
+
+enum TokenUseCase {
+  PWD_RESET // Reset Password
+  LOGIN // Login
+  D2FA // Disable 2FA
+  PHV // Phone Verification
+  FCM // Firebase Cloud Messaging
+}
+
+enum TokenType {
+  HEX
+  OTP
+}

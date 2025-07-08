@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Document Approved</title>
+  </head>
+  <body>
+    <p>Dear {{ requestedBy }},</p>
+    <p>
+      We are pleased to inform you that your document
+      <strong>{{ documentName }}</strong> has been approved on {{ approvalDate
+      }}.
+    </p>
+    <p>You can view the project details by clicking the link below:</p>
+    <p><a href="{{ projectLink }}">View Project</a></p>
+    <p>Thank you for your submission.</p>
+    <p>Best regards,<br />The Approval Team</p>
+  </body>
+</html>

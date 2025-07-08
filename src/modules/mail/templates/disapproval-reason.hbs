@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Document Disapproved</title>
+  </head>
+  <body>
+    <p>Dear {{ requestedBy }},</p>
+    <p>
+      We regret to inform you that your document
+      <strong>{{ documentName }}</strong> has been disapproved on {{
+      disapprovalDate }}.
+    </p>
+    <p><strong>Reason for disapproval:</strong> {{ disapprovalReason }}</p>
+    <p>
+      Please review the provided feedback and resubmit your document after
+      making the necessary changes.
+    </p>
+    <p>You can view the project details by clicking the link below:</p>
+    <p><a href="{{ projectLink }}">View Project</a></p>
+    <p>Thank you for your understanding.</p>
+    <p>Best regards,<br />The Approval Team</p>
+  </body>
+</html>
