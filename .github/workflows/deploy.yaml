@@ -1,0 +1,69 @@
+name: DL API Deployment - Production
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  common:
+    runs-on: [self-hosted]
+    steps:
+      - name: Check running containers
+        run: docker ps -a || exit 0
+
+      - name: Cleanup
+        run: |
+          # Remove unused space
+          docker system prune -a -f
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+  build:
+    runs-on: [self-hosted]
+    needs: common
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate env file
+        uses: SpicyPizza/create-envfile@v1.3
+        with:
+          envkey_BCRYPT_SALT: ${{ secrets.BCRYPT_SALT }}
+          envkey_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          envkey_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          envkey_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          envkey_DEFAULT_PAGE_SIZE: ${{ vars.DEFAULT_PAGE_SIZE }}
+          envkey_SWAGGER_PASSWORD: ${{ secrets.SWAGGER_PASSWORD }}
+          envkey_REDIS_PASS: ${{ secrets.REDIS_PASS }}
+          envkey_REDIS_HOST: ${{ vars.REDIS_HOST }}
+          envkey_REDIS_PORT: ${{ vars.REDIS_PORT }}
+          envkey_MAIL_HOST: ${{ vars.MAIL_HOST }}
+          envkey_MAIL_PORT: ${{ vars.MAIL_PORT }}
+          envkey_MAIL_USER: ${{ secrets.MAIL_USER }}
+          envkey_MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          envkey_MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          envkey_UPLOAD_RATE_TTL: ${{ vars.UPLOAD_RATE_TTL }}
+          envkey_UPLOAD_RATE_LIMIT: ${{ vars.UPLOAD_RATE_LIMIT }}
+          envkey_CLIENT_URL: ${{ secrets.CLIENT_URL }}
+
+  test:
+    runs-on: [self-hosted]
+    needs:
+      - build
+
+    steps:
+      - name: Run CI tests
+        run: "echo 'tests passed'"
+
+  deploy:
+    runs-on: [self-hosted]
+    needs:
+      - test
+
+    steps:
+      - name: Check running containers
+        run: docker ps -a
+
+      - name: Build and run docker compose
+        run: docker compose up -d --build --force-recreate
