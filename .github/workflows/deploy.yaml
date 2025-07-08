@@ -1,4 +1,4 @@
-name: DL API Deployment - Production
+name: Fleet API Deployment - Production
 
 on:
   push:
