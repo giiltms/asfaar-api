@@ -11,7 +11,8 @@ ENV PRISMA_CLI_VERSION=3.0.0
 COPY package.json yarn.lock ./
 
 # Install dependencies
-RUN yarn install --frozen-lockfile
+RUN yarn install
+# --frozen-lockfile
 
 # Copy the rest of the application code to the working directory
 COPY . .
