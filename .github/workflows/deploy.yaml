@@ -1,13 +1,13 @@
-name: Fleet API Deployment - Production
+name: Fleet API Deployment - Staging
 
 on:
   push:
     branches:
-      - production
+      - staging
 
 jobs:
   common:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, staging, fleet]
     steps:
       - name: Check running containers
         run: docker ps -a || exit 0
@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v3
 
   build:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, staging, fleet]
     needs: common
     steps:
       - uses: actions/checkout@v3
@@ -48,7 +48,7 @@ jobs:
           envkey_CLIENT_URL: ${{ secrets.CLIENT_URL }}
 
   test:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, staging, fleet]
     needs:
       - build
 
@@ -57,7 +57,7 @@ jobs:
         run: "echo 'tests passed'"
 
   deploy:
-    runs-on: [self-hosted]
+    runs-on: [self-hosted, staging, fleet]
     needs:
       - test
 
