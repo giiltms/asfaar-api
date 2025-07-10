@@ -1,9 +1,7 @@
 # Use the official Node.js 16 image as the base image
-FROM node:18-bullseye AS build
-
+FROM node:22-bullseye AS build
 
 WORKDIR /app
-
 
 # Set Prisma CLI version
 ENV PRISMA_CLI_VERSION=3.0.0
@@ -29,7 +27,6 @@ RUN npx prisma generate
 
 # Build the application
 RUN yarn build
-
 
 # ---------------------------------------
 # Development Stage (with live reload)
@@ -57,7 +54,7 @@ RUN yarn build
 # ---------------------------------------
 # Production stage
 # ---------------------------------------
-FROM node:18-bullseye AS production
+FROM node:22-bullseye AS production
 
 WORKDIR /app
 
