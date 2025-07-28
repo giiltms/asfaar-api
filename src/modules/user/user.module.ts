@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { UserRepository } from '@modules/user/user.repository';
+import { UserService } from './user.service';
+import { UserRepository } from './user.repository';
 import { CaslModule } from '@modules/casl';
 import { permissions } from '@modules/user/user.permissions';
 import { AuditModule } from '@modules/audit/audit.module';
@@ -10,5 +10,6 @@ import { AuditModule } from '@modules/audit/audit.module';
   imports: [CaslModule.forFeature({ permissions }), AuditModule],
   controllers: [UserController],
   providers: [UserService, UserRepository],
+  exports: [UserService, UserRepository], // Export UserRepository so other modules can use it
 })
 export class UserModule {}

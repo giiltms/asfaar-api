@@ -1,12 +1,13 @@
-import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum } from 'class-validator';
 import { Roles } from '@modules/app/app.roles';
 
-export class SetUserRoleDTO {
+export class SetUserRoleDto {
   @ApiProperty({
-    description: 'Role to assign to the user',
-    example: Roles.PASSENGER,
+    description: 'The role to assign to the user',
+    enum: Roles,
+    example: Roles.USER,
   })
   @IsEnum(Roles)
-  role: Roles;
+  readonly role!: Roles;
 }
