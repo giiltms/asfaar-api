@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import LocalStorageService from './localstorage.service';
+import { LocalStorageService } from './localstorage.service'; // Use named import
 
 /**
  * @desc LocalStorage module for uploading files to the file system
@@ -16,4 +16,4 @@ import LocalStorageService from './localstorage.service';
   providers: [LocalStorageService],
   exports: [LocalStorageService],
 })
-export default class LocalStorageModule {}
+export class LocalStorageModule {}

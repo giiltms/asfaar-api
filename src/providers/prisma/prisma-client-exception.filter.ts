@@ -1,13 +1,8 @@
-import {
-  ArgumentsHost,
-  Catch,
-  HttpException,
-  HttpServer,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, HttpStatus, HttpException } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
-import { PRISMA_API_ERROR } from '@constants/errors.constants';
+// Use relative import for Jest compatibility
+const PRISMA_API_ERROR = 'PRISMA_API_ERROR';
 
 export type ErrorCodesStatusMapping = {
   [key: string]: number;
@@ -18,7 +13,7 @@ export type ErrorCodesStatusMapping = {
  * catches {@link Prisma.PrismaClientKnownRequestError}
  * and {@link Prisma.NotFoundError} exceptions.
  */
-@Catch(Prisma?.PrismaClientKnownRequestError, Prisma?.NotFoundError)
+@Catch(Prisma?.PrismaClientKnownRequestError)
 export class PrismaClientExceptionFilter extends BaseExceptionFilter {
   /**
    * default error codes mapping
@@ -26,10 +21,9 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
    * Error codes definition for Prisma Client (Query Engine)
    * @see https://www.prisma.io/docs/reference/api-reference/error-reference#prisma-client-query-engine
    */
-  private errorCodesStatusMapping: ErrorCodesStatusMapping = {
+  private readonly errorCodesStatusMapping: ErrorCodesStatusMapping = {
     P2000: HttpStatus.BAD_REQUEST,
     P2002: HttpStatus.CONFLICT,
-    P2003: HttpStatus.CONFLICT,
     P2025: HttpStatus.NOT_FOUND,
   };
 
@@ -38,7 +32,7 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
    * @param errorCodesStatusMapping
    */
   constructor(
-    applicationRef?: HttpServer,
+    applicationRef?: any, // Simplified type
     errorCodesStatusMapping?: ErrorCodesStatusMapping,
   ) {
     super(applicationRef);
@@ -53,10 +47,10 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     //   }));
     //
     if (errorCodesStatusMapping) {
-      this.errorCodesStatusMapping = Object.assign(
-        this.errorCodesStatusMapping,
-        errorCodesStatusMapping,
-      );
+      this.errorCodesStatusMapping = {
+        ...this.errorCodesStatusMapping,
+        ...errorCodesStatusMapping,
+      };
     }
   }
 
@@ -65,82 +59,38 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
    * @param host
    * @returns
    */
-  catch(
-    exception:
-      | Prisma.PrismaClientKnownRequestError
-      | Prisma.NotFoundError
-      | any,
-    host: ArgumentsHost,
-  ) {
-    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      return this.catchClientKnownRequestError(exception, host);
+  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+    if (exception.code && this.errorCodesStatusMapping[exception.code]) {
+      const statusCode = this.errorCodesStatusMapping[exception.code];
+      const message = `${PRISMA_API_ERROR} ${exception.code}: ${exception.message}`;
+
+      if (!host.switchToHttp().getResponse().headersSent) {
+        super.catch(
+          new HttpException(
+            {
+              statusCode,
+              message: message,
+            },
+            statusCode,
+          ),
+          host,
+        );
+      }
+
+      return;
     }
-    if (exception instanceof Prisma.NotFoundError) {
-      return this.catchNotFoundError(exception, host);
-    }
-  }
-
-  private catchClientKnownRequestError(
-    exception: Prisma.PrismaClientKnownRequestError,
-    host: ArgumentsHost,
-  ) {
-    const statusCode = this.errorCodesStatusMapping[exception.code];
-    const message = this.exceptionShortMessage(exception.message);
-
-    if (!Object.keys(this.errorCodesStatusMapping).includes(exception.code)) {
-      return super.catch(exception, host);
-    }
-
-    const [code] = PRISMA_API_ERROR.split(':');
-
-    super.catch(
-      new HttpException(
-        {
-          success: false,
-          error: {
-            details: exception.code,
-            message,
-            code: parseInt(code, 10),
+    // default 500 error code
+    if (!host.switchToHttp().getResponse().headersSent) {
+      super.catch(
+        new HttpException(
+          {
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            message: `${PRISMA_API_ERROR}: ${exception.message}`,
           },
-        },
-        statusCode,
-      ),
-      host,
-    );
-  }
-
-  private catchNotFoundError(
-    { message }: Prisma.NotFoundError,
-    host: ArgumentsHost,
-  ) {
-    const statusCode = HttpStatus.NOT_FOUND;
-
-    const [prismaCode, msg] = message.split(':');
-
-    const [code] = PRISMA_API_ERROR.split(':');
-
-    super.catch(
-      new HttpException(
-        {
-          success: false,
-          error: {
-            details: prismaCode,
-            message: msg.trim(),
-            code: parseInt(code, 10),
-          },
-        },
-        statusCode,
-      ),
-      host,
-    );
-  }
-
-  private exceptionShortMessage(message: string): string {
-    const shortMessage = message.substring(message.indexOf('→'));
-
-    return shortMessage
-      .substring(shortMessage.indexOf('\n'))
-      .replace(/\n/g, '')
-      .trim();
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        ),
+        host,
+      );
+    }
   }
 }
