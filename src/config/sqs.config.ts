@@ -4,11 +4,10 @@ import * as process from 'process';
 export default registerAs('sqs', () => ({
   consumer: {
     queues: {
-      aggregate: 'stat-keeper_aggregate',
-      aggregateQueueUrl:
-        'https://sqs.us-east-1.amazonaws.com/076754174573/example-queue',
+      aggregate: process.env.AWS_SQS_QUEUE_NAME || 'example-queue',
+      aggregateQueueUrl: process.env.AWS_SQS_QUEUE_URL || '',
     },
-    region: 'us-east-1',
+    region: process.env.AWS_SQS_REGION || 'us-east-1',
     credentials: {
       accessKeyId: process.env.AWS_SQS_ACCESS_KEY_ID || '',
       secretAccessKey:
@@ -18,12 +17,11 @@ export default registerAs('sqs', () => ({
   },
   producer: {
     queues: {
-      aggregate: 'stat-keeper_aggregate',
-      aggregateQueueUrl:
-        'https://sqs.us-east-1.amazonaws.com/076754174573/example-queue',
+      aggregate: process.env.AWS_SQS_QUEUE_NAME || 'example-queue',
+      aggregateQueueUrl: process.env.AWS_SQS_QUEUE_URL || '',
     },
-    queueUrl: 'https://sqs.us-east-1.amazonaws.com/076754174573/example-queue',
-    region: 'us-east-1',
+    queueUrl: process.env.AWS_SQS_QUEUE_URL || '',
+    region: process.env.AWS_SQS_REGION || 'us-east-1',
     credentials: {
       accessKeyId: process.env.AWS_SQS_ACCESS_KEY_ID || '',
       secretAccessKey:
