@@ -21,20 +21,40 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@filters/*": ["./src/filters/*"],
-      "@dto/*": ["./src/dto/*"],
-      "@guards/*": ["./src/guards/*"],
-      "@pipes/*": ["./src/pipes/*"],
-      "@interceptors/*": ["./src/interceptors/*"],
-      "@interfaces/*": ["./src/interfaces/*"],
-      "@decorators/*": ["./src/decorators/*"],
-      "@tests/*": ["./src/tests/*"],
+      "@common/*": ["./src/common/*"],
+      "@core/*": ["./src/core/*"],
+      "@shared/*": ["./src/shared/*"],
       "@modules/*": ["./src/modules/*"],
       "@providers/*": ["./src/providers/*"],
       "@config/*": ["./src/config/*"],
-      "@helpers/*": ["./src/helpers/*"],
-      "@types/*": ["./src/types/*"],
-      "@constants/*": ["./src/constants/*"]
+      "@tests/*": ["./src/tests/*"],
+
+      // Common module sub-paths
+      "@common/constants/*": ["./src/common/constants/*"],
+      "@common/decorators/*": ["./src/common/decorators/*"],
+      "@common/filters/*": ["./src/common/filters/*"],
+      "@common/guards/*": ["./src/common/guards/*"],
+      "@common/interceptors/*": ["./src/common/interceptors/*"],
+      "@common/pipes/*": ["./src/common/pipes/*"],
+      "@common/types/*": ["./src/common/types/*"],
+      "@common/utils/*": ["./src/common/utils/*"],
+      "@common/dtos/*": ["./src/common/dtos/*"],
+
+      // Legacy paths for backward compatibility
+      "@filters/*": ["./src/filters/*", "./src/common/filters/*"],
+      "@decorators/*": ["./src/decorators/*", "./src/common/decorators/*"],
+      "@interceptors/*": [
+        "./src/interceptors/*",
+        "./src/common/interceptors/*"
+      ],
+      "@pipes/*": ["./src/pipes/*", "./src/common/pipes/*"],
+      "@constants/*": ["./src/constants/*", "./src/common/constants/*"],
+      "@guards/*": ["./src/guards/*", "./src/common/guards/*"],
+      "@types/*": ["./src/types/*", "./src/common/types/*"],
+      "@utils/*": ["./src/utils/*", "./src/common/utils/*"],
+      "@dto/*": ["./src/dto/*", "./src/common/dtos/*"],
+      "@interfaces/*": ["./src/interfaces/*", "./src/common/interfaces/*"],
+      "@helpers/*": ["./src/helpers/*", "./src/common/utils/*"]
     }
   }
 }
