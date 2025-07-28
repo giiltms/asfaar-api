@@ -1,49 +1,79 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
   IsEmail,
-  IsNotEmpty,
-  Length,
-  Matches,
+  IsString,
+  IsOptional,
+  IsArray,
   IsEnum,
-  ArrayUnique,
+  IsPhoneNumber,
+  MinLength,
+  MaxLength,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Gender } from '@prisma/client';
 import { Roles } from '@modules/app/app.roles';
 
 export class SignUpDTO {
-  @ApiProperty({ type: String, example: 'maryam@admin.com' })
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
   @IsEmail()
-  @IsNotEmpty()
   readonly email!: string;
 
-  @ApiPropertyOptional({ type: String, example: 'Maryam' })
+  @ApiProperty({
+    description: 'User first name',
+    example: 'John',
+  })
   @IsString()
-  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(50)
   readonly firstName!: string;
 
-  @ApiPropertyOptional({ type: String, example: 'Ibrahim' })
+  @ApiProperty({
+    description: 'User last name',
+    example: 'Doe',
+  })
   @IsString()
-  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(50)
   readonly lastName!: string;
 
-  @ApiProperty({ type: String, default: 'string!12345' })
-  @IsString()
-  @Length(6, 20)
-  @Matches(/[\d\W]/, {
-    message:
-      'password must contain at least one digit and/or special character',
+  @ApiProperty({
+    description: 'User password',
+    example: 'SecurePassword123!',
+    minLength: 8,
   })
-  @Matches(/[a-zA-Z]/, { message: 'password must contain at least one letter' })
-  @Matches(/^\S+$/, { message: 'password must not contain spaces' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
   readonly password!: string;
 
   @ApiProperty({
-    description: 'The roles of the user. Defaults to ["TRAINER"].',
+    description: 'User roles',
     enum: Roles,
-    default: [Roles.PASSENGER],
-    examples: [Roles.PASSENGER, Roles.DRIVER, Roles.ADMIN, Roles.SYSTEM_ADMIN],
+    isArray: true,
+    default: [Roles.USER],
+    examples: [Roles.USER, Roles.ADMIN],
   })
+  @IsArray()
   @IsEnum(Roles, { each: true })
-  @ArrayUnique()
   readonly roles!: Roles[];
+
+  @ApiProperty({
+    description: 'User phone number',
+    example: '+1234567890',
+    required: false,
+  })
+  @IsOptional()
+  @IsPhoneNumber()
+  readonly phone?: string;
+
+  @ApiProperty({
+    description: 'User gender',
+    enum: Gender,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(Gender)
+  readonly gender?: Gender;
 }
