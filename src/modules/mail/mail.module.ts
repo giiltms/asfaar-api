@@ -1,59 +1,41 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {
-  MAIL_FROM,
-  MAIL_HOST,
-  MAIL_PASSWORD,
-  MAIL_PORT,
-  MAIL_USER,
-} from '@constants/env.constants';
-import { MailService } from '@modules/mail/services/mail.service';
+import { MailService } from './services/mail.service';
 import { MailController } from './controllers/mail.controller';
+import { join } from 'path';
 
-@Global() // 👈 global module
 @Module({
   imports: [
-    ConfigModule,
     MailerModule.forRootAsync({
-      inject: [ConfigService],
+      imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         transport: {
-          host: configService.getOrThrow(MAIL_HOST),
-          port: configService.getOrThrow(MAIL_PORT),
-          secure: false,
+          host: configService.get('MAIL_HOST', 'localhost'),
+          port: parseInt(configService.get('MAIL_PORT', '587')),
+          secure: configService.get('MAIL_SECURE', 'false') === 'true',
           auth: {
-            user: configService.getOrThrow(MAIL_USER),
-            pass: configService.getOrThrow(MAIL_PASSWORD),
-          },
-          tls: {
-            rejectUnauthorized: true,
+            user: configService.get('MAIL_USER', ''),
+            pass: configService.get('MAIL_PASSWORD', ''),
           },
         },
         defaults: {
-          from: `"SCIDaR" <${configService.get(MAIL_FROM)}>`,
+          from: configService.get('MAIL_FROM', 'noreply@example.com'),
         },
         template: {
-          dir: __dirname + '/templates',
+          dir: join(__dirname, 'templates'),
           adapter: new HandlebarsAdapter(),
           options: {
             strict: true,
           },
         },
       }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [MailController],
-  providers: [
-    MailService,
-    {
-      provide: 'CLIENT_URL',
-      useFactory: (configService: ConfigService) =>
-        configService.get('CLIENT_URL'),
-      inject: [ConfigService],
-    },
-  ],
-  exports: [MailService, 'CLIENT_URL'],
+  providers: [MailService],
+  exports: [MailService],
 })
 export class MailModule {}
