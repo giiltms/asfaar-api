@@ -1,8 +1,8 @@
+import { PaginationQueryDto } from '../../../common/dtos/pagination.dto';
 import { IntersectionType } from '@nestjs/swagger';
-import { AuditPaginationDTO } from './audit-pagination.dto';
-import { AuditLogFiltersDTO } from './audit-filters.dto';
+import { AuditFiltersDto } from './audit-filters.dto';
 
 export class ListAuditLogsDTO extends IntersectionType(
-  AuditPaginationDTO,
-  AuditLogFiltersDTO,
+  PaginationQueryDto,
+  AuditFiltersDto,
 ) {}

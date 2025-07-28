@@ -1,12 +1,21 @@
-import { AuditLog, Prisma } from '@prisma/client';
+import { AuditLog } from '@prisma/client';
 
 export default class AuditEntity implements AuditLog {
-  url: string;
   id: string;
   userId: string;
   action: string;
-  timestamp: Date;
+  resource: string;
   resourceId: string;
-  resourceType: string;
-  changes: Prisma.JsonValue;
+  oldValues: any;
+  newValues: any;
+  ipAddress: string;
+  userAgent: string;
+  url: string;
+  timestamp: Date;
+  createdAt: Date;
+  updatedAt: Date;
+
+  constructor(partial: Partial<AuditEntity>) {
+    Object.assign(this, partial);
+  }
 }
