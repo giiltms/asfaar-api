@@ -16,7 +16,7 @@ import paymentConfig from './configs/payment.config';
 
 // Global filters and interceptors
 import { AllExceptionsFilter } from '../filters/all-exception.filter';
-import { TransformInterceptor } from '../interceptors/transform.interceptor';
+import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 /**
  * Common module that provides global configuration, validation, exception handling,
