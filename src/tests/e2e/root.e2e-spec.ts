@@ -1,4 +1,4 @@
-import BaseContext from '@tests/e2e/context/base-context';
+import BaseContext from './context/base-context';
 import AuthModule from './modules/auth';
 import UserModule from './modules/user';
 

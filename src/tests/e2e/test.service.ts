@@ -4,88 +4,181 @@ import { PrismaClient, User } from '@prisma/client';
 import { INestApplication } from '@nestjs/common';
 import { AdminUserInterface } from '@tests/e2e/interfaces/admin-user.interface';
 import { Roles } from '@modules/app/app.roles';
-import { createUsers, getSignUpData } from '@tests/common/user.mock.functions';
-import { SignUpDTO } from '@modules/auth/dto/sign-up.dto';
 import { faker } from '@faker-js/faker';
+import * as bcrypt from 'bcrypt';
+
+export interface SignUpData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  roles: Roles[];
+}
 
 class TestService {
   private _authService!: AuthService;
-
   private _tokenService!: AuthTokenService;
-
   private _connection!: PrismaClient;
 
   constructor(app: INestApplication, connection: PrismaClient) {
     this._authService = app.get<AuthService>(AuthService);
-
     this._tokenService = app.get<AuthTokenService>(AuthTokenService);
-
     this._connection = connection;
   }
 
   async createGlobalAdmin(): Promise<AdminUserInterface> {
-    const role: Roles.SYSTEM_ADMIN[] = [Roles.SYSTEM_ADMIN];
+    const email = 'admin@example.com';
+    const password = 'admin123';
 
-    const signUpData: SignUpDTO = getSignUpData();
-    const userPassword: string = signUpData.password;
+    // Delete existing admin if exists
+    await this._connection.user.deleteMany({
+      where: { email },
+    });
 
-    const newAdmin: User = await this._authService.signUp(signUpData);
-
-    await this._connection.user.update({
-      where: {
-        id: newAdmin.id,
-      },
+    // Create admin user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const adminUser = await this._connection.user.create({
       data: {
-        roles: [Roles.SYSTEM_ADMIN, Roles.PASSENGER],
+        email,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        roles: [Roles.ADMIN], // Use ADMIN instead of SYSTEM_ADMIN
+        isVerified: true,
+        isActive: true,
       },
     });
 
-    const { id, phone, email, password } = newAdmin;
-
-    const { accessToken, refreshToken } = await this._authService.signIn(
-      {
-        email,
-        password: userPassword,
-      },
-      '172.0.0.1',
-    );
+    // Generate tokens using sign method
+    const tokens = await this._tokenService.sign({
+      id: adminUser.id,
+      email: adminUser.email,
+      roles: adminUser.roles,
+    });
 
     return {
-      id,
-      phone,
-      email,
-      password: userPassword,
-      accessToken,
-      refreshToken,
+      id: adminUser.id,
+      phone: adminUser.phone,
+      email: adminUser.email,
+      password,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
     };
   }
 
-  async createUser(): Promise<User> {
-    const signUpDTO: SignUpDTO = this.getSignUpData();
-    const { password } = signUpDTO;
-    const user = await this._authService.signUp(signUpDTO);
+  async createUser(): Promise<User & { password: string }> {
+    const userData = this.getSignUpData();
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+    const user = await this._connection.user.create({
+      data: {
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        roles: userData.roles,
+        isVerified: true,
+        isActive: true,
+      },
+    });
 
     return {
       ...user,
-      password,
+      password: userData.password,
     };
   }
 
-  getSignUpData(): SignUpDTO {
+  async createTestUser(data?: Partial<SignUpData>): Promise<AdminUserInterface> {
+    const userData: SignUpData = {
+      email: data?.email || faker.internet.email(),
+      password: data?.password || 'password123',
+      firstName: data?.firstName || faker.person.firstName(),
+      lastName: data?.lastName || faker.person.lastName(),
+      roles: data?.roles || [Roles.USER],
+    };
+
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = await this._connection.user.create({
+      data: {
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        roles: userData.roles,
+        isVerified: true,
+        isActive: true,
+      },
+    });
+
+    const tokens = await this._tokenService.sign({
+      id: user.id,
+      email: user.email,
+      roles: user.roles,
+    });
+
+    return {
+      id: user.id,
+      phone: user.phone,
+      email: user.email,
+      password: userData.password,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
+  }
+
+  async createUsers(count: number): Promise<User[]> {
+    const users: User[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const userData = {
+        email: faker.internet.email(),
+        password: await bcrypt.hash('password123', 10),
+        firstName: faker.person.firstName(),
+        lastName: faker.person.lastName(),
+        roles: [Roles.USER],
+        isVerified: true,
+        isActive: true,
+      };
+
+      const user = await this._connection.user.create({
+        data: userData,
+      });
+
+      users.push(user);
+    }
+
+    return users;
+  }
+
+  getSignUpData(): SignUpData {
     return {
       email: faker.internet.email(),
+      password: 'password123',
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      password: faker.internet.password({ length: 12 }),
-      roles: [Roles.PASSENGER],
+      roles: [Roles.USER],
     };
   }
 
-  async getTokens(user: User): Promise<Auth.AccessRefreshTokens> {
+  async getTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
     return this._tokenService.sign({
       id: user.id,
       email: user.email,
       roles: user.roles,
+    });
+  }
+
+  async cleanupUser(email: string): Promise<void> {
+    await this._connection.user.deleteMany({
+      where: { email },
+    });
+  }
+
+  async cleanupUsers(emails: string[]): Promise<void> {
+    await this._connection.user.deleteMany({
+      where: {
+        email: { in: emails },
+      },
     });
   }
 }

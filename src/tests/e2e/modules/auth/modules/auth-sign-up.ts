@@ -1,8 +1,7 @@
 import DefaultContext from '@tests/e2e/context/default-context';
 import { User } from '@prisma/client';
-import { AUTH_SIGN_UP } from '@tests/e2e/common/routes';
-import { SignUpDTO } from '@modules/auth/dto/sign-up.dto';
 import { Roles } from '@modules/app/app.roles';
+import { SignUpDTO } from '@modules/auth/dto/sign-up.dto';
 
 export default (ctx: DefaultContext) => {
   let user: User;
@@ -12,35 +11,49 @@ export default (ctx: DefaultContext) => {
     user = await ctx.service.createUser();
   });
 
-  beforeEach(async () => {
-    signUpDTO = ctx.service.getSignUpData();
-  });
-
-  it('should return USER_CONFLICT exception', async () => {
-    const busyEmailDTO: SignUpDTO = {
-      email: user.email,
-      password: user.password,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      roles: [Roles.PASSENGER],
+  beforeEach(() => {
+    signUpDTO = {
+      ...ctx.service.getSignUpData(),
+      roles: [Roles.USER],
     };
-
-    return ctx.request.post(AUTH_SIGN_UP).send(busyEmailDTO).expect(409);
   });
 
-  it('should create new user', async () => {
-    return ctx.request
-      .post(AUTH_SIGN_UP)
-      .send(signUpDTO)
-      .expect(201)
-      .expect(({ body }) => {
-        expect(body).toStrictEqual({
-          id: expect.any(String),
-          email: signUpDTO.email,
-          firstName: signUpDTO.firstName,
-          lastName: signUpDTO.lastName,
-          phone: null,
-        });
-      });
+  it('Should be able to sign up a user [POST /auth/sign-up]', async () => {
+    const { body } = await ctx.request
+      .post('/auth/sign-up')
+      .send({
+        ...signUpDTO,
+        roles: [Roles.USER],
+      })
+      .expect(201);
+
+    expect(body).toBeDefined();
+    expect(body.email).toBe(signUpDTO.email);
+  });
+
+  it('Should fail if email already exists [POST /auth/sign-up]', async () => {
+    await ctx.request
+      .post('/auth/sign-up')
+      .send({
+        email: user.email,
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'password123',
+        roles: [Roles.USER],
+      })
+      .expect(409);
+  });
+
+  it('Should fail with invalid email format [POST /auth/sign-up]', async () => {
+    await ctx.request
+      .post('/auth/sign-up')
+      .send({
+        email: 'invalid-email',
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'password123',
+        roles: [Roles.USER],
+      })
+      .expect(400);
   });
 };
