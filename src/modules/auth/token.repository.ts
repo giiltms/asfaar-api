@@ -64,7 +64,7 @@ export class TokenRepository {
     accessToken: string,
   ): Promise<TokenWhiteList> {
     const jwtConfig = this.configService.get('jwt');
-    const expiredAt = new Date(Date.now() + jwtConfig.jwtExpAccessToken);
+    const expiresAt = new Date(Date.now() + jwtConfig.jwtExpAccessToken);
 
     return this.prisma.tokenWhiteList.create({
       data: {
@@ -72,7 +72,7 @@ export class TokenRepository {
         refreshTokenId,
         accessToken,
         refreshToken: null,
-        expiredAt,
+        expiresAt,
       },
     });
   }
@@ -82,7 +82,7 @@ export class TokenRepository {
     refreshToken: string,
   ): Promise<TokenWhiteList> {
     const jwtConfig = this.configService.get('jwt');
-    const expiredAt = new Date(Date.now() + jwtConfig.jwtExpRefreshToken);
+    const expiresAt = new Date(Date.now() + jwtConfig.jwtExpRefreshToken);
 
     return this.prisma.tokenWhiteList.create({
       data: {
@@ -90,7 +90,7 @@ export class TokenRepository {
         accessToken: null,
         refreshTokenId: null,
         refreshToken,
-        expiredAt,
+        expiresAt,
       },
     });
   }

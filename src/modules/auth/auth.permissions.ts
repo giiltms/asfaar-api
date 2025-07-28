@@ -1,28 +1,30 @@
+import { Permissions, Actions } from '@modules/casl';
 import { InferSubjects } from '@casl/ability';
-
-import { Actions, Permissions } from '@modules/casl';
 import { Roles } from '@modules/app/app.roles';
-import { TokensEntity } from '@modules/auth/entities/tokens.entity';
-import UserEntity from '@modules/user/entities/user.entity';
 
-export type Subjects = InferSubjects<typeof TokensEntity | typeof UserEntity>;
+export type Subjects = InferSubjects<any>;
 
 export const permissions: Permissions<Roles, Subjects, Actions> = {
-  SYSTEM_ADMIN({ can }) {
-    can(Actions.delete, TokensEntity);
-    // campaign report
-    can(Actions.read, UserEntity);
-    can(Actions.create, UserEntity);
-    can(Actions.read, UserEntity);
-    can(Actions.manage, UserEntity);
+  everyone({ can }) {
+    can(Actions.create, 'User'); // Allow user registration
   },
-  DRIVER({ can }) {
-    can(Actions.delete, UserEntity);
+
+  USER({ user, can }) {
+    can(Actions.read, 'User', { id: user.id });
+    can(Actions.update, 'User', { id: user.id });
   },
-  ADMIN({ can }) {
-    can(Actions.delete, UserEntity);
+
+  MODERATOR({ user, can }) {
+    can(Actions.read, 'User');
+    can(Actions.update, 'User');
   },
-  PASSENGER({ can }) {
-    can(Actions.delete, UserEntity);
+
+  ADMIN({ user, can }) {
+    can(Actions.manage, 'User');
+    can(Actions.manage, 'Auth');
+  },
+
+  SUPER_ADMIN({ user, can }) {
+    can(Actions.manage, 'all');
   },
 };
