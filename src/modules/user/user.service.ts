@@ -2,9 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
 import { Prisma, Roles, User } from '@prisma/client';
 import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
-import { USER_NOT_FOUND } from '@constants/errors.constants';
 import { ListUsersDTO } from './dto/users.dto';
 import { UserFiltersDTO } from './dto/user-filters.dto';
+import { USER_NOT_FOUND } from 'src/common';
 
 @Injectable()
 export class UserService {

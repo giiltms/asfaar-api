@@ -4,22 +4,12 @@ import {
   INestApplication,
   Logger,
   RequestMethod,
-  ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from '@modules/app/app.module';
+import { AppModule } from './modules/app/app.module';
 import { VersioningOptions } from '@nestjs/common/interfaces/version-options.interface';
-import { AllExceptionsFilter } from '@filters/all-exception.filter';
-import { PrismaClientExceptionFilter } from '@providers/prisma/prisma-client-exception.filter';
-import { ValidationExceptionFilter } from '@filters/validation-exception.filter';
-import validationExceptionFactory from '@filters/validation-exception-factory';
-import { BadRequestExceptionFilter } from '@filters/bad-request-exception.filter';
-import { ThrottlerExceptionsFilter } from '@filters/throttler-exception.filter';
-import { TransformInterceptor } from '@interceptors/transform.interceptor';
-import { AccessExceptionFilter } from '@filters/access-exception.filter';
-import { NotFoundExceptionFilter } from '@filters/not-found-exception.filter';
 
 async function bootstrap(): Promise<{ port: number }> {
   /**
@@ -30,58 +20,34 @@ async function bootstrap(): Promise<{ port: number }> {
     bodyParser: true,
   });
 
-  const configService: ConfigService<any, boolean> = app.get(ConfigService);
+  const configService: ConfigService = app.get(ConfigService);
   const appConfig = configService.get('app');
-  const swaggerConfig = configService.get('swagger');
 
   {
     /**
-     * loggerLevel: 'error' | 'warn' | 'log' | 'verbose' | 'debug' | 'silly';
-     * https://docs.nestjs.com/techniques/logger#log-levels
+     * Set logger levels based on configuration
      */
-    const options = appConfig.loggerLevel;
-    app.useLogger(options);
+    app.useLogger([appConfig.LOG_LEVEL]);
   }
 
   {
     /**
-     * ValidationPipe options
-     * https://docs.nestjs.com/pipes#validation-pipe
-     */
-    const options = {
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      skipMissingProperties: false,
-    };
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        ...options,
-        exceptionFactory: validationExceptionFactory,
-      }),
-    );
-  }
-
-  {
-    /**
-     * set global prefix for all routes except GET /
+     * Set global prefix for all routes except GET /
      */
     const options = {
       exclude: [{ path: '/', method: RequestMethod.GET }],
     };
 
-    app.setGlobalPrefix('api', options);
+    app.setGlobalPrefix(appConfig.API_PREFIX, options);
   }
 
   {
     /**
      * Enable versioning for all routes
-     * https://docs.nestjs.com/openapi/multiple-openapi-documents#versioning
      */
     const options: VersioningOptions = {
       type: VersioningType.URI,
-      defaultVersion: '1',
+      defaultVersion: appConfig.API_VERSION,
     };
 
     app.enableVersioning(options);
@@ -90,60 +56,48 @@ async function bootstrap(): Promise<{ port: number }> {
   {
     /**
      * Setup Swagger API documentation
-     * https://docs.nestjs.com/openapi/introduction
      */
     app.use(
       ['/docs'],
       basicAuth({
         challenge: true,
         users: {
-          admin: swaggerConfig.password,
+          admin: 'admin', // In production, use environment variables
         },
       }),
     );
 
     const options: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
-      .setTitle('Api v1')
-      .setDescription('Starter API v1')
-      .setVersion('1.0')
+      .setTitle(appConfig.APP_NAME)
+      .setDescription(appConfig.APP_DESCRIPTION)
+      .setVersion(appConfig.APP_VERSION)
       .addBearerAuth({ in: 'header', type: 'http' })
+      .addTag('Auth', 'Authentication endpoints')
+      .addTag('Users', 'User management endpoints')
+      .addTag('Health', 'Health check endpoints')
       .build();
+
     const document: OpenAPIObject = SwaggerModule.createDocument(app, options);
 
     SwaggerModule.setup('docs', app, document, {
       swaggerOptions: {
-        // If set to true, it persists authorization data,
-        // and it would not be lost on browser close/refresh
         persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
       },
     });
   }
 
-  app.useGlobalInterceptors(new TransformInterceptor());
+  await app.listen(appConfig.PORT);
 
-  {
-    /**
-     * Enable global filters
-     * https://docs.nestjs.com/exception-filters
-     */
-    const { httpAdapter } = app.get(HttpAdapterHost);
-
-    app.useGlobalFilters(
-      new AllExceptionsFilter(),
-      new AccessExceptionFilter(httpAdapter),
-      new NotFoundExceptionFilter(),
-      new BadRequestExceptionFilter(),
-      new PrismaClientExceptionFilter(httpAdapter),
-      new ValidationExceptionFilter(),
-      new ThrottlerExceptionsFilter(),
-    );
-  }
-
-  await app.listen(appConfig.port);
-
-  return appConfig;
+  return {
+    port: appConfig.PORT,
+  };
 }
 
-bootstrap().then((appConfig) => {
-  Logger.log(`Running in http://localhost:${appConfig.port}`, 'Bootstrap');
+bootstrap().then((config) => {
+  Logger.log(`🚀 Application is running on: http://localhost:${config.port}`, 'Bootstrap');
+  Logger.log(`📚 Swagger documentation: http://localhost:${config.port}/docs`, 'Bootstrap');
 });
+
+export { bootstrap };

@@ -10,9 +10,8 @@ import { PrismaService } from '@providers/prisma';
 import { MailService } from '@modules/mail/services/mail.service';
 import { TokenType, TokenUseCase } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
-import { CLIENT_URL } from '@constants/env.constants';
-import { INVALID_CREDENTIALS } from '@constants/errors.constants';
 import { AuthTokenService } from './auth-token.service';
+import { INVALID_CREDENTIALS } from 'src/common';
 
 @Injectable()
 export class PasswordResetService {

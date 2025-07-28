@@ -4,7 +4,7 @@ import {
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
-import { NOT_FOUND } from '@constants/errors.constants';
+import { NOT_FOUND } from 'src/common';
 
 @Catch(NotFoundException)
 export class NotFoundExceptionFilter implements ExceptionFilter {

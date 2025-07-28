@@ -5,8 +5,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { RATE_LIMIT_EXCEEDED } from '@constants/errors.constants';
 import { ThrottlerException } from '@nestjs/throttler';
+import { RATE_LIMIT_EXCEEDED } from 'src/common';
 
 @Catch(ThrottlerException)
 export class ThrottlerExceptionsFilter implements ExceptionFilter {
