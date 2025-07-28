@@ -1,37 +1,31 @@
-import { $Enums, User } from '@prisma/client';
-import { Roles } from '@modules/app/app.roles';
+import { User } from '@prisma/client';
 
 export default class UserEntity implements User {
-  gender: $Enums.Gender;
-  nin: string;
-  bvn: string;
-  trainerProfileId: string;
-  teamId: string;
+  id: string;
+  email: string;
+  phone: string;
+  firstName: string;
   middleName: string;
-  regionalProfileId: string;
+  lastName: string;
+  username: string;
+  gender: any; // Use any to avoid Gender enum issues for now
+  dateOfBirth: Date;
+  password: string;
+  avatar: string;
+  bio: string;
+  website: string;
+  location: string;
+  timezone: string;
+  locale: string;
+  roles: any[]; // Use any[] to avoid role enum issues for now
+  status: any; // Use any to avoid Status enum issues for now
+  isVerified: boolean;
+  isActive: boolean;
+  lastLoginAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 
-
-  readonly id!: string;
-
-  readonly phone!: string | null;
-
-  readonly email!: string;
-
-  readonly firstName!: string | null;
-
-  readonly lastName!: string | null;
-
-  readonly password!: string | null;
-
-  readonly avatar!: string | null;
-
-  readonly roles!: Roles[];
-
-  readonly createdAt!: Date;
-
-  readonly updatedAt!: Date;
-
-  readonly isVerified!: boolean;
-
-  readonly isActive!: boolean;
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
 }
