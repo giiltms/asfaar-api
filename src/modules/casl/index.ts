@@ -7,8 +7,6 @@ export { AuthorizableRequest } from './interfaces/request.interface';
 
 export {
   CaslConditions,
-  CaslSubject,
-  CaslUser,
   UseAbility,
 } from './decorators';
 
@@ -33,13 +31,5 @@ export {
 export { Actions, DefaultActions } from './actions.enum';
 
 export { ConditionsProxy } from './proxies/conditions.proxy';
-
-export { UserProxy } from './proxies/user.proxy';
-
-export { SubjectProxy } from './proxies/subject.proxy';
-
-export { AccessGuard } from './access.guard';
-
-export { AccessService } from './access.service';
 
 export { InferSubjects } from '@casl/ability';
