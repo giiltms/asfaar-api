@@ -8,8 +8,16 @@ export const MAIL_PASSWORD = 'MAIL_PASSWORD';
 export const MAIL_PORT = 'MAIL_PORT';
 export const MAIL_USER = 'MAIL_USER';
 
-export const CONTACT_EMAIL = 'CONTACT_EMAIL';
-export const SITE_URL = 'SITE_URL';
+export const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'contact@example.com';
+export const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
+export const SITE_NAME = process.env.SITE_NAME || 'ASFAAR API';
+export const APP_NAME = process.env.APP_NAME || 'ASFAAR';
+export const API_VERSION = process.env.API_VERSION || 'v1';
+export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const PORT = process.env.PORT || 3000;
+export const DATABASE_URL = process.env.DATABASE_URL || '';
+export const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+export const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
 export const AWS_S3_REGION = 'AWS_S3_REGION';
 export const AWS_S3_BUCKET = 'AWS_S3_BUCKET';
