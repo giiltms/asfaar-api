@@ -1,8 +1,4 @@
 import {
-  FORBIDDEN_RESOURCE,
-  UNAUTHORIZED_RESOURCE,
-} from '@constants/errors.constants';
-import {
   ArgumentsHost,
   Catch,
   ForbiddenException,
@@ -12,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
+import { FORBIDDEN_RESOURCE, UNAUTHORIZED_RESOURCE } from '../constants';
 
 interface ExceptionResponse {
   statusCode: number;

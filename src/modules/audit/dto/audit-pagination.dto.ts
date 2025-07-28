@@ -1,8 +1,8 @@
-import { Order } from '@constants/order.constants';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { AuditSortableColumns } from '../types';
+import { Order } from 'src/common';
 
 export class AuditPaginationDTO {
   @ApiPropertyOptional({ enum: AuditSortableColumns })

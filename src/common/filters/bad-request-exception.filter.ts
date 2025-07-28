@@ -1,6 +1,6 @@
 import { Catch, HttpStatus, BadRequestException } from '@nestjs/common';
-import { BAD_REQUEST } from '@constants/errors.constants';
 import BaseExceptionFilter from './base-exception.filter';
+import { BAD_REQUEST } from '../constants';
 
 @Catch(BadRequestException)
 export class BadRequestExceptionFilter extends BaseExceptionFilter {

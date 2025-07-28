@@ -4,8 +4,8 @@ import {
   ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
-import { VALIDATION_ERROR } from '@constants/errors.constants';
 import { ValidationException } from './validation.exception';
+import { VALIDATION_ERROR } from 'src/common';
 
 @Catch(ValidationException)
 export class ValidationExceptionFilter implements ExceptionFilter {

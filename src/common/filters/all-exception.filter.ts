@@ -5,7 +5,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { INTERNAL_SERVER_ERROR } from '@constants/errors.constants';
+import { INTERNAL_SERVER_ERROR } from '../constants';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
