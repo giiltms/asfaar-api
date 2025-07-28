@@ -1,58 +1,85 @@
-import { SignUpDTO } from '@modules/auth/dto/sign-up.dto';
 import { faker } from '@faker-js/faker';
-import { User } from '@prisma/client';
-import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
-import PaginatedResult = PaginatorTypes.PaginatedResult;
 import { Roles } from '@modules/app/app.roles';
 
-export function getSignUpData(email?: string): SignUpDTO {
+export interface MockUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  username?: string;
+  roles?: Roles[];
+}
+
+export function getSignUpData(): MockUserData {
   return {
-    email: faker.internet.email({ provider: email }),
+    email: faker.internet.email().toLowerCase(),
+    password: 'Test123!@#',
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
-    password: faker.internet.password({ length: 12 }),
-    roles: [Roles.PASSENGER],
+    username: faker.internet.userName().toLowerCase(),
+    roles: [Roles.USER],
   };
 }
 
-export function getPaginatedData<T>(input: T[]): PaginatedResult<T> {
+export function getAdminSignUpData(): MockUserData {
   return {
-    data: input,
-    meta: {
-      total: input.length,
-      lastPage: Math.ceil(input.length / 10),
-      currentPage: 1,
-      perPage: 10,
-      prev: null,
-      next: null,
+    email: faker.internet.email().toLowerCase(),
+    password: 'Admin123!@#',
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    username: faker.internet.userName().toLowerCase(),
+    roles: [Roles.ADMIN],
+  };
+}
+
+export function createUsers(count: number): MockUserData[] {
+  const users: MockUserData[] = [];
+
+  for (let i = 0; i < count; i++) {
+    users.push(getSignUpData());
+  }
+
+  return users;
+}
+
+export function createAdminUsers(count: number): MockUserData[] {
+  const users: MockUserData[] = [];
+
+  for (let i = 0; i < count; i++) {
+    users.push(getAdminSignUpData());
+  }
+
+  return users;
+}
+
+export function getMockUserProfile() {
+  return {
+    company: faker.company.name(),
+    jobTitle: faker.person.jobTitle(),
+    education: faker.lorem.sentence(),
+    skills: [faker.lorem.word(), faker.lorem.word(), faker.lorem.word()],
+    interests: [faker.lorem.word(), faker.lorem.word()],
+    socialLinks: {
+      linkedin: faker.internet.url(),
+      twitter: faker.internet.url(),
+      github: faker.internet.url(),
+    },
+    address: {
+      street: faker.location.streetAddress(),
+      city: faker.location.city(),
+      state: faker.location.state(),
+      country: faker.location.country(),
+      zipCode: faker.location.zipCode(),
     },
   };
 }
 
-export function createUsers(length: number): User[] {
-  const result: User[] = [];
-  for (let i = 0; i < length; i++) {
-    const user: User = {
-      id: faker.string.alphanumeric({ length: 12 }),
-      ...getSignUpData(),
-      phone: null,
-      avatar: null,
-      roles: [Roles.PASSENGER],
-      createdAt: faker.date.anytime(),
-      updatedAt: faker.date.anytime(),
-      isVerified: true,
-      isActive: true,
-      gender: 'MALE',
-      middleName: '',
-    };
-    result.push(user);
-  }
-  return result;
-}
-
-export function getJwtTokens(): Auth.AccessRefreshTokens {
-  return {
-    accessToken: faker.string.alphanumeric({ length: 40 }),
-    refreshToken: faker.string.alphanumeric({ length: 40 }),
-  };
+export function getMockUserPreferences() {
+  return [
+    { key: 'language', value: 'en', category: 'general' },
+    { key: 'timezone', value: 'UTC', category: 'general' },
+    { key: 'emailNotifications', value: 'true', category: 'notifications' },
+    { key: 'smsNotifications', value: 'false', category: 'notifications' },
+    { key: 'theme', value: 'light', category: 'appearance' },
+  ];
 }
