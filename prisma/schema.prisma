@@ -10,79 +10,519 @@ datasource db {
 enum Gender {
   MALE
   FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
 }
 
-model AuditLog {
-  id           String   @id @default(uuid())
-  userId       String?
-  action       String
-  timestamp    DateTime @default(now())
-  resourceId   String?
-  resourceType String?
-  changes      Json?
-  url          String?
-
-  user User? @relation(fields: [userId], references: [id], name: "UserAudit")
-}
-
-model User {
-  id         String     @id @default(uuid())
-  email      String     @unique
-  phone      String?
-  firstName  String?
-  middleName String?
-  lastName   String?
-  gender     Gender?
-  password   String
-  avatar     String?
-  roles      Roles[]    @default([PASSENGER])
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  isVerified Boolean?   @default(false)
-  isActive   Boolean?   @default(false)
-  tokens     Token[]
-  auditLogs  AuditLog[] @relation("UserAudit")
-}
-
-model TokenWhiteList {
-  id             String   @id @default(uuid())
-  userId         String
-  accessToken    String?
-  refreshToken   String?
-  refreshTokenId String?
-  expiredAt      DateTime
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+enum Status {
+  ACTIVE
+  INACTIVE
+  PENDING
+  SUSPENDED
+  DELETED
 }
 
 enum Roles {
-  DRIVER
-  PASSENGER
-  SYSTEM_ADMIN
+  SUPER_ADMIN
   ADMIN
+  MODERATOR
+  USER
+  GUEST
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethodType {
+  CARD
+  BANK_TRANSFER
+  WALLET
+  USSD
+  QR_CODE
+  CRYPTO
+  MOBILE_MONEY
+}
+
+enum PaymentProvider {
+  FLUTTERWAVE
+  PAYSTACK
+  FINCRA
+  STRIPE
+  PAYPAL
+}
+
+enum TransactionType {
+  PAYMENT
+  REFUND
+  PAYOUT
+  TRANSFER
+  SUBSCRIPTION
+  WITHDRAWAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+  PAST_DUE
+  SUSPENDED
+}
+
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  phone       String?   @unique
+  firstName   String?
+  middleName  String?
+  lastName    String?
+  username    String?   @unique
+  gender      Gender?
+  dateOfBirth DateTime?
+  password    String
+  avatar      String?
+  bio         String?
+  website     String?
+  location    String?
+  timezone    String?   @default("UTC")
+  locale      String?   @default("en")
+  roles       Roles[]   @default([USER])
+  status      Status    @default(ACTIVE)
+  isVerified  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  tokens        Token[]
+  auditLogs     AuditLog[]       @relation("UserAudit")
+  profile       UserProfile?
+  preferences   UserPreference[]
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  files         File[]
+  notifications Notification[]
+  sessions      UserSession[]
+
+  // Payment relations
+  paymentMethods PaymentMethod[]
+  transactions   Transaction[]
+  subscriptions  Subscription[]
+  wallets        Wallet[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company          String?
+  jobTitle         String?
+  education        String?
+  skills           String[]
+  interests        String[]
+  socialLinks      Json?
+  address          Json?
+  emergencyContact Json?
+  customFields     Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model UserPreference {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  category  String?  @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@map("user_preferences")
+}
+
+model UserSession {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceInfo Json?
+  ipAddress  String?
+  userAgent  String?
+  isActive   Boolean  @default(true)
+  lastActive DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@map("user_sessions")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  color       String?
+  icon        String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  posts Post[]
+  tags  Tag[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  color       String?
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  isActive    Boolean   @default(true)
+  usageCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  posts Post[] @relation("PostTags")
+
+  @@map("tags")
+}
+
+model Post {
+  id            String    @id @default(uuid())
+  title         String
+  slug          String    @unique
+  content       String?
+  excerpt       String?
+  featuredImage String?
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id])
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  status        Status    @default(PENDING)
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  viewCount     Int       @default(0)
+  likeCount     Int       @default(0)
+  commentCount  Int       @default(0)
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  tags     Tag[]     @relation("PostTags")
+  comments Comment[]
+  likes    Like[]
+  files    File[]    @relation("PostFiles")
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  postId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  status    Status    @default(ACTIVE)
+  likeCount Int       @default(0)
+  isEdited  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model File {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  url          String?
+  uploaderId   String
+  uploader     User     @relation(fields: [uploaderId], references: [id])
+  postId       String?
+  post         Post?    @relation("PostFiles", fields: [postId], references: [id])
+  isPublic     Boolean  @default(false)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("files")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String    @default("info")
+  data      Json?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("notifications")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency  String   @default("NGN")
+  balance   Decimal  @default(0) @db.Decimal(19, 2)
+  isActive  Boolean  @default(true)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  fromTransactions Transaction[] @relation("FromWallet")
+  toTransactions   Transaction[] @relation("ToWallet")
+
+  @@unique([userId, currency])
+  @@map("wallets")
+}
+
+model PaymentMethod {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider         PaymentProvider
+  type             PaymentMethodType
+  isDefault        Boolean           @default(false)
+  isActive         Boolean           @default(true)
+  providerMethodId String? // Provider's payment method ID
+  last4            String? // Last 4 digits for cards
+  brand            String? // Card brand (Visa, Mastercard, etc.)
+  expiryMonth      Int?
+  expiryYear       Int?
+  bankName         String?
+  accountNumber    String?
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  transactions Transaction[]
+
+  @@map("payment_methods")
+}
+
+model Transaction {
+  id                String          @id @default(uuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id])
+  type              TransactionType
+  status            PaymentStatus   @default(PENDING)
+  amount            Decimal         @db.Decimal(19, 2)
+  currency          String          @default("NGN")
+  description       String?
+  reference         String          @unique
+  providerReference String? // Provider's transaction reference
+  provider          PaymentProvider
+  paymentMethodId   String?
+  paymentMethod     PaymentMethod?  @relation(fields: [paymentMethodId], references: [id])
+
+  // Wallet transfer fields
+  fromWalletId String?
+  fromWallet   Wallet? @relation("FromWallet", fields: [fromWalletId], references: [id])
+  toWalletId   String?
+  toWallet     Wallet? @relation("ToWallet", fields: [toWalletId], references: [id])
+
+  // Fees and charges
+  fee       Decimal? @db.Decimal(19, 2)
+  netAmount Decimal? @db.Decimal(19, 2)
+
+  // Provider response data
+  providerData Json?
+  webhookData  Json?
+
+  // Subscription relation
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  // Timestamps
+  processedAt DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  refunds TransactionRefund[]
+
+  @@map("transactions")
+}
+
+model TransactionRefund {
+  id                String        @id @default(uuid())
+  transactionId     String
+  transaction       Transaction   @relation(fields: [transactionId], references: [id])
+  amount            Decimal       @db.Decimal(19, 2)
+  reason            String?
+  status            PaymentStatus @default(PENDING)
+  reference         String        @unique
+  providerReference String?
+  providerData      Json?
+  processedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("transaction_refunds")
+}
+
+model Plan {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  price         Decimal  @db.Decimal(19, 2)
+  currency      String   @default("NGN")
+  interval      String // monthly, yearly, weekly
+  intervalCount Int      @default(1)
+  trialDays     Int?     @default(0)
+  features      Json?
+  metadata      Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               Plan               @relation(fields: [planId], references: [id])
+  status             SubscriptionStatus @default(TRIAL)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  trialStart         DateTime?
+  trialEnd           DateTime?
+  cancelledAt        DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+  metadata           Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  transactions Transaction[]
+
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation("UserAudit", fields: [userId], references: [id])
+  action     String
+  resource   String
+  resourceId String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  url        String?
+  timestamp  DateTime @default(now())
+
+  @@map("audit_logs")
 }
 
 model Token {
   id        String       @id @default(uuid())
-  owner     User         @relation(fields: [userId], references: [id])
   userId    String
+  owner     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   code      String
+  type      TokenType    @default(OTP)
+  useCase   TokenUseCase
+  isUsed    Boolean      @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime
+  metadata  Json?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  expiresAt DateTime     @db.Timestamp()
-  useCase   TokenUseCase
-  type      TokenType    @default(value: OTP)
+
+  @@map("tokens")
+}
+
+model TokenWhiteList {
+  id             String    @id @default(uuid())
+  userId         String
+  accessToken    String?
+  refreshToken   String?
+  refreshTokenId String?
+  deviceInfo     Json?
+  ipAddress      String?
+  isRevoked      Boolean   @default(false)
+  revokedAt      DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("token_whitelist")
 }
 
 enum TokenUseCase {
-  PWD_RESET // Reset Password
-  LOGIN // Login
-  D2FA // Disable 2FA
-  PHV // Phone Verification
-  FCM // Firebase Cloud Messaging
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR_AUTH
+  PHONE_VERIFICATION
+  LOGIN_VERIFICATION
+  ACCOUNT_RECOVERY
 }
 
 enum TokenType {
-  HEX
   OTP
+  HEX
+  UUID
+  JWT
 }
