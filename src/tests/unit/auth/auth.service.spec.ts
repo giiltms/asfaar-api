@@ -105,4 +105,4 @@ describe('AuthService', () => {
       expect(typeof service.refreshToken).toBe('function');
     });
   });
-}); 
+});
