@@ -81,4 +81,4 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
   ],
   exports: [ConfigModule],
 })
-export class CommonModule {} 
+export class CommonModule {}
