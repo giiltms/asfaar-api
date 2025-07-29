@@ -4,7 +4,7 @@ import { Prisma, Roles, User } from '@prisma/client';
 import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { ListUsersDTO } from './dto/users.dto';
 import { UserFiltersDTO } from './dto/user-filters.dto';
-import { USER_NOT_FOUND } from 'src/common';
+import { USER_NOT_FOUND } from '@common/constants';
 
 @Injectable()
 export class UserService {

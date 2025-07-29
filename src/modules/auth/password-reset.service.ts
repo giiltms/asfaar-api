@@ -11,7 +11,7 @@ import { MailService } from '@modules/mail/services/mail.service';
 import { TokenType, TokenUseCase } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { AuthTokenService } from './auth-token.service';
-import { INVALID_CREDENTIALS } from 'src/common';
+import { INVALID_CREDENTIALS } from '@common/constants';
 
 @Injectable()
 export class PasswordResetService {
