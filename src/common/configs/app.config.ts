@@ -53,7 +53,7 @@ class AppConfigValidation {
 
   @IsString()
   @IsOptional()
-  API_VERSION: string = 'v1';
+  API_VERSION: string = '1';
 }
 
 export default registerAs('app', (): AppConfigValidation => {
