@@ -40,7 +40,7 @@ RUN yarn build
   RUN yarn global add nodemon
   
   # Copy dependencies and source code from base stage
-  COPY --from=base /app /app
+  COPY --from=build /app /app
   
   # Expose the port for development
   EXPOSE 3000
