@@ -67,7 +67,7 @@ export default registerAs('app', (): AppConfigValidation => {
   config.APP_URL = process.env.APP_URL || 'http://localhost:3000';
   config.LOG_LEVEL = process.env.LOG_LEVEL as LogLevel || LogLevel.Log;
   config.API_PREFIX = process.env.API_PREFIX || 'api';
-  config.API_VERSION = process.env.API_VERSION || 'v1';
+  config.API_VERSION = process.env.API_VERSION || '1';
 
   return config;
 }); 
