@@ -40,7 +40,7 @@ class BaseContext {
     this._app.setGlobalPrefix('api');
     this._app.enableVersioning({
       type: VersioningType.URI,
-      defaultVersion: 'v1',
+      defaultVersion: '1',
     });
 
     this._connection = new PrismaClient();
