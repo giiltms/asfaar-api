@@ -49,8 +49,8 @@ export class SignUpRegionalDTO {
   @ApiProperty({
     description: 'The roles of the user. Defaults to ["PASSENGER"].',
     enum: Roles,
-    default: [Roles.USER],
-    examples: [Roles.USER, Roles.ADMIN],
+    default: [Roles.APPLICANT],
+    examples: [Roles.APPLICANT, Roles.ADMIN],
   })
   @IsEnum(Roles, { each: true })
   @ArrayUnique()

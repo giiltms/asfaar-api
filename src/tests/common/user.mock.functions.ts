@@ -17,7 +17,7 @@ export function getSignUpData(): MockUserData {
     firstName: faker.person.firstName(),
     lastName: faker.person.lastName(),
     username: faker.internet.userName().toLowerCase(),
-    roles: [Roles.USER],
+    roles: [Roles.APPLICANT],
   };
 }
 

@@ -12,7 +12,7 @@ export const permissions: Permissions<Roles> = {
     can(Actions.delete, 'PaymentMethod', { userId: '${user.id}' });
   },
 
-  [Roles.USER]({ can }) {
+  [Roles.APPLICANT]({ can }) {
     // Regular users can initiate payments and view their transactions
     can(Actions.create, 'Payment');
     can(Actions.read, 'Payment', { userId: '${user.id}' });
@@ -20,12 +20,7 @@ export const permissions: Permissions<Roles> = {
     can(Actions.read, 'Wallet', { userId: '${user.id}' });
   },
 
-  [Roles.MODERATOR]({ can }) {
-    // Moderators can view all transactions but not modify
-    can(Actions.read, 'Transaction');
-    can(Actions.read, 'Payment');
-    can(Actions.read, 'Refund');
-  },
+
 
   [Roles.ADMIN]({ can }) {
     // Admins can manage all payment operations

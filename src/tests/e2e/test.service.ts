@@ -94,7 +94,7 @@ class TestService {
       password: data?.password || 'password123',
       firstName: data?.firstName || faker.person.firstName(),
       lastName: data?.lastName || faker.person.lastName(),
-      roles: data?.roles || [Roles.USER],
+      roles: data?.roles || [Roles.APPLICANT],
     };
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -135,7 +135,7 @@ class TestService {
         password: await bcrypt.hash('password123', 10),
         firstName: faker.person.firstName(),
         lastName: faker.person.lastName(),
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
         isVerified: true,
         isActive: true,
       };
@@ -156,7 +156,7 @@ class TestService {
       password: 'password123',
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      roles: [Roles.USER],
+      roles: [Roles.APPLICANT],
     };
   }
 

@@ -1,7 +1,7 @@
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import UserEntity from '@modules/user/entities/user.entity';
-import { Roles } from '@modules/app/app.roles';
+import { Roles } from '@common/constants/roles.constants';
 
 class ZoneEntity {
   @ApiProperty({ type: String })
