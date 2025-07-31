@@ -14,7 +14,7 @@ export default (ctx: DefaultContext) => {
   beforeEach(() => {
     signUpDTO = {
       ...ctx.service.getSignUpData(),
-      roles: [Roles.USER],
+      roles: [Roles.APPLICANT],
     };
   });
 
@@ -23,7 +23,7 @@ export default (ctx: DefaultContext) => {
       .post('/auth/sign-up')
       .send({
         ...signUpDTO,
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
       })
       .expect(201);
 
@@ -39,7 +39,7 @@ export default (ctx: DefaultContext) => {
         firstName: 'Test',
         lastName: 'User',
         password: 'password123',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
       })
       .expect(409);
   });
@@ -52,7 +52,7 @@ export default (ctx: DefaultContext) => {
         firstName: 'Test',
         lastName: 'User',
         password: 'password123',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
       })
       .expect(400);
   });

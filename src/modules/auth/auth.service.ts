@@ -41,7 +41,7 @@ export class AuthService {
       password: hashedPassword,
       phone: signUpDTO.phone,
       gender: signUpDTO.gender,
-      roles: signUpDTO.roles || [Roles.USER],
+      roles: signUpDTO.roles || [Roles.APPLICANT],
       isVerified: false,
       isActive: true,
     };
@@ -75,7 +75,7 @@ export class AuthService {
       lastName: signUpDTO.lastName || 'User',
       password: hashedPassword,
       phone: signUpDTO.phone,
-      roles: [Roles.USER], // Simplified role assignment
+      roles: [Roles.APPLICANT], // Simplified role assignment
       isVerified: false,
       isActive: true,
     };
@@ -98,7 +98,7 @@ export class AuthService {
       firstName: signUpDTO.firstName,
       lastName: signUpDTO.lastName,
       password: hashedPassword,
-      roles: signUpDTO.roles || [Roles.USER],
+      roles: signUpDTO.roles || [Roles.APPLICANT],
       isVerified: false,
       isActive: true,
     };
@@ -157,7 +157,7 @@ export class AuthService {
       const tokens = await this.authTokenService.sign({
         id: 'temp-user-id', // This is a simplified implementation
         email: 'temp@email.com',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
       });
 
       return tokens;

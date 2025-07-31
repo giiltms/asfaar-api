@@ -7,7 +7,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { Roles } from '@modules/app/app.roles';
+import { Roles } from '@common/constants/roles.constants';
 
 export class AuditFiltersDto {
   @ApiPropertyOptional({
@@ -21,7 +21,7 @@ export class AuditFiltersDto {
   @ApiPropertyOptional({
     description: 'Filter by user role',
     enum: Roles,
-    example: Roles.USER,
+    example: Roles.APPLICANT,
   })
   @IsOptional()
   @IsEnum(Roles)

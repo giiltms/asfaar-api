@@ -58,21 +58,7 @@ async function main() {
     },
   });
 
-  const moderator = await prisma.user.create({
-    data: {
-      email: 'moderator@example.com',
-      password: hashedPassword,
-      firstName: 'Moderator',
-      lastName: 'User',
-      username: 'moderator',
-      roles: [Roles.MODERATOR],
-      status: Status.ACTIVE,
-      isVerified: true,
-      isActive: true,
-      timezone: 'UTC',
-      locale: 'en',
-    },
-  });
+
 
   const users = await Promise.all([
     prisma.user.create({
@@ -86,7 +72,7 @@ async function main() {
         bio: 'Software engineer passionate about technology',
         website: 'https://johndoe.dev',
         location: 'New York, USA',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
@@ -105,7 +91,7 @@ async function main() {
         bio: 'UX designer and tech enthusiast',
         website: 'https://janesmith.design',
         location: 'San Francisco, USA',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
@@ -122,7 +108,7 @@ async function main() {
         username: 'alexwilson',
         bio: 'Full-stack developer and open source contributor',
         location: 'London, UK',
-        roles: [Roles.USER],
+        roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
@@ -492,10 +478,10 @@ async function main() {
   console.log('\n🔑 Test accounts:');
   console.log('  - Super Admin: superadmin@example.com / password123');
   console.log('  - Admin: admin@example.com / password123');
-  console.log('  - Moderator: moderator@example.com / password123');
-  console.log('  - User: john.doe@example.com / password123');
-  console.log('  - User: jane.smith@example.com / password123');
-  console.log('  - User: alex.wilson@example.com / password123');
+
+  console.log('  - Applicant: john.doe@example.com / password123');
+  console.log('  - Applicant: jane.smith@example.com / password123');
+  console.log('  - Applicant: alex.wilson@example.com / password123');
 }
 
 main()

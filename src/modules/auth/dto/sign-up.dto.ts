@@ -52,8 +52,8 @@ export class SignUpDTO {
     description: 'User roles',
     enum: Roles,
     isArray: true,
-    default: [Roles.USER],
-    examples: [Roles.USER, Roles.ADMIN],
+    default: [Roles.APPLICANT],
+    examples: [Roles.APPLICANT, Roles.ADMIN],
   })
   @IsArray()
   @IsEnum(Roles, { each: true })

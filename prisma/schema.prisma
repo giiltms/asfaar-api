@@ -25,9 +25,15 @@ enum Status {
 enum Roles {
   SUPER_ADMIN
   ADMIN
-  MODERATOR
-  USER
-  GUEST
+  APPLICANT
+  AGENCY
+  ASFAAR_ADMIN
+  EMBASSY_OFFICER
+  SECURITY_OFFICER
+  VERIFICATION_OFFICER
+  BIOMETRIC_AGENT
+  BIOMETRIC_SUPERVISOR
+  RECEPTIONIST
 }
 
 enum PaymentStatus {
@@ -93,7 +99,7 @@ model User {
   location    String?
   timezone    String?   @default("UTC")
   locale      String?   @default("en")
-  roles       Roles[]   @default([USER])
+  roles       Roles[]   @default([APPLICANT])
   status      Status    @default(ACTIVE)
   isVerified  Boolean   @default(false)
   isActive    Boolean   @default(true)
