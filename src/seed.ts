@@ -58,8 +58,6 @@ async function main() {
     },
   });
 
-
-
   const users = await Promise.all([
     prisma.user.create({
       data: {
