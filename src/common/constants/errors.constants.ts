@@ -44,6 +44,11 @@ export const EARNING_NOT_FOUND = '404041: Earning not available';
 export const TRAINER_NOT_FOUND = '404042: Trainer not found';
 export const TRANSACTION_NOT_FOUND = '404043: Transaction not found';
 export const ADDRESS_NOT_FOUND = '404044: Address not found';
+export const FORM_NOT_FOUND = '404045: Form not found';
+export const FORM_SECTION_NOT_FOUND = '404046: Form section not found';
+export const FORM_GROUP_NOT_FOUND = '404047: Form group not found';
+export const FORM_FIELD_NOT_FOUND = '404048: Form field not found';
+export const FORM_SUBMISSION_NOT_FOUND = '404049: Form submission not found';
 
 export const UNAUTHORIZED_RESOURCE = '401000: Unauthorized resource';
 export const INVALID_CREDENTIALS = '401001: Invalid credentials';
@@ -81,6 +86,8 @@ export const COMPROMISED_PASSWORD =
 export const CANNOT_DELETE_SOLE_MEMBER =
   '400009: Cannot remove the only member';
 export const DEFAULT_ADDRESS_REQUIRED = '400010: At least one default address is required';
+export const FORM_HAS_SUBMISSIONS = '400011: Cannot delete form with existing submissions';
+export const DUPLICATE_FIELD_NAME = '400012: Field name already exists in this form';
 export const CANNOT_DELETE_SOLE_OWNER = '400010: Cannot remove the only owner';
 export const ORDER_BY_ASC_DESC = '400011: Invalid sorting order';
 export const ORDER_BY_FORMAT = '400012: Invalid ordering format';

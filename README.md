@@ -248,6 +248,42 @@ src/
 - `PATCH /api/v1/users/:id` - Update user
 - `DELETE /api/v1/users/:id` - Delete user
 
+### Address Management
+
+- `GET /api/v1/addresses` - Get user addresses
+- `POST /api/v1/addresses` - Create new address
+- `GET /api/v1/addresses/:id` - Get address by ID
+- `PUT /api/v1/addresses/:id` - Update address
+- `DELETE /api/v1/addresses/:id` - Delete address
+- `GET /api/v1/addresses/default` - Get default address
+- `POST /api/v1/addresses/:id/set-default` - Set as default
+- `POST /api/v1/addresses/:id/verify` - Verify address
+- `GET /api/v1/addresses/search?q=term` - Search addresses
+
+### Dynamic Forms (Form Templates)
+
+#### Form Template Management
+
+- `GET /api/v1/forms` - List all form templates (with pagination)
+- `POST /api/v1/forms` - Create new form template
+- `GET /api/v1/forms/:id` - Get form template by ID
+- `PUT /api/v1/forms/:id` - Update form template
+- `DELETE /api/v1/forms/:id` - Delete form template
+- `POST /api/v1/forms/:id/duplicate` - Duplicate form template
+- `GET /api/v1/forms/:id/analytics` - Get form analytics
+
+#### Form Builder APIs
+
+- `POST /api/v1/forms/:id/sections` - Add section to form
+- `PUT /api/v1/forms/sections/:id` - Update form section
+- `DELETE /api/v1/forms/sections/:id` - Delete form section
+- `POST /api/v1/forms/sections/:id/groups` - Add group to section
+- `PUT /api/v1/forms/groups/:id` - Update input group
+- `DELETE /api/v1/forms/groups/:id` - Delete input group
+- `POST /api/v1/forms/groups/:id/fields` - Add field to group
+- `PUT /api/v1/forms/fields/:id` - Update form field
+- `DELETE /api/v1/forms/fields/:id` - Delete form field
+
 ### Health Check
 
 - `GET /api/v1/health` - Application health status
