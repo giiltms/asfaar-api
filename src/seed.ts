@@ -1,4 +1,4 @@
-import { PrismaClient, Roles, Gender, Status } from '@prisma/client';
+import { PrismaClient, Roles, Gender, Status, AddressType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -69,7 +69,9 @@ async function main() {
         gender: Gender.MALE,
         bio: 'Software engineer passionate about technology',
         website: 'https://johndoe.dev',
-        location: 'New York, USA',
+        nin: '12345678901',
+        state: 'New York',
+        lga: 'Manhattan',
         roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
@@ -88,7 +90,9 @@ async function main() {
         gender: Gender.FEMALE,
         bio: 'UX designer and tech enthusiast',
         website: 'https://janesmith.design',
-        location: 'San Francisco, USA',
+        nin: '12345678902',
+        state: 'California',
+        lga: 'San Francisco',
         roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
@@ -105,7 +109,9 @@ async function main() {
         lastName: 'Wilson',
         username: 'alexwilson',
         bio: 'Full-stack developer and open source contributor',
-        location: 'London, UK',
+        nin: '12345678903',
+        state: 'London',
+        lga: 'London',
         roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
@@ -160,6 +166,93 @@ async function main() {
           country: 'USA',
           zipCode: '94102',
         },
+      },
+    }),
+  ]);
+
+  console.log('🏠 Creating addresses...');
+  // Create addresses for users
+  await Promise.all([
+    // Addresses for superAdmin
+    prisma.address.create({
+      data: {
+        userId: superAdmin.id,
+        addressLine1: '1 Government House',
+        area: 'Central Business District',
+        city: 'Abuja',
+        state: 'FCT',
+        country: 'Nigeria',
+        type: AddressType.HOME,
+        isDefault: true,
+        isVerified: true,
+      },
+    }),
+    // Addresses for admin
+    prisma.address.create({
+      data: {
+        userId: admin.id,
+        addressLine1: '123 Admin Street',
+        area: 'Victoria Island',
+        city: 'Lagos',
+        state: 'Lagos',
+        lga: 'Eti-Osa',
+        country: 'Nigeria',
+        type: AddressType.HOME,
+        isDefault: true,
+        isVerified: true,
+      },
+    }),
+    // Addresses for John Doe
+    prisma.address.create({
+      data: {
+        userId: users[0].id,
+        addressLine1: '123 Main Street',
+        addressLine2: 'Apartment 4B',
+        area: 'Manhattan',
+        city: 'New York',
+        state: 'New York',
+        postalCode: '10001',
+        country: 'United States',
+        type: AddressType.HOME,
+        isDefault: true,
+        isVerified: true,
+        label: 'Home Address',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      },
+    }),
+    // Addresses for Jane Smith
+    prisma.address.create({
+      data: {
+        userId: users[1].id,
+        addressLine1: '456 Oak Avenue',
+        area: 'Mission District',
+        city: 'San Francisco',
+        state: 'California',
+        postalCode: '94102',
+        country: 'United States',
+        type: AddressType.HOME,
+        isDefault: true,
+        isVerified: true,
+        label: 'Home',
+        latitude: 37.7749,
+        longitude: -122.4194,
+      },
+    }),
+    // Addresses for Alex Wilson
+    prisma.address.create({
+      data: {
+        userId: users[2].id,
+        addressLine1: '12 Ahmadu Bello Way',
+        area: 'Garki',
+        city: 'Abuja',
+        state: 'FCT',
+        lga: 'Abuja Municipal',
+        country: 'Nigeria',
+        type: AddressType.HOME,
+        isDefault: true,
+        isVerified: false,
+        postalCode: '900001',
       },
     }),
   ]);

@@ -43,6 +43,7 @@ export const AUDIT_NOT_FOUND = '404040: Audit not found';
 export const EARNING_NOT_FOUND = '404041: Earning not available';
 export const TRAINER_NOT_FOUND = '404042: Trainer not found';
 export const TRANSACTION_NOT_FOUND = '404043: Transaction not found';
+export const ADDRESS_NOT_FOUND = '404044: Address not found';
 
 export const UNAUTHORIZED_RESOURCE = '401000: Unauthorized resource';
 export const INVALID_CREDENTIALS = '401001: Invalid credentials';
@@ -63,6 +64,7 @@ export const APPLICATION_UNDER_REVIEW = '401015: Application is under review';
 export const APPLICATION_REJECTED = '401016: Application has been rejected';
 
 export const FORBIDDEN_RESOURCE = '403000: Forbidden resource';
+export const ADDRESS_ACCESS_DENIED = '403001: Access denied to address';
 
 export const BAD_REQUEST = '400000: Bad request';
 export const NO_TOKEN_PROVIDED = '400001: No token provided';
@@ -78,6 +80,7 @@ export const COMPROMISED_PASSWORD =
   '400008: This password has been compromised in a data breach.';
 export const CANNOT_DELETE_SOLE_MEMBER =
   '400009: Cannot remove the only member';
+export const DEFAULT_ADDRESS_REQUIRED = '400010: At least one default address is required';
 export const CANNOT_DELETE_SOLE_OWNER = '400010: Cannot remove the only owner';
 export const ORDER_BY_ASC_DESC = '400011: Invalid sorting order';
 export const ORDER_BY_FORMAT = '400012: Invalid ordering format';

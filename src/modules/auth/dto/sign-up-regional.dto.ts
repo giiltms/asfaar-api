@@ -55,4 +55,28 @@ export class SignUpRegionalDTO {
   @IsEnum(Roles, { each: true })
   @ArrayUnique()
   readonly roles!: Roles[];
+
+  @ApiProperty({
+    description: 'National Identity Number',
+    example: '12345678901',
+    required: false,
+  })
+  @IsString()
+  readonly nin?: string;
+
+  @ApiProperty({
+    description: 'User state or province',
+    example: 'Lagos',
+    required: false,
+  })
+  @IsString()
+  readonly state?: string;
+
+  @ApiProperty({
+    description: 'Local Government Area',
+    example: 'Eti-Osa',
+    required: false,
+  })
+  @IsString()
+  readonly lga?: string;
 }

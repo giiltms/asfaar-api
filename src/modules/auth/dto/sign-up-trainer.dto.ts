@@ -155,6 +155,24 @@ export class SignUpTrainerDTO {
   readonly nin!: string;
 
   @ApiProperty({
+    description: 'User state or province',
+    example: 'Lagos',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  readonly state?: string;
+
+  @ApiProperty({
+    description: 'Local Government Area',
+    example: 'Eti-Osa',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  readonly lga?: string;
+
+  @ApiProperty({
     type: String,
     example: '01234567891',
     description: 'BVN Number',

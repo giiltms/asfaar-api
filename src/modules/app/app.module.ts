@@ -7,6 +7,7 @@ import { CoreModule } from '../../core';
 import { SharedModule } from '../../shared';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user/user.module';
+import { AddressModule } from '../address/address.module';
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
 // import { PostsModule } from '../posts/posts.module';
@@ -20,6 +21,7 @@ import { UserModule } from '../user/user.module';
     // Feature modules
     AuthModule,
     UserModule,
+    AddressModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],
