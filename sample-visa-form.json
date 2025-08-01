@@ -1,0 +1,333 @@
+{
+  "name": "Tourist Visa Application Form",
+  "description": "Complete tourist visa application form for international travelers",
+  "sections": [
+    {
+      "title": "Personal Information",
+      "description": "Please provide your personal details as they appear on your passport",
+      "order": 1,
+      "groups": [
+        {
+          "title": "Basic Details",
+          "description": "Your basic personal information",
+          "order": 1,
+          "repeatable": false,
+          "fields": [
+            {
+              "label": "First Name",
+              "name": "first_name",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "Enter your first name",
+              "validation": {
+                "minLength": 1,
+                "maxLength": 50,
+                "pattern": "^[A-Za-z\\s]+$"
+              },
+              "order": 1
+            },
+            {
+              "label": "Middle Name",
+              "name": "middle_name",
+              "type": "TEXT",
+              "required": false,
+              "placeholder": "Enter your middle name (optional)",
+              "validation": {
+                "maxLength": 50,
+                "pattern": "^[A-Za-z\\s]*$"
+              },
+              "order": 2
+            },
+            {
+              "label": "Last Name",
+              "name": "last_name",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "Enter your last name",
+              "validation": {
+                "minLength": 1,
+                "maxLength": 50,
+                "pattern": "^[A-Za-z\\s]+$"
+              },
+              "order": 3
+            },
+            {
+              "label": "Date of Birth",
+              "name": "date_of_birth",
+              "type": "DATE",
+              "required": true,
+              "validation": {
+                "maxDate": "today",
+                "minAge": 18
+              },
+              "order": 4
+            },
+            {
+              "label": "Gender",
+              "name": "gender",
+              "type": "SELECT",
+              "required": true,
+              "order": 5,
+              "options": [
+                { "label": "Male", "value": "MALE", "order": 1 },
+                { "label": "Female", "value": "FEMALE", "order": 2 },
+                { "label": "Other", "value": "OTHER", "order": 3 },
+                {
+                  "label": "Prefer not to say",
+                  "value": "PREFER_NOT_TO_SAY",
+                  "order": 4
+                }
+              ]
+            },
+            {
+              "label": "Nationality",
+              "name": "nationality",
+              "type": "SELECT",
+              "required": true,
+              "order": 6,
+              "options": [
+                { "label": "United States", "value": "US", "order": 1 },
+                { "label": "United Kingdom", "value": "UK", "order": 2 },
+                { "label": "Canada", "value": "CA", "order": 3 },
+                { "label": "Nigeria", "value": "NG", "order": 4 },
+                { "label": "Other", "value": "OTHER", "order": 5 }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Contact Information",
+          "description": "How we can reach you",
+          "order": 2,
+          "repeatable": false,
+          "fields": [
+            {
+              "label": "Email Address",
+              "name": "email",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "your.email@example.com",
+              "validation": {
+                "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+              },
+              "order": 1
+            },
+            {
+              "label": "Phone Number",
+              "name": "phone",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "+1234567890",
+              "validation": {
+                "pattern": "^\\+?[1-9]\\d{6,14}$"
+              },
+              "order": 2
+            },
+            {
+              "label": "Emergency Contact Name",
+              "name": "emergency_contact_name",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "Full name of emergency contact",
+              "order": 3
+            },
+            {
+              "label": "Emergency Contact Phone",
+              "name": "emergency_contact_phone",
+              "type": "TEXT",
+              "required": true,
+              "placeholder": "+1234567890",
+              "validation": {
+                "pattern": "^\\+?[1-9]\\d{6,14}$"
+              },
+              "order": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Travel Information",
+      "description": "Details about your planned travel",
+      "order": 2,
+      "groups": [
+        {
+          "title": "Trip Details",
+          "description": "Your travel itinerary",
+          "order": 1,
+          "repeatable": false,
+          "fields": [
+            {
+              "label": "Purpose of Visit",
+              "name": "purpose_of_visit",
+              "type": "SELECT",
+              "required": true,
+              "order": 1,
+              "options": [
+                { "label": "Tourism", "value": "TOURISM", "order": 1 },
+                { "label": "Business", "value": "BUSINESS", "order": 2 },
+                { "label": "Family Visit", "value": "FAMILY", "order": 3 },
+                {
+                  "label": "Medical Treatment",
+                  "value": "MEDICAL",
+                  "order": 4
+                },
+                {
+                  "label": "Conference/Seminar",
+                  "value": "CONFERENCE",
+                  "order": 5
+                },
+                { "label": "Other", "value": "OTHER", "order": 6 }
+              ]
+            },
+            {
+              "label": "Planned Arrival Date",
+              "name": "arrival_date",
+              "type": "DATE",
+              "required": true,
+              "validation": {
+                "minDate": "today"
+              },
+              "order": 2
+            },
+            {
+              "label": "Planned Departure Date",
+              "name": "departure_date",
+              "type": "DATE",
+              "required": true,
+              "validation": {
+                "minDate": "arrival_date"
+              },
+              "order": 3
+            },
+            {
+              "label": "Duration of Stay (days)",
+              "name": "duration_days",
+              "type": "NUMBER",
+              "required": true,
+              "validation": {
+                "min": 1,
+                "max": 90
+              },
+              "calculation": {
+                "expression": "DATEDIFF(${departure_date}, ${arrival_date})",
+                "dependencies": ["arrival_date", "departure_date"]
+              },
+              "order": 4
+            },
+            {
+              "label": "Accommodation Details",
+              "name": "accommodation",
+              "type": "TEXTAREA",
+              "required": true,
+              "placeholder": "Hotel name and address or host information",
+              "config": {
+                "rows": 3
+              },
+              "order": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Documents & Supporting Information",
+      "description": "Required documents and additional information",
+      "order": 3,
+      "groups": [
+        {
+          "title": "Required Documents",
+          "description": "Upload required supporting documents",
+          "order": 1,
+          "repeatable": false,
+          "fields": [
+            {
+              "label": "Passport Copy",
+              "name": "passport_copy",
+              "type": "FILE",
+              "required": true,
+              "config": {
+                "acceptedTypes": ["image/*", "application/pdf"],
+                "maxSize": "5MB"
+              },
+              "order": 1
+            },
+            {
+              "label": "Passport Photo",
+              "name": "passport_photo",
+              "type": "FILE",
+              "required": true,
+              "config": {
+                "acceptedTypes": ["image/*"],
+                "maxSize": "2MB"
+              },
+              "order": 2
+            },
+            {
+              "label": "Financial Statement",
+              "name": "financial_statement",
+              "type": "FILE",
+              "required": true,
+              "config": {
+                "acceptedTypes": ["application/pdf", "image/*"],
+                "maxSize": "10MB"
+              },
+              "order": 3
+            },
+            {
+              "label": "Travel Insurance",
+              "name": "travel_insurance",
+              "type": "FILE",
+              "required": false,
+              "config": {
+                "acceptedTypes": ["application/pdf", "image/*"],
+                "maxSize": "5MB"
+              },
+              "order": 4
+            }
+          ]
+        },
+        {
+          "title": "Declaration",
+          "description": "Please confirm the following",
+          "order": 2,
+          "repeatable": false,
+          "fields": [
+            {
+              "label": "I declare that all information provided is true and accurate",
+              "name": "declaration_truth",
+              "type": "BOOLEAN",
+              "required": true,
+              "order": 1
+            },
+            {
+              "label": "I understand that providing false information may result in visa rejection",
+              "name": "declaration_consequences",
+              "type": "BOOLEAN",
+              "required": true,
+              "order": 2
+            },
+            {
+              "label": "Digital Signature",
+              "name": "digital_signature",
+              "type": "SIGNATURE",
+              "required": true,
+              "order": 3
+            },
+            {
+              "label": "Application Date",
+              "name": "application_date",
+              "type": "DATE",
+              "required": true,
+              "defaultValue": "today",
+              "metadata": {
+                "captureTimestamp": true
+              },
+              "order": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
