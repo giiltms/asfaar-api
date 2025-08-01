@@ -96,7 +96,10 @@ model User {
   avatar      String?
   bio         String?
   website     String?
-  location    String?
+  // Removed location - replaced with addresses relation
+  nin         String? // National Identity Number
+  state       String? // User's state
+  lga         String? // Local Government Area
   timezone    String?   @default("UTC")
   locale      String?   @default("en")
   roles       Roles[]   @default([APPLICANT])
@@ -118,6 +121,7 @@ model User {
   files         File[]
   notifications Notification[]
   sessions      UserSession[]
+  addresses     Address[] // User addresses relation
 
   // Payment relations
   paymentMethods PaymentMethod[]
@@ -534,89 +538,89 @@ enum TokenType {
 }
 
 model DynamicForm {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String?
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime @default(now())
 
   sections    FormSection[]
   submissions FormSubmission[]
 }
 
 model FormSection {
-  id          String       @id @default(uuid())
-  form        DynamicForm  @relation(fields: [formId], references: [id])
+  id          String      @id @default(uuid())
+  form        DynamicForm @relation(fields: [formId], references: [id])
   formId      String
   title       String
   description String?
   order       Int
 
-  groups      InputGroup[]
+  groups InputGroup[]
 }
 
 model InputGroup {
-  id          String        @id @default(uuid())
-  section     FormSection   @relation(fields: [sectionId], references: [id])
+  id          String      @id @default(uuid())
+  section     FormSection @relation(fields: [sectionId], references: [id])
   sectionId   String
   title       String?
   description String?
   order       Int
-  repeatable  Boolean       @default(false)
+  repeatable  Boolean     @default(false)
 
-  fields      FormField[]
+  fields FormField[]
 }
 
 model FormField {
-  id            String      @id @default(uuid())
-  group         InputGroup  @relation(fields: [groupId], references: [id])
-  groupId       String
-  label         String
-  name          String      // unique per form context
-  type          FieldType
-  required      Boolean     @default(false)
-  placeholder   String?
-  defaultValue  String?
-  validation    Json?       // e.g., { "minLength": 2, "pattern": "^[A-Z]+$" }
-  config        Json?       // e.g., { "rows": 3 }, { "prefix": "₦" }
+  id                  String     @id @default(uuid())
+  group               InputGroup @relation(fields: [groupId], references: [id])
+  groupId             String
+  label               String
+  name                String // unique per form context
+  type                FieldType
+  required            Boolean    @default(false)
+  placeholder         String?
+  defaultValue        String?
+  validation          Json? // e.g., { "minLength": 2, "pattern": "^[A-Z]+$" }
+  config              Json? // e.g., { "rows": 3 }, { "prefix": "₦" }
   visibilityCondition Json? // e.g., { "field": "is_married", "value": "yes" }
-  calculation   Json?       // e.g., { "expression": "${income} - ${expenses}" }
-  metadata      Json?       // e.g., { "captureTimestamp": true }
-  order         Int
+  calculation         Json? // e.g., { "expression": "${income} - ${expenses}" }
+  metadata            Json? // e.g., { "captureTimestamp": true }
+  order               Int
 
-  options       FieldOption[]  // for SELECT / MULTISELECT
-  responses     FieldResponse[]
+  options   FieldOption[] // for SELECT / MULTISELECT
+  responses FieldResponse[]
 }
 
 model FieldOption {
-  id        String     @id @default(uuid())
-  field     FormField  @relation(fields: [fieldId], references: [id])
-  fieldId   String
-  label     String     // e.g., "Married"
-  value     String     // e.g., "MARRIED"
-  order     Int
+  id      String    @id @default(uuid())
+  field   FormField @relation(fields: [fieldId], references: [id])
+  fieldId String
+  label   String // e.g., "Married"
+  value   String // e.g., "MARRIED"
+  order   Int
 }
 
 model FormSubmission {
   id          String           @id @default(uuid())
   form        DynamicForm      @relation(fields: [formId], references: [id])
   formId      String
-  applicantId String           // user or respondent ID
+  applicantId String // user or respondent ID
   status      SubmissionStatus @default(DRAFT)
   submittedAt DateTime?
   createdAt   DateTime         @default(now())
 
-  responses   FieldResponse[]
+  responses FieldResponse[]
 }
 
 model FieldResponse {
-  id            String         @id @default(uuid())
-  submission    FormSubmission @relation(fields: [submissionId], references: [id])
-  submissionId  String
-  field         FormField      @relation(fields: [formFieldId], references: [id])
-  formFieldId   String
-  value         String?        // stringified value (text, select value, etc.)
-  fileUrls      String[]       // for file inputs
-  createdAt     DateTime       @default(now())
+  id           String         @id @default(uuid())
+  submission   FormSubmission @relation(fields: [submissionId], references: [id])
+  submissionId String
+  field        FormField      @relation(fields: [formFieldId], references: [id])
+  formFieldId  String
+  value        String? // stringified value (text, select value, etc.)
+  fileUrls     String[] // for file inputs
+  createdAt    DateTime       @default(now())
 }
 
 enum FieldType {
@@ -637,4 +641,49 @@ enum SubmissionStatus {
   SUBMITTED
   REVIEWED
   REJECTED
+}
+
+enum AddressType {
+  HOME
+  WORK
+  BUSINESS
+  BILLING
+  SHIPPING
+  EMERGENCY_CONTACT
+  CURRENT_RESIDENCE
+  PERMANENT_RESIDENCE
+}
+
+model Address {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Address Components (International compatibility)
+  addressLine1 String? // House number + Street name
+  addressLine2 String? // Apartment, suite, floor, etc.
+  area         String? // District/Area/Neighborhood
+  city         String? // City/Town
+  lga          String? // Local Government Area (Nigeria specific)
+  state        String? // State/Province
+  postalCode   String? // Postal/ZIP code
+  country      String  @default("Nigeria")
+
+  // Address Type and Status
+  type       AddressType @default(HOME)
+  isDefault  Boolean     @default(false)
+  isVerified Boolean     @default(false)
+
+  // Optional coordinates for mapping
+  latitude  Float?
+  longitude Float?
+
+  // Additional metadata
+  label        String? // Custom label like "Office", "Parents' House"
+  instructions String? // Delivery instructions
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("addresses")
 }

@@ -76,4 +76,34 @@ export class SignUpDTO {
   @IsOptional()
   @IsEnum(Gender)
   readonly gender?: Gender;
+
+  @ApiProperty({
+    description: 'National Identity Number',
+    example: '12345678901',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  readonly nin?: string;
+
+  @ApiProperty({
+    description: 'User state or province',
+    example: 'Lagos',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly state?: string;
+
+  @ApiProperty({
+    description: 'Local Government Area',
+    example: 'Eti-Osa',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly lga?: string;
 }

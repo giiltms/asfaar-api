@@ -14,7 +14,10 @@ export default class UserEntity implements User {
   avatar: string;
   bio: string;
   website: string;
-  location: string;
+  // Removed location - replaced with addresses relationship
+  nin: string; // National Identity Number
+  state: string; // User's state
+  lga: string; // Local Government Area
   timezone: string;
   locale: string;
   roles: any[]; // Use any[] to avoid role enum issues for now

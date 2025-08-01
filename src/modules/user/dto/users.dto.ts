@@ -57,8 +57,26 @@ export class UserDto {
   @ApiProperty({ example: 'https://johndoe.dev', required: false })
   website?: string;
 
-  @ApiProperty({ example: 'New York, NY', required: false })
-  location?: string;
+  @ApiProperty({
+    description: 'National Identity Number',
+    example: '12345678901',
+    required: false
+  })
+  nin?: string;
+
+  @ApiProperty({
+    description: 'User state or province',
+    example: 'Lagos',
+    required: false
+  })
+  state?: string;
+
+  @ApiProperty({
+    description: 'Local Government Area',
+    example: 'Eti-Osa',
+    required: false
+  })
+  lga?: string;
 
   @ApiProperty({ example: 'UTC', required: false })
   timezone?: string;
@@ -227,11 +245,35 @@ export class UpdateUserDto {
   @IsUrl()
   website?: string;
 
-  @ApiProperty({ example: 'New York, NY', required: false })
+  @ApiProperty({
+    description: 'National Identity Number',
+    example: '12345678901',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  nin?: string;
+
+  @ApiProperty({
+    description: 'User state or province',
+    example: 'Lagos',
+    required: false
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  location?: string;
+  state?: string;
+
+  @ApiProperty({
+    description: 'Local Government Area',
+    example: 'Eti-Osa',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  lga?: string;
 
   @ApiProperty({ example: 'UTC', required: false })
   @IsOptional()

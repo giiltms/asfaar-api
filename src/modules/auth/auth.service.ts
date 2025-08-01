@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
 import { User } from '@prisma/client';
 import { SignUpDTO } from './dto/sign-up.dto';
@@ -60,7 +64,10 @@ export class AuthService {
     return user;
   }
 
-  async signUpDriver(signUpDTO: SignUpTrainerDTO, file?: Express.Multer.File): Promise<User> {
+  async signUpDriver(
+    signUpDTO: SignUpTrainerDTO,
+    file?: Express.Multer.File,
+  ): Promise<User> {
     // Simplified version to avoid compilation errors
     const existingUserByEmail = await this.getUserByEmail(signUpDTO.email);
     if (existingUserByEmail) {
@@ -113,7 +120,10 @@ export class AuthService {
       throw new BadRequestException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(signInDTO.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      signInDTO.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid credentials');
     }
@@ -186,7 +196,10 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string, refreshToken?: string): Promise<{ message: string }> {
+  async logout(
+    userId: string,
+    refreshToken?: string,
+  ): Promise<{ message: string }> {
     // Simple logout implementation
     // In a real app, you'd invalidate the refresh token
     return { message: 'Logged out successfully' };
