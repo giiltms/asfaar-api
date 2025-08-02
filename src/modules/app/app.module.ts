@@ -9,6 +9,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user/user.module';
 import { AddressModule } from '../address/address.module';
 import { FormsModule } from '../forms/forms.module';
+import { FormSubmissionsModule } from '../form-submissions/form-submissions.module';
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
 // import { PostsModule } from '../posts/posts.module';
@@ -24,6 +25,7 @@ import { FormsModule } from '../forms/forms.module';
     UserModule,
     AddressModule,
     FormsModule,
+    FormSubmissionsModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],

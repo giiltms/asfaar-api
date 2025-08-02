@@ -128,6 +128,7 @@ model User {
   transactions   Transaction[]
   subscriptions  Subscription[]
   wallets        Wallet[]
+  FormSubmission FormSubmission[]
 
   @@map("users")
 }
@@ -604,23 +605,36 @@ model FormSubmission {
   id          String           @id @default(uuid())
   form        DynamicForm      @relation(fields: [formId], references: [id])
   formId      String
-  applicantId String // user or respondent ID
+  userId      String // Changed from applicantId to userId for consistency
+  user        User             @relation(fields: [userId], references: [id])
   status      SubmissionStatus @default(DRAFT)
   submittedAt DateTime?
+  reviewedAt  DateTime?
+  reviewedBy  String? // ID of the reviewer
+  reviewNotes String? // Review comments
+  metadata    Json? // Additional metadata for the submission
   createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   responses FieldResponse[]
+
+  @@map("form_submissions")
 }
 
 model FieldResponse {
   id           String         @id @default(uuid())
-  submission   FormSubmission @relation(fields: [submissionId], references: [id])
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
   submissionId String
-  field        FormField      @relation(fields: [formFieldId], references: [id])
-  formFieldId  String
+  field        FormField      @relation(fields: [fieldId], references: [id])
+  fieldId      String // Changed from formFieldId to fieldId
+  fieldName    String // Added for easier reference
   value        String? // stringified value (text, select value, etc.)
   fileUrls     String[] // for file inputs
+  metadata     Json? // Additional metadata for the response
   createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("field_responses")
 }
 
 enum FieldType {
@@ -640,6 +654,7 @@ enum SubmissionStatus {
   DRAFT
   SUBMITTED
   REVIEWED
+  APPROVED // Added APPROVED status
   REJECTED
 }
 

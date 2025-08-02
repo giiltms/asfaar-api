@@ -284,6 +284,40 @@ src/
 - `PUT /api/v1/forms/fields/:id` - Update form field
 - `DELETE /api/v1/forms/fields/:id` - Delete form field
 
+### Public Forms (No Authentication Required)
+
+- `GET /api/v1/public/forms` - Get available forms for public access
+- `GET /api/v1/public/forms/:id` - Get complete form template for filling
+- `GET /api/v1/public/forms/:id/preview` - Get form preview with metadata
+
+### Form Submissions
+
+#### User Submission Management
+
+- `POST /api/v1/submissions` - Create new form submission (draft)
+- `POST /api/v1/submissions/submit` - Submit completed form for review
+- `POST /api/v1/submissions/draft` - Save form as draft (auto-save)
+- `GET /api/v1/submissions/my` - Get user's form submissions
+- `GET /api/v1/submissions/:id` - Get submission by ID
+- `PUT /api/v1/submissions/:id` - Update draft submission
+- `DELETE /api/v1/submissions/:id` - Delete draft submission
+
+#### File Upload for Forms
+
+- `POST /api/v1/submissions/upload/single` - Upload single file for form field
+- `POST /api/v1/submissions/upload/multiple` - Upload multiple files for form field
+
+#### Admin Submission Management
+
+- `GET /api/v1/admin/submissions` - Get all submissions (admin)
+- `GET /api/v1/admin/submissions/analytics` - Get submission analytics
+- `GET /api/v1/admin/submissions/:id` - Get any submission (admin)
+- `PUT /api/v1/admin/submissions/:id/review` - Review/approve/reject submission
+- `DELETE /api/v1/admin/submissions/:id` - Delete submission (admin)
+- `GET /api/v1/admin/submissions/user/:userId` - Get user's submissions (admin)
+- `GET /api/v1/admin/submissions/form/:formId/stats` - Get form statistics
+- `PUT /api/v1/admin/submissions/:id/status` - Update submission status (admin)
+
 ### Health Check
 
 - `GET /api/v1/health` - Application health status
