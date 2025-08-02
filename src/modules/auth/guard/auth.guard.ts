@@ -8,35 +8,34 @@ import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { IS_SKIP_AUTH_KEY } from '@modules/auth/guard/skip-auth.guard';
-import { AuthTokenService } from '@modules/auth/auth-token.service';
+import { AuthTokenService } from '../auth-token.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-    private readonly authTokenService: AuthTokenService,
+    private jwtService: JwtService,
     private reflector: Reflector,
+    private configService: ConfigService,
+    private authTokenService: AuthTokenService,
   ) {}
 
-  /**
-   * @desc Check if user is authenticated
-   * @param context ExecutionContext
-   * @returns Promise<boolean>
-   *       true if user is authenticated
-   *       false otherwise
-   *       @throws UnauthorizedException
-   */
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip auth logic implementation
+    const skipAuth = this.reflector.getAllAndOverride<boolean>('skipAuth', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (skipAuth) {
+      // 💡 See this condition
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
-    const isSkipAuth = this.reflector.getAllAndOverride<boolean>(
-      IS_SKIP_AUTH_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-    if (isSkipAuth) {
+    // Check if the route should skip authentication
+    if (skipAuth) {
       // 💡 See this condition
       return true;
     }
@@ -50,24 +49,17 @@ export class AuthGuard implements CanActivate {
       // 💡 We're assigning the payload to the request object here
       // so that we can access it in our route handlers
       request['user'] = await this.jwtService.verifyAsync(token, {
-        secret: this.configService.get<string>('jwt.accessToken'),
+        secret: this.configService.get<string>('JWT_SECRET'),
       });
       request['user']._meta = {
-        accessToken: token,
+        token,
       };
     } catch {
       throw new UnauthorizedException();
     }
-
     return true;
   }
 
-  /**
-   * @desc Extract token from header
-   * @param request Request
-   * @returns string | undefined
-   * @private
-   */
   private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;

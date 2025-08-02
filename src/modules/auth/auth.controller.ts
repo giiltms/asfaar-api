@@ -1,26 +1,25 @@
 import {
   Body,
   Controller,
-  Get,
+  Post,
   HttpCode,
   HttpStatus,
-  Post,
-  Request,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
+  Request,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { SignInDTO } from './dto/sign-in.dto';
 import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
-import { SignUpTrainerDTO } from './dto/sign-up-trainer.dto';
-import { SignUpRegionalDTO } from './dto/sign-up-regional.dto';
-import { PasswordResetService } from './password-reset.service';
+import { AuthGuard } from './guard/auth.guard';
+
 import { AuditService } from '@modules/audit/audit.service';
 
 @ApiTags('Auth')
@@ -53,7 +52,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'User logout' })
   async logout() {
@@ -61,7 +60,7 @@ export class AuthController {
   }
 
   @Post('change-password')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change user password' })
   async changePassword(

@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma';
-import { ConfigService } from '@nestjs/config';
 import { TokenWhiteList } from '.prisma/client';
+import * as moment from 'moment';
 
 @Injectable()
 export class TokenRepository {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   getAccessTokenFromWhitelist(accessToken: string): Promise<TokenWhiteList> {
     return this.prisma.tokenWhiteList.findFirst({
@@ -63,8 +60,8 @@ export class TokenRepository {
     refreshTokenId: string,
     accessToken: string,
   ): Promise<TokenWhiteList> {
-    const jwtConfig = this.configService.get('jwt');
-    const expiresAt = new Date(Date.now() + jwtConfig.jwtExpAccessToken);
+    // Convert '15m' to actual date using moment - 15 minutes
+    const expiresAt = moment().add(15, 'minutes').toDate();
 
     return this.prisma.tokenWhiteList.create({
       data: {
@@ -81,8 +78,8 @@ export class TokenRepository {
     userId: string,
     refreshToken: string,
   ): Promise<TokenWhiteList> {
-    const jwtConfig = this.configService.get('jwt');
-    const expiresAt = new Date(Date.now() + jwtConfig.jwtExpRefreshToken);
+    // Convert '7d' to actual date using moment - 7 days
+    const expiresAt = moment().add(7, 'days').toDate();
 
     return this.prisma.tokenWhiteList.create({
       data: {

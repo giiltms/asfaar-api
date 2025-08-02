@@ -160,16 +160,9 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<any> {
-    // Simplified refresh token logic
     try {
-      // Change verify to a simpler approach since verify doesn't exist
-      // Instead of using verifyRefreshToken, use a simpler token validation
-      const tokens = await this.authTokenService.sign({
-        id: 'temp-user-id', // This is a simplified implementation
-        email: 'temp@email.com',
-        roles: [Roles.APPLICANT],
-      });
-
+      // Use the proper refreshTokens method that validates the token
+      const tokens = await this.authTokenService.refreshTokens(refreshToken);
       return tokens;
     } catch (error) {
       throw new BadRequestException('Invalid refresh token');
