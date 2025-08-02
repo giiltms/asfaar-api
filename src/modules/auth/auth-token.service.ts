@@ -44,7 +44,6 @@ export class AuthTokenService {
     );
 
     if (!token) {
-      // check if token is in the whitelist
       throw new UnauthorizedException();
     }
   }
@@ -57,12 +56,11 @@ export class AuthTokenService {
     );
 
     if (!token) {
-      // check if token is in the whitelist
       throw new UnauthorizedException();
     }
 
     const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get<string>('jwt.refreshToken'),
+      secret: this.configService.get<string>('JWT_SECRET'),
     });
 
     const _payload = {
@@ -118,15 +116,21 @@ export class AuthTokenService {
 
   createJwtAccessToken(payload: Buffer | object): string {
     return this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<number>('jwt.jwtExpAccessToken'),
-      secret: this.configService.get<string>('jwt.accessToken'),
+      expiresIn: this.configService.get<string>(
+        'JWT_ACCESS_TOKEN_EXPIRATION_TIME',
+        '15m',
+      ),
+      secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
 
   createJwtRefreshToken(payload: Buffer | object): string {
     return this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<number>('jwt.jwtExpRefreshToken'),
-      secret: this.configService.get<string>('jwt.refreshToken'),
+      expiresIn: this.configService.get<string>(
+        'JWT_REFRESH_TOKEN_EXPIRATION_TIME',
+        '7d',
+      ),
+      secret: this.configService.get<string>('JWT_SECRET'),
     });
   }
 }
