@@ -17,7 +17,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
       ? exception.getStatus()
       : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const errorMessage = exception?.response?.message || INTERNAL_SERVER_ERROR;
+    // Ensure errorMessage is always a string
+    let errorMessage = exception?.response?.message || INTERNAL_SERVER_ERROR;
+    
+    // Handle cases where message is an array (common with validation errors)
+    if (Array.isArray(errorMessage)) {
+      errorMessage = errorMessage.join(', ');
+    } else if (typeof errorMessage !== 'string') {
+      errorMessage = String(errorMessage);
+    }
+
+    // Only split if errorMessage contains a colon
+    const hasCodeFormat = typeof errorMessage === 'string' && errorMessage.includes(':');
+    
+    if (!hasCodeFormat) {
+      const [serverErrorCode] = INTERNAL_SERVER_ERROR.split(':');
+
+      const exceptionResponse = {
+        success: false,
+        error: {
+          code: parseInt(serverErrorCode, 10),
+          message: errorMessage?.trim() || INTERNAL_SERVER_ERROR,
+          details: exception?.response?.error,
+        },
+      };
+
+      Logger.error(exception, 'AllExceptionsFilter');
+      Logger.error(exception.stack, 'AllExceptionsFilter');
+
+      return res.status(status).json(exceptionResponse);
+    }
 
     const [code, message] = errorMessage.split(':');
 
