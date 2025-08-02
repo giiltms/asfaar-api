@@ -19,7 +19,7 @@ import {
 } from 'class-validator';
 import { Gender, Roles, Status } from '@prisma/client';
 
-// User DTO for responses
+// User DTO for responses - Documentation only (entities handle serialization)
 export class UserDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -104,6 +104,9 @@ export class UserDto {
 
   @ApiProperty({ example: '2023-01-01T00:00:00Z' })
   updatedAt: Date;
+
+  @ApiProperty({ example: 'John Doe', description: 'Computed full name' })
+  fullName?: string;
 }
 
 // User Profile DTO

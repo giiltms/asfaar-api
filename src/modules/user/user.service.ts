@@ -5,21 +5,22 @@ import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { ListUsersDTO } from './dto/users.dto';
 import { UserFiltersDTO } from './dto/user-filters.dto';
 import { USER_NOT_FOUND } from '@common/constants';
+import UserEntity from './entities/user.entity';
 
 @Injectable()
 export class UserService {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string): Promise<UserEntity> {
     const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException(USER_NOT_FOUND);
     }
-    return user;
+    return new UserEntity(user);
   }
 
-  findOne(id: string): Promise<User> {
-    return this.userRepository.findOne({
+  async findOne(id: string): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({
       where: { id },
       select: {
         id: true,
@@ -28,60 +29,83 @@ export class UserService {
         lastName: true,
         phone: true,
         roles: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
+    return new UserEntity(user);
   }
 
-  findUser(id: string): Promise<User> {
+  /**
+   * Find a user by email.
+   * @param email The email of the user to find.
+   * @returns The user if found, otherwise null.
+   */
+  findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true, // Add other fields you need from User
-        roles: true,
+      where: { email },
+    });
+  }
+
+  /**
+   * Find a user by email and password.
+   * @param email The email of the user to find.
+   * @param password The password of the user to find.
+   * @returns The user if found, otherwise null.
+   */
+  findByEmailAndPassword(email: string, password: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: {
+        email,
+        password, // Note: In real apps, you'd hash the password first
       },
     });
   }
 
-  async findAll(
-    projectsDTO: ListUsersDTO,
-  ): Promise<PaginatorTypes.PaginatedResult<User>> {
-    const { page, limit, sortBy, sortOrder, ...filters } = projectsDTO;
+  /**
+   * Find a user by username.
+   * @param username The username of the user to find.
+   * @returns The user if found, otherwise null.
+   */
+  findByUsername(username: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { username },
+    });
+  }
 
-    const where: Prisma.UserWhereInput = this.buildWhereClause(filters);
-    const include: Prisma.UserInclude = {
-      // regionalProfile: true,
-    };
+  /**
+   * Find a user by phone.
+   * @param phone The phone of the user to find.
+   * @returns The user if found, otherwise null.
+   */
+  findByPhone(phone: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { phone },
+    });
+  }
 
-    const paginationOptions: PaginatorTypes.PaginateOptions = {
-      page,
-      perPage: limit,
-    };
-
-    const sortByColumn: Prisma.UserOrderByWithRelationInput = {
-      [sortBy]: sortOrder,
-    };
-
-    return this.userRepository.findAll(
-      where,
-      include,
-      sortByColumn,
-      paginationOptions,
-    );
+  /**
+   * Create a new user.
+   * @param data The data to create the user with.
+   * @returns The created user.
+   */
+  async createUser(data: Prisma.UserCreateInput): Promise<UserEntity> {
+    const user = await this.userRepository.create(data);
+    return new UserEntity(user);
   }
 
   /**
    * Update a user by ID.
    * @param id The ID of the user to update.
-   * @param data The updated user data.
+   * @param data The data to update the user with.
    * @returns The updated user.
    */
-  async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+  async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<UserEntity> {
     const user = await this.findById(id);
-    return this.userRepository.updateUser(id, data);
+    const updatedUser = await this.userRepository.updateUser(id, data);
+    return new UserEntity(updatedUser);
   }
 
   /**
@@ -89,9 +113,10 @@ export class UserService {
    * @param id The ID of the user to delete.
    * @returns The deleted user.
    */
-  async deleteUser(id: string): Promise<User> {
+  async deleteUser(id: string): Promise<UserEntity> {
     const user = await this.findById(id);
-    return this.userRepository.deleteUser(id);
+    const deletedUser = await this.userRepository.deleteUser(id);
+    return new UserEntity(deletedUser);
   }
 
   /**
@@ -100,9 +125,10 @@ export class UserService {
    * @param roles The new roles to assign to the user.
    * @returns The updated user.
    */
-  async updateUserRoles(userId: string, roles: Roles[]): Promise<User> {
+  async updateUserRoles(userId: string, roles: Roles[]): Promise<UserEntity> {
     const user = await this.findById(userId);
-    return this.userRepository.updateUser(userId, { roles });
+    const updatedUser = await this.userRepository.updateUser(userId, { roles });
+    return new UserEntity(updatedUser);
   }
 
   /**
@@ -111,84 +137,107 @@ export class UserService {
    * @param role The new role to assign to the user.
    * @returns The updated user.
    */
-  async setUserRole(userId: string, role: Roles): Promise<User> {
+  async setUserRole(userId: string, role: Roles): Promise<UserEntity> {
     const user = await this.findById(userId);
-    return this.userRepository.updateUser(userId, { roles: [role] });
+    const updatedUser = await this.userRepository.updateUser(userId, { roles: [role] });
+    return new UserEntity(updatedUser);
   }
 
   /**
    * Activate a user by ID.
    * @param userId The ID of the user to activate.
-   * @returns The updated user.
+   * @returns The activated user.
    */
-  async activateUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findById(userId);
-    return this.userRepository.updateUser(userId, { isActive: true });
+  async activateUser(userId: string): Promise<UserEntity> {
+    const user = await this.findById(userId);
+    const updatedUser = await this.userRepository.updateUser(userId, { isActive: true });
+    return new UserEntity(updatedUser);
   }
 
   /**
    * Deactivate a user by ID.
    * @param userId The ID of the user to deactivate.
-   * @returns The updated user.
+   * @returns The deactivated user.
    */
-  async deactivateUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findById(userId);
-    return this.userRepository.updateUser(userId, { isActive: false });
+  async deactivateUser(userId: string): Promise<UserEntity> {
+    const user = await this.findById(userId);
+    const updatedUser = await this.userRepository.updateUser(userId, { isActive: false });
+    return new UserEntity(updatedUser);
   }
 
   /**
    * Verify a user by ID.
    * @param userId The ID of the user to verify.
-   * @returns The updated user.
+   * @returns The verified user.
    */
-  async verifyUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findById(userId);
-    return this.userRepository.updateUser(userId, { isVerified: true });
+  async verifyUser(userId: string): Promise<UserEntity> {
+    const updatedUser = await this.userRepository.updateUser(userId, { isVerified: true });
+    return new UserEntity(updatedUser);
   }
 
   async getUsers(query: ListUsersDTO): Promise<any> {
-    // Simplified implementation
+    // Build where clause from query parameters
+    const where: Prisma.UserWhereInput = {};
+
+    if (query.search) {
+      where.OR = [
+        { firstName: { contains: query.search, mode: 'insensitive' } },
+        { lastName: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.roles && query.roles.length > 0) {
+      where.roles = { hasSome: query.roles };
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (typeof query.isActive === 'boolean') {
+      where.isActive = query.isActive;
+    }
+
+    if (typeof query.isVerified === 'boolean') {
+      where.isVerified = query.isVerified;
+    }
+
+    // Build order by clause
+    const orderBy: Prisma.UserOrderByWithRelationInput = {};
+    if (query.sortBy) {
+      orderBy[query.sortBy] = query.sortOrder || 'desc';
+    } else {
+      orderBy.createdAt = 'desc';
+    }
+
+    // Pagination options
+    const paginationOptions = {
+      page: query.page || 1,
+      perPage: query.limit || 10,
+    };
+
+    const result = await this.userRepository.findAll(
+      where,
+      {}, // include
+      orderBy,
+      paginationOptions
+    );
+
+    // Convert users to UserEntity instances
+    const users = result.data.map(user => new UserEntity(user));
+
     return {
-      data: [],
-      meta: {
-        total: 0,
-        page: query.page || 1,
-        limit: query.limit || 10,
-        totalPages: 0,
-      },
+      ...result,
+      data: users,
     };
   }
 
   async getUserById(id: string): Promise<any> {
-    // Simplified implementation
-    return this.userRepository.findOne({
-      where: { id },
-    });
-  }
-
-  private buildWhereClause(filters: UserFiltersDTO) {
-    const where: Prisma.UserWhereInput = {};
-
-    if (filters) {
-      if (filters.createdAfter) {
-        where.createdAt = { gte: new Date(filters.createdAfter) };
-      }
-      if (filters.createdBefore) {
-        where.createdAt = { lte: new Date(filters.createdBefore) };
-      }
-      if (filters.role) {
-        where.roles = { has: filters.role };
-      }
-      if (filters.search) {
-        where.OR = [
-          { firstName: { contains: filters.search, mode: 'insensitive' } },
-          { middleName: { contains: filters.search, mode: 'insensitive' } },
-          { lastName: { contains: filters.search, mode: 'insensitive' } },
-          { email: { contains: filters.search, mode: 'insensitive' } },
-        ];
-      }
-    }
-
-    return where;
+    const user = await this.findById(id);
+    return {
+      success: true,
+      data: user, // Already a UserEntity instance
+    };
   }
 }
