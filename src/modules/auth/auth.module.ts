@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
@@ -7,6 +7,7 @@ import { AuthTokenService } from './auth-token.service';
 import { PasswordResetService } from './password-reset.service';
 import { TokenService } from './token.service';
 import { TokenRepository } from './token.repository';
+import { AuthGuard } from './guard/auth.guard';
 import { UserModule } from '@modules/user/user.module';
 import { MailModule } from '@modules/mail/mail.module';
 import { AuditModule } from '@modules/audit/audit.module';
@@ -18,7 +19,7 @@ import { RedisService } from './redis.service';
     ConfigModule,
     UserModule,
     MailModule,
-    AuditModule,
+    forwardRef(() => AuditModule),
     LocalStorageModule,
     JwtModule.registerAsync({
       global: true, // Make JWT module global
@@ -39,6 +40,7 @@ import { RedisService } from './redis.service';
     PasswordResetService,
     TokenService,
     TokenRepository,
+    AuthGuard,
     RedisService,
   ],
   exports: [
@@ -46,6 +48,7 @@ import { RedisService } from './redis.service';
     AuthTokenService,
     PasswordResetService,
     TokenService,
+    AuthGuard,
   ],
 })
 export class AuthModule {}
