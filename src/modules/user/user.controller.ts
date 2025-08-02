@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
@@ -31,16 +32,33 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
-  async getProfile() {
-    // Implementation would get user from request context
-    return { message: 'Current user profile' };
+  async getProfile(@Request() req: any) {
+    const userId = req.user.id;
+    const user = await this.userService.findById(userId);
+
+    // Remove sensitive information before returning
+    const { password, ...userProfile } = user;
+
+    return {
+      success: true,
+      data: userProfile,
+    };
   }
 
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
-  async updateProfile(@Body() updateData: any) {
-    // Implementation would update current user
-    return { message: 'Profile updated' };
+  async updateProfile(@Request() req: any, @Body() updateData: any) {
+    const userId = req.user.id;
+    const updatedUser = await this.userService.updateUser(userId, updateData);
+
+    // Remove sensitive information before returning
+    const { password, ...userProfile } = updatedUser;
+
+    return {
+      success: true,
+      data: userProfile,
+      message: 'Profile updated successfully',
+    };
   }
 
   @Get(':id')
