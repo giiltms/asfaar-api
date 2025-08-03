@@ -16,7 +16,10 @@ import { MailService } from '@modules/mail/services/mail.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { Roles } from '@modules/app/app.roles';
-import { USER_CONFLICT } from '@common/constants/errors.constants';
+import {
+  EMAIL_CONFLICT,
+  PHONE_CONFLICT,
+} from '@common/constants/errors.constants';
 
 @Injectable()
 export class AuthService {
@@ -32,16 +35,14 @@ export class AuthService {
   async signUp(signUpDTO: SignUpDTO): Promise<User> {
     const existingUser = await this.getUserByEmail(signUpDTO.email);
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(EMAIL_CONFLICT);
     }
 
     // Check if phone is provided and if it already exists
     if (signUpDTO.phone) {
       const existingUserByPhone = await this.getUserByPhone(signUpDTO.phone);
       if (existingUserByPhone) {
-        throw new ConflictException(
-          'User with this phone number already exists',
-        );
+        throw new ConflictException(PHONE_CONFLICT);
       }
     }
 
@@ -80,15 +81,13 @@ export class AuthService {
     // Simplified version to avoid compilation errors
     const existingUserByEmail = await this.getUserByEmail(signUpDTO.email);
     if (existingUserByEmail) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(EMAIL_CONFLICT);
     }
 
     // Check if phone already exists (phone is required for trainers)
     const existingUserByPhone = await this.getUserByPhone(signUpDTO.phone);
     if (existingUserByPhone) {
-      throw new ConflictException(
-        'User with this phone number already exists',
-      );
+      throw new ConflictException(PHONE_CONFLICT);
     }
 
     const hashedPassword = await bcrypt.hash(signUpDTO.password, 10);
@@ -112,7 +111,7 @@ export class AuthService {
     // Simplified version to avoid compilation errors
     const existingUserByEmail = await this.getUserByEmail(signUpDTO.email);
     if (existingUserByEmail) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(EMAIL_CONFLICT);
     }
 
     const hashedPassword = await bcrypt.hash(signUpDTO.password, 10);

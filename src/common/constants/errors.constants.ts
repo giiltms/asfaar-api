@@ -130,15 +130,17 @@ export const ERROR_SENDING_FILE = '400040: Error sending file';
 export const CONFLICT = '409000: Conflict';
 export const USER_CONFLICT =
   '409001: User with this email or phone already exists';
-export const PHONE_VERIFIED_CONFLICT = '409002: This phone is already verified';
+export const EMAIL_CONFLICT = '409002: User with this email already exists';
+export const PHONE_CONFLICT = '409003: User with this phone number already exists';
+export const PHONE_VERIFIED_CONFLICT = '409004: This phone is already verified';
 export const BILLING_ACCOUNT_CREATED_CONFLICT =
-  '409003: Billing account is already created';
+  '409005: Billing account is already created';
 export const MFA_ENABLED_CONFLICT =
-  '409004: Multi-factor authentication is already enabled';
-export const MERGE_USER_CONFLICT = '409005: Cannot merge the same user';
+  '409006: Multi-factor authentication is already enabled';
+export const MERGE_USER_CONFLICT = '409007: Cannot merge the same user';
 export const UPDATE_PROFILE_CONFLICT =
-  '409006: User email or phone is not verified';
-export const EMAIL_VERIFIED_CONFLICT = '409007: This email is already verified';
+  '409008: User email or phone is not verified';
+export const EMAIL_VERIFIED_CONFLICT = '409009: This email is already verified';
 export const TRANSACTION_ERROR = '409009: Transaction Error';
 export const INVALID_USER = '409010: Invalid User';
 export const INVITATION_ALREADY_SENT = '409011: Invitation already sent';
