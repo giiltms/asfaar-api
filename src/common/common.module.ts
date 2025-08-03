@@ -16,6 +16,7 @@ import paymentConfig from './configs/payment.config';
 
 // Global filters and interceptors
 import { AllExceptionsFilter } from '../filters/all-exception.filter';
+import { BadRequestExceptionFilter } from '../filters/bad-request-exception.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 /**
@@ -55,19 +56,30 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
     // ]),
   ],
   providers: [
-    // Global validation pipe
+    // Global validation pipe with enhanced error handling
     {
       provide: APP_PIPE,
       useFactory: () =>
         new ValidationPipe({
-          transform: true,
-          whitelist: true,
-          forbidNonWhitelisted: true,
-          skipMissingProperties: false,
+          transform: true, // Auto-transform payloads to DTO instances
+          whitelist: true, // Strip unknown properties
+          forbidNonWhitelisted: true, // Throw error for unknown properties
+          skipMissingProperties: false, // Validate even undefined properties
+          stopAtFirstError: true, // Stop validation on first error for cleaner responses
+          transformOptions: {
+            enableImplicitConversion: true, // Auto-convert types (string -> number, etc.)
+          },
+          errorHttpStatusCode: 400, // Ensure validation errors return 400 Bad Request
         }),
     },
 
-    // Global exception filter
+    // Specific validation error filter (handles ValidationPipe BadRequestException)
+    {
+      provide: APP_FILTER,
+      useClass: BadRequestExceptionFilter,
+    },
+
+    // Global exception filter (handles all other exceptions)
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,

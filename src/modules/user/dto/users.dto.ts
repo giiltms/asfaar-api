@@ -180,9 +180,22 @@ export class CreateUserDto {
   @IsEnum(Gender)
   gender?: Gender;
 
-  @ApiProperty({ example: '1990-01-01', required: false })
+  @ApiProperty({
+    example: '1990-01-01T00:00:00.000Z',
+    description: 'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
+    required: false
+  })
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }) => {
+    if (!value) return value;
+    // If it's a date string without time, add midnight UTC time
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return `${value}T00:00:00.000Z`;
+    }
+    // If it's already a proper ISO string, return as is
+    return value;
+  })
   dateOfBirth?: string;
 
   @ApiProperty({ example: 'SecurePassword123!', minLength: 8 })
@@ -232,9 +245,22 @@ export class UpdateUserDto {
   @IsEnum(Gender)
   gender?: Gender;
 
-  @ApiProperty({ example: '1990-01-01', required: false })
+  @ApiProperty({
+    example: '1990-01-01T00:00:00.000Z',
+    description: 'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
+    required: false
+  })
   @IsOptional()
   @IsDateString()
+  @Transform(({ value }) => {
+    if (!value) return value;
+    // If it's a date string without time, add midnight UTC time
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return `${value}T00:00:00.000Z`;
+    }
+    // If it's already a proper ISO string, return as is
+    return value;
+  })
   dateOfBirth?: string;
 
   @ApiProperty({ example: 'Software engineer passionate about technology', required: false })
