@@ -12,4 +12,4 @@ import { ConfigModule } from '@nestjs/config';
     // NotificationService, // Commented out until EventEmitter dependency is properly configured
   ],
 })
-export class SharedModule {} 
+export class SharedModule {}

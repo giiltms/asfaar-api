@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ExceptionFilter,
   ArgumentsHost,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { BAD_REQUEST } from 'src/common';
 
@@ -39,12 +39,16 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
       success: false,
       error: {
         code: parseInt(code, 10),
-        message: errorMessage === BAD_REQUEST ? defaultMessage?.trim() : errorMessage,
+        message:
+          errorMessage === BAD_REQUEST ? defaultMessage?.trim() : errorMessage,
         details: details,
       },
     };
 
-    Logger.error(`Validation Error: ${errorMessage}`, 'BadRequestExceptionFilter');
+    Logger.error(
+      `Validation Error: ${errorMessage}`,
+      'BadRequestExceptionFilter',
+    );
 
     return response.status(status).json(finalResponse);
   }

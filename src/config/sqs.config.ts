@@ -10,9 +10,7 @@ export default registerAs('sqs', () => ({
     region: process.env.AWS_SQS_REGION || 'us-east-1',
     credentials: {
       accessKeyId: process.env.AWS_SQS_ACCESS_KEY_ID || '',
-      secretAccessKey:
-        process.env.AWS_SQS_SECRET_ACCESS_KEY ||
-        '',
+      secretAccessKey: process.env.AWS_SQS_SECRET_ACCESS_KEY || '',
     },
   },
   producer: {
@@ -24,9 +22,7 @@ export default registerAs('sqs', () => ({
     region: process.env.AWS_SQS_REGION || 'us-east-1',
     credentials: {
       accessKeyId: process.env.AWS_SQS_ACCESS_KEY_ID || '',
-      secretAccessKey:
-        process.env.AWS_SQS_SECRET_ACCESS_KEY ||
-        '',
+      secretAccessKey: process.env.AWS_SQS_SECRET_ACCESS_KEY || '',
     },
   },
 }));

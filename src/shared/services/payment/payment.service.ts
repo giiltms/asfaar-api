@@ -71,7 +71,9 @@ export class PaymentService {
   /**
    * Initialize a payment transaction
    */
-  async initiatePayment(data: InitiatePaymentDto): Promise<PaymentInitializationResponse> {
+  async initiatePayment(
+    data: InitiatePaymentDto,
+  ): Promise<PaymentInitializationResponse> {
     try {
       const reference = this.generateReference();
 
@@ -110,7 +112,9 @@ export class PaymentService {
       const result = await this.provider.verifyPayment(reference);
 
       if (result.success) {
-        this.logger.log(`Payment verified successfully: ${reference} - Status: ${result.status}`);
+        this.logger.log(
+          `Payment verified successfully: ${reference} - Status: ${result.status}`,
+        );
       } else {
         this.logger.error(`Payment verification failed: ${reference}`);
       }
@@ -127,14 +131,20 @@ export class PaymentService {
    */
   async refundPayment(data: PaymentRefundData): Promise<PaymentRefundResponse> {
     try {
-      this.logger.log(`Processing refund for transaction: ${data.transactionReference}`);
+      this.logger.log(
+        `Processing refund for transaction: ${data.transactionReference}`,
+      );
 
       const result = await this.provider.refundPayment(data);
 
       if (result.success) {
-        this.logger.log(`Refund processed successfully: ${result.refundReference}`);
+        this.logger.log(
+          `Refund processed successfully: ${result.refundReference}`,
+        );
       } else {
-        this.logger.error(`Refund failed for transaction: ${data.transactionReference}`);
+        this.logger.error(
+          `Refund failed for transaction: ${data.transactionReference}`,
+        );
       }
 
       return result;
@@ -147,21 +157,30 @@ export class PaymentService {
   /**
    * Create a transfer recipient
    */
-  async createTransferRecipient(data: TransferRecipientData): Promise<TransferRecipientResponse> {
+  async createTransferRecipient(
+    data: TransferRecipientData,
+  ): Promise<TransferRecipientResponse> {
     try {
-      this.logger.log(`Creating transfer recipient: ${data.name} - ${data.accountNumber}`);
+      this.logger.log(
+        `Creating transfer recipient: ${data.name} - ${data.accountNumber}`,
+      );
 
       const result = await this.provider.createTransferRecipient(data);
 
       if (result.success) {
         this.logger.log(`Transfer recipient created: ${result.recipientCode}`);
       } else {
-        this.logger.error(`Failed to create transfer recipient for: ${data.name}`);
+        this.logger.error(
+          `Failed to create transfer recipient for: ${data.name}`,
+        );
       }
 
       return result;
     } catch (error) {
-      this.logger.error(`Transfer recipient creation error for ${data.name}`, error);
+      this.logger.error(
+        `Transfer recipient creation error for ${data.name}`,
+        error,
+      );
       throw error;
     }
   }
@@ -171,19 +190,26 @@ export class PaymentService {
    */
   async initiateTransfer(data: TransferData): Promise<TransferResponse> {
     try {
-      this.logger.log(`Initiating transfer: ${data.amount} to ${data.recipientCode}`);
+      this.logger.log(
+        `Initiating transfer: ${data.amount} to ${data.recipientCode}`,
+      );
 
       const result = await this.provider.initiateTransfer(data);
 
       if (result.success) {
         this.logger.log(`Transfer initiated successfully: ${result.reference}`);
       } else {
-        this.logger.error(`Transfer initiation failed for recipient: ${data.recipientCode}`);
+        this.logger.error(
+          `Transfer initiation failed for recipient: ${data.recipientCode}`,
+        );
       }
 
       return result;
     } catch (error) {
-      this.logger.error(`Transfer initiation error for ${data.recipientCode}`, error);
+      this.logger.error(
+        `Transfer initiation error for ${data.recipientCode}`,
+        error,
+      );
       throw error;
     }
   }
@@ -191,14 +217,19 @@ export class PaymentService {
   /**
    * Verify webhook signature and parse data
    */
-  async verifyWebhook(payload: string, signature: string): Promise<WebhookVerificationResult> {
+  async verifyWebhook(
+    payload: string,
+    signature: string,
+  ): Promise<WebhookVerificationResult> {
     try {
       this.logger.log('Verifying webhook signature');
 
       const result = await this.provider.verifyWebhook(payload, signature);
 
       if (result.isValid) {
-        this.logger.log(`Webhook verified successfully for event: ${result.event}`);
+        this.logger.log(
+          `Webhook verified successfully for event: ${result.event}`,
+        );
       } else {
         this.logger.warn('Invalid webhook signature received');
       }
@@ -213,7 +244,9 @@ export class PaymentService {
   /**
    * Get list of supported banks
    */
-  async getBanks(country?: string): Promise<Array<{ name: string; code: string; country?: string }>> {
+  async getBanks(
+    country?: string,
+  ): Promise<Array<{ name: string; code: string; country?: string }>> {
     try {
       this.logger.log(`Fetching banks for country: ${country || 'default'}`);
 
@@ -231,11 +264,19 @@ export class PaymentService {
   /**
    * Resolve account name from account number and bank code
    */
-  async resolveAccountName(accountNumber: string, bankCode: string): Promise<{ accountName: string; accountNumber: string }> {
+  async resolveAccountName(
+    accountNumber: string,
+    bankCode: string,
+  ): Promise<{ accountName: string; accountNumber: string }> {
     try {
-      this.logger.log(`Resolving account: ${accountNumber} for bank: ${bankCode}`);
+      this.logger.log(
+        `Resolving account: ${accountNumber} for bank: ${bankCode}`,
+      );
 
-      const result = await this.provider.resolveAccountName(accountNumber, bankCode);
+      const result = await this.provider.resolveAccountName(
+        accountNumber,
+        bankCode,
+      );
 
       this.logger.log(`Account resolved: ${result.accountName}`);
 
@@ -315,4 +356,4 @@ export class PaymentService {
 
     return Math.max(amount * feePercentage, fixedFee);
   }
-} 
+}

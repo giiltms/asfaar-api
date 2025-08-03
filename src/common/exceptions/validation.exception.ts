@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 
 export class ValidationException extends BadRequestException {
   constructor(
-    message: string = 'Validation failed',
+    message = 'Validation failed',
     public readonly validationErrors: any[],
   ) {
     super({
@@ -14,4 +14,4 @@ export class ValidationException extends BadRequestException {
       },
     });
   }
-} 
+}

@@ -5,7 +5,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { DynamicForm, FormSection, InputGroup, FormField, FieldOption, Prisma } from '@prisma/client';
+import {
+  DynamicForm,
+  FormSection,
+  InputGroup,
+  FormField,
+  FieldOption,
+  Prisma,
+} from '@prisma/client';
 import {
   CreateFormDto,
   UpdateFormDto,
@@ -42,29 +49,29 @@ export class FormsService {
         ...formData,
         sections: sections
           ? {
-            create: sections.map((section) => ({
-              ...section,
-              groups: section.groups
-                ? {
-                  create: section.groups.map((group) => ({
-                    ...group,
-                    fields: group.fields
-                      ? {
-                        create: group.fields.map((field) => ({
-                          ...field,
-                          options: field.options
-                            ? {
-                              create: field.options,
+              create: sections.map((section) => ({
+                ...section,
+                groups: section.groups
+                  ? {
+                      create: section.groups.map((group) => ({
+                        ...group,
+                        fields: group.fields
+                          ? {
+                              create: group.fields.map((field) => ({
+                                ...field,
+                                options: field.options
+                                  ? {
+                                      create: field.options,
+                                    }
+                                  : undefined,
+                              })),
                             }
-                            : undefined,
-                        })),
-                      }
-                      : undefined,
-                  })),
-                }
-                : undefined,
-            })),
-          }
+                          : undefined,
+                      })),
+                    }
+                  : undefined,
+              })),
+            }
           : undefined,
       },
       include: this.getFormInclude(),
@@ -85,11 +92,11 @@ export class FormsService {
 
     const where: Prisma.DynamicFormWhereInput = search
       ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ],
+        }
       : {};
 
     const orderBy = this.buildOrderBy(sortBy, sortOrder);
@@ -256,22 +263,22 @@ export class FormsService {
         formId,
         groups: sectionDto.groups
           ? {
-            create: sectionDto.groups.map((group) => ({
-              ...group,
-              fields: group.fields
-                ? {
-                  create: group.fields.map((field) => ({
-                    ...field,
-                    options: field.options
-                      ? {
-                        create: field.options,
-                      }
-                      : undefined,
-                  })),
-                }
-                : undefined,
-            })),
-          }
+              create: sectionDto.groups.map((group) => ({
+                ...group,
+                fields: group.fields
+                  ? {
+                      create: group.fields.map((field) => ({
+                        ...field,
+                        options: field.options
+                          ? {
+                              create: field.options,
+                            }
+                          : undefined,
+                      })),
+                    }
+                  : undefined,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -351,15 +358,15 @@ export class FormsService {
         sectionId,
         fields: groupDto.fields
           ? {
-            create: groupDto.fields.map((field) => ({
-              ...field,
-              options: field.options
-                ? {
-                  create: field.options,
-                }
-                : undefined,
-            })),
-          }
+              create: groupDto.fields.map((field) => ({
+                ...field,
+                options: field.options
+                  ? {
+                      create: field.options,
+                    }
+                  : undefined,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -457,8 +464,8 @@ export class FormsService {
         groupId,
         options: fieldDto.options
           ? {
-            create: fieldDto.options,
-          }
+              create: fieldDto.options,
+            }
           : undefined,
       },
       include: {
@@ -544,7 +551,8 @@ export class FormsService {
 
     const submissionStats = {
       total: form.submissions.length,
-      completed: form.submissions.filter((s) => s.status === 'SUBMITTED').length,
+      completed: form.submissions.filter((s) => s.status === 'SUBMITTED')
+        .length,
       drafts: form.submissions.filter((s) => s.status === 'DRAFT').length,
       reviewed: form.submissions.filter((s) => s.status === 'REVIEWED').length,
       rejected: form.submissions.filter((s) => s.status === 'REJECTED').length,
@@ -674,4 +682,4 @@ export class FormsService {
       status: 'draft', // TODO: Add status field to schema
     };
   }
-} 
+}

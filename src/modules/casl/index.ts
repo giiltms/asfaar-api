@@ -5,10 +5,7 @@ export { AuthorizableUserMeta } from './interfaces/authorizable-user-meta.interf
 
 export { AuthorizableRequest } from './interfaces/request.interface';
 
-export {
-  CaslConditions,
-  UseAbility,
-} from './decorators';
+export { CaslConditions, UseAbility } from './decorators';
 
 export {
   SubjectBeforeFilterHook,

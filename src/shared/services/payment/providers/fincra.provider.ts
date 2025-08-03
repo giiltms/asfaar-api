@@ -42,7 +42,9 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  async initializePayment(data: PaymentInitializationData): Promise<PaymentInitializationResponse> {
+  async initializePayment(
+    data: PaymentInitializationData,
+  ): Promise<PaymentInitializationResponse> {
     try {
       const payload = {
         amount: data.amount,
@@ -59,7 +61,11 @@ export class FincraProvider implements PaymentProviderInterface {
         feeBearer: 'customer',
       };
 
-      const response = await this.makeRequest('POST', '/checkout/payments', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/checkout/payments',
+        payload,
+      );
 
       if (response.success) {
         return {
@@ -87,7 +93,10 @@ export class FincraProvider implements PaymentProviderInterface {
 
   async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
     try {
-      const response = await this.makeRequest('GET', `/checkout/payments/${reference}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/checkout/payments/${reference}`,
+      );
 
       if (response.success && response.data) {
         const { data } = response;
@@ -97,9 +106,14 @@ export class FincraProvider implements PaymentProviderInterface {
           reference: data.reference,
           amount: parseFloat(data.amount),
           currency: data.currency,
-          status: data.status === 'successful' ? 'success' :
-            data.status === 'failed' ? 'failed' :
-              data.status === 'cancelled' ? 'abandoned' : 'pending',
+          status:
+            data.status === 'successful'
+              ? 'success'
+              : data.status === 'failed'
+              ? 'failed'
+              : data.status === 'cancelled'
+              ? 'abandoned'
+              : 'pending',
           gatewayResponse: data.gatewayMessage,
           paidAt: data.dateCreated ? new Date(data.dateCreated) : undefined,
           channel: data.paymentMethod,
@@ -142,7 +156,11 @@ export class FincraProvider implements PaymentProviderInterface {
         amount: data.amount,
       };
 
-      const response = await this.makeRequest('POST', `/checkout/payments/${data.transactionReference}/refund`, payload);
+      const response = await this.makeRequest(
+        'POST',
+        `/checkout/payments/${data.transactionReference}/refund`,
+        payload,
+      );
 
       if (response.success) {
         return {
@@ -173,7 +191,9 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  async createTransferRecipient(data: TransferRecipientData): Promise<TransferRecipientResponse> {
+  async createTransferRecipient(
+    data: TransferRecipientData,
+  ): Promise<TransferRecipientResponse> {
     try {
       const payload = {
         name: data.name,
@@ -184,7 +204,11 @@ export class FincraProvider implements PaymentProviderInterface {
         metadata: data.metadata,
       };
 
-      const response = await this.makeRequest('POST', '/payouts/beneficiaries', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/payouts/beneficiaries',
+        payload,
+      );
 
       if (response.success) {
         return {
@@ -219,15 +243,23 @@ export class FincraProvider implements PaymentProviderInterface {
         customerReference: data.reference || `FINCRA_${Date.now()}`,
       };
 
-      const response = await this.makeRequest('POST', '/payouts/disbursements', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/payouts/disbursements',
+        payload,
+      );
 
       if (response.success) {
         return {
           success: true,
           reference: response.data.customerReference,
           amount: parseFloat(response.data.amount),
-          status: response.data.status === 'successful' ? 'success' :
-            response.data.status === 'pending' ? 'pending' : 'failed',
+          status:
+            response.data.status === 'successful'
+              ? 'success'
+              : response.data.status === 'pending'
+              ? 'pending'
+              : 'failed',
           providerData: response.data,
         };
       }
@@ -251,7 +283,10 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  async verifyWebhook(payload: string, signature: string): Promise<WebhookVerificationResult> {
+  async verifyWebhook(
+    payload: string,
+    signature: string,
+  ): Promise<WebhookVerificationResult> {
     try {
       if (!this.webhookSecret) {
         this.logger.error('Webhook secret not configured');
@@ -281,9 +316,14 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  async getBanks(country = 'nigeria'): Promise<Array<{ name: string; code: string; country?: string }>> {
+  async getBanks(
+    country = 'nigeria',
+  ): Promise<Array<{ name: string; code: string; country?: string }>> {
     try {
-      const response = await this.makeRequest('GET', `/profile/merchants/settlement-banks?country=${country}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/profile/merchants/settlement-banks?country=${country}`,
+      );
 
       if (response.success && response.data) {
         return response.data.map((bank: any) => ({
@@ -300,9 +340,15 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  async resolveAccountName(accountNumber: string, bankCode: string): Promise<{ accountName: string; accountNumber: string }> {
+  async resolveAccountName(
+    accountNumber: string,
+    bankCode: string,
+  ): Promise<{ accountName: string; accountNumber: string }> {
     try {
-      const response = await this.makeRequest('GET', `/profile/merchants/settlement-banks/resolve?accountNumber=${accountNumber}&bankCode=${bankCode}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/profile/merchants/settlement-banks/resolve?accountNumber=${accountNumber}&bankCode=${bankCode}`,
+      );
 
       if (response.success && response.data) {
         return {
@@ -320,7 +366,10 @@ export class FincraProvider implements PaymentProviderInterface {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.makeRequest('GET', '/profile/merchants/settlement-banks?country=nigeria');
+      const response = await this.makeRequest(
+        'GET',
+        '/profile/merchants/settlement-banks?country=nigeria',
+      );
       return response.success === true;
     } catch (error) {
       this.logger.error('Fincra health check failed', error);
@@ -328,10 +377,14 @@ export class FincraProvider implements PaymentProviderInterface {
     }
   }
 
-  private async makeRequest(method: 'GET' | 'POST', endpoint: string, data?: any): Promise<any> {
+  private async makeRequest(
+    method: 'GET' | 'POST',
+    endpoint: string,
+    data?: any,
+  ): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.secretKey}`,
+      Authorization: `Bearer ${this.secretKey}`,
       'Content-Type': 'application/json',
       'api-key': this.publicKey,
     };
@@ -349,9 +402,11 @@ export class FincraProvider implements PaymentProviderInterface {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return response.json();
   }
-} 
+}

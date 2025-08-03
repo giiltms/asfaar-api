@@ -1,5 +1,11 @@
 import { registerAs } from '@nestjs/config';
-import { IsEnum, IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+} from 'class-validator';
 import { validateConfig } from '../utils/validate-config';
 
 export enum PaymentProvider {
@@ -119,10 +125,15 @@ class PaymentConfig {
 
 export default registerAs('payment', () => {
   const config = {
-    PAYMENT_PROVIDER: (process.env.PAYMENT_PROVIDER as PaymentProvider) || PaymentProvider.PAYSTACK,
+    PAYMENT_PROVIDER:
+      (process.env.PAYMENT_PROVIDER as PaymentProvider) ||
+      PaymentProvider.PAYSTACK,
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
-    PAYMENT_CALLBACK_URL: process.env.PAYMENT_CALLBACK_URL || 'http://localhost:3000/payments/callback',
-    PAYMENT_CANCEL_URL: process.env.PAYMENT_CANCEL_URL || 'http://localhost:3000/payments/cancel',
+    PAYMENT_CALLBACK_URL:
+      process.env.PAYMENT_CALLBACK_URL ||
+      'http://localhost:3000/payments/callback',
+    PAYMENT_CANCEL_URL:
+      process.env.PAYMENT_CANCEL_URL || 'http://localhost:3000/payments/cancel',
     PAYMENT_SANDBOX_MODE: process.env.PAYMENT_SANDBOX_MODE === 'true',
 
     // Flutterwave
@@ -153,11 +164,12 @@ export default registerAs('payment', () => {
     PAYPAL_WEBHOOK_SECRET: process.env.PAYPAL_WEBHOOK_SECRET,
 
     // Settings
-    PAYMENT_TIMEOUT_MINUTES: parseInt(process.env.PAYMENT_TIMEOUT_MINUTES) || 30,
+    PAYMENT_TIMEOUT_MINUTES:
+      parseInt(process.env.PAYMENT_TIMEOUT_MINUTES) || 30,
     PAYMENT_MAX_AMOUNT: parseInt(process.env.PAYMENT_MAX_AMOUNT) || 10000000, // 100,000.00
     PAYMENT_MIN_AMOUNT: parseInt(process.env.PAYMENT_MIN_AMOUNT) || 100, // 1.00
   };
 
   // Return the config directly without validation for now to avoid async issues
   return config;
-}); 
+});

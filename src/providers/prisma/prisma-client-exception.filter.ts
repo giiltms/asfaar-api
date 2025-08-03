@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 // Use relative import for Jest compatibility

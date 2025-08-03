@@ -9,7 +9,12 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { AuditService } from './audit.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { ListAuditLogsDTO } from './dto/audits.dto';
 

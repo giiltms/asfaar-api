@@ -38,4 +38,4 @@ import { CacheService } from './cache/cache.service';
   providers: [DatabaseService, CacheService],
   exports: [DatabaseService, CacheService, PrismaModule, RedisModule],
 })
-export class CoreModule {} 
+export class CoreModule {}

@@ -51,7 +51,10 @@ export class UserDto {
   @ApiProperty({ example: 'https://example.com/avatar.jpg', required: false })
   avatar?: string;
 
-  @ApiProperty({ example: 'Software engineer passionate about technology', required: false })
+  @ApiProperty({
+    example: 'Software engineer passionate about technology',
+    required: false,
+  })
   bio?: string;
 
   @ApiProperty({ example: 'https://johndoe.dev', required: false })
@@ -60,21 +63,21 @@ export class UserDto {
   @ApiProperty({
     description: 'National Identity Number',
     example: '12345678901',
-    required: false
+    required: false,
   })
   nin?: string;
 
   @ApiProperty({
     description: 'User state or province',
     example: 'Lagos',
-    required: false
+    required: false,
   })
   state?: string;
 
   @ApiProperty({
     description: 'Local Government Area',
     example: 'Eti-Osa',
-    required: false
+    required: false,
   })
   lga?: string;
 
@@ -120,7 +123,10 @@ export class UserProfileDto {
   @ApiProperty({ example: 'Computer Science Degree', required: false })
   education?: string;
 
-  @ApiProperty({ example: ['JavaScript', 'TypeScript', 'Node.js'], required: false })
+  @ApiProperty({
+    example: ['JavaScript', 'TypeScript', 'Node.js'],
+    required: false,
+  })
   skills?: string[];
 
   @ApiProperty({ example: ['Programming', 'Reading'], required: false })
@@ -128,13 +134,13 @@ export class UserProfileDto {
 
   @ApiProperty({
     example: { linkedin: 'https://linkedin.com/in/johndoe' },
-    required: false
+    required: false,
   })
   socialLinks?: Record<string, any>;
 
   @ApiProperty({
     example: { street: '123 Main St', city: 'New York', state: 'NY' },
-    required: false
+    required: false,
   })
   address?: Record<string, any>;
 }
@@ -182,8 +188,9 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: '1990-01-01T00:00:00.000Z',
-    description: 'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
-    required: false
+    description:
+      'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
+    required: false,
   })
   @IsOptional()
   @IsDateString()
@@ -247,8 +254,9 @@ export class UpdateUserDto {
 
   @ApiProperty({
     example: '1990-01-01T00:00:00.000Z',
-    description: 'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
-    required: false
+    description:
+      'Date of birth in ISO-8601 format. You can also send just date (YYYY-MM-DD) and it will be converted.',
+    required: false,
   })
   @IsOptional()
   @IsDateString()
@@ -263,7 +271,10 @@ export class UpdateUserDto {
   })
   dateOfBirth?: string;
 
-  @ApiProperty({ example: 'Software engineer passionate about technology', required: false })
+  @ApiProperty({
+    example: 'Software engineer passionate about technology',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
@@ -277,7 +288,7 @@ export class UpdateUserDto {
   @ApiProperty({
     description: 'National Identity Number',
     example: '12345678901',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -287,7 +298,7 @@ export class UpdateUserDto {
   @ApiProperty({
     description: 'User state or province',
     example: 'Lagos',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -297,7 +308,7 @@ export class UpdateUserDto {
   @ApiProperty({
     description: 'Local Government Area',
     example: 'Eti-Osa',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()

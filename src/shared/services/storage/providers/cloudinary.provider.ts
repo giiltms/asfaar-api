@@ -1,14 +1,23 @@
 import { v4 as uuid } from 'uuid';
 import * as path from 'path';
-import { StorageProviderInterface, UploadOptions, UploadResult, DeleteOptions } from '../interfaces/storage.interface';
+import {
+  StorageProviderInterface,
+  UploadOptions,
+  UploadResult,
+  DeleteOptions,
+} from '../interfaces/storage.interface';
 
 export class CloudinaryStorageProvider implements StorageProviderInterface {
   constructor(private readonly config: any) {}
 
-  async upload(file: Express.Multer.File, options?: UploadOptions): Promise<UploadResult> {
+  async upload(
+    file: Express.Multer.File,
+    options?: UploadOptions,
+  ): Promise<UploadResult> {
     // Cloudinary implementation would go here
     // This is a placeholder implementation
-    const fileName = options?.fileName || this.generateFileName(file.originalname);
+    const fileName =
+      options?.fileName || this.generateFileName(file.originalname);
     const folder = options?.folder || this.config.CLOUDINARY_FOLDER;
     const key = `${folder}/${fileName}`;
 
@@ -61,4 +70,4 @@ export class CloudinaryStorageProvider implements StorageProviderInterface {
     const extension = path.extname(originalName);
     return `${uuid()}${extension}`;
   }
-} 
+}

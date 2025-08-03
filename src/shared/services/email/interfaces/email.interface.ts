@@ -26,4 +26,4 @@ export interface EmailTemplate {
 export interface EmailProvider {
   sendEmail(options: SendEmailOptions): Promise<void>;
   healthCheck(): Promise<boolean>;
-} 
+}

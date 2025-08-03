@@ -59,13 +59,17 @@ export class FormSubmissionsController {
     @Request() req: any,
     @Body() createSubmissionDto: CreateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.createSubmission(req.user.id, createSubmissionDto);
+    return this.submissionsService.createSubmission(
+      req.user.id,
+      createSubmissionDto,
+    );
   }
 
   @Post('submit')
   @ApiOperation({
     summary: 'Submit form for review',
-    description: 'Submit a completed form for review (validates all required fields)',
+    description:
+      'Submit a completed form for review (validates all required fields)',
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
@@ -79,7 +83,8 @@ export class FormSubmissionsController {
   @Post('draft')
   @ApiOperation({
     summary: 'Save form as draft',
-    description: 'Save partial form progress as draft (auto-save functionality)',
+    description:
+      'Save partial form progress as draft (auto-save functionality)',
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
@@ -95,8 +100,16 @@ export class FormSubmissionsController {
     summary: 'Get my form submissions',
     description: 'Get all submissions for the authenticated user',
   })
-  @ApiQuery({ name: 'formId', required: false, description: 'Filter by form ID' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'formId',
+    required: false,
+    description: 'Filter by form ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'search', required: false, description: 'Search term' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
@@ -274,11 +287,11 @@ export class FormSubmissionsController {
   ) {
     // TODO: Implement file upload logic with storage service
     return {
-      files: files.map(file => ({
+      files: files.map((file) => ({
         fileUrl: `https://storage.example.com/uploads/${file.filename}`,
         fileName: file.originalname,
         fileSize: file.size,
       })),
     };
   }
-} 
+}

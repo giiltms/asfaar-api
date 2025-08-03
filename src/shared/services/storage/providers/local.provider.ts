@@ -1,7 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
-import { StorageProviderInterface, UploadOptions, UploadResult, DeleteOptions } from '../interfaces/storage.interface';
+import {
+  StorageProviderInterface,
+  UploadOptions,
+  UploadResult,
+  DeleteOptions,
+} from '../interfaces/storage.interface';
 
 export class LocalStorageProvider implements StorageProviderInterface {
   private readonly basePath: string;
@@ -11,8 +16,12 @@ export class LocalStorageProvider implements StorageProviderInterface {
     this.ensureDirectoryExists(this.basePath);
   }
 
-  async upload(file: Express.Multer.File, options?: UploadOptions): Promise<UploadResult> {
-    const fileName = options?.fileName || this.generateFileName(file.originalname);
+  async upload(
+    file: Express.Multer.File,
+    options?: UploadOptions,
+  ): Promise<UploadResult> {
+    const fileName =
+      options?.fileName || this.generateFileName(file.originalname);
     const folder = options?.folder || 'default';
     const fullPath = path.join(this.basePath, folder);
 
@@ -92,4 +101,4 @@ export class LocalStorageProvider implements StorageProviderInterface {
       fs.mkdirSync(dirPath, { recursive: true });
     }
   }
-} 
+}

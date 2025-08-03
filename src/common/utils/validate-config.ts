@@ -16,7 +16,7 @@ export async function validateConfig<T extends object>(
   if (errors.length > 0) {
     throw new Error(
       `Config validation error: ${errors
-        .map(error => Object.values(error.constraints || {}).join(', '))
+        .map((error) => Object.values(error.constraints || {}).join(', '))
         .join('; ')}`,
     );
   }
@@ -24,4 +24,4 @@ export async function validateConfig<T extends object>(
   return validatedConfig;
 }
 
-export { validateConfig as default }; 
+export { validateConfig as default };

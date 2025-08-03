@@ -1,5 +1,11 @@
 import { registerAs } from '@nestjs/config';
-import { IsString, IsNumber, IsOptional, IsEnum, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum StorageProvider {
@@ -15,17 +21,25 @@ class StorageConfigValidation {
 
   @IsString()
   @IsOptional()
-  STORAGE_LOCAL_PATH: string = './uploads';
+  STORAGE_LOCAL_PATH = './uploads';
 
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  STORAGE_MAX_FILE_SIZE: number = 10485760; // 10MB
+  STORAGE_MAX_FILE_SIZE = 10485760; // 10MB
 
   @IsArray()
   @Transform(({ value }) => value.split(',').map((ext: string) => ext.trim()))
   @IsOptional()
-  STORAGE_ALLOWED_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'];
+  STORAGE_ALLOWED_EXTENSIONS: string[] = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'pdf',
+    'doc',
+    'docx',
+  ];
 
   // S3 Configuration
   @IsString()
@@ -38,7 +52,7 @@ class StorageConfigValidation {
 
   @IsString()
   @IsOptional()
-  AWS_S3_REGION: string = 'us-east-1';
+  AWS_S3_REGION = 'us-east-1';
 
   @IsString()
   @IsOptional()
@@ -63,16 +77,21 @@ class StorageConfigValidation {
 
   @IsString()
   @IsOptional()
-  CLOUDINARY_FOLDER: string = 'nestjs-boilerplate';
+  CLOUDINARY_FOLDER = 'nestjs-boilerplate';
 }
 
 export default registerAs('storage', (): StorageConfigValidation => {
   const config = new StorageConfigValidation();
 
-  config.STORAGE_PROVIDER = process.env.STORAGE_PROVIDER as StorageProvider || StorageProvider.LOCAL;
+  config.STORAGE_PROVIDER =
+    (process.env.STORAGE_PROVIDER as StorageProvider) || StorageProvider.LOCAL;
   config.STORAGE_LOCAL_PATH = process.env.STORAGE_LOCAL_PATH || './uploads';
-  config.STORAGE_MAX_FILE_SIZE = parseInt(process.env.STORAGE_MAX_FILE_SIZE, 10) || 10485760;
-  config.STORAGE_ALLOWED_EXTENSIONS = process.env.STORAGE_ALLOWED_EXTENSIONS?.split(',').map(ext => ext.trim()) || ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'];
+  config.STORAGE_MAX_FILE_SIZE =
+    parseInt(process.env.STORAGE_MAX_FILE_SIZE, 10) || 10485760;
+  config.STORAGE_ALLOWED_EXTENSIONS =
+    process.env.STORAGE_ALLOWED_EXTENSIONS?.split(',').map((ext) =>
+      ext.trim(),
+    ) || ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx'];
 
   // S3
   config.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
@@ -85,7 +104,8 @@ export default registerAs('storage', (): StorageConfigValidation => {
   config.CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
   config.CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
   config.CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
-  config.CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER || 'nestjs-boilerplate';
+  config.CLOUDINARY_FOLDER =
+    process.env.CLOUDINARY_FOLDER || 'nestjs-boilerplate';
 
   return config;
-}); 
+});

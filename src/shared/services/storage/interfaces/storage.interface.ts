@@ -37,10 +37,13 @@ export interface StorageProvider {
 }
 
 export interface StorageProviderInterface {
-  upload(file: Express.Multer.File, options?: UploadOptions): Promise<UploadResult>;
+  upload(
+    file: Express.Multer.File,
+    options?: UploadOptions,
+  ): Promise<UploadResult>;
   delete(key: string, options?: DeleteOptions): Promise<boolean>;
   getUrl(key: string, expiresIn?: number): Promise<string>;
   exists(key: string): Promise<boolean>;
   getMetadata(key: string): Promise<any>;
   healthCheck(): Promise<boolean>;
-} 
+}

@@ -1,6 +1,15 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../../providers/prisma/prisma.service';
-import { PaginationOptions, PaginatedResult, PaginationUtils } from '../../common/utils/pagination.utils';
+import {
+  PaginationOptions,
+  PaginatedResult,
+  PaginationUtils,
+} from '../../common/utils/pagination.utils';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
@@ -33,7 +42,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     include?: any,
     select?: any,
   ): Promise<PaginatedResult<T>> {
-    const normalizedOptions = PaginationUtils.normalizePaginationOptions(options);
+    const normalizedOptions =
+      PaginationUtils.normalizePaginationOptions(options);
     const query = PaginationUtils.getPrismaQuery(normalizedOptions);
 
     const [data, totalItems] = await Promise.all([
@@ -46,7 +56,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       this.prisma[model].count({ where }),
     ]);
 
-    return PaginationUtils.createPaginatedResult(data, totalItems, normalizedOptions);
+    return PaginationUtils.createPaginatedResult(
+      data,
+      totalItems,
+      normalizedOptions,
+    );
   }
 
   /**
@@ -95,4 +109,4 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       return null;
     }
   }
-} 
+}

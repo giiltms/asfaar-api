@@ -266,7 +266,7 @@ export class CreateAddressDto {
   @MaxLength(100)
   @MinLength(1)
   @Transform(({ value }) => value || 'Nigeria')
-  country: string = 'Nigeria';
+  country = 'Nigeria';
 
   @ApiProperty({
     description: 'Address type',
@@ -411,4 +411,4 @@ export class SetDefaultAddressDto {
   })
   @IsUUID()
   addressId: string;
-} 
+}

@@ -46,4 +46,4 @@ export class PostsRepository {
   async deleteLike(args: Prisma.LikeDeleteArgs) {
     return this.prisma.like.delete(args);
   }
-} 
+}

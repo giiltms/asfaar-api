@@ -13,7 +13,7 @@ import {
   AddressDto,
   AddressSummaryDto,
 } from './dto/address.dto';
-import { 
+import {
   ADDRESS_NOT_FOUND,
   ADDRESS_ACCESS_DENIED,
   DEFAULT_ADDRESS_REQUIRED,
@@ -61,19 +61,19 @@ export class AddressService {
   async getUserAddresses(userId: string): Promise<AddressSummaryDto[]> {
     const addresses = await this.prisma.address.findMany({
       where: { userId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return addresses.map(address => this.mapToAddressSummaryDto(address));
+    return addresses.map((address) => this.mapToAddressSummaryDto(address));
   }
 
   /**
    * Get a specific address by ID
    */
-  async getAddressById(addressId: string, userId?: string): Promise<AddressDto> {
+  async getAddressById(
+    addressId: string,
+    userId?: string,
+  ): Promise<AddressDto> {
     const address = await this.prisma.address.findUnique({
       where: { id: addressId },
     });
@@ -146,7 +146,10 @@ export class AddressService {
   /**
    * Set an address as default
    */
-  async setDefaultAddress(addressId: string, userId: string): Promise<AddressDto> {
+  async setDefaultAddress(
+    addressId: string,
+    userId: string,
+  ): Promise<AddressDto> {
     // Verify address ownership
     await this.getAddressById(addressId, userId);
 
@@ -188,13 +191,10 @@ export class AddressService {
         userId,
         type,
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return addresses.map(address => this.mapToAddressSummaryDto(address));
+    return addresses.map((address) => this.mapToAddressSummaryDto(address));
   }
 
   /**
@@ -231,25 +231,17 @@ export class AddressService {
           { label: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
 
-    return addresses.map(address => this.mapToAddressSummaryDto(address));
+    return addresses.map((address) => this.mapToAddressSummaryDto(address));
   }
 
   /**
    * Get address statistics for a user
    */
   async getAddressStatistics(userId: string) {
-    const [
-      total,
-      verified,
-      byType,
-      hasDefault,
-    ] = await Promise.all([
+    const [total, verified, byType, hasDefault] = await Promise.all([
       this.prisma.address.count({ where: { userId } }),
       this.prisma.address.count({ where: { userId, isVerified: true } }),
       this.prisma.address.groupBy({
@@ -278,7 +270,10 @@ export class AddressService {
   /**
    * Private helper methods
    */
-  private async unsetDefaultAddresses(userId: string, excludeId?: string): Promise<void> {
+  private async unsetDefaultAddresses(
+    userId: string,
+    excludeId?: string,
+  ): Promise<void> {
     const where: Prisma.AddressWhereInput = {
       userId,
       isDefault: true,
@@ -294,7 +289,10 @@ export class AddressService {
     });
   }
 
-  private async setNewDefaultAddress(userId: string, excludeId: string): Promise<void> {
+  private async setNewDefaultAddress(
+    userId: string,
+    excludeId: string,
+  ): Promise<void> {
     const newDefaultAddress = await this.prisma.address.findFirst({
       where: {
         userId,
@@ -384,11 +382,13 @@ export class AddressService {
   /**
    * Validate Nigerian address
    */
-  private validateNigerianAddress(address: CreateAddressDto | UpdateAddressDto): void {
+  private validateNigerianAddress(
+    address: CreateAddressDto | UpdateAddressDto,
+  ): void {
     if (address.country === 'Nigeria') {
       // Add Nigerian-specific validation logic here
       // For example, validate state against known Nigerian states
       // Validate LGA against known LGAs for the state
     }
   }
-} 
+}

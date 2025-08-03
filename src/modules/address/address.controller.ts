@@ -313,4 +313,4 @@ export class AddressController {
     const address = await this.addressService.getAddressById(addressId);
     return this.addressService.verifyAddress(addressId, address.userId);
   }
-} 
+}

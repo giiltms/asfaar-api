@@ -38,7 +38,9 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  async initializePayment(data: PaymentInitializationData): Promise<PaymentInitializationResponse> {
+  async initializePayment(
+    data: PaymentInitializationData,
+  ): Promise<PaymentInitializationResponse> {
     try {
       const payload = {
         tx_ref: data.reference,
@@ -54,7 +56,8 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
           logo: '',
         },
         meta: data.metadata,
-        payment_options: data.paymentMethods?.join(',') || 'card,banktransfer,ussd',
+        payment_options:
+          data.paymentMethods?.join(',') || 'card,banktransfer,ussd',
       };
 
       const response = await this.makeRequest('POST', '/payments', payload);
@@ -85,7 +88,10 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
 
   async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
     try {
-      const response = await this.makeRequest('GET', `/transactions/verify_by_reference?tx_ref=${reference}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/transactions/verify_by_reference?tx_ref=${reference}`,
+      );
 
       if (response.status === 'success' && response.data) {
         const { data } = response;
@@ -95,9 +101,14 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
           reference: data.tx_ref,
           amount: data.amount,
           currency: data.currency,
-          status: data.status === 'successful' ? 'success' :
-            data.status === 'failed' ? 'failed' :
-              data.status === 'cancelled' ? 'abandoned' : 'pending',
+          status:
+            data.status === 'successful'
+              ? 'success'
+              : data.status === 'failed'
+              ? 'failed'
+              : data.status === 'cancelled'
+              ? 'abandoned'
+              : 'pending',
           gatewayResponse: data.processor_response,
           paidAt: data.created_at ? new Date(data.created_at) : undefined,
           channel: data.payment_type,
@@ -136,7 +147,10 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
   async refundPayment(data: PaymentRefundData): Promise<PaymentRefundResponse> {
     try {
       // First, get the transaction ID from the reference
-      const verifyResponse = await this.makeRequest('GET', `/transactions/verify_by_reference?tx_ref=${data.transactionReference}`);
+      const verifyResponse = await this.makeRequest(
+        'GET',
+        `/transactions/verify_by_reference?tx_ref=${data.transactionReference}`,
+      );
 
       if (verifyResponse.status !== 'success' || !verifyResponse.data?.id) {
         throw new Error('Transaction not found');
@@ -147,7 +161,11 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
         comments: data.reason,
       };
 
-      const response = await this.makeRequest('POST', `/transactions/${verifyResponse.data.id}/refund`, payload);
+      const response = await this.makeRequest(
+        'POST',
+        `/transactions/${verifyResponse.data.id}/refund`,
+        payload,
+      );
 
       if (response.status === 'success') {
         return {
@@ -178,7 +196,9 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  async createTransferRecipient(data: TransferRecipientData): Promise<TransferRecipientResponse> {
+  async createTransferRecipient(
+    data: TransferRecipientData,
+  ): Promise<TransferRecipientResponse> {
     try {
       const payload = {
         account_bank: data.bankCode,
@@ -186,7 +206,11 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
         beneficiary_name: data.name,
       };
 
-      const response = await this.makeRequest('POST', '/beneficiaries', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/beneficiaries',
+        payload,
+      );
 
       if (response.status === 'success') {
         return {
@@ -202,7 +226,10 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
         providerData: response,
       };
     } catch (error) {
-      this.logger.error('Flutterwave transfer recipient creation failed', error);
+      this.logger.error(
+        'Flutterwave transfer recipient creation failed',
+        error,
+      );
       return {
         success: false,
         recipientCode: '',
@@ -230,8 +257,12 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
           success: true,
           reference: response.data.reference,
           amount: response.data.amount,
-          status: response.data.status === 'SUCCESSFUL' ? 'success' :
-            response.data.status === 'PENDING' ? 'pending' : 'failed',
+          status:
+            response.data.status === 'SUCCESSFUL'
+              ? 'success'
+              : response.data.status === 'PENDING'
+              ? 'pending'
+              : 'failed',
           providerData: response.data,
         };
       }
@@ -255,7 +286,10 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  async verifyWebhook(payload: string, signature: string): Promise<WebhookVerificationResult> {
+  async verifyWebhook(
+    payload: string,
+    signature: string,
+  ): Promise<WebhookVerificationResult> {
     try {
       if (!this.webhookSecret) {
         this.logger.error('Webhook secret not configured');
@@ -285,7 +319,9 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  async getBanks(country = 'NG'): Promise<Array<{ name: string; code: string; country?: string }>> {
+  async getBanks(
+    country = 'NG',
+  ): Promise<Array<{ name: string; code: string; country?: string }>> {
     try {
       const response = await this.makeRequest('GET', `/banks/${country}`);
 
@@ -304,14 +340,21 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  async resolveAccountName(accountNumber: string, bankCode: string): Promise<{ accountName: string; accountNumber: string }> {
+  async resolveAccountName(
+    accountNumber: string,
+    bankCode: string,
+  ): Promise<{ accountName: string; accountNumber: string }> {
     try {
       const payload = {
         account_number: accountNumber,
         account_bank: bankCode,
       };
 
-      const response = await this.makeRequest('POST', '/accounts/resolve', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/accounts/resolve',
+        payload,
+      );
 
       if (response.status === 'success' && response.data) {
         return {
@@ -337,10 +380,14 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
     }
   }
 
-  private async makeRequest(method: 'GET' | 'POST', endpoint: string, data?: any): Promise<any> {
+  private async makeRequest(
+    method: 'GET' | 'POST',
+    endpoint: string,
+    data?: any,
+  ): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.secretKey}`,
+      Authorization: `Bearer ${this.secretKey}`,
       'Content-Type': 'application/json',
     };
 
@@ -357,9 +404,11 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return response.json();
   }
-} 
+}

@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsUUID, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsUUID,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum PostStatus {
@@ -79,10 +85,14 @@ export class PostDto {
   @ApiProperty({ example: 'getting-started-with-nestjs-123456' })
   slug: string;
 
-  @ApiPropertyOptional({ example: 'A comprehensive guide to building APIs with NestJS...' })
+  @ApiPropertyOptional({
+    example: 'A comprehensive guide to building APIs with NestJS...',
+  })
   content?: string;
 
-  @ApiPropertyOptional({ example: 'Learn how to build scalable APIs with NestJS framework' })
+  @ApiPropertyOptional({
+    example: 'Learn how to build scalable APIs with NestJS framework',
+  })
   excerpt?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/featured-image.jpg' })
@@ -134,7 +144,9 @@ export class CreatePostDto {
   @IsString()
   title: string;
 
-  @ApiPropertyOptional({ example: 'A comprehensive guide to building APIs with NestJS...' })
+  @ApiPropertyOptional({
+    example: 'A comprehensive guide to building APIs with NestJS...',
+  })
   @IsString()
   @IsOptional()
   content?: string;
@@ -161,7 +173,7 @@ export class CreatePostDto {
 
   @ApiPropertyOptional({
     example: ['javascript', 'nestjs', 'api'],
-    type: [String]
+    type: [String],
   })
   @IsOptional()
   tagNames?: string[];
@@ -183,7 +195,9 @@ export class UpdatePostDto {
   @IsOptional()
   excerpt?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/new-featured-image.jpg' })
+  @ApiPropertyOptional({
+    example: 'https://example.com/new-featured-image.jpg',
+  })
   @IsString()
   @IsOptional()
   featuredImage?: string;
@@ -205,7 +219,7 @@ export class UpdatePostDto {
 
   @ApiPropertyOptional({
     example: ['javascript', 'nestjs', 'api'],
-    type: [String]
+    type: [String],
   })
   @IsOptional()
   tagNames?: string[];
@@ -221,7 +235,9 @@ export class PostSummaryDto {
   @ApiProperty({ example: 'getting-started-with-nestjs-123456' })
   slug: string;
 
-  @ApiPropertyOptional({ example: 'Learn how to build scalable APIs with NestJS framework' })
+  @ApiPropertyOptional({
+    example: 'Learn how to build scalable APIs with NestJS framework',
+  })
   excerpt?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/featured-image.jpg' })
@@ -251,4 +267,4 @@ export class PostSummaryDto {
   constructor(partial: Partial<PostSummaryDto>) {
     Object.assign(this, partial);
   }
-} 
+}

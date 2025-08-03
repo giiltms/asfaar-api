@@ -45,11 +45,16 @@ export class CacheService {
   /**
    * Set value in cache
    */
-  async set<T>(key: string, value: T, options?: CacheOptions): Promise<boolean> {
+  async set<T>(
+    key: string,
+    value: T,
+    options?: CacheOptions,
+  ): Promise<boolean> {
     try {
       const fullKey = this.buildKey(key, options?.prefix);
       const ttl = options?.ttl || this.defaultTtl;
-      const serializedValue = options?.serialize !== false ? JSON.stringify(value) : String(value);
+      const serializedValue =
+        options?.serialize !== false ? JSON.stringify(value) : String(value);
 
       await this.redis.setex(fullKey, ttl, serializedValue);
       return true;
@@ -90,13 +95,20 @@ export class CacheService {
   /**
    * Set expiration for a key
    */
-  async expire(key: string, ttl: number, options?: CacheOptions): Promise<boolean> {
+  async expire(
+    key: string,
+    ttl: number,
+    options?: CacheOptions,
+  ): Promise<boolean> {
     try {
       const fullKey = this.buildKey(key, options?.prefix);
       const result = await this.redis.expire(fullKey, ttl);
       return result === 1;
     } catch (error) {
-      this.logger.error(`Failed to set expiration for cache key: ${key}`, error);
+      this.logger.error(
+        `Failed to set expiration for cache key: ${key}`,
+        error,
+      );
       return false;
     }
   }
@@ -106,10 +118,10 @@ export class CacheService {
    */
   async mget<T>(keys: string[], options?: CacheOptions): Promise<(T | null)[]> {
     try {
-      const fullKeys = keys.map(key => this.buildKey(key, options?.prefix));
+      const fullKeys = keys.map((key) => this.buildKey(key, options?.prefix));
       const values = await this.redis.mget(...fullKeys);
 
-      return values.map(value => {
+      return values.map((value) => {
         if (!value) return null;
         return options?.serialize !== false ? JSON.parse(value) : value;
       });
@@ -122,7 +134,10 @@ export class CacheService {
   /**
    * Delete keys by pattern
    */
-  async deleteByPattern(pattern: string, options?: CacheOptions): Promise<number> {
+  async deleteByPattern(
+    pattern: string,
+    options?: CacheOptions,
+  ): Promise<number> {
     try {
       const fullPattern = this.buildKey(pattern, options?.prefix);
       const keys = await this.redis.keys(fullPattern);
@@ -133,7 +148,10 @@ export class CacheService {
 
       return await this.redis.del(...keys);
     } catch (error) {
-      this.logger.error(`Failed to delete cache keys by pattern: ${pattern}`, error);
+      this.logger.error(
+        `Failed to delete cache keys by pattern: ${pattern}`,
+        error,
+      );
       return 0;
     }
   }
@@ -187,4 +205,4 @@ export class CacheService {
     const keyPrefix = prefix || this.defaultPrefix;
     return `${keyPrefix}:${key}`;
   }
-} 
+}

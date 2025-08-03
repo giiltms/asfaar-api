@@ -22,7 +22,10 @@ import { extname } from 'path';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRATION_TIME', '15m'),
+          expiresIn: configService.get(
+            'JWT_ACCESS_TOKEN_EXPIRATION_TIME',
+            '15m',
+          ),
         },
       }),
       inject: [ConfigService],
@@ -34,7 +37,8 @@ import { extname } from 'path';
         storage: diskStorage({
           destination: './uploads/form-submissions',
           filename: (req, file, callback) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
             const ext = extname(file.originalname);
             const filename = `${file.fieldname}-${uniqueSuffix}${ext}`;
             callback(null, filename);
@@ -78,4 +82,4 @@ import { extname } from 'path';
   providers: [FormSubmissionsService],
   exports: [FormSubmissionsService],
 })
-export class FormSubmissionsModule {} 
+export class FormSubmissionsModule {}

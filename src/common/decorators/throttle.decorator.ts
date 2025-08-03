@@ -50,4 +50,4 @@ export const ThrottleConfigs = {
    * Password reset - 3 attempts per hour
    */
   PASSWORD_RESET: { limit: 3, ttl: 3600 },
-} as const; 
+} as const;

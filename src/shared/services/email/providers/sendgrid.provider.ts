@@ -11,12 +11,14 @@ export class SendGridEmailProvider implements EmailProvider {
         email: this.config.MAIL_FROM_EMAIL,
         name: this.config.MAIL_FROM_NAME,
       },
-      personalizations: [{
-        to: this.formatRecipients(options.to),
-        ...(options.cc && { cc: this.formatRecipients(options.cc) }),
-        ...(options.bcc && { bcc: this.formatRecipients(options.bcc) }),
-        subject: options.subject,
-      }],
+      personalizations: [
+        {
+          to: this.formatRecipients(options.to),
+          ...(options.cc && { cc: this.formatRecipients(options.cc) }),
+          ...(options.bcc && { bcc: this.formatRecipients(options.bcc) }),
+          subject: options.subject,
+        },
+      ],
       content: [
         ...(options.text ? [{ type: 'text/plain', value: options.text }] : []),
         ...(options.html ? [{ type: 'text/html', value: options.html }] : []),
@@ -38,6 +40,6 @@ export class SendGridEmailProvider implements EmailProvider {
 
   private formatRecipients(recipients: string | string[]): any[] {
     const emails = Array.isArray(recipients) ? recipients : [recipients];
-    return emails.map(email => ({ email }));
+    return emails.map((email) => ({ email }));
   }
-} 
+}

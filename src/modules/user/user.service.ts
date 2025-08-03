@@ -55,7 +55,10 @@ export class UserService {
    * @param password The password of the user to find.
    * @returns The user if found, otherwise null.
    */
-  findByEmailAndPassword(email: string, password: string): Promise<User | null> {
+  findByEmailAndPassword(
+    email: string,
+    password: string,
+  ): Promise<User | null> {
     return this.userRepository.findOne({
       where: {
         email,
@@ -102,7 +105,10 @@ export class UserService {
    * @param data The data to update the user with.
    * @returns The updated user.
    */
-  async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<UserEntity> {
+  async updateUser(
+    id: string,
+    data: Prisma.UserUpdateInput,
+  ): Promise<UserEntity> {
     const user = await this.findById(id);
     const updatedUser = await this.userRepository.updateUser(id, data);
     return new UserEntity(updatedUser);
@@ -139,7 +145,9 @@ export class UserService {
    */
   async setUserRole(userId: string, role: Roles): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, { roles: [role] });
+    const updatedUser = await this.userRepository.updateUser(userId, {
+      roles: [role],
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -150,7 +158,9 @@ export class UserService {
    */
   async activateUser(userId: string): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, { isActive: true });
+    const updatedUser = await this.userRepository.updateUser(userId, {
+      isActive: true,
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -161,7 +171,9 @@ export class UserService {
    */
   async deactivateUser(userId: string): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, { isActive: false });
+    const updatedUser = await this.userRepository.updateUser(userId, {
+      isActive: false,
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -171,7 +183,9 @@ export class UserService {
    * @returns The verified user.
    */
   async verifyUser(userId: string): Promise<UserEntity> {
-    const updatedUser = await this.userRepository.updateUser(userId, { isVerified: true });
+    const updatedUser = await this.userRepository.updateUser(userId, {
+      isVerified: true,
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -221,11 +235,11 @@ export class UserService {
       where,
       {}, // include
       orderBy,
-      paginationOptions
+      paginationOptions,
     );
 
     // Convert users to UserEntity instances
-    const users = result.data.map(user => new UserEntity(user));
+    const users = result.data.map((user) => new UserEntity(user));
 
     return {
       ...result,

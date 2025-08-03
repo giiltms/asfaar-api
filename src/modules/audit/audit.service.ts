@@ -52,8 +52,16 @@ export class AuditService {
     }
   }
 
-  async getAuditLogs(paginationDto: PaginationQueryDto, filters: AuditFiltersDto) {
-    const { page = 1, limit = 10, sortBy = 'timestamp', sortOrder = 'desc' } = paginationDto;
+  async getAuditLogs(
+    paginationDto: PaginationQueryDto,
+    filters: AuditFiltersDto,
+  ) {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'timestamp',
+      sortOrder = 'desc',
+    } = paginationDto;
     const offset = (page - 1) * limit;
 
     // Build where clause based on filters
@@ -158,7 +166,7 @@ export class AuditService {
     });
   }
 
-  async deleteOldAuditLogs(daysOld: number = 90): Promise<void> {
+  async deleteOldAuditLogs(daysOld = 90): Promise<void> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
@@ -170,6 +178,8 @@ export class AuditService {
       },
     });
 
-    this.logger.log(`Deleted ${result.count} audit logs older than ${daysOld} days`);
+    this.logger.log(
+      `Deleted ${result.count} audit logs older than ${daysOld} days`,
+    );
   }
 }

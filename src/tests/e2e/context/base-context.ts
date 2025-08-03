@@ -1,4 +1,8 @@
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import { Server } from 'http';
@@ -33,7 +37,7 @@ class BaseContext {
         whitelist: true,
         forbidNonWhitelisted: true,
         skipMissingProperties: false,
-      })
+      }),
     );
 
     // Set global prefix for API versioning

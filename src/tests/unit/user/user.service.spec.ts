@@ -84,4 +84,4 @@ describe('UserService', () => {
       expect(typeof service.verifyUser).toBe('function');
     });
   });
-}); 
+});

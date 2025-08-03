@@ -1,4 +1,10 @@
-import { PrismaClient, Roles, Gender, Status, AddressType } from '@prisma/client';
+import {
+  PrismaClient,
+  Roles,
+  Gender,
+  Status,
+  AddressType,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -153,7 +159,12 @@ async function main() {
         company: 'Design Studio',
         jobTitle: 'UX Designer',
         education: 'Graphic Design',
-        skills: ['Figma', 'Adobe Creative Suite', 'User Research', 'Prototyping'],
+        skills: [
+          'Figma',
+          'Adobe Creative Suite',
+          'User Research',
+          'Prototyping',
+        ],
         interests: ['Design', 'Art', 'Photography'],
         socialLinks: {
           linkedin: 'https://linkedin.com/in/janesmith',
@@ -218,7 +229,7 @@ async function main() {
         isVerified: true,
         label: 'Home Address',
         latitude: 40.7128,
-        longitude: -74.0060,
+        longitude: -74.006,
       },
     }),
     // Addresses for Jane Smith
@@ -357,7 +368,8 @@ async function main() {
       data: {
         title: 'Getting Started with NestJS',
         slug: 'getting-started-with-nestjs-' + Date.now(),
-        content: 'NestJS is a progressive Node.js framework for building efficient and scalable server-side applications...',
+        content:
+          'NestJS is a progressive Node.js framework for building efficient and scalable server-side applications...',
         excerpt: 'Learn how to build scalable APIs with NestJS framework',
         authorId: users[0].id,
         categoryId: categories[1].id,
@@ -373,7 +385,8 @@ async function main() {
       data: {
         title: 'Modern UI Design Principles',
         slug: 'modern-ui-design-principles-' + Date.now(),
-        content: 'Explore the fundamental principles of modern user interface design...',
+        content:
+          'Explore the fundamental principles of modern user interface design...',
         excerpt: 'Discover the key principles that make great user interfaces',
         authorId: users[1].id,
         categoryId: categories[2].id,
@@ -389,7 +402,8 @@ async function main() {
       data: {
         title: 'Building RESTful APIs with TypeScript',
         slug: 'building-restful-apis-typescript-' + Date.now(),
-        content: 'Learn how to build robust RESTful APIs using TypeScript and modern frameworks...',
+        content:
+          'Learn how to build robust RESTful APIs using TypeScript and modern frameworks...',
         excerpt: 'A comprehensive guide to API development with TypeScript',
         authorId: users[2].id,
         categoryId: categories[1].id,
@@ -453,7 +467,8 @@ async function main() {
     }),
     prisma.comment.create({
       data: {
-        content: 'Very helpful tutorial. Looking forward to more NestJS content!',
+        content:
+          'Very helpful tutorial. Looking forward to more NestJS content!',
         authorId: users[2].id,
         postId: posts[0].id,
         status: Status.ACTIVE,
@@ -462,7 +477,8 @@ async function main() {
     }),
     prisma.comment.create({
       data: {
-        content: 'These design principles are spot on. Thanks for the insights!',
+        content:
+          'These design principles are spot on. Thanks for the insights!',
         authorId: users[0].id,
         postId: posts[1].id,
         status: Status.ACTIVE,

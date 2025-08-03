@@ -24,7 +24,7 @@ export class BaseResponseDto<T = any> {
 
 export class ErrorResponseDto {
   @ApiProperty({ example: false })
-  success: boolean = false;
+  success = false;
 
   @ApiProperty({ example: 'An error occurred' })
   message: string;
@@ -40,4 +40,4 @@ export class ErrorResponseDto {
     this.error = error;
     this.timestamp = new Date().toISOString();
   }
-} 
+}

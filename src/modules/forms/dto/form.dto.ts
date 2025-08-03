@@ -101,7 +101,7 @@ export class CreateFormFieldDto {
     default: false,
   })
   @IsBoolean()
-  required: boolean = false;
+  required = false;
 
   @ApiPropertyOptional({
     description: 'Field placeholder text',
@@ -149,7 +149,10 @@ export class CreateFormFieldDto {
 
   @ApiPropertyOptional({
     description: 'Field calculation rules (JSON)',
-    example: { expression: '${income} - ${expenses}', dependencies: ['income', 'expenses'] },
+    example: {
+      expression: '${income} - ${expenses}',
+      dependencies: ['income', 'expenses'],
+    },
   })
   @IsOptional()
   @IsJSON()
@@ -266,7 +269,7 @@ export class CreateInputGroupDto {
     default: false,
   })
   @IsBoolean()
-  repeatable: boolean = false;
+  repeatable = false;
 
   @ApiPropertyOptional({
     description: 'Fields in this group',
@@ -529,4 +532,4 @@ export class FormQueryDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';
-} 
+}

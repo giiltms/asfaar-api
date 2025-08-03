@@ -11,10 +11,12 @@ export class SesEmailProvider implements EmailProvider {
       Destination: {
         ToAddresses: Array.isArray(options.to) ? options.to : [options.to],
         ...(options.cc && {
-          CcAddresses: Array.isArray(options.cc) ? options.cc : [options.cc]
+          CcAddresses: Array.isArray(options.cc) ? options.cc : [options.cc],
         }),
         ...(options.bcc && {
-          BccAddresses: Array.isArray(options.bcc) ? options.bcc : [options.bcc]
+          BccAddresses: Array.isArray(options.bcc)
+            ? options.bcc
+            : [options.bcc],
         }),
       },
       Message: {
@@ -38,4 +40,4 @@ export class SesEmailProvider implements EmailProvider {
       return false;
     }
   }
-} 
+}

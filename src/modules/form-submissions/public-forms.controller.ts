@@ -1,15 +1,5 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { FormSubmissionsService } from './services/form-submissions.service';
 import { PublicFormDto } from './dto/submission.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
@@ -23,7 +13,8 @@ export class PublicFormsController {
   @Get()
   @ApiOperation({
     summary: 'Get available forms',
-    description: 'Get list of all available forms for public access (no authentication required)',
+    description:
+      'Get list of all available forms for public access (no authentication required)',
   })
   @ApiResponse({
     status: 200,
@@ -55,7 +46,8 @@ export class PublicFormsController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get form template',
-    description: 'Get complete form template structure for filling (no authentication required)',
+    description:
+      'Get complete form template structure for filling (no authentication required)',
   })
   @ApiParam({
     name: 'id',
@@ -64,7 +56,9 @@ export class PublicFormsController {
   })
   @ApiOkBaseResponse({ dto: PublicFormDto })
   @ApiDefaultResponse({ type: PublicFormDto })
-  async getPublicForm(@Param('id', ParseUUIDPipe) id: string): Promise<PublicFormDto> {
+  async getPublicForm(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<PublicFormDto> {
     return this.submissionsService.getPublicForm(id);
   }
 
@@ -91,7 +85,10 @@ export class PublicFormsController {
             id: { type: 'string' },
             name: { type: 'string' },
             description: { type: 'string' },
-            estimatedTime: { type: 'number', description: 'Estimated completion time in minutes' },
+            estimatedTime: {
+              type: 'number',
+              description: 'Estimated completion time in minutes',
+            },
             totalFields: { type: 'number' },
             requiredFields: { type: 'number' },
             sectionsCount: { type: 'number' },
@@ -118,13 +115,13 @@ export class PublicFormsController {
     let totalFields = 0;
     let requiredFields = 0;
 
-    const sectionsPreview = form.sections.map(section => {
+    const sectionsPreview = form.sections.map((section) => {
       let sectionFieldsCount = 0;
 
-      section.groups.forEach(group => {
+      section.groups.forEach((group) => {
         sectionFieldsCount += group.fields.length;
         totalFields += group.fields.length;
-        requiredFields += group.fields.filter(field => field.required).length;
+        requiredFields += group.fields.filter((field) => field.required).length;
       });
 
       return {
@@ -135,7 +132,7 @@ export class PublicFormsController {
     });
 
     // Estimate 30 seconds per field + 15 seconds per required field
-    const estimatedTime = Math.ceil((totalFields * 0.5) + (requiredFields * 0.25));
+    const estimatedTime = Math.ceil(totalFields * 0.5 + requiredFields * 0.25);
 
     return {
       id: form.id,
@@ -148,4 +145,4 @@ export class PublicFormsController {
       sections: sectionsPreview,
     };
   }
-} 
+}

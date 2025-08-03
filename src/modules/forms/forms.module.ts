@@ -15,7 +15,10 @@ import { FormsService } from './services/forms.service';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRATION_TIME', '15m'),
+          expiresIn: configService.get(
+            'JWT_ACCESS_TOKEN_EXPIRATION_TIME',
+            '15m',
+          ),
         },
       }),
       inject: [ConfigService],
@@ -26,4 +29,4 @@ import { FormsService } from './services/forms.service';
   providers: [FormsService],
   exports: [FormsService],
 })
-export class FormsModule {} 
+export class FormsModule {}

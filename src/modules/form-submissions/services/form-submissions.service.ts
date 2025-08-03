@@ -11,7 +11,7 @@ import {
   FieldResponse,
   SubmissionStatus,
   Prisma,
-  FieldType
+  FieldType,
 } from '@prisma/client';
 import {
   CreateFormSubmissionDto,
@@ -69,7 +69,9 @@ export class FormSubmissionsService {
     return this.mapToPublicFormDto(form);
   }
 
-  async getPublicForms(): Promise<Array<{ id: string; name: string; description?: string }>> {
+  async getPublicForms(): Promise<
+    Array<{ id: string; name: string; description?: string }>
+  > {
     const forms = await this.prisma.dynamicForm.findMany({
       select: {
         id: true,
@@ -109,7 +111,11 @@ export class FormSubmissionsService {
 
     if (existingDraft) {
       // Update existing draft instead of creating new one
-      return this.updateSubmission(userId, existingDraft.id, createSubmissionDto);
+      return this.updateSubmission(
+        userId,
+        existingDraft.id,
+        createSubmissionDto,
+      );
     }
 
     const submission = await this.prisma.formSubmission.create({
@@ -120,14 +126,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId instead of formFieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId instead of formFieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -136,7 +142,10 @@ export class FormSubmissionsService {
     return this.mapToSubmissionDto(submission);
   }
 
-  async submitForm(userId: string, submitDto: SubmitFormDto): Promise<FormSubmissionDto> {
+  async submitForm(
+    userId: string,
+    submitDto: SubmitFormDto,
+  ): Promise<FormSubmissionDto> {
     const { formId, responses, metadata } = submitDto;
 
     // Get form with all fields for validation
@@ -196,7 +205,7 @@ export class FormSubmissionsService {
           status: SubmissionStatus.SUBMITTED,
           submittedAt: new Date(),
           metadata: {
-            ...(submission.metadata as object || {}),
+            ...((submission.metadata as object) || {}),
             ...metadata,
             submittedAt: new Date().toISOString(),
           },
@@ -242,7 +251,10 @@ export class FormSubmissionsService {
     return this.mapToSubmissionDto(submission);
   }
 
-  async saveDraft(userId: string, draftDto: SaveDraftDto): Promise<FormSubmissionDto> {
+  async saveDraft(
+    userId: string,
+    draftDto: SaveDraftDto,
+  ): Promise<FormSubmissionDto> {
     const { formId, responses, metadata } = draftDto;
 
     // Verify form exists
@@ -269,7 +281,7 @@ export class FormSubmissionsService {
         where: { id: submission.id },
         data: {
           metadata: {
-            ...(submission.metadata as object || {}),
+            ...((submission.metadata as object) || {}),
             ...metadata,
             lastSaved: new Date().toISOString(),
           },
@@ -324,7 +336,17 @@ export class FormSubmissionsService {
     limit: number;
     totalPages: number;
   }> {
-    const { page, limit, formId, status, search, dateFrom, dateTo, sortBy, sortOrder } = queryDto;
+    const {
+      page,
+      limit,
+      formId,
+      status,
+      search,
+      dateFrom,
+      dateTo,
+      sortBy,
+      sortOrder,
+    } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.FormSubmissionWhereInput = {
@@ -355,7 +377,9 @@ export class FormSubmissionsService {
     ]);
 
     return {
-      submissions: submissions.map((submission) => this.mapToSubmissionDto(submission)),
+      submissions: submissions.map((submission) =>
+        this.mapToSubmissionDto(submission),
+      ),
       total,
       page,
       limit,
@@ -363,7 +387,10 @@ export class FormSubmissionsService {
     };
   }
 
-  async getSubmissionById(userId: string, submissionId: string): Promise<FormSubmissionDto> {
+  async getSubmissionById(
+    userId: string,
+    submissionId: string,
+  ): Promise<FormSubmissionDto> {
     const submission = await this.prisma.formSubmission.findUnique({
       where: { id: submissionId },
       include: this.getSubmissionInclude(),
@@ -373,7 +400,8 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (submission.userId !== userId && userId !== 'admin') { // Allow admin access
+    if (submission.userId !== userId && userId !== 'admin') {
+      // Allow admin access
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -409,15 +437,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -435,7 +463,8 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (submission.userId !== userId && userId !== 'admin') { // Allow admin deletion
+    if (submission.userId !== userId && userId !== 'admin') {
+      // Allow admin deletion
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -456,7 +485,18 @@ export class FormSubmissionsService {
     limit: number;
     totalPages: number;
   }> {
-    const { page, limit, formId, userId, status, search, dateFrom, dateTo, sortBy, sortOrder } = queryDto;
+    const {
+      page,
+      limit,
+      formId,
+      userId,
+      status,
+      search,
+      dateFrom,
+      dateTo,
+      sortBy,
+      sortOrder,
+    } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.FormSubmissionWhereInput = {
@@ -490,7 +530,9 @@ export class FormSubmissionsService {
     ]);
 
     return {
-      submissions: submissions.map((submission) => this.mapToSubmissionDto(submission)),
+      submissions: submissions.map((submission) =>
+        this.mapToSubmissionDto(submission),
+      ),
       total,
       page,
       limit,
@@ -530,12 +572,7 @@ export class FormSubmissionsService {
   }
 
   async getSubmissionAnalytics(): Promise<SubmissionAnalyticsDto> {
-    const [
-      total,
-      byStatus,
-      byFormData,
-      recentSubmissions,
-    ] = await Promise.all([
+    const [total, byStatus, byFormData, recentSubmissions] = await Promise.all([
       this.prisma.formSubmission.count(),
       this.prisma.formSubmission.groupBy({
         by: ['status'],
@@ -567,18 +604,19 @@ export class FormSubmissionsService {
     };
 
     byStatus.forEach((item) => {
-      statusCounts[item.status.toLowerCase() as keyof typeof statusCounts] = item._count.id;
+      statusCounts[item.status.toLowerCase() as keyof typeof statusCounts] =
+        item._count.id;
     });
 
     // Get form names for byForm data
-    const formIds = byFormData.map(item => item.formId);
+    const formIds = byFormData.map((item) => item.formId);
     const forms = await this.prisma.dynamicForm.findMany({
       where: { id: { in: formIds } },
       select: { id: true, name: true },
     });
 
-    const formMap = new Map(forms.map(form => [form.id, form.name]));
-    const byForm = byFormData.map(item => ({
+    const formMap = new Map(forms.map((form) => [form.id, form.name]));
+    const byForm = byFormData.map((item) => ({
       formId: item.formId,
       formName: formMap.get(item.formId) || 'Unknown Form',
       count: item._count.id,
@@ -596,7 +634,8 @@ export class FormSubmissionsService {
       count,
     }));
 
-    const completionRate = total > 0 ? (statusCounts.submitted / total) * 100 : 0;
+    const completionRate =
+      total > 0 ? (statusCounts.submitted / total) * 100 : 0;
 
     return {
       total,
@@ -608,9 +647,12 @@ export class FormSubmissionsService {
   }
 
   // Validation Engine
-  private async validateSubmission(form: any, responses: CreateFieldResponseDto[]): Promise<void> {
+  private async validateSubmission(
+    form: any,
+    responses: CreateFieldResponseDto[],
+  ): Promise<void> {
     const allFields = this.getAllFormFields(form);
-    const responseMap = new Map(responses.map(r => [r.fieldId, r]));
+    const responseMap = new Map(responses.map((r) => [r.fieldId, r]));
 
     for (const field of allFields) {
       const response = responseMap.get(field.id);
@@ -644,23 +686,31 @@ export class FormSubmissionsService {
     switch (field.type) {
       case FieldType.NUMBER:
         if (isNaN(Number(value))) {
-          throw new BadRequestException(`Field '${field.label}' must be a number`);
+          throw new BadRequestException(
+            `Field '${field.label}' must be a number`,
+          );
         }
         break;
       case FieldType.DATE:
         if (!this.isValidDate(value)) {
-          throw new BadRequestException(`Field '${field.label}' must be a valid date`);
+          throw new BadRequestException(
+            `Field '${field.label}' must be a valid date`,
+          );
         }
         break;
       case FieldType.BOOLEAN:
         if (typeof value !== 'boolean') {
-          throw new BadRequestException(`Field '${field.label}' must be a boolean`);
+          throw new BadRequestException(
+            `Field '${field.label}' must be a boolean`,
+          );
         }
         break;
       case FieldType.SELECT:
       case FieldType.MULTISELECT:
         if (!this.isValidOption(field, value)) {
-          throw new BadRequestException(`Invalid option for field '${field.label}'`);
+          throw new BadRequestException(
+            `Invalid option for field '${field.label}'`,
+          );
         }
         break;
     }
@@ -680,7 +730,9 @@ export class FormSubmissionsService {
     const validValues = field.options.map((opt: any) => opt.value);
 
     if (field.type === FieldType.MULTISELECT) {
-      return Array.isArray(value) && value.every(v => validValues.includes(v));
+      return (
+        Array.isArray(value) && value.every((v) => validValues.includes(v))
+      );
     } else {
       return validValues.includes(value);
     }
@@ -690,19 +742,27 @@ export class FormSubmissionsService {
     const rules = field.validation;
 
     if (rules.minLength && value.length < rules.minLength) {
-      throw new BadRequestException(`Field '${field.label}' must be at least ${rules.minLength} characters`);
+      throw new BadRequestException(
+        `Field '${field.label}' must be at least ${rules.minLength} characters`,
+      );
     }
 
     if (rules.maxLength && value.length > rules.maxLength) {
-      throw new BadRequestException(`Field '${field.label}' must be at most ${rules.maxLength} characters`);
+      throw new BadRequestException(
+        `Field '${field.label}' must be at most ${rules.maxLength} characters`,
+      );
     }
 
     if (rules.min && Number(value) < rules.min) {
-      throw new BadRequestException(`Field '${field.label}' must be at least ${rules.min}`);
+      throw new BadRequestException(
+        `Field '${field.label}' must be at least ${rules.min}`,
+      );
     }
 
     if (rules.max && Number(value) > rules.max) {
-      throw new BadRequestException(`Field '${field.label}' must be at most ${rules.max}`);
+      throw new BadRequestException(
+        `Field '${field.label}' must be at most ${rules.max}`,
+      );
     }
 
     if (rules.pattern && !new RegExp(rules.pattern).test(value)) {
@@ -711,8 +771,12 @@ export class FormSubmissionsService {
   }
 
   private isEmpty(value: any): boolean {
-    return value === null || value === undefined || value === '' ||
-      (Array.isArray(value) && value.length === 0);
+    return (
+      value === null ||
+      value === undefined ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0)
+    );
   }
 
   // Helper Methods
@@ -813,4 +877,4 @@ export class FormSubmissionsService {
       })),
     };
   }
-} 
+}

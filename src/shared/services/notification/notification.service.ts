@@ -54,7 +54,9 @@ export class NotificationService {
   /**
    * Send email notification
    */
-  async sendEmailNotification(data: Omit<NotificationData, 'channels'>): Promise<void> {
+  async sendEmailNotification(
+    data: Omit<NotificationData, 'channels'>,
+  ): Promise<void> {
     return this.sendNotification({
       ...data,
       channels: [NotificationChannel.EMAIL],
@@ -64,7 +66,9 @@ export class NotificationService {
   /**
    * Send SMS notification
    */
-  async sendSmsNotification(data: Omit<NotificationData, 'channels'>): Promise<void> {
+  async sendSmsNotification(
+    data: Omit<NotificationData, 'channels'>,
+  ): Promise<void> {
     return this.sendNotification({
       ...data,
       channels: [NotificationChannel.SMS],
@@ -74,7 +78,9 @@ export class NotificationService {
   /**
    * Send push notification
    */
-  async sendPushNotification(data: Omit<NotificationData, 'channels'>): Promise<void> {
+  async sendPushNotification(
+    data: Omit<NotificationData, 'channels'>,
+  ): Promise<void> {
     return this.sendNotification({
       ...data,
       channels: [NotificationChannel.PUSH],
@@ -84,7 +90,9 @@ export class NotificationService {
   /**
    * Send in-app notification
    */
-  async sendInAppNotification(data: Omit<NotificationData, 'channels'>): Promise<void> {
+  async sendInAppNotification(
+    data: Omit<NotificationData, 'channels'>,
+  ): Promise<void> {
     return this.sendNotification({
       ...data,
       channels: [NotificationChannel.IN_APP],
@@ -94,7 +102,10 @@ export class NotificationService {
   /**
    * Send welcome notification to new users
    */
-  async sendWelcomeNotification(userId: string, userName: string): Promise<void> {
+  async sendWelcomeNotification(
+    userId: string,
+    userName: string,
+  ): Promise<void> {
     return this.sendNotification({
       userId,
       title: 'Welcome!',
@@ -108,11 +119,15 @@ export class NotificationService {
   /**
    * Send password reset notification
    */
-  async sendPasswordResetNotification(userId: string, resetUrl: string): Promise<void> {
+  async sendPasswordResetNotification(
+    userId: string,
+    resetUrl: string,
+  ): Promise<void> {
     return this.sendNotification({
       userId,
       title: 'Password Reset',
-      message: 'You requested a password reset. Click the link in your email to reset your password.',
+      message:
+        'You requested a password reset. Click the link in your email to reset your password.',
       type: NotificationType.INFO,
       channels: [NotificationChannel.EMAIL],
       data: { resetUrl },
@@ -122,13 +137,21 @@ export class NotificationService {
   /**
    * Send security alert notification
    */
-  async sendSecurityAlert(userId: string, alertType: string, details: string): Promise<void> {
+  async sendSecurityAlert(
+    userId: string,
+    alertType: string,
+    details: string,
+  ): Promise<void> {
     return this.sendNotification({
       userId,
       title: 'Security Alert',
       message: `Security alert: ${alertType}. ${details}`,
       type: NotificationType.WARNING,
-      channels: [NotificationChannel.EMAIL, NotificationChannel.SMS, NotificationChannel.IN_APP],
+      channels: [
+        NotificationChannel.EMAIL,
+        NotificationChannel.SMS,
+        NotificationChannel.IN_APP,
+      ],
       data: { alertType, details },
     });
   }
@@ -136,10 +159,12 @@ export class NotificationService {
   /**
    * Broadcast notification to all users
    */
-  async broadcastNotification(data: Omit<NotificationData, 'userId'>): Promise<void> {
+  async broadcastNotification(
+    data: Omit<NotificationData, 'userId'>,
+  ): Promise<void> {
     return this.sendNotification({
       ...data,
       title: `[Broadcast] ${data.title}`,
     });
   }
-} 
+}

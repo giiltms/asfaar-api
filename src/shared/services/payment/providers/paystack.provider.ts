@@ -38,7 +38,9 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  async initializePayment(data: PaymentInitializationData): Promise<PaymentInitializationResponse> {
+  async initializePayment(
+    data: PaymentInitializationData,
+  ): Promise<PaymentInitializationResponse> {
     try {
       const payload = {
         email: data.email,
@@ -49,14 +51,20 @@ export class PaystackProvider implements PaymentProviderInterface {
         cancel_url: data.cancelUrl,
         metadata: data.metadata,
         channels: data.paymentMethods,
-        custom_fields: data.customFields ? Object.entries(data.customFields).map(([key, value]) => ({
-          display_name: key,
-          variable_name: key.toLowerCase().replace(/\s+/g, '_'),
-          value,
-        })) : undefined,
+        custom_fields: data.customFields
+          ? Object.entries(data.customFields).map(([key, value]) => ({
+              display_name: key,
+              variable_name: key.toLowerCase().replace(/\s+/g, '_'),
+              value,
+            }))
+          : undefined,
       };
 
-      const response = await this.makeRequest('POST', '/transaction/initialize', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/transaction/initialize',
+        payload,
+      );
 
       if (response.status) {
         return {
@@ -85,7 +93,10 @@ export class PaystackProvider implements PaymentProviderInterface {
 
   async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
     try {
-      const response = await this.makeRequest('GET', `/transaction/verify/${reference}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/transaction/verify/${reference}`,
+      );
 
       if (response.status && response.data) {
         const { data } = response;
@@ -95,9 +106,14 @@ export class PaystackProvider implements PaymentProviderInterface {
           reference: data.reference,
           amount: data.amount / 100, // Convert from kobo
           currency: data.currency,
-          status: data.status === 'success' ? 'success' :
-            data.status === 'failed' ? 'failed' :
-              data.status === 'abandoned' ? 'abandoned' : 'pending',
+          status:
+            data.status === 'success'
+              ? 'success'
+              : data.status === 'failed'
+              ? 'failed'
+              : data.status === 'abandoned'
+              ? 'abandoned'
+              : 'pending',
           gatewayResponse: data.gateway_response,
           paidAt: data.paid_at ? new Date(data.paid_at) : undefined,
           channel: data.channel,
@@ -173,7 +189,9 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  async createTransferRecipient(data: TransferRecipientData): Promise<TransferRecipientResponse> {
+  async createTransferRecipient(
+    data: TransferRecipientData,
+  ): Promise<TransferRecipientResponse> {
     try {
       const payload = {
         type: data.type,
@@ -184,7 +202,11 @@ export class PaystackProvider implements PaymentProviderInterface {
         metadata: data.metadata,
       };
 
-      const response = await this.makeRequest('POST', '/transferrecipient', payload);
+      const response = await this.makeRequest(
+        'POST',
+        '/transferrecipient',
+        payload,
+      );
 
       if (response.status) {
         return {
@@ -228,9 +250,14 @@ export class PaystackProvider implements PaymentProviderInterface {
           reference: response.data.reference,
           transferCode: response.data.transfer_code,
           amount: response.data.amount / 100,
-          status: response.data.status === 'success' ? 'success' :
-            response.data.status === 'pending' ? 'pending' :
-              response.data.status === 'reversed' ? 'reversed' : 'failed',
+          status:
+            response.data.status === 'success'
+              ? 'success'
+              : response.data.status === 'pending'
+              ? 'pending'
+              : response.data.status === 'reversed'
+              ? 'reversed'
+              : 'failed',
           providerData: response.data,
         };
       }
@@ -254,7 +281,10 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  async verifyWebhook(payload: string, signature: string): Promise<WebhookVerificationResult> {
+  async verifyWebhook(
+    payload: string,
+    signature: string,
+  ): Promise<WebhookVerificationResult> {
     try {
       if (!this.webhookSecret) {
         this.logger.error('Webhook secret not configured');
@@ -284,9 +314,14 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  async getBanks(country = 'nigeria'): Promise<Array<{ name: string; code: string; country?: string }>> {
+  async getBanks(
+    country = 'nigeria',
+  ): Promise<Array<{ name: string; code: string; country?: string }>> {
     try {
-      const response = await this.makeRequest('GET', `/bank?country=${country}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/bank?country=${country}`,
+      );
 
       if (response.status && response.data) {
         return response.data.map((bank: any) => ({
@@ -303,9 +338,15 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  async resolveAccountName(accountNumber: string, bankCode: string): Promise<{ accountName: string; accountNumber: string }> {
+  async resolveAccountName(
+    accountNumber: string,
+    bankCode: string,
+  ): Promise<{ accountName: string; accountNumber: string }> {
     try {
-      const response = await this.makeRequest('GET', `/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`);
+      const response = await this.makeRequest(
+        'GET',
+        `/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`,
+      );
 
       if (response.status && response.data) {
         return {
@@ -323,7 +364,10 @@ export class PaystackProvider implements PaymentProviderInterface {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await this.makeRequest('GET', '/bank?country=nigeria&perPage=1');
+      const response = await this.makeRequest(
+        'GET',
+        '/bank?country=nigeria&perPage=1',
+      );
       return response.status === true;
     } catch (error) {
       this.logger.error('Paystack health check failed', error);
@@ -331,10 +375,14 @@ export class PaystackProvider implements PaymentProviderInterface {
     }
   }
 
-  private async makeRequest(method: 'GET' | 'POST', endpoint: string, data?: any): Promise<any> {
+  private async makeRequest(
+    method: 'GET' | 'POST',
+    endpoint: string,
+    data?: any,
+  ): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `Bearer ${this.secretKey}`,
+      Authorization: `Bearer ${this.secretKey}`,
       'Content-Type': 'application/json',
     };
 
@@ -351,9 +399,11 @@ export class PaystackProvider implements PaymentProviderInterface {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      );
     }
 
     return response.json();
   }
-} 
+}

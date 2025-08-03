@@ -11,7 +11,10 @@ export class MailService {
 
   async sendRegisterationConfirmation(email: string, data: any): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
-    const contactEmail = this.configService.get('CONTACT_EMAIL', 'contact@example.com');
+    const contactEmail = this.configService.get(
+      'CONTACT_EMAIL',
+      'contact@example.com',
+    );
 
     await this.mailerService.sendMail({
       to: email,
@@ -39,7 +42,10 @@ export class MailService {
     });
   }
 
-  async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
+  async sendPasswordResetEmail(
+    email: string,
+    resetToken: string,
+  ): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
 
     await this.mailerService.sendMail({

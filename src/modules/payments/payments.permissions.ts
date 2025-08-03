@@ -20,8 +20,6 @@ export const permissions: Permissions<Roles> = {
     can(Actions.read, 'Wallet', { userId: '${user.id}' });
   },
 
-
-
   [Roles.ADMIN]({ can }) {
     // Admins can manage all payment operations
     can(Actions.manage, 'Transaction');
@@ -37,4 +35,4 @@ export const permissions: Permissions<Roles> = {
     // Super admins have full access to everything
     can(Actions.manage, 'all');
   },
-}; 
+};

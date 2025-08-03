@@ -28,7 +28,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // Only split if errorMessage contains a colon
-    const hasCodeFormat = typeof errorMessage === 'string' && errorMessage.includes(':');
+    const hasCodeFormat =
+      typeof errorMessage === 'string' && errorMessage.includes(':');
 
     if (!hasCodeFormat) {
       const [serverErrorCode] = INTERNAL_SERVER_ERROR.split(':');

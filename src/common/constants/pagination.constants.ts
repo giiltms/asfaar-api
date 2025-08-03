@@ -11,4 +11,4 @@ export const SORT_ORDER = {
 } as const;
 
 export const DEFAULT_SORT_FIELD = 'createdAt';
-export const DEFAULT_SORT_ORDER = SORT_ORDER.DESC; 
+export const DEFAULT_SORT_ORDER = SORT_ORDER.DESC;

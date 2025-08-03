@@ -85,9 +85,12 @@ export const COMPROMISED_PASSWORD =
   '400008: This password has been compromised in a data breach.';
 export const CANNOT_DELETE_SOLE_MEMBER =
   '400009: Cannot remove the only member';
-export const DEFAULT_ADDRESS_REQUIRED = '400010: At least one default address is required';
-export const FORM_HAS_SUBMISSIONS = '400011: Cannot delete form with existing submissions';
-export const DUPLICATE_FIELD_NAME = '400012: Field name already exists in this form';
+export const DEFAULT_ADDRESS_REQUIRED =
+  '400010: At least one default address is required';
+export const FORM_HAS_SUBMISSIONS =
+  '400011: Cannot delete form with existing submissions';
+export const DUPLICATE_FIELD_NAME =
+  '400012: Field name already exists in this form';
 export const CANNOT_DELETE_SOLE_OWNER = '400010: Cannot remove the only owner';
 export const ORDER_BY_ASC_DESC = '400011: Invalid sorting order';
 export const ORDER_BY_FORMAT = '400012: Invalid ordering format';

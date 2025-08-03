@@ -1,7 +1,9 @@
 import { ValidationError } from 'class-validator';
 import { BadRequestException } from '@nestjs/common';
 
-export default function validationExceptionFactory(errors: ValidationError[]): BadRequestException {
+export default function validationExceptionFactory(
+  errors: ValidationError[],
+): BadRequestException {
   const errorMessages = errors.map((error) => {
     const constraints = error.constraints;
     if (constraints) {
@@ -14,4 +16,4 @@ export default function validationExceptionFactory(errors: ValidationError[]): B
     message: 'Validation failed',
     errors: errorMessages,
   });
-} 
+}

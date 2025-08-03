@@ -12,7 +12,12 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { UserService } from './user.service';
 import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
@@ -36,9 +41,15 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Current user profile', type: UserEntity })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user profile',
+    type: UserEntity,
+  })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize single user entity
-  async getProfile(@Request() req: any): Promise<{ success: boolean; data: UserEntity }> {
+  async getProfile(
+    @Request() req: any,
+  ): Promise<{ success: boolean; data: UserEntity }> {
     const userId = req.user.id;
     const user = await this.userService.findById(userId);
 
@@ -50,9 +61,16 @@ export class UserController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile updated successfully', type: UserEntity })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully',
+    type: UserEntity,
+  })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize updated user entity
-  async updateProfile(@Request() req: any, @Body() updateData: UpdateUserDto): Promise<{ success: boolean; data: UserEntity; message: string }> {
+  async updateProfile(
+    @Request() req: any,
+    @Body() updateData: UpdateUserDto,
+  ): Promise<{ success: boolean; data: UserEntity; message: string }> {
     const userId = req.user.id;
     const updatedUser = await this.userService.updateUser(userId, updateData);
 
@@ -73,9 +91,16 @@ export class UserController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update user by ID' })
-  @ApiResponse({ status: 200, description: 'User updated successfully', type: UserEntity })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: UserEntity,
+  })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize updated user entity
-  async updateUser(@Param('id') id: string, @Body() updateData: UpdateUserDto): Promise<UserEntity> {
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateData: UpdateUserDto,
+  ): Promise<UserEntity> {
     return this.userService.updateUser(id, updateData);
   }
 
@@ -88,7 +113,11 @@ export class UserController {
 
   @Post(':id/roles')
   @ApiOperation({ summary: 'Set user role' })
-  @ApiResponse({ status: 200, description: 'User role updated successfully', type: UserEntity })
+  @ApiResponse({
+    status: 200,
+    description: 'User role updated successfully',
+    type: UserEntity,
+  })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize user entity with updated role
   async setUserRole(
     @Param('id') id: string,

@@ -1,4 +1,8 @@
-import { PAGINATION, DEFAULT_SORT_FIELD, DEFAULT_SORT_ORDER } from '../constants/pagination.constants';
+import {
+  PAGINATION,
+  DEFAULT_SORT_FIELD,
+  DEFAULT_SORT_ORDER,
+} from '../constants/pagination.constants';
 
 export interface PaginationOptions {
   page?: number;
@@ -34,8 +38,13 @@ export class PaginationUtils {
   /**
    * Validate and normalize pagination options
    */
-  static normalizePaginationOptions(options: PaginationOptions): Required<PaginationOptions> {
-    const page = Math.max(options.page || PAGINATION.DEFAULT_PAGE, PAGINATION.DEFAULT_PAGE);
+  static normalizePaginationOptions(
+    options: PaginationOptions,
+  ): Required<PaginationOptions> {
+    const page = Math.max(
+      options.page || PAGINATION.DEFAULT_PAGE,
+      PAGINATION.DEFAULT_PAGE,
+    );
     const limit = Math.min(
       Math.max(options.limit || PAGINATION.DEFAULT_LIMIT, PAGINATION.MIN_LIMIT),
       PAGINATION.MAX_LIMIT,
@@ -105,4 +114,4 @@ export class PaginationUtils {
       },
     };
   }
-} 
+}

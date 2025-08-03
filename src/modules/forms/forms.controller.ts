@@ -50,7 +50,8 @@ export class FormsController {
   @Post()
   @ApiOperation({
     summary: 'Create new form template',
-    description: 'Create a new dynamic form template with sections, groups, and fields',
+    description:
+      'Create a new dynamic form template with sections, groups, and fields',
   })
   @ApiOkBaseResponse({ dto: FormDto })
   @ApiDefaultResponse({ type: FormDto })
@@ -408,4 +409,4 @@ export class FormsController {
   async deleteField(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.formsService.deleteField(id);
   }
-} 
+}

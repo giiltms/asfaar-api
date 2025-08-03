@@ -96,8 +96,14 @@ async function bootstrap(): Promise<{ port: number }> {
 }
 
 bootstrap().then((config) => {
-  Logger.log(`🚀 Application is running on: http://localhost:${config.port}`, 'Bootstrap');
-  Logger.log(`📚 Swagger documentation: http://localhost:${config.port}/docs`, 'Bootstrap');
+  Logger.log(
+    `🚀 Application is running on: http://localhost:${config.port}`,
+    'Bootstrap',
+  );
+  Logger.log(
+    `📚 Swagger documentation: http://localhost:${config.port}/docs`,
+    'Bootstrap',
+  );
 });
 
 export { bootstrap };

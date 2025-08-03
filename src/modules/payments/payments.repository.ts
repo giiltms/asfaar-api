@@ -48,7 +48,10 @@ export class PaymentsRepository {
     });
   }
 
-  async updateTransaction(id: string, data: Partial<Prisma.TransactionUpdateInput>) {
+  async updateTransaction(
+    id: string,
+    data: Partial<Prisma.TransactionUpdateInput>,
+  ) {
     return this.prisma.transaction.update({
       where: { id },
       data,
@@ -115,7 +118,10 @@ export class PaymentsRepository {
     });
   }
 
-  async updateRefund(id: string, data: Partial<Prisma.TransactionRefundUpdateInput>) {
+  async updateRefund(
+    id: string,
+    data: Partial<Prisma.TransactionRefundUpdateInput>,
+  ) {
     return this.prisma.transactionRefund.update({
       where: { id },
       data,
@@ -173,15 +179,16 @@ export class PaymentsRepository {
         },
       },
       data: {
-        balance: operation === 'increment'
-          ? { increment: amount }
-          : { decrement: amount },
+        balance:
+          operation === 'increment'
+            ? { increment: amount }
+            : { decrement: amount },
         updatedAt: new Date(),
       },
     });
   }
 
-  async getUserWallet(userId: string, currency: string = 'NGN') {
+  async getUserWallet(userId: string, currency = 'NGN') {
     return this.prisma.wallet.findUnique({
       where: {
         userId_currency: {
@@ -237,14 +244,14 @@ export class PaymentsRepository {
         userId,
         isActive: true,
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
-  async updatePaymentMethod(id: string, data: Partial<Prisma.PaymentMethodUpdateInput>) {
+  async updatePaymentMethod(
+    id: string,
+    data: Partial<Prisma.PaymentMethodUpdateInput>,
+  ) {
     return this.prisma.paymentMethod.update({
       where: { id },
       data,
@@ -257,4 +264,4 @@ export class PaymentsRepository {
       data: { isActive: false },
     });
   }
-} 
+}

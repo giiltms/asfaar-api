@@ -5,12 +5,12 @@ import { Transform } from 'class-transformer';
 class RedisConfigValidation {
   @IsString()
   @IsOptional()
-  REDIS_HOST: string = 'localhost';
+  REDIS_HOST = 'localhost';
 
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  REDIS_PORT: number = 6379;
+  REDIS_PORT = 6379;
 
   @IsString()
   @IsOptional()
@@ -19,7 +19,7 @@ class RedisConfigValidation {
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  REDIS_DB: number = 0;
+  REDIS_DB = 0;
 
   @IsString()
   @IsOptional()
@@ -28,12 +28,12 @@ class RedisConfigValidation {
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  REDIS_TTL: number = 3600; // 1 hour in seconds
+  REDIS_TTL = 3600; // 1 hour in seconds
 
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  REDIS_MAX_RETRIES: number = 3;
+  REDIS_MAX_RETRIES = 3;
 }
 
 export default registerAs('redis', (): RedisConfigValidation => {
@@ -48,4 +48,4 @@ export default registerAs('redis', (): RedisConfigValidation => {
   config.REDIS_MAX_RETRIES = parseInt(process.env.REDIS_MAX_RETRIES, 10) || 3;
 
   return config;
-}); 
+});

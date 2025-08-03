@@ -103,7 +103,9 @@ export interface PaymentProviderInterface {
   /**
    * Initialize a payment transaction
    */
-  initializePayment(data: PaymentInitializationData): Promise<PaymentInitializationResponse>;
+  initializePayment(
+    data: PaymentInitializationData,
+  ): Promise<PaymentInitializationResponse>;
 
   /**
    * Verify a payment transaction
@@ -118,7 +120,9 @@ export interface PaymentProviderInterface {
   /**
    * Create a transfer recipient
    */
-  createTransferRecipient(data: TransferRecipientData): Promise<TransferRecipientResponse>;
+  createTransferRecipient(
+    data: TransferRecipientData,
+  ): Promise<TransferRecipientResponse>;
 
   /**
    * Initiate a transfer
@@ -128,20 +132,28 @@ export interface PaymentProviderInterface {
   /**
    * Verify webhook signature and parse data
    */
-  verifyWebhook(payload: string, signature: string): Promise<WebhookVerificationResult>;
+  verifyWebhook(
+    payload: string,
+    signature: string,
+  ): Promise<WebhookVerificationResult>;
 
   /**
    * Get list of supported banks
    */
-  getBanks(country?: string): Promise<Array<{ name: string; code: string; country?: string }>>;
+  getBanks(
+    country?: string,
+  ): Promise<Array<{ name: string; code: string; country?: string }>>;
 
   /**
    * Resolve account name from account number and bank code
    */
-  resolveAccountName(accountNumber: string, bankCode: string): Promise<{ accountName: string; accountNumber: string }>;
+  resolveAccountName(
+    accountNumber: string,
+    bankCode: string,
+  ): Promise<{ accountName: string; accountNumber: string }>;
 
   /**
    * Health check for the payment provider
    */
   healthCheck(): Promise<boolean>;
-} 
+}

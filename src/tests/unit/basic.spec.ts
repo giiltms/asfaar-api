@@ -33,7 +33,8 @@ describe('Basic Test Suite', () => {
     });
 
     it('should handle timeouts', async () => {
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
       const start = Date.now();
       await delay(15); // Increased from 10 to 15 for more reliable timing
       const end = Date.now();
@@ -59,4 +60,4 @@ describe('Basic Test Suite', () => {
       expect(name).toBe('Alice');
     });
   });
-}); 
+});

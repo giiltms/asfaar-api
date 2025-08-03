@@ -17,9 +17,14 @@ export class LocalStorageService {
     }
   }
 
-  async upload(file: Express.Multer.File, destination?: string): Promise<string> {
+  async upload(
+    file: Express.Multer.File,
+    destination?: string,
+  ): Promise<string> {
     try {
-      const uploadDir = destination ? path.join(this.uploadPath, destination) : this.uploadPath;
+      const uploadDir = destination
+        ? path.join(this.uploadPath, destination)
+        : this.uploadPath;
 
       // Ensure destination directory exists
       if (!fs.existsSync(uploadDir)) {
@@ -43,7 +48,10 @@ export class LocalStorageService {
 
   async delete(filePath: string): Promise<boolean> {
     try {
-      const fullPath = path.join(this.uploadPath, filePath.replace('/uploads/', ''));
+      const fullPath = path.join(
+        this.uploadPath,
+        filePath.replace('/uploads/', ''),
+      );
 
       if (fs.existsSync(fullPath)) {
         await fs.promises.unlink(fullPath);

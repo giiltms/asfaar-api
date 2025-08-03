@@ -88,7 +88,9 @@ class TestService {
     };
   }
 
-  async createTestUser(data?: Partial<SignUpData>): Promise<AdminUserInterface> {
+  async createTestUser(
+    data?: Partial<SignUpData>,
+  ): Promise<AdminUserInterface> {
     const userData: SignUpData = {
       email: data?.email || faker.internet.email(),
       password: data?.password || 'password123',
@@ -160,7 +162,9 @@ class TestService {
     };
   }
 
-  async getTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+  async getTokens(
+    user: User,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     return this._tokenService.sign({
       id: user.id,
       email: user.email,

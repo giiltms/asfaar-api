@@ -58,7 +58,9 @@ export class CreateFieldResponseDto {
   metadata?: any;
 }
 
-export class UpdateFieldResponseDto extends PartialType(CreateFieldResponseDto) {}
+export class UpdateFieldResponseDto extends PartialType(
+  CreateFieldResponseDto,
+) {}
 
 export class FieldResponseDto {
   @ApiProperty({ description: 'Response ID' })
@@ -120,7 +122,7 @@ export class CreateFormSubmissionDto {
     example: {
       userAgent: 'Mozilla/5.0...',
       sessionId: 'sess_123',
-      submitLocation: { lat: 6.5244, lng: 3.3792 }
+      submitLocation: { lat: 6.5244, lng: 3.3792 },
     },
   })
   @IsOptional()
@@ -128,7 +130,9 @@ export class CreateFormSubmissionDto {
   metadata?: any;
 }
 
-export class UpdateFormSubmissionDto extends PartialType(CreateFormSubmissionDto) {}
+export class UpdateFormSubmissionDto extends PartialType(
+  CreateFormSubmissionDto,
+) {}
 
 export class SubmitFormDto {
   @ApiProperty({
@@ -151,7 +155,7 @@ export class SubmitFormDto {
     description: 'Additional submission metadata',
     example: {
       submitLocation: { lat: 6.5244, lng: 3.3792 },
-      deviceInfo: 'iPhone 13 Pro'
+      deviceInfo: 'iPhone 13 Pro',
     },
   })
   @IsOptional()
@@ -457,4 +461,4 @@ export class SubmissionAnalyticsDto {
 
   @ApiProperty({ description: 'Average completion time in minutes' })
   avgCompletionTime?: number;
-} 
+}

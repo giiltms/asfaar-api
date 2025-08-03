@@ -92,13 +92,16 @@ export const ADMIN_PANEL_ROLES = [
 ];
 
 // Helper function to check if a role has higher or equal access than another
-export const hasRoleAccess = (userRole: Roles, requiredRole: Roles): boolean => {
+export const hasRoleAccess = (
+  userRole: Roles,
+  requiredRole: Roles,
+): boolean => {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 };
 
 // Helper function to get the highest role from a list of roles
 export const getHighestRole = (roles: Roles[]): Roles => {
   return roles.reduce((highest, current) =>
-    ROLE_HIERARCHY[current] > ROLE_HIERARCHY[highest] ? current : highest
+    ROLE_HIERARCHY[current] > ROLE_HIERARCHY[highest] ? current : highest,
   );
-}; 
+};

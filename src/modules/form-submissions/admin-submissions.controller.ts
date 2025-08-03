@@ -42,13 +42,30 @@ export class AdminSubmissionsController {
   // TODO: Add proper role-based authorization
   @ApiOperation({
     summary: 'Get all form submissions',
-    description: 'Get all form submissions with advanced filtering (admin only)',
+    description:
+      'Get all form submissions with advanced filtering (admin only)',
   })
-  @ApiQuery({ name: 'formId', required: false, description: 'Filter by form ID' })
-  @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'formId',
+    required: false,
+    description: 'Filter by form ID',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    description: 'Filter by user ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'search', required: false, description: 'Search term' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: 'Filter from date' })
+  @ApiQuery({
+    name: 'dateFrom',
+    required: false,
+    description: 'Filter from date',
+  })
   @ApiQuery({ name: 'dateTo', required: false, description: 'Filter to date' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
@@ -84,7 +101,8 @@ export class AdminSubmissionsController {
   // TODO: Add proper role-based authorization
   @ApiOperation({
     summary: 'Get submission analytics',
-    description: 'Get comprehensive analytics and statistics for form submissions',
+    description:
+      'Get comprehensive analytics and statistics for form submissions',
   })
   @ApiOkBaseResponse({ dto: SubmissionAnalyticsDto })
   @ApiDefaultResponse({ type: SubmissionAnalyticsDto })
@@ -105,10 +123,15 @@ export class AdminSubmissionsController {
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
-  async getSubmissionById(@Param('id', ParseUUIDPipe) id: string): Promise<FormSubmissionDto> {
+  async getSubmissionById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<FormSubmissionDto> {
     // Note: Admin can view any submission, so we use a special method or modify the service
     // For now, we'll use the user method but this should be enhanced
-    const submission = await this.submissionsService.getSubmissionById('admin', id);
+    const submission = await this.submissionsService.getSubmissionById(
+      'admin',
+      id,
+    );
     return submission;
   }
 
@@ -150,7 +173,9 @@ export class AdminSubmissionsController {
     description: 'Submission deleted successfully',
   })
   @ApiDefaultResponse({})
-  async deleteSubmissionAdmin(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  async deleteSubmissionAdmin(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<void> {
     // This should be a special admin delete method
     // For now, we'll implement it as a direct deletion
     await this.submissionsService.deleteSubmission('admin', id);
@@ -167,8 +192,16 @@ export class AdminSubmissionsController {
     description: 'User ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @ApiQuery({ name: 'formId', required: false, description: 'Filter by form ID' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({
+    name: 'formId',
+    required: false,
+    description: 'Filter by form ID',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiResponse({
@@ -258,28 +291,35 @@ export class AdminSubmissionsController {
       rejected: 0,
     };
 
-    submissions.forEach(submission => {
-      statusCounts[submission.status.toLowerCase() as keyof typeof statusCounts]++;
+    submissions.forEach((submission) => {
+      statusCounts[
+        submission.status.toLowerCase() as keyof typeof statusCounts
+      ]++;
     });
 
-    const completedSubmissions = submissions.filter(s => s.submittedAt);
-    const avgCompletionTime = completedSubmissions.length > 0
-      ? completedSubmissions.reduce((acc, submission) => {
-        if (submission.submittedAt && submission.createdAt) {
-          const timeDiff = new Date(submission.submittedAt).getTime() - new Date(submission.createdAt).getTime();
-          return acc + (timeDiff / 1000 / 60); // Convert to minutes
-        }
-        return acc;
-      }, 0) / completedSubmissions.length
-      : 0;
+    const completedSubmissions = submissions.filter((s) => s.submittedAt);
+    const avgCompletionTime =
+      completedSubmissions.length > 0
+        ? completedSubmissions.reduce((acc, submission) => {
+            if (submission.submittedAt && submission.createdAt) {
+              const timeDiff =
+                new Date(submission.submittedAt).getTime() -
+                new Date(submission.createdAt).getTime();
+              return acc + timeDiff / 1000 / 60; // Convert to minutes
+            }
+            return acc;
+          }, 0) / completedSubmissions.length
+        : 0;
 
-    const completionRate = submissions.length > 0
-      ? (statusCounts.submitted / submissions.length) * 100
-      : 0;
+    const completionRate =
+      submissions.length > 0
+        ? (statusCounts.submitted / submissions.length) * 100
+        : 0;
 
-    const abandonmentRate = submissions.length > 0
-      ? (statusCounts.draft / submissions.length) * 100
-      : 0;
+    const abandonmentRate =
+      submissions.length > 0
+        ? (statusCounts.draft / submissions.length) * 100
+        : 0;
 
     // Get form details
     const form = await this.submissionsService.getPublicForm(formId);
@@ -324,4 +364,4 @@ export class AdminSubmissionsController {
 
     return this.submissionsService.reviewSubmission('admin', id, reviewDto);
   }
-} 
+}

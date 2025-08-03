@@ -15,7 +15,10 @@ import { AuthModule } from '@modules/auth/auth.module';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRATION_TIME', '15m'),
+          expiresIn: configService.get(
+            'JWT_ACCESS_TOKEN_EXPIRATION_TIME',
+            '15m',
+          ),
         },
       }),
       inject: [ConfigService],
@@ -26,4 +29,4 @@ import { AuthModule } from '@modules/auth/auth.module';
   providers: [AddressService],
   exports: [AddressService],
 })
-export class AddressModule {} 
+export class AddressModule {}

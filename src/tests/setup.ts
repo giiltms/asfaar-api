@@ -21,7 +21,8 @@ global.console = {
 
 // Global test utilities
 global.testUtils = {
-  sleep: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
-  randomEmail: () => `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`,
+  sleep: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
+  randomEmail: () =>
+    `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`,
   randomString: (length = 10) => Math.random().toString(36).substr(2, length),
-}; 
+};

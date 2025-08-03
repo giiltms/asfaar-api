@@ -1,5 +1,11 @@
 import { registerAs } from '@nestjs/config';
-import { IsString, IsNumber, IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum MailProvider {
@@ -16,21 +22,21 @@ class MailConfigValidation {
 
   @IsString()
   @IsOptional()
-  MAIL_FROM_NAME: string = 'NestJS Boilerplate';
+  MAIL_FROM_NAME = 'NestJS Boilerplate';
 
   @IsString()
   @IsOptional()
-  MAIL_FROM_EMAIL: string = 'noreply@example.com';
+  MAIL_FROM_EMAIL = 'noreply@example.com';
 
   // SMTP Configuration
   @IsString()
   @IsOptional()
-  SMTP_HOST: string = 'localhost';
+  SMTP_HOST = 'localhost';
 
   @IsNumber()
   @Transform(({ value }) => parseInt(value, 10))
   @IsOptional()
-  SMTP_PORT: number = 587;
+  SMTP_PORT = 587;
 
   @IsString()
   @IsOptional()
@@ -43,7 +49,7 @@ class MailConfigValidation {
   @IsBoolean()
   @Transform(({ value }) => value === 'true')
   @IsOptional()
-  SMTP_SECURE: boolean = false;
+  SMTP_SECURE = false;
 
   // Mailjet Configuration
   @IsString()
@@ -62,7 +68,7 @@ class MailConfigValidation {
   // AWS SES Configuration
   @IsString()
   @IsOptional()
-  AWS_SES_REGION: string = 'us-east-1';
+  AWS_SES_REGION = 'us-east-1';
 
   @IsString()
   @IsOptional()
@@ -76,7 +82,8 @@ class MailConfigValidation {
 export default registerAs('mail', (): MailConfigValidation => {
   const config = new MailConfigValidation();
 
-  config.MAIL_PROVIDER = process.env.MAIL_PROVIDER as MailProvider || MailProvider.SMTP;
+  config.MAIL_PROVIDER =
+    (process.env.MAIL_PROVIDER as MailProvider) || MailProvider.SMTP;
   config.MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'NestJS Boilerplate';
   config.MAIL_FROM_EMAIL = process.env.MAIL_FROM_EMAIL || 'noreply@example.com';
 
@@ -100,4 +107,4 @@ export default registerAs('mail', (): MailConfigValidation => {
   config.AWS_SES_SECRET_ACCESS_KEY = process.env.AWS_SES_SECRET_ACCESS_KEY;
 
   return config;
-}); 
+});

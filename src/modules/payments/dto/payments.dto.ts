@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsEnum, IsEmail, IsBoolean, IsUUID, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsEmail,
+  IsBoolean,
+  IsUUID,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum PaymentStatus {
@@ -44,7 +54,10 @@ export class InitiatePaymentDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 5000, description: 'Amount in kobo/cents (NGN 50.00)' })
+  @ApiProperty({
+    example: 5000,
+    description: 'Amount in kobo/cents (NGN 50.00)',
+  })
   @IsNumber()
   @Min(100) // Minimum 1 NGN
   @Max(10000000) // Maximum 100,000 NGN
@@ -62,21 +75,21 @@ export class InitiatePaymentDto {
 
   @ApiPropertyOptional({
     example: { orderId: '123', customerId: 'user-456' },
-    description: 'Additional metadata for the payment'
+    description: 'Additional metadata for the payment',
   })
   @IsOptional()
   metadata?: Record<string, any>;
 
   @ApiPropertyOptional({
     example: ['card', 'bank_transfer', 'ussd'],
-    type: [String]
+    type: [String],
   })
   @IsOptional()
   paymentMethods?: string[];
 
   @ApiPropertyOptional({
     example: { customerNote: 'Rush order' },
-    description: 'Custom fields for the payment'
+    description: 'Custom fields for the payment',
   })
   @IsOptional()
   customFields?: Record<string, string>;
@@ -150,7 +163,10 @@ export class RefundPaymentDto {
   @IsString()
   transactionReference: string;
 
-  @ApiPropertyOptional({ example: 2500, description: 'Amount to refund (partial refund if less than original)' })
+  @ApiPropertyOptional({
+    example: 2500,
+    description: 'Amount to refund (partial refund if less than original)',
+  })
   @IsNumber()
   @IsOptional()
   @Min(100)
@@ -261,7 +277,10 @@ export class TransferResponseDto {
   @ApiProperty({ example: 10000 })
   amount: number;
 
-  @ApiProperty({ enum: ['success', 'pending', 'failed', 'reversed'], example: 'pending' })
+  @ApiProperty({
+    enum: ['success', 'pending', 'failed', 'reversed'],
+    example: 'pending',
+  })
   status: 'success' | 'pending' | 'failed' | 'reversed';
 
   @ApiPropertyOptional()
@@ -377,4 +396,4 @@ export class WebhookDto {
 
   @ApiPropertyOptional({ example: '2023-12-01T10:30:00Z' })
   timestamp?: string;
-} 
+}

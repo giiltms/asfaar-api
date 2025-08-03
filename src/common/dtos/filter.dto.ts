@@ -77,4 +77,4 @@ export class UserFilterDto extends DateFilterDto {
   })
   @IsOptional()
   isVerified?: boolean;
-} 
+}
