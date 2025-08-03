@@ -6,11 +6,12 @@ describe('UserService', () => {
   let service: UserService;
 
   const mockUserRepository = {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
+    findById: jest.fn(),
+    findOne: jest.fn(),
     create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
+    updateUser: jest.fn(),
+    deleteUser: jest.fn(),
+    findAll: jest.fn(),
     count: jest.fn(),
   };
 
@@ -39,16 +40,48 @@ describe('UserService', () => {
   });
 
   describe('Basic functionality', () => {
-    it('should have findAll method', () => {
-      expect(typeof service.findAll).toBe('function');
+    it('should have getUsers method', () => {
+      expect(typeof service.getUsers).toBe('function');
+    });
+
+    it('should have findById method', () => {
+      expect(typeof service.findById).toBe('function');
     });
 
     it('should have findOne method', () => {
       expect(typeof service.findOne).toBe('function');
     });
 
+    it('should have findByEmail method', () => {
+      expect(typeof service.findByEmail).toBe('function');
+    });
+
+    it('should have createUser method', () => {
+      expect(typeof service.createUser).toBe('function');
+    });
+
     it('should have updateUser method', () => {
       expect(typeof service.updateUser).toBe('function');
+    });
+
+    it('should have deleteUser method', () => {
+      expect(typeof service.deleteUser).toBe('function');
+    });
+
+    it('should have setUserRole method', () => {
+      expect(typeof service.setUserRole).toBe('function');
+    });
+
+    it('should have activateUser method', () => {
+      expect(typeof service.activateUser).toBe('function');
+    });
+
+    it('should have deactivateUser method', () => {
+      expect(typeof service.deactivateUser).toBe('function');
+    });
+
+    it('should have verifyUser method', () => {
+      expect(typeof service.verifyUser).toBe('function');
     });
   });
 }); 
