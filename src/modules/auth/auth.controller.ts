@@ -8,9 +8,12 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import Serialize from '@common/decorators/serialize.decorator';
+import UserEntity from '@modules/user/entities/user.entity';
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
 import { SignUpDTO } from './dto/sign-up.dto';
+import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
 import { SignInDTO } from './dto/sign-in.dto';
 import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
@@ -28,9 +31,17 @@ export class AuthController {
   ) {}
 
   @Post('sign-up')
+  @Serialize(UserEntity)
   @ApiOperation({ summary: 'User registration' })
   async signUp(@Body() signUpDTO: SignUpDTO) {
     return this.authService.signUp(signUpDTO);
+  }
+
+  @Post('sign-up-applicant')
+  @Serialize(UserEntity)
+  @ApiOperation({ summary: 'Applicant registration' })
+  async signUpApplicant(@Body() signUpDto: ApplicantSignUpDto) {
+    return this.authService.signUpApplicant(signUpDto);
   }
 
   @Post('sign-in')

@@ -6,6 +6,7 @@ import {
 import { UserRepository } from '@modules/user/user.repository';
 import { User } from '@prisma/client';
 import { SignUpDTO } from './dto/sign-up.dto';
+import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
 import { SignUpTrainerDTO } from './dto/sign-up-trainer.dto';
 import { SignUpRegionalDTO } from './dto/sign-up-regional.dto';
 import { SignInDTO } from './dto/sign-in.dto';
@@ -127,6 +128,38 @@ export class AuthService {
     };
 
     const user = await this.userRepository.create(userData);
+    return user;
+  }
+
+  async signUpApplicant(signUpDto: ApplicantSignUpDto): Promise<User> {
+    const existingUser = await this.getUserByEmail(signUpDto.email);
+    if (existingUser) {
+      throw new ConflictException(EMAIL_CONFLICT);
+    }
+
+    const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
+
+    const userData = {
+      email: signUpDto.email,
+      firstName: signUpDto.firstName,
+      lastName: signUpDto.lastName,
+      password: hashedPassword,
+      roles: [Roles.APPLICANT],
+      isVerified: false,
+      isActive: true,
+    };
+
+    const user = await this.userRepository.create(userData);
+
+    // Send verification email (optional - comment out if mail service not ready)
+    // try {
+    //   await this.mailService.sendRegisterationConfirmation(user.email, {
+    //     name: `${user.firstName} ${user.lastName}`,
+    //   });
+    // } catch (error) {
+    //   console.log('Error sending email:', error.message);
+    // }
+
     return user;
   }
 
