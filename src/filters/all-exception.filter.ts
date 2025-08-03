@@ -19,7 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Ensure errorMessage is always a string
     let errorMessage = exception?.response?.message || INTERNAL_SERVER_ERROR;
-    
+
     // Handle cases where message is an array (common with validation errors)
     if (Array.isArray(errorMessage)) {
       errorMessage = errorMessage.join(', ');
@@ -29,7 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Only split if errorMessage contains a colon
     const hasCodeFormat = typeof errorMessage === 'string' && errorMessage.includes(':');
-    
+
     if (!hasCodeFormat) {
       const [serverErrorCode] = INTERNAL_SERVER_ERROR.split(':');
 

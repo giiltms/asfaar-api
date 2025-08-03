@@ -73,16 +73,16 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
         }),
     },
 
-    // Specific validation error filter (handles ValidationPipe BadRequestException)
-    {
-      provide: APP_FILTER,
-      useClass: BadRequestExceptionFilter,
-    },
-
-    // Global exception filter (handles all other exceptions)
+    // Global exception filter (handles all other exceptions) - register FIRST for lower priority
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+
+    // Specific validation error filter (handles ValidationPipe BadRequestException) - register LAST for higher priority
+    {
+      provide: APP_FILTER,
+      useClass: BadRequestExceptionFilter,
     },
 
     // Global response transformation interceptor
