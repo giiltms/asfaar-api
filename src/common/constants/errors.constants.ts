@@ -131,7 +131,8 @@ export const CONFLICT = '409000: Conflict';
 export const USER_CONFLICT =
   '409001: User with this email or phone already exists';
 export const EMAIL_CONFLICT = '409002: User with this email already exists';
-export const PHONE_CONFLICT = '409003: User with this phone number already exists';
+export const PHONE_CONFLICT =
+  '409003: User with this phone number already exists';
 export const PHONE_VERIFIED_CONFLICT = '409004: This phone is already verified';
 export const BILLING_ACCOUNT_CREATED_CONFLICT =
   '409005: Billing account is already created';

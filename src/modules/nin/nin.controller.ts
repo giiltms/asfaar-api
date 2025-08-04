@@ -14,15 +14,15 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiParam, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
   ApiQuery,
   ApiBearerAuth,
   ApiSecurity,
-  ApiHeader 
+  ApiHeader,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -125,14 +125,13 @@ export class NinController {
     return await this.ninService.getNinVerification(getNinDto, req.user);
   }
 
-
-
   @Put(':nin')
   @RequirePermissions(NIN_PERMISSIONS.MANAGE_NIN)
   @CheckOwnership()
   @ApiOperation({
     summary: 'Update NIN verification data',
-    description: 'Update verification data for a specific NIN (Admin/Moderator only)',
+    description:
+      'Update verification data for a specific NIN (Admin/Moderator only)',
   })
   @ApiParam({
     name: 'nin',
@@ -157,7 +156,11 @@ export class NinController {
     @Body() updateData: any, // You can create a specific UpdateNinDto
     @Req() req: AuthenticatedRequest,
   ): Promise<NinVerificationResponseDto> {
-    return await this.ninService.updateNinVerification(nin, updateData, req.user);
+    return await this.ninService.updateNinVerification(
+      nin,
+      updateData,
+      req.user,
+    );
   }
 
   @Delete(':nin')
@@ -192,7 +195,6 @@ export class NinController {
     return await this.ninService.deleteNinVerification(nin, req.user);
   }
 
-
   @Post('revalidate/:nin')
   @RequirePermissions(NIN_PERMISSIONS.FORCE_VERIFICATION)
   @ApiOperation({
@@ -224,12 +226,12 @@ export class NinController {
     return await this.ninService.verifyNin(verifyNinDto, context);
   }
 
-
   @Post('test/verify')
   @RequirePermissions(NIN_PERMISSIONS.MANAGE_NIN)
   @ApiOperation({
     summary: 'Test NIN verification',
-    description: 'Test NIN verification with mock data (Development/Testing only)',
+    description:
+      'Test NIN verification with mock data (Development/Testing only)',
   })
   @ApiResponse({
     status: 200,
@@ -240,10 +242,13 @@ export class NinController {
     @Req() req: AuthenticatedRequest,
   ) {
     // This endpoint would only be available in development/testing environments
-    const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-    
+    const isDevelopment =
+      process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+
     if (!isDevelopment) {
-      throw new Error('Test endpoint only available in development/test environments');
+      throw new Error(
+        'Test endpoint only available in development/test environments',
+      );
     }
 
     const context = {
@@ -254,7 +259,7 @@ export class NinController {
 
     return await this.ninService.verifyNin(
       { nin: testData.nin, forceVerification: true },
-      context
+      context,
     );
   }
 }

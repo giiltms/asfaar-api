@@ -1,8 +1,8 @@
 import { SetMetadata } from '@nestjs/common';
-import { 
-  CanActivate, 
-  ExecutionContext, 
-  Injectable, 
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -15,19 +15,20 @@ export const NIN_PERMISSIONS = {
   VERIFY_NIN: 'nin:verify',
   VIEW_NIN: 'nin:view',
   VIEW_OWN_NIN: 'nin:view:own',
-  
+
   // Admin permissions
   VIEW_ALL_NIN: 'nin:view:all',
   DELETE_NIN: 'nin:delete',
   MANAGE_NIN: 'nin:manage',
-  
+
   // System permissions
   FORCE_VERIFICATION: 'nin:force-verify',
   VIEW_SYSTEM_LOGS: 'nin:logs:view',
   EXPORT_DATA: 'nin:export',
 } as const;
 
-export type NinPermission = typeof NIN_PERMISSIONS[keyof typeof NIN_PERMISSIONS];
+export type NinPermission =
+  (typeof NIN_PERMISSIONS)[keyof typeof NIN_PERMISSIONS];
 
 // Role-based permissions mapping
 export const ROLE_PERMISSIONS = {
@@ -49,10 +50,7 @@ export const ROLE_PERMISSIONS = {
     NIN_PERMISSIONS.MANAGE_NIN,
     NIN_PERMISSIONS.VIEW_SYSTEM_LOGS,
   ],
-  user: [
-    NIN_PERMISSIONS.VERIFY_NIN,
-    NIN_PERMISSIONS.VIEW_OWN_NIN,
-  ],
+  user: [NIN_PERMISSIONS.VERIFY_NIN, NIN_PERMISSIONS.VIEW_OWN_NIN],
   guest: [], // No permissions for guests
 } as const;
 
@@ -84,10 +82,9 @@ export class NinPermissionsGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredPermissions = this.reflector.getAllAndOverride<NinPermission[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      NinPermission[]
+    >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     // If no permissions are required, allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
@@ -108,20 +105,21 @@ export class NinPermissionsGuard implements CanActivate {
     }
 
     // Get user permissions (from user object or derive from role)
-    const userPermissions = user.permissions || this.getPermissionsFromRole(user.role);
+    const userPermissions =
+      user.permissions || this.getPermissionsFromRole(user.role);
 
     // Check if user has all required permissions
-    const hasAllPermissions = requiredPermissions.every(permission =>
-      userPermissions.includes(permission)
+    const hasAllPermissions = requiredPermissions.every((permission) =>
+      userPermissions.includes(permission),
     );
 
     if (!hasAllPermissions) {
       const missingPermissions = requiredPermissions.filter(
-        permission => !userPermissions.includes(permission)
+        (permission) => !userPermissions.includes(permission),
       );
-      
+
       throw new ForbiddenException(
-        `Insufficient permissions. Missing: ${missingPermissions.join(', ')}`
+        `Insufficient permissions. Missing: ${missingPermissions.join(', ')}`,
       );
     }
 
@@ -129,7 +127,7 @@ export class NinPermissionsGuard implements CanActivate {
   }
 
   private getPermissionsFromRole(role: UserRole): NinPermission[] {
-    return [...ROLE_PERMISSIONS[role] || []];
+    return [...(ROLE_PERMISSIONS[role] || [])];
   }
 }
 
@@ -151,7 +149,7 @@ export class NinOwnershipGuard implements CanActivate {
 
     // For regular users, check ownership
     const resourceUserId = request.params?.userId || request.body?.userId;
-    
+
     if (resourceUserId && resourceUserId !== user.id) {
       throw new ForbiddenException('You can only access your own resources');
     }
@@ -163,17 +161,16 @@ export class NinOwnershipGuard implements CanActivate {
 // Combined guard that checks both authentication and permissions
 @Injectable()
 export class NinAuthGuard implements CanActivate {
-
   constructor(
     private permissionsGuard: NinPermissionsGuard,
     private ownershipGuard: NinOwnershipGuard,
-    private reflector: Reflector
+    private reflector: Reflector,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // First check permissions
     const hasPermissions = this.permissionsGuard.canActivate(context);
-    
+
     if (!hasPermissions) {
       return false;
     }
@@ -197,26 +194,45 @@ export const CheckOwnership = () => SetMetadata('checkOwnership', true);
 
 // Utility functions for permission checking
 export class NinPermissionService {
-  static hasPermission(user: AuthenticatedUser, permission: NinPermission): boolean {
-    const userPermissions = user.permissions || this.getRolePermissions(user.role);
+  static hasPermission(
+    user: AuthenticatedUser,
+    permission: NinPermission,
+  ): boolean {
+    const userPermissions =
+      user.permissions || this.getRolePermissions(user.role);
     return userPermissions.includes(permission);
   }
 
-  static hasAnyPermission(user: AuthenticatedUser, permissions: NinPermission[]): boolean {
-    const userPermissions = user.permissions || this.getRolePermissions(user.role);
-    return permissions.some(permission => userPermissions.includes(permission));
+  static hasAnyPermission(
+    user: AuthenticatedUser,
+    permissions: NinPermission[],
+  ): boolean {
+    const userPermissions =
+      user.permissions || this.getRolePermissions(user.role);
+    return permissions.some((permission) =>
+      userPermissions.includes(permission),
+    );
   }
 
-  static hasAllPermissions(user: AuthenticatedUser, permissions: NinPermission[]): boolean {
-    const userPermissions = user.permissions || this.getRolePermissions(user.role);
-    return permissions.every(permission => userPermissions.includes(permission));
+  static hasAllPermissions(
+    user: AuthenticatedUser,
+    permissions: NinPermission[],
+  ): boolean {
+    const userPermissions =
+      user.permissions || this.getRolePermissions(user.role);
+    return permissions.every((permission) =>
+      userPermissions.includes(permission),
+    );
   }
 
   static getRolePermissions(role: UserRole): NinPermission[] {
-    return [...ROLE_PERMISSIONS[role] || []];
+    return [...(ROLE_PERMISSIONS[role] || [])];
   }
 
-  static canAccessNinData(user: AuthenticatedUser, ninUserId?: string): boolean {
+  static canAccessNinData(
+    user: AuthenticatedUser,
+    ninUserId?: string,
+  ): boolean {
     // Admin and moderator can access all NIN data
     if (['admin', 'moderator'].includes(user.role)) {
       return true;
@@ -231,9 +247,9 @@ export class NinPermissionService {
   }
 
   static canPerformAction(
-    user: AuthenticatedUser, 
-    action: NinPermission, 
-    resourceUserId?: string
+    user: AuthenticatedUser,
+    action: NinPermission,
+    resourceUserId?: string,
   ): boolean {
     // Check basic permission
     if (!this.hasPermission(user, action)) {
@@ -251,15 +267,22 @@ export class NinPermissionService {
 
 // Permission validation decorator for methods
 export function ValidateNinPermission(permission: NinPermission) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const method = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-      const request = args.find(arg => arg && arg.user);
-      
+      const request = args.find((arg) => arg && arg.user);
+
       if (request && request.user) {
-        const hasPermission = NinPermissionService.hasPermission(request.user, permission);
-        
+        const hasPermission = NinPermissionService.hasPermission(
+          request.user,
+          permission,
+        );
+
         if (!hasPermission) {
           throw new ForbiddenException(`Permission required: ${permission}`);
         }

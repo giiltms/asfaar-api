@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, Length, Matches, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Length,
+  Matches,
+  IsOptional,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -190,7 +197,6 @@ export class NinVerificationDataDto {
   @ApiProperty({ description: 'Verified phone number' })
   verifiedPhoneNumber: string;
 }
-
 
 export class NinVerificationResponseDto {
   @ApiProperty({ description: 'Whether the verification was successful' })

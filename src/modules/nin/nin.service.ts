@@ -1,33 +1,28 @@
-import { 
-  Injectable, 
-  Logger, 
-  NotFoundException, 
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
   ConflictException,
   BadRequestException,
   HttpException,
-  HttpStatus 
+  HttpStatus,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
-import { 
-  YouVerifyService, 
-  YouVerifyVerificationData, 
-  YouVerifyResponse 
+import { PrismaService } from '@providers/prisma/prisma.service';
+import {
+  YouVerifyService,
+  YouVerifyVerificationData,
+  YouVerifyResponse,
 } from '@providers/youverify/youverify.service';
 
-import { 
-  NinVerification, 
-  VerificationStatus, 
-  VerificationMethod 
-} from './entities/nin.entity';
-import { 
-  VerifyNinDto, 
+import {
+  VerifyNinDto,
   NinVerificationResponseDto,
   GetNinVerificationDto,
-  NinVerificationHistoryDto 
+  NinVerificationHistoryDto,
 } from './dtos/nin.dto';
 import { AuthenticatedUser } from './nin.permissions';
 import { NinRepository } from './nin.repository';
+import { VerificationStatus, VerificationMethod, NinVerification, Gender } from '@prisma/client';
 
 export interface VerificationContext {
   userId?: string;
@@ -44,56 +39,90 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
+// Utility functions for NIN verification
+export class NinVerificationHelper {
+  static isVerified(verification: NinVerification): boolean {
+    return verification.verificationStatus === VerificationStatus.VERIFIED;
+  }
+
+  static isExpired(verification: NinVerification): boolean {
+    if (!verification.verificationDate) return false;
+    // Verification expires after 1 year
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    return verification.verificationDate < oneYearAgo;
+  }
+
+  static getAge(verification: NinVerification): number | null {
+    if (!verification.dateOfBirth) return null;
+    const birthDate = new Date(verification.dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
+  }
+
+  static normalizeNin(nin: string): string {
+    return nin.replace(/\D/g, '');
+  }
+}
+
 @Injectable()
 export class NinService {
   private readonly logger = new Logger(NinService.name);
 
   constructor(
-     private readonly ninRepository: NinRepository,
+    private readonly ninRepository: NinRepository,
     private readonly youVerifyService: YouVerifyService,
   ) {}
 
   async verifyNin(
-    verifyNinDto: VerifyNinDto, 
-    context: VerificationContext = {}
+    verifyNinDto: VerifyNinDto,
+    context: VerificationContext = {},
   ): Promise<NinVerificationResponseDto> {
-
     const { nin, forceVerification } = verifyNinDto;
     const { userId, ipAddress, userAgent } = context;
 
     this.logger.log(`Starting NIN verification for: ${nin}`);
 
     try {
-     
-
       // Check if NIN already exists and is verified
       const existingVerification = await this.findByNin(nin);
-      
-      if (existingVerification && existingVerification.isVerified && !forceVerification) {
+
+      if (
+        existingVerification &&
+        NinVerificationHelper.isVerified(existingVerification) &&
+        !forceVerification
+      ) {
         this.logger.log(`NIN ${nin} already verified, returning existing data`);
-        
+
         // Update last verification attempt
-        await this.ninRepository.update(nin,
-          { 
-            lastVerificationAttempt: new Date(),
-            verificationAttempts: existingVerification.verificationAttempts + 1,
-          }
-        );
+        await this.ninRepository.update(nin, {
+          lastVerificationAttempt: new Date(),
+          verificationAttempts: existingVerification.verificationAttempts + 1,
+        });
 
         return this.mapToResponseDto(existingVerification);
       }
 
       // Perform verification using YouVerify service
       const youVerifyResponse = await this.youVerifyService.verifyNin({ nin });
-      console.log("nin.service->data: ",youVerifyResponse)
-      
+      console.log('nin.service->data: ', youVerifyResponse);
+
       if (!youVerifyResponse.success) {
-        
         this.logger.error(`NIN verification failed for ${nin}:`);
-        
+
         throw new HttpException(
           'NIN verification failed. Please try again later.',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -103,17 +132,18 @@ export class NinService {
         youVerifyResponse.metadata,
         userId,
         ipAddress,
-        userAgent
+        userAgent,
       );
 
       this.logger.log(`NIN verification completed successfully for: ${nin}`);
-      
-      return this.mapToResponseDto(savedVerification, youVerifyResponse.metadata);
 
+      return this.mapToResponseDto(
+        savedVerification,
+        youVerifyResponse.metadata,
+      );
     } catch (error) {
       this.logger.error(`NIN verification failed for ${nin}:`, error.message);
-      
-      
+
       // Re-throw the error to be handled by the controller
       throw error;
     }
@@ -121,78 +151,91 @@ export class NinService {
 
   async getNinVerification(
     getNinDto: GetNinVerificationDto,
-    user: AuthenticatedUser
+    user: AuthenticatedUser,
   ): Promise<NinVerificationResponseDto> {
     const { nin } = getNinDto;
-    
+
     this.logger.log(`Retrieving NIN verification for: ${nin}`);
 
     const verification = await this.findByNin(nin);
-    
+
     if (!verification) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     // Check if user can access this NIN data
-    if (verification.userId && verification.userId !== user.id && !['admin', 'moderator'].includes(user.role)) {
+    if (
+      verification.userId &&
+      verification.userId !== user.id &&
+      !['admin', 'moderator'].includes(user.role)
+    ) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     return this.mapToResponseDto(verification);
   }
 
-
-
-  async deleteNinVerification(nin: string, user: AuthenticatedUser): Promise<void> {
+  async deleteNinVerification(
+    nin: string,
+    user: AuthenticatedUser,
+  ): Promise<void> {
     this.logger.log(`Deleting NIN verification for: ${nin}`);
 
     const verification = await this.findByNin(nin);
-    
+
     if (!verification) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     // Check permissions
-    if (verification.userId && verification.userId !== user.id && user.role !== 'admin') {
+    if (
+      verification.userId &&
+      verification.userId !== user.id &&
+      user.role !== 'admin'
+    ) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     await this.ninRepository.delete(nin);
-    
+
     this.logger.log(`NIN verification deleted successfully for: ${nin}`);
   }
 
   async updateNinVerification(
     nin: string,
     updateData: Partial<YouVerifyVerificationData>,
-    user: AuthenticatedUser
+    user: AuthenticatedUser,
   ): Promise<NinVerificationResponseDto> {
     this.logger.log(`Updating NIN verification for: ${nin}`);
 
     const verification = await this.findByNin(nin);
-    
+
     if (!verification) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     // Check permissions
-    if (verification.userId && verification.userId !== user.id && !['admin', 'moderator'].includes(user.role)) {
+    if (
+      verification.userId &&
+      verification.userId !== user.id &&
+      !['admin', 'moderator'].includes(user.role)
+    ) {
       throw new NotFoundException(`NIN verification not found: ${nin}`);
     }
 
     const previousData = { ...verification };
-    
-    // Update verification data
-    const updatedVerification = await this.updateVerificationData(verification, updateData);
 
-   
+    // Update verification data
+    const updatedVerification = await this.updateVerificationData(
+      verification,
+      updateData,
+    );
 
     return this.mapToResponseDto(updatedVerification);
   }
 
-
   // Private helper methods
-  private async findByNin(nin: string): Promise<any| null> {
+  private async findByNin(nin: string): Promise<any | null> {
     return await this.ninRepository.findByNin(nin);
   }
 
@@ -201,7 +244,7 @@ export class NinService {
     metadata: any,
     userId?: string,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ): Promise<any> {
     const nin = verificationData.idNumber;
     const existingVerification = await this.findByNin(nin);
@@ -211,9 +254,11 @@ export class NinService {
       firstName: verificationData.firstName,
       middleName: verificationData.middleName,
       lastName: verificationData.lastName,
-      fullName: `${verificationData.firstName ?? ''} ${verificationData.middleName ?? ''} ${verificationData.lastName ?? ''}`.trim(),
-      dateOfBirth: verificationData.dateOfBirth,
-      gender: verificationData.gender?.toLowerCase() === 'male' ? 'MALE' : 'FEMALE',
+      fullName: `${verificationData.firstName ?? ''} ${verificationData.middleName ?? ''
+        } ${verificationData.lastName ?? ''}`.trim(),
+      dateOfBirth: verificationData.dateOfBirth ? new Date(verificationData.dateOfBirth) : null,
+      gender:
+        verificationData.gender?.toLowerCase() === 'male' ? Gender.MALE : Gender.FEMALE,
       phoneNumber: verificationData.mobile || null,
       verifiedPhoneNumber: null, // YouVerify doesn't provide this, set to null or implement later
       photo: verificationData.image || null,
@@ -238,21 +283,22 @@ export class NinService {
       verificationDate: new Date(),
       rawData: verificationData,
       userId,
-      verificationAttempts: existingVerification ? existingVerification.verificationAttempts + 1 : 1,
+      verificationAttempts: existingVerification
+        ? existingVerification.verificationAttempts + 1
+        : 1,
     };
 
     if (existingVerification) {
       await this.ninRepository.update(nin, verificationEntity);
-      return await this.findByNin(nin) as NinVerification;
+      return (await this.findByNin(nin)) as NinVerification;
     } else {
       return await this.ninRepository.create(verificationEntity);
     }
   }
 
-
   private async updateVerificationData(
     verification: NinVerification,
-    updateData: Partial<YouVerifyVerificationData>
+    updateData: Partial<YouVerifyVerificationData>,
   ): Promise<any> {
     const updateEntity: Partial<NinVerification> = {};
 
@@ -260,23 +306,31 @@ export class NinService {
     if (updateData.middleName) updateEntity.middleName = updateData.middleName;
     if (updateData.lastName) updateEntity.lastName = updateData.lastName;
     if (updateData.fullName) updateEntity.fullName = updateData.fullName;
-    if (updateData.dateOfBirth) updateEntity.dateOfBirth = updateData.dateOfBirth;
+    if (updateData.dateOfBirth)
+      updateEntity.dateOfBirth = new Date(updateData.dateOfBirth);
     if (updateData.gender) updateEntity.gender = updateData.gender as any;
-    if (updateData.phoneNumber) updateEntity.phoneNumber = updateData.phoneNumber;
+    if (updateData.phoneNumber)
+      updateEntity.phoneNumber = updateData.phoneNumber;
     if (updateData.photo) updateEntity.photo = updateData.photo;
 
     if (updateData.address) {
-      if (updateData.address.line1) updateEntity.addressLine1 = updateData.address.line1;
-      if (updateData.address.line2) updateEntity.addressLine2 = updateData.address.line2;
+      if (updateData.address.line1)
+        updateEntity.addressLine1 = updateData.address.line1;
+      if (updateData.address.line2)
+        updateEntity.addressLine2 = updateData.address.line2;
       if (updateData.address.city) updateEntity.city = updateData.address.city;
-      if (updateData.address.state) updateEntity.state = updateData.address.state;
+      if (updateData.address.state)
+        updateEntity.state = updateData.address.state;
       if (updateData.address.lga) updateEntity.lga = updateData.address.lga;
-      if (updateData.address.postalCode) updateEntity.postalCode = updateData.address.postalCode;
+      if (updateData.address.postalCode)
+        updateEntity.postalCode = updateData.address.postalCode;
     }
 
     if (updateData.birthPlace) {
-      if (updateData.birthPlace.state) updateEntity.birthState = updateData.birthPlace.state;
-      if (updateData.birthPlace.lga) updateEntity.birthLga = updateData.birthPlace.lga;
+      if (updateData.birthPlace.state)
+        updateEntity.birthState = updateData.birthPlace.state;
+      if (updateData.birthPlace.lga)
+        updateEntity.birthLga = updateData.birthPlace.lga;
     }
 
     await this.ninRepository.update(verification.nin, updateEntity);
@@ -300,7 +354,7 @@ export class NinService {
 
   private mapToResponseDto(
     verification: NinVerification,
-    metadata?: any
+    metadata?: any,
   ): NinVerificationResponseDto {
     return {
       success: true,
@@ -310,10 +364,10 @@ export class NinService {
         middleName: verification.middleName || '',
         lastName: verification.lastName || '',
         fullName: verification.fullName || '',
-        dateOfBirth: verification.dateOfBirth || '',
-        gender: verification.gender || 'male',
+        dateOfBirth: verification.dateOfBirth ? verification.dateOfBirth.toISOString().split('T')[0] : '',
+        gender: verification.gender || Gender.MALE,
         phoneNumber: verification.phoneNumber || '',
-        verified: verification.isVerified,
+        verified: NinVerificationHelper.isVerified(verification),
         verificationId: verification.verificationId || '',
         verificationStatus: verification.verificationStatus,
         verificationDate: verification.verificationDate?.toISOString() || '',

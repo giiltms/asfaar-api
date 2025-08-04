@@ -37,12 +37,9 @@ export interface YouVerifyVerificationData {
   rawData?: any;
 }
 
-
 export interface YouVerifyRequest {
   nin: string;
 }
-
-
 
 export interface YouVerifyResponse {
   success: boolean;
@@ -63,8 +60,9 @@ export class YouVerifyService {
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {
-
-    this.youverifyEndpoint = configService.get<string>('YOUVERIFY_ENDPOINT') || 'https://api.youverify.co/v2/api/identity/ng/nin'
+    this.youverifyEndpoint =
+      configService.get<string>('YOUVERIFY_ENDPOINT') ||
+      'https://api.youverify.co/v2/api/identity/ng/nin';
 
     this.youverifyApiKey = configService.get<string>('YOUVERIFY_TOKEN');
 
@@ -79,13 +77,15 @@ export class YouVerifyService {
     const { nin } = request;
 
     if (!nin || !/^\d{11}$/.test(nin)) {
-      throw new HttpException({
-        success: false,
-        error: 'NIN must be exactly 11 digits',
-        details: { type: 'validation_error' }
-      }, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        {
+          success: false,
+          error: 'NIN must be exactly 11 digits',
+          details: { type: 'validation_error' },
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
-
 
     try {
       const response = await firstValueFrom(
@@ -100,13 +100,13 @@ export class YouVerifyService {
               token: this.youverifyApiKey,
               'Content-Type': 'application/json',
             },
-          }
-        )
+          },
+        ),
       );
 
       const data = response.data;
 
-      console.log("youverify->data: ", data)
+      console.log('youverify->data: ', data);
 
       if (data.success) {
         return {
@@ -121,19 +121,22 @@ export class YouVerifyService {
         };
       }
 
-      this.logger.error(`❌ YouVerify NIN verification failed: ${data?.message}`);
+      this.logger.error(
+        `❌ YouVerify NIN verification failed: ${data?.message}`,
+      );
 
       return {
         success: false,
         error: data?.message || 'Verification failed',
       };
-
     } catch (err) {
-    
-        console.log(err)
+      console.log(err);
       const axiosError = err as AxiosError;
       //@ts-ignore
-      const message = axiosError?.response?.data?.message || axiosError?.message || 'Unknown error during NIN verification';
+      const message =
+        (axiosError?.response?.data as any)?.message ||
+        axiosError?.message ||
+        'Unknown error during NIN verification';
 
       this.logger.error(`❌ YouVerify NIN verification failed: ${message}`);
 
@@ -144,4 +147,3 @@ export class YouVerifyService {
     }
   }
 }
-

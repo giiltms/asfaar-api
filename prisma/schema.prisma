@@ -124,11 +124,12 @@ model User {
   addresses     Address[] // User addresses relation
 
   // Payment relations
-  paymentMethods PaymentMethod[]
-  transactions   Transaction[]
-  subscriptions  Subscription[]
-  wallets        Wallet[]
-  FormSubmission FormSubmission[]
+  paymentMethods   PaymentMethod[]
+  transactions     Transaction[]
+  subscriptions    Subscription[]
+  wallets          Wallet[]
+  FormSubmission   FormSubmission[]
+  ninVerifications NinVerification[]
 
   @@map("users")
 }
@@ -703,41 +704,110 @@ model Address {
   @@map("addresses")
 }
 
-
 model TempNINData {
-  id                     String   @id @default(cuid())
-  nin                    String   @unique
-  firstName              String
-  middleName             String?
-  lastName               String
-  fullName               String?
-  dateOfBirth            String
-  gender                 String
-  phoneNumber            String?
-  verifiedPhoneNumber    String?
-  photo                  String?
-  addressLine1           String
-  addressLine2           String?
-  city                   String?
-  state                  String
-  lga                    String
-  postalCode             String?
-  country                String   @default("Nigeria")
-  birthState             String?
-  birthLga               String?
-  trackingId             String?
-  verified               Boolean  @default(false)
-  verificationId         String?
-  verificationStatus     String?
-  verificationMethod     String?
-  verificationDate       DateTime?
-  verificationAttempts   Int      @default(1)
+  id                      String    @id @default(cuid())
+  nin                     String    @unique
+  firstName               String
+  middleName              String?
+  lastName                String
+  fullName                String?
+  dateOfBirth             String
+  gender                  String
+  phoneNumber             String?
+  verifiedPhoneNumber     String?
+  photo                   String?
+  addressLine1            String
+  addressLine2            String?
+  city                    String?
+  state                   String
+  lga                     String
+  postalCode              String?
+  country                 String    @default("Nigeria")
+  birthState              String?
+  birthLga                String?
+  trackingId              String?
+  verified                Boolean   @default(false)
+  verificationId          String?
+  verificationStatus      String?
+  verificationMethod      String?
+  verificationDate        DateTime?
+  verificationAttempts    Int       @default(1)
   lastVerificationAttempt DateTime?
-  rawData                Json?
- 
-  userId                 String?
-  
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  rawData                 Json?
+
+  userId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+enum VerificationMethod {
+  YOUVERIFY
+  TEST_MODE
+  MANUAL
+  API
+}
+
+model NinVerification {
+  id                  String    @id @default(uuid())
+  nin                 String    @unique @db.VarChar(11)
+  firstName           String?   @db.VarChar(100)
+  middleName          String?   @db.VarChar(100)
+  lastName            String?   @db.VarChar(100)
+  fullName            String?   @db.VarChar(300)
+  dateOfBirth         DateTime?
+  gender              Gender?
+  phoneNumber         String?   @db.VarChar(20)
+  verifiedPhoneNumber String?   @db.VarChar(20)
+  photo               String?   @db.Text
+
+  // Address fields
+  addressLine1 String? @db.VarChar(255)
+  addressLine2 String? @db.VarChar(255)
+  city         String? @db.VarChar(100)
+  state        String? @db.VarChar(100)
+  lga          String? @db.VarChar(100)
+  postalCode   String? @db.VarChar(20)
+  country      String  @default("Nigeria") @db.VarChar(100)
+
+  // Birth place fields
+  birthState String? @db.VarChar(100)
+  birthLga   String? @db.VarChar(100)
+
+  // Verification fields
+  verificationStatus      VerificationStatus @default(PENDING)
+  verificationMethod      VerificationMethod @default(YOUVERIFY)
+  verificationId          String?            @db.VarChar(255)
+  trackingId              String?            @db.VarChar(255)
+  verificationDate        DateTime?
+  rawData                 Json?
+  metadata                Json?
+  errorMessage            String?            @db.Text
+  verificationAttempts    Int                @default(1)
+  lastVerificationAttempt DateTime?
+
+  // User who initiated verification (optional)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  // Audit trail
+  ipAddress String? @db.VarChar(45)
+  userAgent String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nin])
+  @@index([verificationStatus])
+  @@index([verificationMethod])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("nin_verifications")
+}

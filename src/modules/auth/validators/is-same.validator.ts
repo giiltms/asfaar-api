@@ -20,7 +20,10 @@ export class IsSameConstraint implements ValidatorConstraintInterface {
   }
 }
 
-export function IsSame(property: string, validationOptions?: ValidationOptions) {
+export function IsSame(
+  property: string,
+  validationOptions?: ValidationOptions,
+) {
   return function (object: Object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
@@ -30,4 +33,4 @@ export function IsSame(property: string, validationOptions?: ValidationOptions) 
       validator: IsSameConstraint,
     });
   };
-} 
+}

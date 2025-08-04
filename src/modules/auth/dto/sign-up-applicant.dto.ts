@@ -43,7 +43,8 @@ export class ApplicantSignUpDto {
   @MinLength(8)
   @MaxLength(128)
   @Matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
   })
   readonly password!: string;
 
@@ -56,4 +57,4 @@ export class ApplicantSignUpDto {
     message: 'Confirm password must match password',
   })
   readonly confirmPassword!: string;
-} 
+}
