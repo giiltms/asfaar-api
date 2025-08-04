@@ -15,11 +15,11 @@ import { PasswordResetService } from './password-reset.service';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
 import { SignInDTO } from './dto/sign-in.dto';
+import { VerifyNinDto, ConfirmNinDto } from './dto/verify-nin.dto';
 import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { AuthGuard } from './guard/auth.guard';
-
-import { AuditService } from '@modules/audit/audit.service';
+import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -27,7 +27,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordResetService: PasswordResetService,
-    private readonly auditService: AuditService,
+    private readonly ninVerificationService: NinVerificationService,
   ) {}
 
   @Post('sign-up')
@@ -83,5 +83,21 @@ export class AuthController {
     return {
       message: 'Password changed successfully',
     };
+  }
+
+  @Post('verify-nin')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify NIN with date of birth' })
+  async verifyNin(@Body() verifyNinDto: VerifyNinDto) {
+    return this.ninVerificationService.verifyNin(verifyNinDto);
+  }
+
+  @Post('confirm-nin')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm NIN verification and link to user' })
+  async confirmNin(@Body() confirmNinDto: ConfirmNinDto, @Request() req: any) {
+    return this.ninVerificationService.confirmNin(confirmNinDto, req.user.id);
   }
 }
