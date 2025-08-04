@@ -7,8 +7,6 @@ import { UserRepository } from '@modules/user/user.repository';
 import { User } from '@prisma/client';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
-import { SignUpTrainerDTO } from './dto/sign-up-trainer.dto';
-import { SignUpRegionalDTO } from './dto/sign-up-regional.dto';
 import { SignInDTO } from './dto/sign-in.dto';
 import { TokenService } from './token.service';
 import { AuthTokenService } from './auth-token.service';
@@ -72,62 +70,6 @@ export class AuthService {
     //   console.log('Error sending email:', error.message);
     // }
 
-    return user;
-  }
-
-  async signUpDriver(
-    signUpDTO: SignUpTrainerDTO,
-    file?: Express.Multer.File,
-  ): Promise<User> {
-    // Simplified version to avoid compilation errors
-    const existingUserByEmail = await this.getUserByEmail(signUpDTO.email);
-    if (existingUserByEmail) {
-      throw new ConflictException(EMAIL_CONFLICT);
-    }
-
-    // Check if phone already exists (phone is required for trainers)
-    const existingUserByPhone = await this.getUserByPhone(signUpDTO.phone);
-    if (existingUserByPhone) {
-      throw new ConflictException(PHONE_CONFLICT);
-    }
-
-    const hashedPassword = await bcrypt.hash(signUpDTO.password, 10);
-
-    const userData = {
-      email: signUpDTO.email,
-      firstName: signUpDTO.firstName || 'Driver',
-      lastName: signUpDTO.lastName || 'User',
-      password: hashedPassword,
-      phone: signUpDTO.phone,
-      roles: [Roles.APPLICANT], // Simplified role assignment
-      isVerified: false,
-      isActive: true,
-    };
-
-    const user = await this.userRepository.create(userData);
-    return user;
-  }
-
-  async signUpRegional(signUpDTO: SignUpRegionalDTO): Promise<User> {
-    // Simplified version to avoid compilation errors
-    const existingUserByEmail = await this.getUserByEmail(signUpDTO.email);
-    if (existingUserByEmail) {
-      throw new ConflictException(EMAIL_CONFLICT);
-    }
-
-    const hashedPassword = await bcrypt.hash(signUpDTO.password, 10);
-
-    const userData = {
-      email: signUpDTO.email,
-      firstName: signUpDTO.firstName,
-      lastName: signUpDTO.lastName,
-      password: hashedPassword,
-      roles: signUpDTO.roles || [Roles.APPLICANT],
-      isVerified: false,
-      isActive: true,
-    };
-
-    const user = await this.userRepository.create(userData);
     return user;
   }
 
