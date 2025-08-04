@@ -702,3 +702,42 @@ model Address {
 
   @@map("addresses")
 }
+
+
+model TempNINData {
+  id                     String   @id @default(cuid())
+  nin                    String   @unique
+  firstName              String
+  middleName             String?
+  lastName               String
+  fullName               String?
+  dateOfBirth            String
+  gender                 String
+  phoneNumber            String?
+  verifiedPhoneNumber    String?
+  photo                  String?
+  addressLine1           String
+  addressLine2           String?
+  city                   String?
+  state                  String
+  lga                    String
+  postalCode             String?
+  country                String   @default("Nigeria")
+  birthState             String?
+  birthLga               String?
+  trackingId             String?
+  verified               Boolean  @default(false)
+  verificationId         String?
+  verificationStatus     String?
+  verificationMethod     String?
+  verificationDate       DateTime?
+  verificationAttempts   Int      @default(1)
+  lastVerificationAttempt DateTime?
+  rawData                Json?
+ 
+  userId                 String?
+  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
