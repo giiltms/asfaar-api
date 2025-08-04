@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { YouVerifyProvider } from './providers/youverify.provider';
 import { TempNINData, Gender } from '@prisma/client';
@@ -60,23 +65,25 @@ export class NinVerificationService {
 
       // Check if NIN already exists in temp data
       const existingTemp = await this.prisma.tempNINData.findUnique({
-        where: { nin: normalizedNin }
+        where: { nin: normalizedNin },
       });
 
       if (existingTemp) {
-        throw new ConflictException('NIN verification already in progress. Please use confirm-nin endpoint.');
+        throw new ConflictException(
+          'NIN verification already in progress. Please use confirm-nin endpoint.',
+        );
       }
 
       // Verify with YouVerify
       const verificationResponse = await this.youVerifyProvider.verifyNin({
         nin: normalizedNin,
-        reference: `nin-verify-${Date.now()}`
+        reference: `nin-verify-${Date.now()}`,
       });
 
       if (!verificationResponse.success || !verificationResponse.data) {
         return {
           success: false,
-          error: verificationResponse.error || 'NIN verification failed'
+          error: verificationResponse.error || 'NIN verification failed',
         };
       }
 
@@ -84,13 +91,17 @@ export class NinVerificationService {
 
       // Validate date of birth matches
       if (verifiedData.dateOfBirth) {
-        const verifiedDob = new Date(verifiedData.dateOfBirth).toISOString().split('T')[0];
-        const providedDob = new Date(request.dateOfBirth).toISOString().split('T')[0];
+        const verifiedDob = new Date(verifiedData.dateOfBirth)
+          .toISOString()
+          .split('T')[0];
+        const providedDob = new Date(request.dateOfBirth)
+          .toISOString()
+          .split('T')[0];
 
         if (verifiedDob !== providedDob) {
           return {
             success: false,
-            error: 'Date of birth does not match NIN records'
+            error: 'Date of birth does not match NIN records',
           };
         }
       }
@@ -119,7 +130,7 @@ export class NinVerificationService {
           verificationStatus: 'VERIFIED',
           verificationMethod: 'YOUVERIFY',
           verificationDate: new Date(),
-        }
+        },
       });
 
       return {
@@ -146,28 +157,33 @@ export class NinVerificationService {
             state: tempNinData.birthState,
             lga: tempNinData.birthLga,
           },
-        }
+        },
       };
-
     } catch (error) {
       this.logger.error(`NIN verification failed: ${error.message}`);
 
-      if (error instanceof BadRequestException || error instanceof ConflictException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
 
       return {
         success: false,
-        error: 'Internal server error during NIN verification'
+        error: 'Internal server error during NIN verification',
       };
     }
   }
 
-  async confirmNin(request: ConfirmNinDto, userId: string): Promise<{ success: boolean; message: string }> {
+  async confirmNin(
+    request: ConfirmNinDto,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // Get temp NIN data
       const tempNinData = await this.prisma.tempNINData.findUnique({
-        where: { id: request.tempNinId }
+        where: { id: request.tempNinId },
       });
 
       if (!tempNinData) {
@@ -176,7 +192,7 @@ export class NinVerificationService {
 
       // Check if user already has NIN
       const existingUser = await this.prisma.user.findUnique({
-        where: { id: userId }
+        where: { id: userId },
       });
 
       if (existingUser?.nin) {
@@ -195,27 +211,29 @@ export class NinVerificationService {
           gender: tempNinData.gender as Gender,
           state: tempNinData.state || existingUser?.state,
           lga: tempNinData.lga || existingUser?.lga,
-        }
+        },
       });
 
       // Delete temp data
       await this.prisma.tempNINData.delete({
-        where: { id: request.tempNinId }
+        where: { id: request.tempNinId },
       });
 
       return {
         success: true,
-        message: 'NIN verified and linked to user successfully'
+        message: 'NIN verified and linked to user successfully',
       };
-
     } catch (error) {
       this.logger.error(`NIN confirmation failed: ${error.message}`);
 
-      if (error instanceof BadRequestException || error instanceof ConflictException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
 
       throw new BadRequestException('Failed to confirm NIN verification');
     }
   }
-} 
+}
