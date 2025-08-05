@@ -4,13 +4,12 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
+
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-    private readonly logger: Logger,
-  ) {
-    this.logger = new Logger(MailService.name);
-  }
+  ) {}
 
   async sendRegisterationConfirmation(email: string, data: any): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
@@ -68,19 +67,31 @@ export class MailService {
     userName: string,
     verificationToken: string,
   ): Promise<void> {
-    // This is the link to the frontend
-    const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
-    const verificationLink = `${siteUrl}/verification/verify-email?token=${verificationToken}`;
+    try {
+      // This is the link to the frontend
+      const siteUrl = this.configService.get(
+        'SITE_URL',
+        'http://localhost:3000',
+      );
+      const verificationLink = `${siteUrl}/verification/verify-email?token=${verificationToken}`;
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Verify Your Email Address - Asfaar Visa Services',
-      template: 'email-verification',
-      context: {
-        userName,
-        verificationLink,
-      },
-    });
-    this.logger.debug('Email verification sent to', email);
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Verify Your Email Address - Asfaar Visa Services',
+        template: 'email-verification',
+        context: {
+          userName,
+          verificationLink,
+        },
+      });
+
+      this.logger.debug(`Email verification sent successfully to: ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email verification to ${email}:`,
+        error.message,
+      );
+      throw error;
+    }
   }
 }
