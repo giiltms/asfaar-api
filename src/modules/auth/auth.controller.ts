@@ -2,12 +2,20 @@ import {
   Body,
   Controller,
   Post,
+  Get,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import Serialize from '@common/decorators/serialize.decorator';
 import UserEntity from '@modules/user/entities/user.entity';
 import { AuthService } from './auth.service';
@@ -99,5 +107,27 @@ export class AuthController {
   @ApiOperation({ summary: 'Confirm NIN verification and link to user' })
   async confirmNin(@Body() confirmNinDto: ConfirmNinDto, @Request() req: any) {
     return this.ninVerificationService.confirmNin(confirmNinDto, req.user.id);
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify email address' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid email or already verified',
+  })
+  async resendVerification(@Body() body: { email: string }) {
+    return this.authService.resendVerificationEmail(body.email);
   }
 }

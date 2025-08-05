@@ -10,27 +10,31 @@ import { join } from 'path';
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        transport: {
-          host: configService.get('MAIL_HOST', 'localhost'),
-          port: parseInt(configService.get('MAIL_PORT', '587')),
-          secure: configService.get('MAIL_SECURE', 'false') === 'true',
-          auth: {
-            user: configService.get('MAIL_USER', ''),
-            pass: configService.get('MAIL_PASSWORD', ''),
+      useFactory: async (configService: ConfigService) => {
+        const mailConfig = configService.get('mail');
+
+        return {
+          transport: {
+            host: mailConfig?.SMTP_HOST || 'localhost',
+            port: mailConfig?.SMTP_PORT || 587,
+            secure: mailConfig?.SMTP_SECURE || false,
+            auth: {
+              user: mailConfig?.SMTP_USER,
+              pass: mailConfig?.SMTP_PASS,
+            },
           },
-        },
-        defaults: {
-          from: configService.get('MAIL_FROM', 'noreply@example.com'),
-        },
-        template: {
-          dir: join(__dirname, 'templates'),
-          adapter: new HandlebarsAdapter(),
-          options: {
-            strict: true,
+          defaults: {
+            from: `${mailConfig?.MAIL_FROM_NAME || 'Asfaar Visa Services'} <${mailConfig?.MAIL_FROM_EMAIL || 'noreply@asfaarvisaservices.com'}>`,
           },
-        },
-      }),
+          template: {
+            dir: join(__dirname, 'templates'),
+            adapter: new HandlebarsAdapter(),
+            options: {
+              strict: true,
+            },
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

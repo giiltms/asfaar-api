@@ -59,4 +59,26 @@ export class MailService {
       },
     });
   }
+
+  async sendEmailVerification(
+    email: string,
+    userName: string,
+    verificationToken: string,
+  ): Promise<void> {
+    // This is the link to the frontend
+    const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
+    const verificationLink = `${siteUrl}/verification/verify-email?token=${verificationToken}`;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Verify Your Email Address - Asfaar Visa Services',
+      template: 'email-verification',
+      context: {
+        userName,
+        verificationLink,
+      },
+    });
+
+    console.log('Email verification sent to', email);
+  }
 }

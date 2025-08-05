@@ -12,10 +12,12 @@ import { AuthGuard } from './guard/auth.guard';
 import { TokenRepository } from './token.repository';
 import { MailService } from '@modules/mail/services/mail.service';
 import { SharedModule } from '@shared/shared.module';
+import { PrismaModule } from '@providers/prisma/prisma.module';
 
 @Module({
   imports: [
     SharedModule,
+    PrismaModule,
     ConfigModule,
     JwtModule.registerAsync({
       global: true, // Make JWT module global

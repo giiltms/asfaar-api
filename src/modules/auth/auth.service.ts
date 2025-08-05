@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
-import { User } from '@prisma/client';
+import { User, TokenUseCase, TokenType } from '@prisma/client';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
 import { SignInDTO } from './dto/sign-in.dto';
@@ -13,6 +13,7 @@ import { AuthTokenService } from './auth-token.service';
 import { PasswordResetService } from './password-reset.service';
 import { MailService } from '@modules/mail/services/mail.service';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@providers/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Roles } from '@modules/app/app.roles';
 import {
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly passwordResetService: PasswordResetService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async signUp(signUpDTO: SignUpDTO): Promise<User> {
@@ -87,20 +89,32 @@ export class AuthService {
       lastName: signUpDto.lastName,
       password: hashedPassword,
       roles: [Roles.APPLICANT],
-      isVerified: false,
+      isVerified: false, // Set to false by default
       isActive: true,
     };
 
     const user = await this.userRepository.create(userData);
 
-    // Send verification email (optional - comment out if mail service not ready)
-    // try {
-    //   await this.mailService.sendRegisterationConfirmation(user.email, {
-    //     name: `${user.firstName} ${user.lastName}`,
-    //   });
-    // } catch (error) {
-    //   console.log('Error sending email:', error.message);
-    // }
+    // Generate email verification token
+    try {
+      const verificationToken = await this.tokenService.create(
+        user.id,
+        TokenUseCase.EMAIL_VERIFICATION,
+        TokenType.HEX,
+        32, // 32-character hex token
+        1440, // 24 hours expiration (1440 minutes)
+      );
+
+      // Send verification email
+      await this.mailService.sendEmailVerification(
+        user.email,
+        `${user.firstName} ${user.lastName}`,
+        verificationToken.code,
+      );
+    } catch (error) {
+      console.log('Error sending verification email:', error.message);
+      // Don't throw error here to avoid blocking registration
+    }
 
     return user;
   }
@@ -121,6 +135,12 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new BadRequestException('Account is deactivated');
+    }
+
+    if (!user.isVerified) {
+      throw new BadRequestException(
+        'Please verify your email address before signing in. Check your email for the verification link.',
+      );
     }
 
     // Generate tokens
@@ -191,5 +211,103 @@ export class AuthService {
     // Simple logout implementation
     // In a real app, you'd invalidate the refresh token
     return { message: 'Logged out successfully' };
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string; user?: any }> {
+    try {
+      // Find the token first to get the user ID
+      const tokenRecord = await this.prisma.token.findFirst({
+        where: {
+          code: await this.hashToken(token),
+          useCase: TokenUseCase.EMAIL_VERIFICATION,
+          isUsed: false,
+        },
+        include: {
+          owner: true,
+        },
+      });
+
+      if (!tokenRecord) {
+        throw new BadRequestException('Invalid or expired verification token');
+      }
+
+      // Check if token is expired
+      if (new Date() > tokenRecord.expiresAt) {
+        throw new BadRequestException('Verification token has expired');
+      }
+
+      // Verify the token using the token service
+      const isValid = await this.tokenService.verify(
+        tokenRecord.userId,
+        token,
+        TokenUseCase.EMAIL_VERIFICATION,
+      );
+
+      if (!isValid) {
+        throw new BadRequestException('Invalid verification token');
+      }
+
+      // Update user as verified
+      const user = await this.userRepository.updateUser(tokenRecord.userId, {
+        isVerified: true,
+      });
+
+      return {
+        message: 'Email verified successfully! Your account is now active.',
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isVerified: user.isVerified,
+        },
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to verify email address',
+      );
+    }
+  }
+
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    try {
+      // Generate new verification token
+      const verificationToken = await this.tokenService.create(
+        user.id,
+        TokenUseCase.EMAIL_VERIFICATION,
+        TokenType.HEX,
+        32,
+        1440, // 24 hours
+      );
+
+      // Send verification email
+      await this.mailService.sendEmailVerification(
+        user.email,
+        `${user.firstName} ${user.lastName}`,
+        verificationToken.code,
+      );
+
+      return {
+        message: 'Verification email sent successfully',
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to send verification email');
+    }
+  }
+
+  // Helper method for token hashing (same as in TokenService)
+  private async hashToken(token: string): Promise<string> {
+    const crypto = await import('crypto');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    return hash;
   }
 }
