@@ -149,7 +149,9 @@ export class BiometricCenterEntity {
     };
   }
 
-  @ApiPropertyOptional({ description: 'Availability status based on isActive and current time' })
+  @ApiPropertyOptional({
+    description: 'Availability status based on isActive and current time',
+  })
   @Expose()
   get availabilityStatus(): 'AVAILABLE' | 'CLOSED' | 'INACTIVE' {
     if (!this.isActive) {
@@ -169,4 +171,4 @@ export class BiometricCenterEntity {
     // Additional time-based checks can be added here
     return 'AVAILABLE';
   }
-} 
+}

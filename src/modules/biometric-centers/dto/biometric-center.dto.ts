@@ -349,4 +349,4 @@ export class BiometricCenterResponseDto {
 
   @ApiPropertyOptional({ description: 'Last modifier ID' })
   lastModifiedBy?: string;
-} 
+}

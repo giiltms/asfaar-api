@@ -45,4 +45,4 @@ export interface NinVerificationProviderInterface {
    * Health check for the verification provider
    */
   healthCheck(): Promise<boolean>;
-} 
+}

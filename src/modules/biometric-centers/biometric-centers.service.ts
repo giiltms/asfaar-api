@@ -172,7 +172,7 @@ export class BiometricCentersService {
       limit,
       totalCount,
       'name', // default sort field
-      'asc'   // default sort order
+      'asc', // default sort order
     );
 
     return {
@@ -327,9 +327,7 @@ export class BiometricCentersService {
     const center = await this.findCenterById(id);
 
     if (!center.isActive) {
-      throw new BadRequestException(
-        'Biometric center is already deactivated',
-      );
+      throw new BadRequestException('Biometric center is already deactivated');
     }
 
     // Check if center has active appointments
@@ -416,7 +414,10 @@ export class BiometricCentersService {
   /**
    * Check center availability for appointments
    */
-  async checkCenterAvailability(centerId: string, date: Date): Promise<{
+  async checkCenterAvailability(
+    centerId: string,
+    date: Date,
+  ): Promise<{
     isAvailable: boolean;
     capacity: number;
     bookedSlots: number;
@@ -462,4 +463,4 @@ export class BiometricCentersService {
       availableSlots,
     };
   }
-} 
+}

@@ -28,4 +28,4 @@ export class ConfirmNinDto {
   })
   @IsString()
   readonly tempNinId!: string;
-} 
+}

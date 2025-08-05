@@ -11,6 +11,8 @@ import { AddressModule } from '../address/address.module';
 import { FormsModule } from '../forms/forms.module';
 import { FormSubmissionsModule } from '../form-submissions/form-submissions.module';
 import { BiometricCentersModule } from '../biometric-centers/biometric-centers.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { BiometricAppointmentsModule } from '../biometric-appointments/biometric-appointments.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -29,6 +31,8 @@ import { BiometricCentersModule } from '../biometric-centers/biometric-centers.m
     FormsModule,
     FormSubmissionsModule,
     BiometricCentersModule,
+    PaymentsModule,
+    BiometricAppointmentsModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],

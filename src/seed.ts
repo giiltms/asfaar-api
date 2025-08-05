@@ -626,7 +626,14 @@ async function main() {
         capacity: 75,
         openingTime: '08:00',
         closingTime: '18:00',
-        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+        workingDays: [
+          'MONDAY',
+          'TUESDAY',
+          'WEDNESDAY',
+          'THURSDAY',
+          'FRIDAY',
+          'SATURDAY',
+        ],
         appointmentDuration: 25,
         bufferTime: 10,
         servicesOffered: [
@@ -715,7 +722,8 @@ async function main() {
       data: {
         name: 'ASFAAR-PORT HARCOURT',
         code: 'ASFAAR-PHC-GRA',
-        address: '15 Aba Road, GRA Phase 2, Port Harcourt, Rivers State, Nigeria',
+        address:
+          '15 Aba Road, GRA Phase 2, Port Harcourt, Rivers State, Nigeria',
         city: 'Port Harcourt',
         state: 'Rivers State',
         country: 'Nigeria',

@@ -362,6 +362,7 @@ model PaymentMethod {
 
   // Relations
   transactions Transaction[]
+  Payment      Payment[]
 
   @@map("payment_methods")
 }
@@ -619,8 +620,9 @@ model FormSubmission {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  responses    FieldResponse[]
-  appointments BiometricAppointment[]
+  responses   FieldResponse[]
+  appointment BiometricAppointment?
+  payment     Payment?
 
   @@map("form_submissions")
 }
@@ -925,11 +927,6 @@ model BiometricAppointment {
   rescheduleReason        String? // Reason for rescheduling
   rescheduleCount         Int       @default(0) // Number of times rescheduled
 
-  // Payment Integration
-  paymentRequired    Boolean   @default(true) // Whether payment is required for this appointment
-  paymentCompleted   Boolean   @default(false) // Whether payment is completed
-  paymentCompletedAt DateTime? // When payment was completed
-
   // Biometric Capture Results
   biometricsCaptured Boolean   @default(false) // Whether biometrics were captured
   capturedAt         DateTime? // When biometrics were captured
@@ -950,7 +947,67 @@ model BiometricAppointment {
   @@index([appointmentTime])
   @@index([status])
   @@index([appointmentClass])
-  @@index([paymentCompleted])
   @@index([createdAt])
   @@map("biometric_appointments")
+}
+
+// Payment Enums (reusing existing PaymentStatus)
+enum Currency {
+  USD
+  NGN
+  EUR
+  GBP
+}
+
+// Using existing PaymentMethodType enum
+
+// Payment Model
+model Payment {
+  id String @id @default(uuid())
+
+  // Relations
+  submissionId String         @unique // One payment per form submission
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Payment Details
+  amount      Float
+  currency    Currency           @default(NGN)
+  status      PaymentStatus      @default(PENDING)
+  methodType  PaymentMethodType? // Type of payment method used
+  description String? // What the payment is for
+
+  // Payment Processor Integration
+  processorId       String? // Stripe/Paystack/Flutterwave transaction ID
+  processorName     String? // Which payment processor was used
+  processorResponse Json? // Full response from payment processor
+
+  // Payment Metadata
+  invoiceNumber String? @unique // Internal invoice number
+  receiptUrl    String? // URL to payment receipt
+  refundReason  String? // Reason for refund if applicable
+  refundAmount  Float? // Amount refunded
+
+  // Timestamps
+  paidAt     DateTime? // When payment was completed
+  failedAt   DateTime? // When payment failed
+  refundedAt DateTime? // When payment was refunded
+  expiresAt  DateTime? // When payment link expires
+
+  // Audit Fields
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String? // Who initiated the payment
+  lastModifiedBy  String? // Last person who modified
+  PaymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId String?
+
+  // Indexes for performance
+  @@index([submissionId])
+  @@index([status])
+  @@index([amount])
+  @@index([currency])
+  @@index([processorId])
+  @@index([paidAt])
+  @@index([createdAt])
+  @@map("payments")
 }

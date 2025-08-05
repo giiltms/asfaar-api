@@ -267,10 +267,8 @@ export class BiometricCentersController {
       throw new Error('Invalid date format. Use YYYY-MM-DD');
     }
 
-    const availability = await this.biometricCentersService.checkCenterAvailability(
-      id,
-      date,
-    );
+    const availability =
+      await this.biometricCentersService.checkCenterAvailability(id, date);
 
     return {
       message: 'Center availability checked successfully',
@@ -372,4 +370,4 @@ export class BiometricCentersController {
       version: '1.0.0',
     };
   }
-} 
+}

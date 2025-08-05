@@ -78,8 +78,8 @@ export class YouVerifyProvider implements NinVerificationProviderInterface {
           data.gender.toLowerCase() === 'male'
             ? 'MALE'
             : data.gender.toLowerCase() === 'female'
-              ? 'FEMALE'
-              : data.gender.toUpperCase();
+            ? 'FEMALE'
+            : data.gender.toUpperCase();
       }
 
       const verificationData: NinVerificationData = {
@@ -87,8 +87,9 @@ export class YouVerifyProvider implements NinVerificationProviderInterface {
         firstName: data.firstName,
         middleName: data.middleName,
         lastName: data.lastName,
-        fullName: `${data.firstName || ''} ${data.middleName || ''} ${data.lastName || ''
-          }`.trim(),
+        fullName: `${data.firstName || ''} ${data.middleName || ''} ${
+          data.lastName || ''
+        }`.trim(),
         dateOfBirth: data.dateOfBirth, // Already in YYYY-MM-DD format
         gender: gender,
         phoneNumber: data.mobile,

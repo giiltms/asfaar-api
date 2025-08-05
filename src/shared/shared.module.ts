@@ -18,9 +18,6 @@ import { YouVerifyProvider } from './services/nin-verification/providers/youveri
     NinVerificationService,
     YouVerifyProvider,
   ],
-  exports: [
-    PaymentService,
-    NinVerificationService,
-  ],
+  exports: [PaymentService, NinVerificationService],
 })
 export class SharedModule {}
