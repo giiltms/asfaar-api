@@ -10,6 +10,7 @@ import { UserModule } from '../user/user.module';
 import { AddressModule } from '../address/address.module';
 import { FormsModule } from '../forms/forms.module';
 import { FormSubmissionsModule } from '../form-submissions/form-submissions.module';
+import { BiometricCentersModule } from '../biometric-centers/biometric-centers.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -27,6 +28,7 @@ import { FormSubmissionsModule } from '../form-submissions/form-submissions.modu
     AddressModule,
     FormsModule,
     FormSubmissionsModule,
+    BiometricCentersModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],

@@ -14,6 +14,8 @@ async function main() {
 
   // Clean existing data
   console.log('🧹 Cleaning existing data...');
+  await prisma.biometricAppointment.deleteMany();
+  await prisma.biometricCenter.deleteMany();
   await prisma.like.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.post.deleteMany();
@@ -570,6 +572,181 @@ async function main() {
     }),
   ]);
 
+  // Create biometric centers
+  console.log('🏢 Creating biometric centers...');
+  const biometricCenters = await Promise.all([
+    prisma.biometricCenter.create({
+      data: {
+        name: 'ASFAAR-ABUJA HQ',
+        code: 'ASFAAR-ABJ-HQ',
+        address: '14 Yedseram Street, Maitama, Abuja, Nigeria',
+        city: 'Abuja',
+        state: 'Federal Capital Territory',
+        country: 'Nigeria',
+        postalCode: '900001',
+        phone: '+2347007004001',
+        email: 'info@asfaarvisaservices.com',
+        website: 'https://asfaarvisaservices.com',
+        isActive: true,
+        capacity: 50,
+        openingTime: '09:00',
+        closingTime: '17:00',
+        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        appointmentDuration: 30,
+        bufferTime: 15,
+        servicesOffered: [
+          'BIOMETRIC_CAPTURE',
+          'DOCUMENT_VERIFICATION',
+          'PHOTO_CAPTURE',
+          'FINGERPRINT_SCANNING',
+        ],
+        specialFacilities: [
+          'WHEELCHAIR_ACCESS',
+          'PARKING_AVAILABLE',
+          'PUBLIC_TRANSPORT',
+          'AIR_CONDITIONING',
+        ],
+        managerId: superAdmin.id,
+        createdBy: superAdmin.id,
+      },
+    }),
+    prisma.biometricCenter.create({
+      data: {
+        name: 'ASFAAR-LAGOS IKEJA',
+        code: 'ASFAAR-LOS-IKJ',
+        address: '45 Allen Avenue, Ikeja, Lagos State, Nigeria',
+        city: 'Lagos',
+        state: 'Lagos State',
+        country: 'Nigeria',
+        postalCode: '100001',
+        phone: '+2349012345678',
+        email: 'lagos@asfaarvisaservices.com',
+        website: 'https://asfaarvisaservices.com',
+        isActive: true,
+        capacity: 75,
+        openingTime: '08:00',
+        closingTime: '18:00',
+        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
+        appointmentDuration: 25,
+        bufferTime: 10,
+        servicesOffered: [
+          'BIOMETRIC_CAPTURE',
+          'DOCUMENT_VERIFICATION',
+          'PHOTO_CAPTURE',
+          'FINGERPRINT_SCANNING',
+          'IRIS_SCANNING',
+        ],
+        specialFacilities: [
+          'WHEELCHAIR_ACCESS',
+          'PARKING_AVAILABLE',
+          'PUBLIC_TRANSPORT',
+          'AIR_CONDITIONING',
+          'VIP_LOUNGE',
+        ],
+        managerId: admin.id,
+        createdBy: superAdmin.id,
+      },
+    }),
+    prisma.biometricCenter.create({
+      data: {
+        name: 'ASFAAR-LAGOS ISLAND',
+        code: 'ASFAAR-LOS-ISL',
+        address: '12 Marina Street, Lagos Island, Lagos State, Nigeria',
+        city: 'Lagos',
+        state: 'Lagos State',
+        country: 'Nigeria',
+        postalCode: '100001',
+        phone: '+2349087654321',
+        email: 'island@asfaarvisaservices.com',
+        website: 'https://asfaarvisaservices.com',
+        isActive: true,
+        capacity: 40,
+        openingTime: '09:00',
+        closingTime: '17:00',
+        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        appointmentDuration: 30,
+        bufferTime: 15,
+        servicesOffered: [
+          'BIOMETRIC_CAPTURE',
+          'DOCUMENT_VERIFICATION',
+          'PHOTO_CAPTURE',
+        ],
+        specialFacilities: [
+          'WHEELCHAIR_ACCESS',
+          'PUBLIC_TRANSPORT',
+          'AIR_CONDITIONING',
+        ],
+        createdBy: superAdmin.id,
+      },
+    }),
+    prisma.biometricCenter.create({
+      data: {
+        name: 'ASFAAR-KANO CENTRAL',
+        code: 'ASFAAR-KNO-CTR',
+        address: '23 Ibrahim Taiwo Road, Kano, Kano State, Nigeria',
+        city: 'Kano',
+        state: 'Kano State',
+        country: 'Nigeria',
+        postalCode: '700001',
+        phone: '+2348123456789',
+        email: 'kano@asfaarvisaservices.com',
+        website: 'https://asfaarvisaservices.com',
+        isActive: true,
+        capacity: 35,
+        openingTime: '09:00',
+        closingTime: '16:00',
+        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        appointmentDuration: 35,
+        bufferTime: 20,
+        servicesOffered: [
+          'BIOMETRIC_CAPTURE',
+          'DOCUMENT_VERIFICATION',
+          'PHOTO_CAPTURE',
+        ],
+        specialFacilities: [
+          'WHEELCHAIR_ACCESS',
+          'PARKING_AVAILABLE',
+          'AIR_CONDITIONING',
+        ],
+        createdBy: superAdmin.id,
+      },
+    }),
+    prisma.biometricCenter.create({
+      data: {
+        name: 'ASFAAR-PORT HARCOURT',
+        code: 'ASFAAR-PHC-GRA',
+        address: '15 Aba Road, GRA Phase 2, Port Harcourt, Rivers State, Nigeria',
+        city: 'Port Harcourt',
+        state: 'Rivers State',
+        country: 'Nigeria',
+        postalCode: '500001',
+        phone: '+2347065432109',
+        email: 'portharcourt@asfaarvisaservices.com',
+        website: 'https://asfaarvisaservices.com',
+        isActive: true,
+        capacity: 45,
+        openingTime: '08:30',
+        closingTime: '17:30',
+        workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        appointmentDuration: 30,
+        bufferTime: 15,
+        servicesOffered: [
+          'BIOMETRIC_CAPTURE',
+          'DOCUMENT_VERIFICATION',
+          'PHOTO_CAPTURE',
+          'FINGERPRINT_SCANNING',
+        ],
+        specialFacilities: [
+          'WHEELCHAIR_ACCESS',
+          'PARKING_AVAILABLE',
+          'PUBLIC_TRANSPORT',
+          'AIR_CONDITIONING',
+        ],
+        createdBy: superAdmin.id,
+      },
+    }),
+  ]);
+
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Created:');
   console.log(`  - ${3 + users.length} users (including admin accounts)`);
@@ -581,6 +758,7 @@ async function main() {
   console.log(`  - 2 notifications`);
   console.log(`  - 4 user preferences`);
   console.log(`  - 2 user profiles`);
+  console.log(`  - ${biometricCenters.length} biometric centers`);
 
   console.log('\n🔑 Test accounts:');
   console.log('  - Super Admin: superadmin@example.com / password123');

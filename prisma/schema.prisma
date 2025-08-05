@@ -124,12 +124,14 @@ model User {
   addresses     Address[] // User addresses relation
 
   // Payment relations
-  paymentMethods   PaymentMethod[]
-  transactions     Transaction[]
-  subscriptions    Subscription[]
-  wallets          Wallet[]
-  FormSubmission   FormSubmission[]
-  ninVerifications NinVerification[]
+  paymentMethods        PaymentMethod[]
+  transactions          Transaction[]
+  subscriptions         Subscription[]
+  wallets               Wallet[]
+  FormSubmission        FormSubmission[]
+  ninVerifications      NinVerification[]
+  biometricCenters      BiometricCenter[]      @relation("CenterManager")
+  biometricAppointments BiometricAppointment[]
 
   @@map("users")
 }
@@ -617,7 +619,8 @@ model FormSubmission {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  responses FieldResponse[]
+  responses    FieldResponse[]
+  appointments BiometricAppointment[]
 
   @@map("form_submissions")
 }
@@ -810,4 +813,144 @@ model NinVerification {
   @@index([createdAt])
   @@index([userId])
   @@map("nin_verifications")
+}
+
+// Biometric Center Model
+model BiometricCenter {
+  id   String @id @default(uuid())
+  name String @unique // e.g., "ASFAAR-ABUJA HQ"
+  code String @unique // e.g., "ASFAAR-ABJ-HQ" for internal reference
+
+  // Location Details
+  address    String // Full address
+  city       String // City name
+  state      String // State/Province
+  country    String  @default("Nigeria")
+  postalCode String? // Postal/ZIP code
+
+  // Contact Information
+  phone   String? // Phone number
+  email   String? // Email address
+  website String? // Website URL
+
+  // Operational Details
+  isActive    Boolean  @default(true) // Whether center is operational
+  capacity    Int? // Daily appointment capacity
+  openingTime String? // Opening time (e.g., "09:00")
+  closingTime String? // Closing time (e.g., "17:00")
+  workingDays String[] // Days of operation (e.g., ["MONDAY", "TUESDAY", ...])
+
+  // Scheduling
+  appointmentDuration Int @default(30) // Duration per appointment in minutes
+  bufferTime          Int @default(15) // Buffer time between appointments
+
+  // Services
+  servicesOffered   String[] // Services available at this center
+  specialFacilities String[] // Special facilities (wheelchair access, etc.)
+
+  // Staff and Management
+  managerId String? // Manager user ID
+  manager   User?   @relation("CenterManager", fields: [managerId], references: [id])
+
+  // Audit Fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String? // Admin who created the center
+  lastModifiedBy String? // Last person who modified
+
+  // Relations
+  appointments BiometricAppointment[]
+
+  @@index([city])
+  @@index([state])
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("biometric_centers")
+}
+
+// Biometric Appointment Enums
+enum AppointmentClass {
+  REGULAR
+  VIP
+  PREMIUM
+}
+
+enum AppointmentStatus {
+  PENDING // Initial status when appointment is created
+  SCHEDULED // When date/time is set but payment not completed
+  ACTIVE // When application is completed AND payment is made
+  COMPLETED // When biometric capture is done
+  CANCELLED // When appointment is cancelled
+  RESCHEDULED // When appointment is rescheduled
+  NO_SHOW // When applicant doesn't show up
+}
+
+// Biometric Appointment Model
+model BiometricAppointment {
+  id String @id @default(uuid())
+
+  // Relations
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submissionId String         @unique // One appointment per form submission
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Biometric Center Relation (instead of enum)
+  centerId String
+  center   BiometricCenter @relation(fields: [centerId], references: [id])
+
+  // Appointment Details
+  appointmentClass AppointmentClass  @default(REGULAR)
+  status           AppointmentStatus @default(PENDING)
+
+  // Date and Time
+  appointmentDate DateTime? // Date of the appointment
+  appointmentTime DateTime? // Full date-time for the appointment
+
+  // Requirements and Notes
+  specialRequirements String? // Any special requirements or accessibility needs
+  adminNotes          String? // Internal notes by admin/staff
+
+  // Acknowledgments
+  confirmationAcknowledged Boolean @default(false) // User confirmed appointment
+  consentAcknowledged      Boolean @default(false) // User gave biometric consent
+  termsAcknowledged        Boolean @default(false) // User agreed to terms
+
+  // Reminder System
+  reminderSent   Boolean   @default(false) // Whether reminder was sent
+  reminderSentAt DateTime? // When reminder was sent
+
+  // Rescheduling History
+  originalAppointmentDate DateTime? // Original date if rescheduled
+  rescheduleReason        String? // Reason for rescheduling
+  rescheduleCount         Int       @default(0) // Number of times rescheduled
+
+  // Payment Integration
+  paymentRequired    Boolean   @default(true) // Whether payment is required for this appointment
+  paymentCompleted   Boolean   @default(false) // Whether payment is completed
+  paymentCompletedAt DateTime? // When payment was completed
+
+  // Biometric Capture Results
+  biometricsCaptured Boolean   @default(false) // Whether biometrics were captured
+  capturedAt         DateTime? // When biometrics were captured
+  capturedBy         String? // Staff member who captured biometrics
+  captureQuality     String? // Quality assessment of captured biometrics
+
+  // Audit Fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String? // Admin/staff who created the appointment
+  lastModifiedBy String? // Last person who modified the appointment
+
+  // Indexes for performance
+  @@index([userId])
+  @@index([submissionId])
+  @@index([centerId])
+  @@index([appointmentDate])
+  @@index([appointmentTime])
+  @@index([status])
+  @@index([appointmentClass])
+  @@index([paymentCompleted])
+  @@index([createdAt])
+  @@map("biometric_appointments")
 }
