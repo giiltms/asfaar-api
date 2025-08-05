@@ -12,19 +12,30 @@ import { join } from 'path';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const mailConfig = configService.get('mail');
+        const appConfig = configService.get('app');
+
+        // Enable debug logging only when log level is debug
+        const isDebugMode = appConfig?.LOG_LEVEL === 'debug';
 
         return {
           transport: {
             host: mailConfig?.SMTP_HOST || 'localhost',
             port: mailConfig?.SMTP_PORT || 587,
             secure: mailConfig?.SMTP_SECURE || false,
+            logger: isDebugMode,
+            debug: isDebugMode,
+            tls: {
+              rejectUnauthorized: true,
+              minVersion: 'TLSv1.2',
+            },
             auth: {
               user: mailConfig?.SMTP_USER,
               pass: mailConfig?.SMTP_PASS,
             },
           },
           defaults: {
-            from: `${mailConfig?.MAIL_FROM_NAME || 'Asfaar Visa Services'} <${mailConfig?.MAIL_FROM_EMAIL || 'noreply@asfaarvisaservices.com'}>`,
+            from: `${mailConfig?.MAIL_FROM_NAME || 'Asfaar Visa Services'} <${mailConfig?.MAIL_FROM_EMAIL || 'noreply@asfaarvisaservices.com'
+              }>`,
           },
           template: {
             dir: join(__dirname, 'templates'),

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 
@@ -7,7 +7,10 @@ export class MailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly logger: Logger,
+  ) {
+    this.logger = new Logger(MailService.name);
+  }
 
   async sendRegisterationConfirmation(email: string, data: any): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
@@ -78,7 +81,6 @@ export class MailService {
         verificationLink,
       },
     });
-
-    console.log('Email verification sent to', email);
+    this.logger.debug('Email verification sent to', email);
   }
 }
