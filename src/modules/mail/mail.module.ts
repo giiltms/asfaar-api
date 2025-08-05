@@ -3,7 +3,6 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './services/mail.service';
-import { MailController } from './controllers/mail.controller';
 import { join } from 'path';
 
 @Module({
@@ -34,8 +33,9 @@ import { join } from 'path';
             },
           },
           defaults: {
-            from: `${mailConfig?.MAIL_FROM_NAME || 'Asfaar Visa Services'} <${mailConfig?.MAIL_FROM_EMAIL || 'noreply@asfaarvisaservices.com'
-              }>`,
+            from: `${mailConfig?.MAIL_FROM_NAME || 'Asfaar Visa Services'} <${
+              mailConfig?.MAIL_FROM_EMAIL || 'noreply@asfaarvisaservices.com'
+            }>`,
           },
           template: {
             dir: join(__dirname, 'templates'),
@@ -49,7 +49,7 @@ import { join } from 'path';
       inject: [ConfigService],
     }),
   ],
-  controllers: [MailController],
+  controllers: [],
   providers: [MailService],
   exports: [MailService],
 })
