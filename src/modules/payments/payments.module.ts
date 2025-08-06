@@ -3,6 +3,8 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { UserService } from '@modules/user/user.service';
+import { UserModule } from '@modules/user/user.module';
 
 /**
  * PaymentsModule
@@ -14,9 +16,10 @@ import { AuthModule } from '@modules/auth/auth.module';
   imports: [
     PrismaModule, // For database operations
     AuthModule, // For authentication guards
+UserModule,
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
+  providers: [PaymentsService, UserService],
   exports: [PaymentsService], // Export service for use in other modules
 })
 export class PaymentsModule {}

@@ -105,6 +105,75 @@ export class PaymentsRepository {
     });
   }
 
+  async createPaymentOption(data: Prisma.PaymentOptionCreateInput) {
+    return this.prisma.paymentOption.create({
+      data,
+    });
+  }
+
+  async findPaymentOptionById(id: string) {
+    return this.prisma.paymentOption.findUnique({
+      where: { id },
+    });
+  }
+
+  async findAllPaymentOptions(
+    filters: {
+      isActive?: boolean;
+      currency?: string;
+      search?: string;
+    } = {},
+    pagination: { skip?: number; take?: number } = {},
+  ) {
+    const { isActive, currency, search } = filters;
+    const { skip, take } = pagination;
+
+    const where: Prisma.PaymentOptionWhereInput = {};
+
+    if (isActive !== undefined) {
+      where.isActive = isActive;
+    }
+
+    if (currency) {
+      where.currency = currency;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.paymentOption.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.paymentOption.count({ where }),
+    ]);
+
+    return { data, total };
+  }
+
+  async updatePaymentOption(
+    id: string,
+    data: Prisma.PaymentOptionUpdateInput,
+  ) {
+    return this.prisma.paymentOption.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async deletePaymentOption(id: string) {
+    return this.prisma.paymentOption.delete({
+      where: { id },
+    });
+  }
+
   async createRefund(data: CreateRefundData) {
     return this.prisma.transactionRefund.create({
       data: {
