@@ -755,6 +755,124 @@ async function main() {
     }),
   ]);
 
+  // Create Booths for each center
+  console.log('🏢 Creating booths...');
+  const booths = [];
+
+  // Create booths for ASFAAR-ABUJA HQ (the active center)
+  const abujaCenter = biometricCenters.find(
+    (center) => center.code === 'ASFAAR-ABJ-HQ',
+  );
+  if (abujaCenter) {
+    const abujaBooths = await Promise.all([
+      // Regular booths
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R1',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R2',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R3',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+      // Premium booth
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'P1',
+          appointmentClass: 'PREMIUM',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+      // VIP booth
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'VIP1',
+          appointmentClass: 'VIP',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+    ]);
+    booths.push(...abujaBooths);
+  }
+
+  // Create a few sample booths for Lagos center as well
+  const lagosCenter = biometricCenters.find(
+    (center) => center.code === 'ASFAAR-LAG-VI',
+  );
+  if (lagosCenter) {
+    const lagosBooths = await Promise.all([
+      prisma.booth.create({
+        data: {
+          centerId: lagosCenter.id,
+          boothNumber: 'R1',
+          appointmentClass: 'REGULAR',
+          isActive: false, // Inactive since center is inactive
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: lagosCenter.id,
+          boothNumber: 'P1',
+          appointmentClass: 'PREMIUM',
+          isActive: false, // Inactive since center is inactive
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+    ]);
+    booths.push(...lagosBooths);
+  }
+
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Created:');
   console.log(`  - ${3 + users.length} users (including admin accounts)`);
@@ -767,6 +885,7 @@ async function main() {
   console.log(`  - 4 user preferences`);
   console.log(`  - 2 user profiles`);
   console.log(`  - ${biometricCenters.length} biometric centers`);
+  console.log(`  - ${booths.length} booths`);
 
   console.log('\n🔑 Test accounts:');
   console.log('  - Super Admin: superadmin@example.com / password123');
