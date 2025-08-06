@@ -37,10 +37,8 @@ import {
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
-import { User } from '@prisma/client';
 import { UserService } from '@modules/user/user.service';
-import { UserProxy } from '@modules/casl/proxies/user.proxy';
-import { CaslUser } from '@modules/casl/decorators/casl-user';
+
 
 /**
  * Controller for managing payments
@@ -48,7 +46,7 @@ import { CaslUser } from '@modules/casl/decorators/casl-user';
  */
 @ApiTags('Payments')
 @Controller('payments')
-//@UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @ApiBearerAuth()
 export class PaymentsController {
   constructor(
@@ -258,11 +256,10 @@ export class PaymentsController {
   ) {
     console.log("initiatePayment->request: ", req.user)
 
-    const userId = req.user.id;
+    const user = req.user
 
     const paymentOption = await this.paymentsService.findPaymentOptionById(initiatePaymentDto.paymentOption);
     
-    const user = await this.userService.getUserById(userId);
     initiatePaymentDto.amount = paymentOption.amount
     initiatePaymentDto.email = user.email
 
@@ -273,7 +270,7 @@ export class PaymentsController {
 
     const payment = await this.paymentsService.initiatePayment(
       initiatePaymentDto,
-      userId,
+      user.id,
     );
 
     return {
