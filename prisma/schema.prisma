@@ -64,6 +64,19 @@ enum PaymentProvider {
   PAYPAL
 }
 
+model PaymentOption {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  amount      Int
+  currency    String            @default("NGN")
+  providers   PaymentProvider[]
+  metadata    Json?
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
 enum TransactionType {
   PAYMENT
   REFUND
