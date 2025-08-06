@@ -6,10 +6,13 @@ import {
   Body,
   Param,
   Query,
+  Request,
   HttpStatus,
   UseGuards,
   ParseUUIDPipe,
   ValidationPipe,
+  Delete,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,10 +29,18 @@ import {
   RefundPaymentDto,
   PaymentFiltersDto,
   UpdatePaymentDto,
+  InitiatePaymentDto,
+  PaymentOptionFiltersDto,
+  CreatePaymentOptionDto,
+  UpdatePaymentOptionDto,
 } from './dto/payment.dto';
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
+import { User } from '@prisma/client';
+import { UserService } from '@modules/user/user.service';
+import { UserProxy } from '@modules/casl/proxies/user.proxy';
+import { CaslUser } from '@modules/casl/decorators/casl-user';
 
 /**
  * Controller for managing payments
@@ -37,10 +48,14 @@ import { PaginationQueryDto } from '@common/dtos';
  */
 @ApiTags('Payments')
 @Controller('payments')
-@UseGuards(AuthGuard)
+//@UseGuards(AuthGuard)
 @ApiBearerAuth()
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly userService: UserService
+
+  ) {}
 
   /**
    * Create a new payment
@@ -79,6 +94,72 @@ export class PaymentsController {
     };
   }
 
+     /**
+   * Get all payment options
+   */
+  @Get('options')
+  @ApiOperation({
+    summary: 'Get payment options',
+    description: 'Get all payment options with filtering and pagination',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    type: Boolean,
+    description: 'Filter by active status',
+  })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    type: String,
+    description: 'Filter by currency',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by name or description',
+
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment options retrieved successfully',
+  })
+  async findAllPaymentOptions(
+  @Query(new ValidationPipe({ transform: true })) filters: PaymentOptionFiltersDto,
+  @Query(new ValidationPipe({ transform: true })) pagination: PaginationQueryDto,
+  ) {
+
+
+  console.log('Filters:', filters);
+  console.log('Pagination:', pagination);
+
+    const result = await this.paymentsService.findAllPaymentOptions(
+      filters,
+      pagination,
+    );
+    return {
+      message: 'Payment options retrieved successfully',
+      data: result.data,
+      meta: result.meta,
+    };
+  }
+
+  
   /**
    * Get all payments with optional filtering and pagination
    */
@@ -148,6 +229,56 @@ export class PaymentsController {
       message: 'Payments retrieved successfully',
       data: result.data,
       meta: result.meta,
+    };
+  }
+
+   /**
+   * Initiate a new payment
+   */
+  @Post("initiate")
+  @ApiOperation({
+    summary: 'Initiate a new payment',
+    description: 'Initiate a new payment for a form submission',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Payment initiated successfully',
+    type: PaymentEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  //@UseGuards(AuthGuard)  // or JwtAuthGuard, or whatever your auth guard is
+  @ApiBearerAuth()
+
+  async initiatePayment(
+    @Request() req: any,
+    @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto
+  ) {
+    console.log("initiatePayment->request: ", req.user)
+
+    const userId = req.user.id;
+
+    const paymentOption = await this.paymentsService.findPaymentOptionById(initiatePaymentDto.paymentOption);
+    
+    const user = await this.userService.getUserById(userId);
+    initiatePaymentDto.amount = paymentOption.amount
+    initiatePaymentDto.email = user.email
+
+    if (!paymentOption || !paymentOption.isActive) {
+      //this.logger.error(`Invalid or inactive payment option: ${paymentOption}`);
+      throw new BadRequestException('Invalid or inactive payment option');
+    }
+
+    const payment = await this.paymentsService.initiatePayment(
+      initiatePaymentDto,
+      userId,
+    );
+
+    return {
+      message: 'Payment initiated successfully',
+      data: payment,
     };
   }
 
@@ -330,6 +461,131 @@ export class PaymentsController {
     };
   }
 
+
+ 
+
+  /**
+   * Create a new payment option (Admin only)
+   */
+  @Post('options')
+  @ApiOperation({
+    summary: 'Create a payment option',
+    description: 'Create a new payment option (Admin only)',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Payment option created successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  async createPaymentOption(
+    @Body(ValidationPipe) createDto: CreatePaymentOptionDto,
+  ) {
+
+    const option = await this.paymentsService.createPaymentOption(createDto);
+
+    return {
+      message: 'Payment option created successfully',
+      data: option,
+    };
+  }
+
+ 
+
+  /**
+   * Get a payment option by ID
+   */
+  @Get('options/:id')
+  @ApiOperation({
+    summary: 'Get payment option by ID',
+    description: 'Get a specific payment option by its ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Payment option ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment option retrieved successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payment option not found',
+  })
+  async findPaymentOptionById(@Param('id', ParseUUIDPipe) id: string) {
+    const option = await this.paymentsService.findPaymentOptionById(id);
+    return {
+      message: 'Payment option retrieved successfully',
+      data: option,
+    };
+  }
+
+  /**
+   * Update a payment option (Admin only)
+   */
+  @Put('options/:id')
+  @ApiOperation({
+    summary: 'Update payment option',
+    description: 'Update a payment option (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Payment option ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment option updated successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payment option not found',
+  })
+  async updatePaymentOption(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(ValidationPipe) updateDto: UpdatePaymentOptionDto,
+  ) {
+    const option = await this.paymentsService.updatePaymentOption(id, updateDto);
+    return {
+      message: 'Payment option updated successfully',
+      data: option,
+    };
+  }
+
+  /**
+   * Delete a payment option (Admin only)
+   */
+  @Delete('options/:id')
+  @ApiOperation({
+    summary: 'Delete payment option',
+    description: 'Delete a payment option (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Payment option ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment option deleted successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payment option not found',
+  })
+  
+  async deletePaymentOption(@Param('id', ParseUUIDPipe) id: string) {
+    await this.paymentsService.deletePaymentOption(id);
+    return {
+      message: 'Payment option deleted successfully',
+    };
+  }
+
+
+
   /**
    * Refund a payment
    */
@@ -401,3 +657,5 @@ export class PaymentsController {
     };
   }
 }
+
+

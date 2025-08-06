@@ -10,6 +10,7 @@ export const permissions: Permissions<Roles> = {
     can(Actions.create, 'PaymentMethod');
     can(Actions.update, 'PaymentMethod', { userId: '${user.id}' });
     can(Actions.delete, 'PaymentMethod', { userId: '${user.id}' });
+    can(Actions.read, 'PaymentOption');
   },
 
   [Roles.APPLICANT]({ can }) {
@@ -29,6 +30,7 @@ export const permissions: Permissions<Roles> = {
     can(Actions.manage, 'Wallet');
     can(Actions.create, 'Transfer');
     can(Actions.read, 'Transfer');
+    can(Actions.manage, 'PaymentOption');
   },
 
   [Roles.SUPER_ADMIN]({ can }) {

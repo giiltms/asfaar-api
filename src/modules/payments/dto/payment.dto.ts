@@ -8,10 +8,14 @@ import {
   IsPositive,
   IsUrl,
   Min,
+  IsBoolean,
+  IsArray,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Currency, PaymentStatus, PaymentMethodType } from '@prisma/client';
+import { PaymentProvider } from '@common/configs/payment.config';
+import { PaymentProvider as PrismaPaymentProvider } from '@prisma/client';
 
 // Base DTO for creating a payment
 export class CreatePaymentDto {
@@ -62,6 +66,72 @@ export class CreatePaymentDto {
   @IsString()
   description?: string;
 }
+
+//DTO for initiating a payment
+export class InitiatePaymentDto {
+  @ApiProperty({
+    description: 'Form submission ID that this payment is for',
+  })
+  @IsUUID()
+  @IsOptional()
+  submissionId?: string;
+
+  @ApiProperty({
+    description: 'User email',
+  })
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty({
+    description: 'Payment amount',
+  })
+  @IsNumber()
+  @Type(() => Number)
+  @IsPositive()
+  @IsOptional()
+  amount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Payment currency',
+    enum: Currency,
+    default: Currency.NGN,
+  })
+  @IsOptional()
+  @IsEnum(Currency)
+  currency?: Currency;
+
+  @ApiPropertyOptional({
+    description: 'Payment method type',
+    enum: PaymentMethodType,
+  })
+  @IsOptional()
+  @IsEnum(PaymentMethodType)
+  methodType?: PaymentMethodType;
+
+  @ApiPropertyOptional({
+    description: 'Payment provider',
+    enum: PaymentProvider,
+  })
+  @IsOptional()
+  @IsEnum(PaymentProvider)
+  paymentProvider?: PaymentProvider;
+
+  @ApiPropertyOptional({
+    description: 'Payment option uuid',
+  })
+  @IsOptional()
+  @IsString()
+  paymentOption?: string;
+
+  @ApiPropertyOptional({
+    description: 'Description of what the payment is for',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+
 
 // DTO for updating payment status (usually via webhooks)
 export class UpdatePaymentStatusDto {
@@ -289,4 +359,141 @@ export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {
   @IsOptional()
   @Transform(({ value }) => new Date(value))
   expiresAt?: Date;
+}
+
+
+
+export class CreatePaymentOptionDto {
+  @ApiProperty({ description: 'Name of the payment option', example: 'Visa Fee' })
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiPropertyOptional({
+    description: 'Description of the payment option',
+    example: 'Visa application processing fee',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Amount in kobo',
+    example: 50000,
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  amount: number;
+
+  @ApiPropertyOptional({
+    description: 'Currency',
+    example: 'NGN',
+    default: 'NGN',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Allowed payment providers',
+    type: [String],
+    enum: PrismaPaymentProvider,
+  })
+  @IsOptional()
+  @IsArray()
+  providers?: PrismaPaymentProvider[];
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+    example: { customField: 'value' },
+  })
+  @IsOptional()
+  metadata?: any;
+
+  @ApiPropertyOptional({
+    description: 'Whether the option is active',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdatePaymentOptionDto {
+  @ApiPropertyOptional({ description: 'Name of the payment option', example: 'Visa Fee' })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Description of the payment option',
+    example: 'Visa application processing fee',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Amount in kobo',
+    example: 50000,
+  })
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Currency',
+    example: 'NGN',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Allowed payment providers',
+    type: [String],
+    enum: PrismaPaymentProvider,
+  })
+  @IsOptional()
+  @IsArray()
+  providers?: PrismaPaymentProvider[];
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+    example: { customField: 'value' },
+  })
+  @IsOptional()
+  metadata?: any;
+
+  @ApiPropertyOptional({
+    description: 'Whether the option is active',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class PaymentOptionFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by currency',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search by name or description',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

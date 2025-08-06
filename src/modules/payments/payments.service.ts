@@ -13,6 +13,10 @@ import {
   RefundPaymentDto,
   PaymentFiltersDto,
   UpdatePaymentDto,
+  InitiatePaymentDto,
+  CreatePaymentOptionDto,
+  PaymentOptionFiltersDto,
+  UpdatePaymentOptionDto,
 } from './dto/payment.dto';
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
@@ -86,6 +90,77 @@ export class PaymentsService {
 
       this.logger.log(
         `Created payment: ${payment.id} for submission: ${createDto.submissionId}`,
+      );
+
+      return payment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create payment: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new payment
+   */
+  async initiatePayment(
+    initiatePaymentDto: InitiatePaymentDto,
+    createdBy?: string,
+  ): Promise<Payment> {
+    try {
+      // Check if submission exists
+      const submission = await this.prisma.formSubmission.findUnique({
+        where: { id: initiatePaymentDto.submissionId },
+      });
+
+      if (!submission) {
+        throw new NotFoundException(
+          `Form submission with ID "${initiatePaymentDto.submissionId}" not found`,
+        );
+      }
+
+      // Check if payment already exists for this submission
+      const existingPayment = await this.prisma.payment.findUnique({
+        where: { submissionId: initiatePaymentDto.submissionId },
+      });
+
+      if (existingPayment) {
+        throw new ConflictException(
+          `Payment already exists for submission "${initiatePaymentDto.submissionId}"`,
+        );
+      }
+
+      // Generate invoice number
+      const invoiceNumber = await this.generateInvoiceNumber();
+
+      // Set default values
+      const paymentData: Prisma.PaymentCreateInput = {
+        amount:initiatePaymentDto.amount,
+        currency: initiatePaymentDto.currency || Currency.NGN,
+        invoiceNumber,
+        createdBy,
+        submission: {
+          connect: { id: initiatePaymentDto.submissionId },
+        },
+      };
+
+      const payment = await this.prisma.payment.create({
+        data: paymentData,
+        include: {
+          submission: {
+            select: {
+              id: true,
+              status: true,
+              userId: true,
+            },
+          },
+        },
+      });
+
+      this.logger.log(
+        `Created payment: ${payment.id} for submission: ${initiatePaymentDto.submissionId}`,
       );
 
       return payment;
@@ -303,6 +378,135 @@ export class PaymentsService {
     } catch (error) {
       this.logger.error(
         `Failed to update payment status ${id}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  async createPaymentOption(createDto: CreatePaymentOptionDto) {
+    try {
+
+      const paymentOption = await this.prisma.paymentOption.create({
+        data: {
+          ...createDto,
+          providers: createDto.providers || [],
+          isActive: createDto.isActive ?? true,
+        },
+      });
+
+      this.logger.log(`Created payment option: ${paymentOption.id}`);
+
+      return paymentOption;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create payment option: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  async findAllPaymentOptions(
+    filters: PaymentOptionFiltersDto = {},
+    pagination: PaginationQueryDto = {},
+  ) {
+    const { page = 1, limit = 10 } = pagination;
+    const { isActive, currency, search } = filters;
+
+    const skip = (page - 1) * limit;
+
+    const result = await this.prisma.paymentOption.findMany({
+      where: {
+        isActive,
+        currency,
+        OR: search
+          ? [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
+          : undefined,
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const total = await this.prisma.paymentOption.count({
+      where: {
+        isActive,
+        currency,
+        OR: search
+          ? [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
+          : undefined,
+      },
+    });
+
+    const meta = PaginationUtils.createPaginationMeta(
+      page,
+      limit,
+      total,
+      'createdAt',
+      'desc',
+    );
+
+    return {
+      data: result,
+      meta,
+    };
+  }
+
+  async findPaymentOptionById(id: string) {
+    const paymentOption = await this.prisma.paymentOption.findUnique({
+      where: { id },
+    });
+
+    if (!paymentOption) {
+      throw new NotFoundException(`Payment option with ID "${id}" not found`);
+    }
+
+    return paymentOption;
+  }
+
+  async updatePaymentOption(
+    id: string,
+    updateDto: UpdatePaymentOptionDto,
+  ) {
+    try {
+      await this.findPaymentOptionById(id);
+
+      const updatedOption = await this.prisma.paymentOption.update({
+        where: { id },
+        data: updateDto,
+      });
+
+      this.logger.log(`Updated payment option: ${id}`);
+      return updatedOption;
+    } catch (error) {
+      this.logger.error(
+        `Failed to update payment option ${id}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  async deletePaymentOption(id: string) {
+    try {
+      await this.findPaymentOptionById(id);
+
+      await this.prisma.paymentOption.delete({
+        where: { id },
+      });
+
+      this.logger.log(`Deleted payment option: ${id}`);
+      return { message: 'Payment option deleted successfully' };
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete payment option ${id}: ${error.message}`,
         error.stack,
       );
       throw error;
