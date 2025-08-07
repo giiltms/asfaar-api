@@ -25,7 +25,7 @@ export class CreatePaymentDto {
   })
   @IsNotEmpty()
   @IsUUID()
-  submissionId: string;
+  submissionId?: string;
 
   @ApiProperty({
     description: 'Payment amount',
@@ -117,11 +117,11 @@ export class InitiatePaymentDto {
   paymentProvider?: PaymentProvider;
 
   @ApiPropertyOptional({
-    description: 'Payment option uuid',
+    description: 'Service Fees UUIDs',
   })
   @IsOptional()
-  @IsString()
-  paymentOption?: string;
+  @IsArray()
+  serviceFees?: [string];
 
   @ApiPropertyOptional({
     description: 'Description of what the payment is for',
@@ -363,7 +363,7 @@ export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {
 
 
 
-export class CreatePaymentOptionDto {
+export class CreateServiceFeeDto {
   @ApiProperty({ description: 'Name of the payment option', example: 'Visa Fee' })
   @IsNotEmpty()
   @IsString()
@@ -420,7 +420,7 @@ export class CreatePaymentOptionDto {
   isActive?: boolean;
 }
 
-export class UpdatePaymentOptionDto {
+export class UpdateServiceFeeDto {
   @ApiPropertyOptional({ description: 'Name of the payment option', example: 'Visa Fee' })
   @IsOptional()
   @IsString()
@@ -475,7 +475,7 @@ export class UpdatePaymentOptionDto {
   isActive?: boolean;
 }
 
-export class PaymentOptionFiltersDto {
+export class ServiceFeeFiltersDto {
   @ApiPropertyOptional({
     description: 'Filter by active status',
   })

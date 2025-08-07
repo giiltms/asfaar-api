@@ -30,14 +30,15 @@ import {
   PaymentFiltersDto,
   UpdatePaymentDto,
   InitiatePaymentDto,
-  PaymentOptionFiltersDto,
-  CreatePaymentOptionDto,
-  UpdatePaymentOptionDto,
+  ServiceFeeFiltersDto,
+  CreateServiceFeeDto,
+  UpdateServiceFeeDto,
 } from './dto/payment.dto';
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
 import { UserService } from '@modules/user/user.service';
+import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
 
 
 /**
@@ -51,6 +52,7 @@ import { UserService } from '@modules/user/user.service';
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
+    private readonly paymentProviderService: PaymentProviderService,
     private readonly userService: UserService
 
   ) {}
@@ -93,12 +95,12 @@ export class PaymentsController {
   }
 
      /**
-   * Get all payment options
+   * Get all service fees
    */
-  @Get('options')
+  @Get('fee')
   @ApiOperation({
-    summary: 'Get payment options',
-    description: 'Get all payment options with filtering and pagination',
+    summary: 'Get service fees',
+    description: 'Get all service fees with filtering and pagination',
   })
   @ApiQuery({
     name: 'page',
@@ -135,10 +137,10 @@ export class PaymentsController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Payment options retrieved successfully',
+    description: 'Service fee retrieved successfully',
   })
-  async findAllPaymentOptions(
-  @Query(new ValidationPipe({ transform: true })) filters: PaymentOptionFiltersDto,
+  async findAllServiceFees(
+  @Query(new ValidationPipe({ transform: true })) filters: ServiceFeeFiltersDto,
   @Query(new ValidationPipe({ transform: true })) pagination: PaginationQueryDto,
   ) {
 
@@ -146,12 +148,12 @@ export class PaymentsController {
   console.log('Filters:', filters);
   console.log('Pagination:', pagination);
 
-    const result = await this.paymentsService.findAllPaymentOptions(
+    const result = await this.paymentsService.findAllServiceFees(
       filters,
       pagination,
     );
     return {
-      message: 'Payment options retrieved successfully',
+      message: 'Service fee retrieved successfully',
       data: result.data,
       meta: result.meta,
     };
@@ -254,28 +256,97 @@ export class PaymentsController {
     @Request() req: any,
     @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto
   ) {
-    console.log("initiatePayment->request: ", req.user)
 
     const user = req.user
 
-    const paymentOption = await this.paymentsService.findPaymentOptionById(initiatePaymentDto.paymentOption);
-    
-    initiatePaymentDto.amount = paymentOption.amount
-    initiatePaymentDto.email = user.email
 
-    if (!paymentOption || !paymentOption.isActive) {
-      //this.logger.error(`Invalid or inactive payment option: ${paymentOption}`);
-      throw new BadRequestException('Invalid or inactive payment option');
+     // Validate we have service fees to process
+    if (!initiatePaymentDto?.serviceFees?.length) {
+      throw new BadRequestException('At least one service fee is required');
     }
 
-    const payment = await this.paymentsService.initiatePayment(
-      initiatePaymentDto,
-      user.id,
+    // Fetch all service fees
+    const serviceFees = await Promise.all(
+      initiatePaymentDto.serviceFees.map(serviceFeeId => 
+        this.paymentsService.findServiceFeeById(serviceFeeId)
+      )
     );
+
+    // Verify all service fees are valid and active
+    const invalidFees = serviceFees.filter(
+      fee => !fee || !fee.isActive
+    );
+    
+    if (invalidFees.length > 0) {
+      throw new BadRequestException('One or more service fees are invalid or inactive');
+    }
+
+    // Calculate total amount
+    const totalAmount = serviceFees.reduce(
+      (sum, fee) => sum + fee.amount, 0
+    );
+
+    // Prepare payment data
+    const paymentData = {
+      ...initiatePaymentDto,
+      amount: totalAmount,
+      email: user.email,
+      user: user?.id,
+      serviceFees: initiatePaymentDto.serviceFees,
+      metadata: {
+        feeDetails: serviceFees.map(fee => ({
+          id: fee.id,
+          name: fee.name,
+          amount: fee.amount,
+        })),
+      },
+    };
+
+
+    const payment = await this.paymentProviderService.initiatePayment(
+      paymentData,
+    );
+
+    await this.paymentsService.createPayment(paymentData, user.id, payment.reference)
 
     return {
       message: 'Payment initiated successfully',
       data: payment,
+    };
+  }
+
+
+   /**
+   * Get a specific payment by ID
+   */
+  @Get(':reference/verify')
+  @ApiOperation({
+    summary: 'Verify payment by Ref',
+    description: 'Retrieve a specific payment by Ref',
+  })
+  @ApiParam({
+    name: 'reference',
+    description: 'Payment Ref',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment retrieved successfully',
+    type: PaymentEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Payment not found',
+  })
+  async verifyPayment(@Param('reference') reference: string) {
+
+    const payment = await this.paymentsService.findPaymentByRef(reference)
+
+
+    const result = await this.paymentProviderService.verifyPayment(reference, payment.processor);
+
+    return {
+      message: 'Payment retrieved successfully',
+      data: result,
     };
   }
 
@@ -462,12 +533,12 @@ export class PaymentsController {
  
 
   /**
-   * Create a new payment option (Admin only)
+   * Create a new service fee (Admin only)
    */
-  @Post('options')
+  @Post('fee')
   @ApiOperation({
-    summary: 'Create a payment option',
-    description: 'Create a new payment option (Admin only)',
+    summary: 'Create a service fee',
+    description: 'Create a new service fee (Admin only)',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -477,11 +548,11 @@ export class PaymentsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid input data',
   })
-  async createPaymentOption(
-    @Body(ValidationPipe) createDto: CreatePaymentOptionDto,
+  async createServiceFee(
+    @Body(ValidationPipe) createDto: CreateServiceFeeDto,
   ) {
 
-    const option = await this.paymentsService.createPaymentOption(createDto);
+    const option = await this.paymentsService.createServiceFee(createDto);
 
     return {
       message: 'Payment option created successfully',
@@ -492,12 +563,12 @@ export class PaymentsController {
  
 
   /**
-   * Get a payment option by ID
+   * Get a service fee by ID
    */
-  @Get('options/:id')
+  @Get('fee/:id')
   @ApiOperation({
-    summary: 'Get payment option by ID',
-    description: 'Get a specific payment option by its ID',
+    summary: 'Get service fee by ID',
+    description: 'Get a specific service fee by its ID',
   })
   @ApiParam({
     name: 'id',
@@ -512,8 +583,8 @@ export class PaymentsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Payment option not found',
   })
-  async findPaymentOptionById(@Param('id', ParseUUIDPipe) id: string) {
-    const option = await this.paymentsService.findPaymentOptionById(id);
+  async findServiceFeeById(@Param('id', ParseUUIDPipe) id: string) {
+    const option = await this.paymentsService.findServiceFeeById(id);
     return {
       message: 'Payment option retrieved successfully',
       data: option,
@@ -521,12 +592,12 @@ export class PaymentsController {
   }
 
   /**
-   * Update a payment option (Admin only)
+   * Update a service fee (Admin only)
    */
-  @Put('options/:id')
+  @Put('fee/:id')
   @ApiOperation({
-    summary: 'Update payment option',
-    description: 'Update a payment option (Admin only)',
+    summary: 'Update service fee',
+    description: 'Update a service fee (Admin only)',
   })
   @ApiParam({
     name: 'id',
@@ -541,11 +612,11 @@ export class PaymentsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Payment option not found',
   })
-  async updatePaymentOption(
+  async updateServiceFee(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body(ValidationPipe) updateDto: UpdatePaymentOptionDto,
+    @Body(ValidationPipe) updateDto: UpdateServiceFeeDto,
   ) {
-    const option = await this.paymentsService.updatePaymentOption(id, updateDto);
+    const option = await this.paymentsService.updateServiceFee(id, updateDto);
     return {
       message: 'Payment option updated successfully',
       data: option,
@@ -553,12 +624,12 @@ export class PaymentsController {
   }
 
   /**
-   * Delete a payment option (Admin only)
+   * Delete a service fee (Admin only)
    */
-  @Delete('options/:id')
+  @Delete('fee/:id')
   @ApiOperation({
-    summary: 'Delete payment option',
-    description: 'Delete a payment option (Admin only)',
+    summary: 'Delete service fee',
+    description: 'Delete a service fee (Admin only)',
   })
   @ApiParam({
     name: 'id',
@@ -574,8 +645,8 @@ export class PaymentsController {
     description: 'Payment option not found',
   })
   
-  async deletePaymentOption(@Param('id', ParseUUIDPipe) id: string) {
-    await this.paymentsService.deletePaymentOption(id);
+  async deleteServiceFee(@Param('id', ParseUUIDPipe) id: string) {
+    await this.paymentsService.deleteServiceFee(id);
     return {
       message: 'Payment option deleted successfully',
     };

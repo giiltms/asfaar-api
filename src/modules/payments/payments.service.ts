@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { Prisma, Payment, PaymentStatus, Currency } from '@prisma/client';
+import { Prisma, Payment, PaymentStatus, Currency, PaymentProvider } from '@prisma/client';
 import {
   CreatePaymentDto,
   UpdatePaymentStatusDto,
@@ -14,12 +14,13 @@ import {
   PaymentFiltersDto,
   UpdatePaymentDto,
   InitiatePaymentDto,
-  CreatePaymentOptionDto,
-  PaymentOptionFiltersDto,
-  UpdatePaymentOptionDto,
+  CreateServiceFeeDto,
+  ServiceFeeFiltersDto,
+  UpdateServiceFeeDto,
 } from './dto/payment.dto';
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
+import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
 
 /**
  * Service for managing payments
@@ -29,50 +30,59 @@ import { PaginationUtils } from '@common/utils/pagination.utils';
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentProviderService: PaymentProviderService,
+  ) {}
 
   /**
    * Create a new payment
    */
   async createPayment(
-    createDto: CreatePaymentDto,
+    createDto: any,
     createdBy?: string,
+    reference?: string
   ): Promise<Payment> {
     try {
-      // Check if submission exists
-      const submission = await this.prisma.formSubmission.findUnique({
-        where: { id: createDto.submissionId },
-      });
 
-      if (!submission) {
-        throw new NotFoundException(
-          `Form submission with ID "${createDto.submissionId}" not found`,
-        );
-      }
 
-      // Check if payment already exists for this submission
-      const existingPayment = await this.prisma.payment.findUnique({
-        where: { submissionId: createDto.submissionId },
-      });
+      // // Check if submission exists
+      // const submission = await this.prisma.formSubmission.findUnique({
+      //   where: { id: createDto.submissionId },
+      // });
 
-      if (existingPayment) {
-        throw new ConflictException(
-          `Payment already exists for submission "${createDto.submissionId}"`,
-        );
-      }
+      // if (!submission) {
+      //   throw new NotFoundException(
+      //     `Form submission with ID "${createDto.submissionId}" not found`,
+      //   );
+      // }
+
+      // // Check if payment already exists for this submission
+      // const existingPayment = await this.prisma.payment.findUnique({
+      //   where: { submissionId: createDto.submissionId },
+      // });
+
+      // if (existingPayment) {
+      //   throw new ConflictException(
+      //     `Payment already exists for submission "${createDto.submissionId}"`,
+      //   );
+      // }
 
       // Generate invoice number
       const invoiceNumber = await this.generateInvoiceNumber();
+      const processor = createDto.paymentProvider.toUpperCase();
 
       // Set default values
       const paymentData: Prisma.PaymentCreateInput = {
-        ...createDto,
+        amount: createDto.amount,
         currency: createDto.currency || Currency.NGN,
         invoiceNumber,
+        reference,
+        processor: processor as PaymentProvider,
         createdBy,
-        submission: {
-          connect: { id: createDto.submissionId },
-        },
+        // submission: {
+        //   connect: { id: createDto.submissionId },
+        // },
       };
 
       const payment = await this.prisma.payment.create({
@@ -111,52 +121,67 @@ export class PaymentsService {
   ): Promise<Payment> {
     try {
       // Check if submission exists
-      const submission = await this.prisma.formSubmission.findUnique({
-        where: { id: initiatePaymentDto.submissionId },
-      });
+      // const submission = await this.prisma.formSubmission.findUnique({
+      //   where: { id: initiatePaymentDto.submissionId },
+      // });
 
-      if (!submission) {
-        throw new NotFoundException(
-          `Form submission with ID "${initiatePaymentDto.submissionId}" not found`,
-        );
+      // if (!submission) {
+      //   throw new NotFoundException(
+      //     `Form submission with ID "${initiatePaymentDto.submissionId}" not found`,
+      //   );
+      // }
+
+      // // Check if payment already exists for this submission
+      // const existingPayment = await this.prisma.payment.findUnique({
+      //   where: { submissionId: initiatePaymentDto.submissionId },
+      // });
+
+      // if (existingPayment) {
+      //   throw new ConflictException(
+      //     `Payment already exists for submission "${initiatePaymentDto.submissionId}"`,
+      //   );
+      // }
+
+       // Validate we have service fees to process
+      if (!initiatePaymentDto?.serviceFees?.length) {
+        throw new BadRequestException('At least one service fee is required');
       }
 
-      // Check if payment already exists for this submission
-      const existingPayment = await this.prisma.payment.findUnique({
-        where: { submissionId: initiatePaymentDto.submissionId },
-      });
+      // Fetch all service fees
+      const serviceFees = await Promise.all(
+        initiatePaymentDto.serviceFees.map(serviceFeeId => 
+          this.findServiceFeeById(serviceFeeId)
+        )
+      );
 
-      if (existingPayment) {
-        throw new ConflictException(
-          `Payment already exists for submission "${initiatePaymentDto.submissionId}"`,
-        );
+      // Verify all service fees are valid and active
+      const invalidFees = serviceFees.filter(
+        fee => !fee || !fee.isActive
+      );
+      
+      if (invalidFees.length > 0) {
+        throw new BadRequestException('One or more service fees are invalid or inactive');
       }
+
+      // Calculate total amount
+      const totalAmount = serviceFees.reduce(
+        (sum, fee) => sum + fee.amount, 0
+      );
 
       // Generate invoice number
       const invoiceNumber = await this.generateInvoiceNumber();
 
       // Set default values
       const paymentData: Prisma.PaymentCreateInput = {
-        amount:initiatePaymentDto.amount,
+        amount: initiatePaymentDto.amount,
         currency: initiatePaymentDto.currency || Currency.NGN,
         invoiceNumber,
         createdBy,
-        submission: {
-          connect: { id: initiatePaymentDto.submissionId },
-        },
       };
 
       const payment = await this.prisma.payment.create({
         data: paymentData,
-        include: {
-          submission: {
-            select: {
-              id: true,
-              status: true,
-              userId: true,
-            },
-          },
-        },
+        
       });
 
       this.logger.log(
@@ -277,6 +302,7 @@ export class PaymentsService {
    * Get a single payment by ID
    */
   async findPaymentById(id: string): Promise<Payment> {
+
     const payment = await this.prisma.payment.findUnique({
       where: { id },
       include: {
@@ -300,6 +326,38 @@ export class PaymentsService {
 
     if (!payment) {
       throw new NotFoundException(`Payment with ID "${id}" not found`);
+    }
+
+    return payment;
+  }
+
+  /**
+   * Get a single payment by Reference
+   */
+  async findPaymentByRef(reference: string): Promise<Payment> {
+    const payment = await this.prisma.payment.findUnique({
+      where: { reference },
+      include: {
+        submission: {
+          select: {
+            id: true,
+            status: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID "${reference}" not found`);
     }
 
     return payment;
@@ -343,7 +401,6 @@ export class PaymentsService {
       const updateData: Prisma.PaymentUpdateInput = {
         status: updateDto.status,
         processorId: updateDto.processorId,
-        processorName: updateDto.processorName,
         receiptUrl: updateDto.receiptUrl,
         processorResponse: updateDto.processorResponse,
         lastModifiedBy,
@@ -384,10 +441,10 @@ export class PaymentsService {
     }
   }
 
-  async createPaymentOption(createDto: CreatePaymentOptionDto) {
+  async createServiceFee(createDto: CreateServiceFeeDto) {
     try {
 
-      const paymentOption = await this.prisma.paymentOption.create({
+      const serviceFee = await this.prisma.serviceFee.create({
         data: {
           ...createDto,
           providers: createDto.providers || [],
@@ -395,20 +452,20 @@ export class PaymentsService {
         },
       });
 
-      this.logger.log(`Created payment option: ${paymentOption.id}`);
+      this.logger.log(`Created service Fee: ${serviceFee.id}`);
 
-      return paymentOption;
+      return serviceFee;
     } catch (error) {
       this.logger.error(
-        `Failed to create payment option: ${error.message}`,
+        `Failed to create service Fee: ${error.message}`,
         error.stack,
       );
       throw error;
     }
   }
 
-  async findAllPaymentOptions(
-    filters: PaymentOptionFiltersDto = {},
+  async findAllServiceFees(
+    filters: ServiceFeeFiltersDto = {},
     pagination: PaginationQueryDto = {},
   ) {
     const { page = 1, limit = 10 } = pagination;
@@ -416,7 +473,7 @@ export class PaymentsService {
 
     const skip = (page - 1) * limit;
 
-    const result = await this.prisma.paymentOption.findMany({
+    const result = await this.prisma.serviceFee.findMany({
       where: {
         isActive,
         currency,
@@ -432,7 +489,7 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const total = await this.prisma.paymentOption.count({
+    const total = await this.prisma.serviceFee.count({
       where: {
         isActive,
         currency,
@@ -459,54 +516,54 @@ export class PaymentsService {
     };
   }
 
-  async findPaymentOptionById(id: string) {
-    const paymentOption = await this.prisma.paymentOption.findUnique({
+  async findServiceFeeById(id: string) {
+    const serviceFee = await this.prisma.serviceFee.findUnique({
       where: { id },
     });
 
-    if (!paymentOption) {
-      throw new NotFoundException(`Payment option with ID "${id}" not found`);
+    if (!serviceFee) {
+      throw new NotFoundException(`Service Fee with ID "${id}" not found`);
     }
 
-    return paymentOption;
+    return serviceFee;
   }
 
-  async updatePaymentOption(
+  async updateServiceFee(
     id: string,
-    updateDto: UpdatePaymentOptionDto,
+    updateDto: UpdateServiceFeeDto,
   ) {
     try {
-      await this.findPaymentOptionById(id);
+      await this.findServiceFeeById(id);
 
-      const updatedOption = await this.prisma.paymentOption.update({
+      const updatedOption = await this.prisma.serviceFee.update({
         where: { id },
         data: updateDto,
       });
 
-      this.logger.log(`Updated payment option: ${id}`);
+      this.logger.log(`Updated service Fee: ${id}`);
       return updatedOption;
     } catch (error) {
       this.logger.error(
-        `Failed to update payment option ${id}: ${error.message}`,
+        `Failed to update service Fee ${id}: ${error.message}`,
         error.stack,
       );
       throw error;
     }
   }
 
-  async deletePaymentOption(id: string) {
+  async deleteServiceFee(id: string) {
     try {
-      await this.findPaymentOptionById(id);
+      await this.findServiceFeeById(id);
 
-      await this.prisma.paymentOption.delete({
+      await this.prisma.serviceFee.delete({
         where: { id },
       });
 
-      this.logger.log(`Deleted payment option: ${id}`);
-      return { message: 'Payment option deleted successfully' };
+      this.logger.log(`Deleted service Fee: ${id}`);
+      return { message: 'Service Fee deleted successfully' };
     } catch (error) {
       this.logger.error(
-        `Failed to delete payment option ${id}: ${error.message}`,
+        `Failed to delete service Fee ${id}: ${error.message}`,
         error.stack,
       );
       throw error;
