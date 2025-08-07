@@ -566,14 +566,67 @@ enum TokenType {
   JWT
 }
 
+// Country model for managing visa destinations and forms
+model Country {
+  id           String  @id @default(uuid())
+  name         String  @unique // e.g., "Saudi Arabia"
+  isoCode2     String  @unique @db.VarChar(2) // e.g., "SA" (ISO 3166-1 alpha-2)
+  isoCode3     String  @unique @db.VarChar(3) // e.g., "SAU" (ISO 3166-1 alpha-3)
+  numericCode  String  @unique @db.VarChar(3) // e.g., "682" (ISO 3166-1 numeric)
+  currency     String? // e.g., "SAR"
+  currencyName String? // e.g., "Saudi Riyal"
+  dialCode     String? // e.g., "+966"
+  region       String? // e.g., "Asia", "Africa"
+  subregion    String? // e.g., "Western Asia"
+  capital      String? // e.g., "Riyadh"
+  flag         String? // Flag emoji or URL
+  isActive     Boolean @default(true)
+
+  // Form and application settings
+  visaProcessingDays Int?     @default(14) // Expected processing time
+  maxApplications    Int?     @default(1000) // Max applications per year
+  applicationFee     Decimal? @db.Decimal(10, 2) // Base application fee
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Relations
+  forms               DynamicForm[]
+  applicationCounters ApplicationCounter[]
+
+  @@map("countries")
+}
+
+// Application counter for generating unique reference numbers per country/year
+model ApplicationCounter {
+  id        String  @id @default(uuid())
+  country   Country @relation(fields: [countryId], references: [id])
+  countryId String
+  year      Int
+  counter   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, year])
+  @@map("application_counters")
+}
+
 model DynamicForm {
   id          String   @id @default(uuid())
   name        String
   description String?
   createdAt   DateTime @default(now())
 
+  // Country-specific forms
+  country   Country? @relation(fields: [countryId], references: [id])
+  countryId String?
+
   sections    FormSection[]
   submissions FormSubmission[]
+
+  @@map("dynamic_forms")
 }
 
 model FormSection {
@@ -630,19 +683,20 @@ model FieldOption {
 }
 
 model FormSubmission {
-  id          String           @id @default(uuid())
-  form        DynamicForm      @relation(fields: [formId], references: [id])
-  formId      String
-  userId      String // Changed from applicantId to userId for consistency
-  user        User             @relation(fields: [userId], references: [id])
-  status      SubmissionStatus @default(DRAFT)
-  submittedAt DateTime?
-  reviewedAt  DateTime?
-  reviewedBy  String? // ID of the reviewer
-  reviewNotes String? // Review comments
-  metadata    Json? // Additional metadata for the submission
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id              String           @id @default(uuid())
+  referenceNumber String?          @unique // e.g., "SA25001234" - Generated when submitted
+  form            DynamicForm      @relation(fields: [formId], references: [id])
+  formId          String
+  userId          String // Changed from applicantId to userId for consistency
+  user            User             @relation(fields: [userId], references: [id])
+  status          SubmissionStatus @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String? // ID of the reviewer
+  reviewNotes     String? // Review comments
+  metadata        Json? // Additional metadata for the submission
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   responses   FieldResponse[]
   appointment BiometricAppointment?

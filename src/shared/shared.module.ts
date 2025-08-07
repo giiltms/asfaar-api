@@ -6,6 +6,7 @@ import { FlutterwaveProvider } from './services/payment/providers/flutterwave.pr
 import { FincraProvider } from './services/payment/providers/fincra.provider';
 import { NinVerificationService } from './services/nin-verification/nin-verification.service';
 import { YouVerifyProvider } from './services/nin-verification/providers/youverify.provider';
+import { ReferenceNumberService } from './services/reference-number/reference-number.service';
 
 @Global()
 @Module({
@@ -17,7 +18,8 @@ import { YouVerifyProvider } from './services/nin-verification/providers/youveri
     FincraProvider,
     NinVerificationService,
     YouVerifyProvider,
+    ReferenceNumberService,
   ],
-  exports: [PaymentService, NinVerificationService],
+  exports: [PaymentService, NinVerificationService, ReferenceNumberService],
 })
 export class SharedModule {}
