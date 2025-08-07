@@ -62,9 +62,20 @@ export class FormsController {
   @Get()
   @ApiOperation({
     summary: 'Get form templates',
-    description: 'Get all form templates with pagination and filtering',
+    description:
+      'Get all form templates with pagination and filtering, including country-specific filtering',
   })
   @ApiQuery({ name: 'search', required: false, description: 'Search term' })
+  @ApiQuery({
+    name: 'countryId',
+    required: false,
+    description: 'Filter by country ID',
+  })
+  @ApiQuery({
+    name: 'countryCode',
+    required: false,
+    description: 'Filter by country ISO code (2-letter)',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiQuery({ name: 'sortBy', required: false, description: 'Sort field' })

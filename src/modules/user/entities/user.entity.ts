@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
-import { Exclude, Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export default class UserEntity implements User {
   @Expose()
@@ -76,6 +77,28 @@ export default class UserEntity implements User {
 
   @Expose()
   updatedAt: Date;
+
+  @ApiPropertyOptional({
+    description: 'User addresses (default address first)',
+    type: 'object',
+    isArray: true,
+  })
+  @Expose()
+  @Type(() => Object)
+  addresses?: any[]; // Using any[] to avoid circular dependency issues
+
+  @ApiPropertyOptional({
+    description: 'Default address',
+    type: 'object',
+  })
+  @Expose()
+  @Transform(({ obj }) => {
+    // Find and return the default address
+    return obj.addresses?.find((addr: any) => addr.isDefault) || null;
+  })
+  get defaultAddress(): any {
+    return this.addresses?.find((addr: any) => addr.isDefault) || null;
+  }
 
   @Expose()
   get fullName(): string {

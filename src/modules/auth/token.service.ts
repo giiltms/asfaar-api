@@ -36,7 +36,7 @@ export class TokenService {
   }
 
   private async hashToken(token: string): Promise<string> {
-    const hash = createHash('sha256').update(String(token)).digest('base64');
+    const hash = createHash('sha256').update(String(token)).digest('hex');
     return hash;
   }
 

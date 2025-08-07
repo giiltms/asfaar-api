@@ -42,11 +42,29 @@ export class FormsService {
 
   // Form CRUD Operations
   async createForm(createFormDto: CreateFormDto): Promise<FormDto> {
-    const { sections, ...formData } = createFormDto;
+    const { sections, countryId, ...formData } = createFormDto;
+
+    // Validate country exists if countryId is provided
+    if (countryId) {
+      const country = await this.prisma.country.findUnique({
+        where: { id: countryId },
+      });
+
+      if (!country) {
+        throw new NotFoundException(`Country with ID ${countryId} not found`);
+      }
+
+      if (!country.isActive) {
+        throw new BadRequestException(
+          'Cannot create forms for inactive countries',
+        );
+      }
+    }
 
     const form = await this.prisma.dynamicForm.create({
       data: {
         ...formData,
+        countryId,
         sections: sections
           ? {
               create: sections.map((section) => ({
@@ -87,17 +105,28 @@ export class FormsService {
     limit: number;
     totalPages: number;
   }> {
-    const { search, page, limit, sortBy, sortOrder } = queryDto;
+    const { search, page, limit, sortBy, sortOrder, countryId, countryCode } =
+      queryDto;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.DynamicFormWhereInput = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: Prisma.DynamicFormWhereInput = {};
+
+    // Search filtering
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Country filtering
+    if (countryId) {
+      where.countryId = countryId;
+    } else if (countryCode) {
+      where.country = {
+        isoCode2: countryCode.toUpperCase(),
+      };
+    }
 
     const orderBy = this.buildOrderBy(sortBy, sortOrder);
 
@@ -108,6 +137,14 @@ export class FormsService {
         take: limit,
         orderBy,
         include: {
+          country: {
+            select: {
+              id: true,
+              name: true,
+              isoCode2: true,
+              flag: true,
+            },
+          },
           sections: {
             include: {
               groups: {

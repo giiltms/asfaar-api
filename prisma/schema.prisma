@@ -100,6 +100,15 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
+enum QueueStatus {
+  WAITING // In queue, waiting to be called
+  CALLED // Called to booth but not started service
+  IN_PROGRESS // Biometric capture in progress
+  COMPLETED // Service completed
+  NO_SHOW // Didn't show up when called
+  CANCELLED // Cancelled while in queue
+}
+
 model User {
   id          String    @id @default(uuid())
   email       String    @unique
@@ -150,6 +159,8 @@ model User {
   ninVerifications      NinVerification[]
   biometricCenters      BiometricCenter[]      @relation("CenterManager")
   biometricAppointments BiometricAppointment[]
+  booths                Booth[]                @relation("BoothAgent")
+  biometricSessions     BiometricSession[]     @relation("BiometricAgent")
 
   @@map("users")
 }
@@ -560,15 +571,68 @@ enum TokenType {
   JWT
 }
 
+// Country model for managing visa destinations and forms
+model Country {
+  id           String  @id @default(uuid())
+  name         String  @unique // e.g., "Saudi Arabia"
+  isoCode2     String  @unique @db.VarChar(2) // e.g., "SA" (ISO 3166-1 alpha-2)
+  isoCode3     String  @unique @db.VarChar(3) // e.g., "SAU" (ISO 3166-1 alpha-3)
+  numericCode  String  @unique @db.VarChar(3) // e.g., "682" (ISO 3166-1 numeric)
+  currency     String? // e.g., "SAR"
+  currencyName String? // e.g., "Saudi Riyal"
+  dialCode     String? // e.g., "+966"
+  region       String? // e.g., "Asia", "Africa"
+  subregion    String? // e.g., "Western Asia"
+  capital      String? // e.g., "Riyadh"
+  flag         String? // Flag emoji or URL
+  isActive     Boolean @default(true)
+
+  // Form and application settings
+  visaProcessingDays Int?     @default(14) // Expected processing time
+  maxApplications    Int?     @default(1000) // Max applications per year
+  applicationFee     Decimal? @db.Decimal(10, 2) // Base application fee
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?
+
+  // Relations
+  forms               DynamicForm[]
+  applicationCounters ApplicationCounter[]
+
+  @@map("countries")
+}
+
+// Application counter for generating unique reference numbers per country/year
+model ApplicationCounter {
+  id        String  @id @default(uuid())
+  country   Country @relation(fields: [countryId], references: [id])
+  countryId String
+  year      Int
+  counter   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, year])
+  @@map("application_counters")
+}
+
 model DynamicForm {
   id          String   @id @default(uuid())
   name        String
   description String?
   createdAt   DateTime @default(now())
 
+  // Country-specific forms
+  country   Country? @relation(fields: [countryId], references: [id])
+  countryId String?
+
   sections    FormSection[]
   submissions FormSubmission[]
   serviceFees ServiceFee[]
+
+  @@map("dynamic_forms")
 }
 
 model FormSection {
@@ -625,19 +689,20 @@ model FieldOption {
 }
 
 model FormSubmission {
-  id          String           @id @default(uuid())
-  form        DynamicForm      @relation(fields: [formId], references: [id])
-  formId      String
-  userId      String // Changed from applicantId to userId for consistency
-  user        User             @relation(fields: [userId], references: [id])
-  status      SubmissionStatus @default(DRAFT)
-  submittedAt DateTime?
-  reviewedAt  DateTime?
-  reviewedBy  String? // ID of the reviewer
-  reviewNotes String? // Review comments
-  metadata    Json? // Additional metadata for the submission
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id              String           @id @default(uuid())
+  referenceNumber String?          @unique // e.g., "SA25001234" - Generated when submitted
+  form            DynamicForm      @relation(fields: [formId], references: [id])
+  formId          String
+  userId          String // Changed from applicantId to userId for consistency
+  user            User             @relation(fields: [userId], references: [id])
+  status          SubmissionStatus @default(DRAFT)
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String? // ID of the reviewer
+  reviewNotes     String? // Review comments
+  metadata        Json? // Additional metadata for the submission
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   responses       FieldResponse[]
   serviceFees     ServiceFee[]
@@ -884,12 +949,139 @@ model BiometricCenter {
 
   // Relations
   appointments BiometricAppointment[]
+  booths       Booth[]
+  queueEntries QueueEntry[]
 
   @@index([city])
   @@index([state])
   @@index([isActive])
   @@index([createdAt])
   @@map("biometric_centers")
+}
+
+// Booth Model
+model Booth {
+  id       String          @id @default(uuid())
+  centerId String
+  center   BiometricCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  // Booth Details
+  boothNumber      String // e.g., "A1", "B2", "VIP-1"
+  appointmentClass AppointmentClass // VIP, PREMIUM, REGULAR
+  isActive         Boolean          @default(true)
+  isOccupied       Boolean          @default(false)
+
+  // Equipment/Capabilities
+  hasCamera             Boolean @default(true)
+  hasFingerprintScanner Boolean @default(true)
+  hasSignaturePad       Boolean @default(false)
+
+  // Current Assignment
+  agentId String?
+  agent   User?   @relation("BoothAgent", fields: [agentId], references: [id])
+
+  // Relations
+  queueEntries      QueueEntry[]
+  biometricSessions BiometricSession[]
+
+  // Audit
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  lastModifiedBy String?
+
+  @@unique([centerId, boothNumber])
+  @@index([centerId])
+  @@index([appointmentClass])
+  @@index([isActive, isOccupied])
+  @@map("booths")
+}
+
+// Queue Entry Model
+model QueueEntry {
+  id String @id @default(uuid())
+
+  // Appointment Reference
+  appointmentId String               @unique
+  appointment   BiometricAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  // Queue Details
+  centerId         String
+  center           BiometricCenter  @relation(fields: [centerId], references: [id])
+  appointmentClass AppointmentClass
+
+  // Queue Position & Status
+  queueNumber Int         @default(autoincrement()) // Auto-generated sequential number
+  status      QueueStatus @default(WAITING)
+  priority    Int         @default(0) // Higher number = higher priority
+
+  // Timestamps
+  joinedAt    DateTime  @default(now())
+  calledAt    DateTime? // When called to booth
+  startedAt   DateTime? // When biometric capture started
+  completedAt DateTime? // When biometric capture completed
+
+  // Booth Assignment
+  boothId String?
+  booth   Booth?  @relation(fields: [boothId], references: [id])
+
+  // Estimated times
+  estimatedWaitTime    Int? // In minutes
+  estimatedServiceTime Int? // In minutes
+
+  // Relations
+  biometricSession BiometricSession?
+
+  @@index([centerId, appointmentClass, queueNumber])
+  @@index([status, joinedAt])
+  @@index([centerId, status])
+  @@map("queue_entries")
+}
+
+// Biometric Session Model
+model BiometricSession {
+  id String @id @default(uuid())
+
+  // References
+  appointmentId String               @unique
+  appointment   BiometricAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  queueEntryId  String               @unique
+  queueEntry    QueueEntry           @relation(fields: [queueEntryId], references: [id], onDelete: Cascade)
+  boothId       String
+  booth         Booth                @relation(fields: [boothId], references: [id])
+  agentId       String
+  agent         User                 @relation("BiometricAgent", fields: [agentId], references: [id])
+
+  // Biometric Data Capture Status
+  fingerprintsCaptured Boolean @default(false)
+  photoCaptured        Boolean @default(false)
+  signatureCaptured    Boolean @default(false)
+
+  // Files/References
+  photoUrl        String?
+  fingerprintData Json? // Encrypted biometric data
+  signatureUrl    String?
+
+  // Session Timing
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  duration    Int? // In seconds
+
+  // Quality Checks
+  photoQualityScore       Float?
+  fingerprintQualityScore Float?
+  requiresRetake          Boolean @default(false)
+  retakeReason            String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appointmentId])
+  @@index([boothId])
+  @@index([agentId])
+  @@index([startedAt])
+  @@map("biometric_sessions")
 }
 
 // Biometric Appointment Enums
@@ -954,6 +1146,10 @@ model BiometricAppointment {
   capturedAt         DateTime? // When biometrics were captured
   capturedBy         String? // Staff member who captured biometrics
   captureQuality     String? // Quality assessment of captured biometrics
+
+  // Relations
+  queueEntry       QueueEntry?
+  biometricSession BiometricSession?
 
   // Audit Fields
   createdAt      DateTime @default(now())

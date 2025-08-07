@@ -16,6 +16,8 @@ async function main() {
   console.log('🧹 Cleaning existing data...');
   await prisma.biometricAppointment.deleteMany();
   await prisma.biometricCenter.deleteMany();
+  await prisma.applicationCounter.deleteMany();
+  await prisma.country.deleteMany();
   await prisma.like.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.post.deleteMany();
@@ -29,6 +31,313 @@ async function main() {
   await prisma.tokenWhiteList.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
+
+  // Create countries - Gulf Arab Countries target list
+  console.log('🌍 Creating Gulf Arab countries...');
+  const countries = await Promise.all([
+    // 1. Kingdom of Saudi Arabia
+    prisma.country.create({
+      data: {
+        name: 'Kingdom of Saudi Arabia',
+        isoCode2: 'SA',
+        isoCode3: 'SAU',
+        numericCode: '682',
+        currency: 'SAR',
+        currencyName: 'Saudi Riyal',
+        dialCode: '+966',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Riyadh',
+        flag: '🇸🇦',
+        isActive: true,
+        visaProcessingDays: 7,
+        maxApplications: 5000,
+        applicationFee: 150,
+      },
+    }),
+    // 2. State of Kuwait
+    prisma.country.create({
+      data: {
+        name: 'State of Kuwait',
+        isoCode2: 'KW',
+        isoCode3: 'KWT',
+        numericCode: '414',
+        currency: 'KWD',
+        currencyName: 'Kuwaiti Dinar',
+        dialCode: '+965',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Kuwait City',
+        flag: '🇰🇼',
+        isActive: true,
+        visaProcessingDays: 5,
+        maxApplications: 2000,
+        applicationFee: 120,
+      },
+    }),
+    // 3. United Arab Emirates
+    prisma.country.create({
+      data: {
+        name: 'United Arab Emirates',
+        isoCode2: 'AE',
+        isoCode3: 'ARE',
+        numericCode: '784',
+        currency: 'AED',
+        currencyName: 'UAE Dirham',
+        dialCode: '+971',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Abu Dhabi',
+        flag: '🇦🇪',
+        isActive: true,
+        visaProcessingDays: 5,
+        maxApplications: 3000,
+        applicationFee: 100,
+      },
+    }),
+    // 4. State of Qatar
+    prisma.country.create({
+      data: {
+        name: 'State of Qatar',
+        isoCode2: 'QA',
+        isoCode3: 'QAT',
+        numericCode: '634',
+        currency: 'QAR',
+        currencyName: 'Qatari Riyal',
+        dialCode: '+974',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Doha',
+        flag: '🇶🇦',
+        isActive: true,
+        visaProcessingDays: 7,
+        maxApplications: 1500,
+        applicationFee: 130,
+      },
+    }),
+    // 5. Republic of Iraq
+    prisma.country.create({
+      data: {
+        name: 'Republic of Iraq',
+        isoCode2: 'IQ',
+        isoCode3: 'IRQ',
+        numericCode: '368',
+        currency: 'IQD',
+        currencyName: 'Iraqi Dinar',
+        dialCode: '+964',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Baghdad',
+        flag: '🇮🇶',
+        isActive: true,
+        visaProcessingDays: 14,
+        maxApplications: 1000,
+        applicationFee: 80,
+      },
+    }),
+    // 6. Arab Republic of Egypt
+    prisma.country.create({
+      data: {
+        name: 'Arab Republic of Egypt',
+        isoCode2: 'EG',
+        isoCode3: 'EGY',
+        numericCode: '818',
+        currency: 'EGP',
+        currencyName: 'Egyptian Pound',
+        dialCode: '+20',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Cairo',
+        flag: '🇪🇬',
+        isActive: true,
+        visaProcessingDays: 10,
+        maxApplications: 3500,
+        applicationFee: 60,
+      },
+    }),
+    // 7. Kingdom of Morocco
+    prisma.country.create({
+      data: {
+        name: 'Kingdom of Morocco',
+        isoCode2: 'MA',
+        isoCode3: 'MAR',
+        numericCode: '504',
+        currency: 'MAD',
+        currencyName: 'Moroccan Dirham',
+        dialCode: '+212',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Rabat',
+        flag: '🇲🇦',
+        isActive: true,
+        visaProcessingDays: 12,
+        maxApplications: 2500,
+        applicationFee: 70,
+      },
+    }),
+    // 8. Republic of Tunisia
+    prisma.country.create({
+      data: {
+        name: 'Republic of Tunisia',
+        isoCode2: 'TN',
+        isoCode3: 'TUN',
+        numericCode: '788',
+        currency: 'TND',
+        currencyName: 'Tunisian Dinar',
+        dialCode: '+216',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Tunis',
+        flag: '🇹🇳',
+        isActive: true,
+        visaProcessingDays: 10,
+        maxApplications: 1500,
+        applicationFee: 65,
+      },
+    }),
+    // 9. People's Democratic Republic of Algeria
+    prisma.country.create({
+      data: {
+        name: "People's Democratic Republic of Algeria",
+        isoCode2: 'DZ',
+        isoCode3: 'DZA',
+        numericCode: '012',
+        currency: 'DZD',
+        currencyName: 'Algerian Dinar',
+        dialCode: '+213',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Algiers',
+        flag: '🇩🇿',
+        isActive: true,
+        visaProcessingDays: 14,
+        maxApplications: 2000,
+        applicationFee: 75,
+      },
+    }),
+    // 10. State of Libya
+    prisma.country.create({
+      data: {
+        name: 'State of Libya',
+        isoCode2: 'LY',
+        isoCode3: 'LBY',
+        numericCode: '434',
+        currency: 'LYD',
+        currencyName: 'Libyan Dinar',
+        dialCode: '+218',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Tripoli',
+        flag: '🇱🇾',
+        isActive: true,
+        visaProcessingDays: 21,
+        maxApplications: 800,
+        applicationFee: 90,
+      },
+    }),
+    // 11. Islamic Republic of Mauritania
+    prisma.country.create({
+      data: {
+        name: 'Islamic Republic of Mauritania',
+        isoCode2: 'MR',
+        isoCode3: 'MRT',
+        numericCode: '478',
+        currency: 'MRU',
+        currencyName: 'Mauritanian Ouguiya',
+        dialCode: '+222',
+        region: 'Africa',
+        subregion: 'Western Africa',
+        capital: 'Nouakchott',
+        flag: '🇲🇷',
+        isActive: true,
+        visaProcessingDays: 15,
+        maxApplications: 600,
+        applicationFee: 85,
+      },
+    }),
+    // 12. Republic of Sudan
+    prisma.country.create({
+      data: {
+        name: 'Republic of Sudan',
+        isoCode2: 'SD',
+        isoCode3: 'SDN',
+        numericCode: '729',
+        currency: 'SDG',
+        currencyName: 'Sudanese Pound',
+        dialCode: '+249',
+        region: 'Africa',
+        subregion: 'Northern Africa',
+        capital: 'Khartoum',
+        flag: '🇸🇩',
+        isActive: true,
+        visaProcessingDays: 18,
+        maxApplications: 1200,
+        applicationFee: 70,
+      },
+    }),
+    // 13. Syrian Arab Republic
+    prisma.country.create({
+      data: {
+        name: 'Syrian Arab Republic',
+        isoCode2: 'SY',
+        isoCode3: 'SYR',
+        numericCode: '760',
+        currency: 'SYP',
+        currencyName: 'Syrian Pound',
+        dialCode: '+963',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Damascus',
+        flag: '🇸🇾',
+        isActive: true,
+        visaProcessingDays: 21,
+        maxApplications: 800,
+        applicationFee: 60,
+      },
+    }),
+    // 14. State of Palestine
+    prisma.country.create({
+      data: {
+        name: 'State of Palestine',
+        isoCode2: 'PS',
+        isoCode3: 'PSE',
+        numericCode: '275',
+        currency: 'ILS',
+        currencyName: 'Israeli New Shekel',
+        dialCode: '+970',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'East Jerusalem',
+        flag: '🇵🇸',
+        isActive: true,
+        visaProcessingDays: 14,
+        maxApplications: 1000,
+        applicationFee: 55,
+      },
+    }),
+    // 15. Republic of Lebanon
+    prisma.country.create({
+      data: {
+        name: 'Republic of Lebanon',
+        isoCode2: 'LB',
+        isoCode3: 'LBN',
+        numericCode: '422',
+        currency: 'LBP',
+        currencyName: 'Lebanese Pound',
+        dialCode: '+961',
+        region: 'Asia',
+        subregion: 'Western Asia',
+        capital: 'Beirut',
+        flag: '🇱🇧',
+        isActive: true,
+        visaProcessingDays: 12,
+        maxApplications: 1200,
+        applicationFee: 65,
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${countries.length} countries`);
 
   // Create users
   console.log('👥 Creating users...');
@@ -755,6 +1064,124 @@ async function main() {
     }),
   ]);
 
+  // Create Booths for each center
+  console.log('🏢 Creating booths...');
+  const booths = [];
+
+  // Create booths for ASFAAR-ABUJA HQ (the active center)
+  const abujaCenter = biometricCenters.find(
+    (center) => center.code === 'ASFAAR-ABJ-HQ',
+  );
+  if (abujaCenter) {
+    const abujaBooths = await Promise.all([
+      // Regular booths
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R1',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R2',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'R3',
+          appointmentClass: 'REGULAR',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+      // Premium booth
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'P1',
+          appointmentClass: 'PREMIUM',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+      // VIP booth
+      prisma.booth.create({
+        data: {
+          centerId: abujaCenter.id,
+          boothNumber: 'VIP1',
+          appointmentClass: 'VIP',
+          isActive: true,
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+    ]);
+    booths.push(...abujaBooths);
+  }
+
+  // Create a few sample booths for Lagos center as well
+  const lagosCenter = biometricCenters.find(
+    (center) => center.code === 'ASFAAR-LAG-VI',
+  );
+  if (lagosCenter) {
+    const lagosBooths = await Promise.all([
+      prisma.booth.create({
+        data: {
+          centerId: lagosCenter.id,
+          boothNumber: 'R1',
+          appointmentClass: 'REGULAR',
+          isActive: false, // Inactive since center is inactive
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: false,
+          createdBy: superAdmin.id,
+        },
+      }),
+      prisma.booth.create({
+        data: {
+          centerId: lagosCenter.id,
+          boothNumber: 'P1',
+          appointmentClass: 'PREMIUM',
+          isActive: false, // Inactive since center is inactive
+          isOccupied: false,
+          hasCamera: true,
+          hasFingerprintScanner: true,
+          hasSignaturePad: true,
+          createdBy: superAdmin.id,
+        },
+      }),
+    ]);
+    booths.push(...lagosBooths);
+  }
+
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Created:');
   console.log(`  - ${3 + users.length} users (including admin accounts)`);
@@ -767,6 +1194,7 @@ async function main() {
   console.log(`  - 4 user preferences`);
   console.log(`  - 2 user profiles`);
   console.log(`  - ${biometricCenters.length} biometric centers`);
+  console.log(`  - ${booths.length} booths`);
 
   console.log('\n🔑 Test accounts:');
   console.log('  - Super Admin: superadmin@example.com / password123');

@@ -213,7 +213,7 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  async verifyEmail(token: string): Promise<{ message: string; user?: any }> {
+  async verifyEmail(token: string): Promise<any> {
     try {
       // Find the token first to get the user ID
       const tokenRecord = await this.prisma.token.findFirst({
@@ -252,15 +252,12 @@ export class AuthService {
         isVerified: true,
       });
 
+      // Automatically authenticate the user after successful verification
+      const authResponse = await this.sign(user);
+
       return {
-        message: 'Email verified successfully! Your account is now active.',
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          isVerified: user.isVerified,
-        },
+        message: 'Email verified successfully! You are now logged in.',
+        ...authResponse,
       };
     } catch (error) {
       throw new BadRequestException(

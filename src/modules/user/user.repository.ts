@@ -34,6 +34,14 @@ export class UserRepository {
   ): Promise<User> {
     return transactionClient.user.findUnique({
       where: { id },
+      include: {
+        addresses: {
+          orderBy: [
+            { isDefault: 'desc' }, // Default address first
+            { createdAt: 'asc' }, // Then by creation order
+          ],
+        },
+      },
     });
   }
 

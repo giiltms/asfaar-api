@@ -19,6 +19,8 @@ A comprehensive, production-ready NestJS API boilerplate with authentication, au
 - **Audit Logging**: Automatic audit trail for operations
 - **Health Checks**: Comprehensive health monitoring
 - **Testing**: Unit and E2E testing setup with Jest
+- **FIFO Queuing System**: Complete biometric appointment queuing with booth management
+- **Biometric Center Management**: Multi-center support with booth classification
 
 ### Architecture
 
@@ -318,9 +320,199 @@ src/
 - `GET /api/v1/admin/submissions/form/:formId/stats` - Get form statistics
 - `PUT /api/v1/admin/submissions/:id/status` - Update submission status (admin)
 
+### FIFO Queuing System
+
+#### Biometric Center Management
+
+- `GET /api/v1/biometric-centers` - List all biometric centers (with pagination)
+- `POST /api/v1/biometric-centers` - Create new biometric center
+- `GET /api/v1/biometric-centers/:id` - Get center by ID
+- `PUT /api/v1/biometric-centers/:id` - Update center details
+- `DELETE /api/v1/biometric-centers/:id/deactivate` - Deactivate center
+- `GET /api/v1/biometric-centers/active/city/:city` - Get active centers by city
+- `GET /api/v1/biometric-centers/active/state/:state` - Get active centers by state
+- `GET /api/v1/biometric-centers/:id/availability` - Check center availability
+
+#### Booth Management
+
+- `GET /api/v1/booths` - List all booths (with pagination and filtering)
+- `POST /api/v1/booths` - Create new booth
+- `GET /api/v1/booths/:id` - Get booth by ID
+- `PUT /api/v1/booths/:id` - Update booth details
+- `DELETE /api/v1/booths/:id` - Delete booth (soft delete)
+- `GET /api/v1/booths/stats` - Get booth statistics
+- `GET /api/v1/booths/available/:centerId/:appointmentClass` - Get available booths
+- `PUT /api/v1/booths/:id/assign-agent` - Assign biometric agent to booth
+- `PUT /api/v1/booths/:id/unassign-agent` - Unassign agent from booth
+
+#### Queue Management (FIFO)
+
+##### Applicant Queue Operations
+- `POST /api/v1/queue/check-in` - Join FIFO queue with appointment
+- `GET /api/v1/queue/position/:appointmentId` - Check current queue position
+- `GET /api/v1/queue/my-position/:appointmentId` - Get your queue status (applicant view)
+
+##### Staff Queue Operations
+- `POST /api/v1/queue/call-next` - Call next person in FIFO order and assign booth
+- `PUT /api/v1/queue/:queueId/status` - Update queue entry status
+- `PUT /api/v1/queue/:queueId/cancel` - Cancel queue entry
+- `PUT /api/v1/queue/bulk-update` - Bulk update multiple queue entries
+
+##### Queue Monitoring & Analytics
+- `GET /api/v1/queue` - List all queue entries (with filtering)
+- `GET /api/v1/queue/stats` - Get comprehensive queue statistics
+- `GET /api/v1/queue/center/:centerId` - Get queue for specific center
+- `GET /api/v1/queue/monitor/center/:centerId` - Real-time queue monitoring dashboard
+
+#### Biometric Appointments
+
+- `GET /api/v1/biometric-appointments` - List appointments (with pagination)
+- `POST /api/v1/biometric-appointments` - Create new appointment
+- `GET /api/v1/biometric-appointments/:id` - Get appointment by ID
+- `PUT /api/v1/biometric-appointments/:id/status` - Update appointment status
+- `PUT /api/v1/biometric-appointments/:id/reschedule` - Reschedule appointment
+- `PUT /api/v1/biometric-appointments/:id/complete` - Complete biometric capture
+- `PUT /api/v1/biometric-appointments/:id/cancel` - Cancel appointment
+- `GET /api/v1/biometric-appointments/statistics` - Get appointment analytics
+- `GET /api/v1/biometric-appointments/my-appointments` - Get user's appointments
+
+#### Payment Integration
+
+- `GET /api/v1/payments` - List all payments (with filtering)
+- `POST /api/v1/payments` - Create new payment
+- `GET /api/v1/payments/:id` - Get payment by ID
+- `GET /api/v1/payments/submission/:submissionId` - Get payment for form submission
+- `PUT /api/v1/payments/:id/status` - Update payment status (webhook endpoint)
+- `PUT /api/v1/payments/:id` - Update payment details
+- `PUT /api/v1/payments/:id/refund` - Process payment refund
+- `GET /api/v1/payments/statistics` - Get payment analytics
+
 ### Health Check
 
 - `GET /api/v1/health` - Application health status
+
+## 🔄 FIFO Queuing System Workflow
+
+Our comprehensive FIFO (First-In-First-Out) queuing system manages biometric appointments with automatic booth assignment and real-time monitoring.
+
+### 📋 Complete Workflow
+
+1. **📅 Appointment Creation**
+   ```bash
+   POST /api/v1/biometric-appointments
+   # Creates appointment with PENDING status
+   ```
+
+2. **💳 Payment Processing**
+   ```bash
+   POST /api/v1/payments
+   # Payment completion automatically activates appointment
+   ```
+
+3. **🚪 Applicant Check-in (FIFO Entry Point)**
+   ```bash
+   POST /api/v1/queue/check-in
+   {
+     "appointmentId": "appointment-uuid",
+     "priority": 0  // Optional: higher numbers = higher priority
+   }
+   # Validates appointment, adds to FIFO queue, returns queue number
+   ```
+
+4. **📍 Position Tracking**
+   ```bash
+   GET /api/v1/queue/position/{appointmentId}
+   # Returns current position, estimated wait time, people ahead
+   ```
+
+5. **📞 Call Next Person (FIFO Algorithm)**
+   ```bash
+   POST /api/v1/queue/call-next
+   {
+     "centerId": "center-uuid",
+     "appointmentClass": "REGULAR|PREMIUM|VIP",
+     "boothId": "booth-uuid"  // Optional: auto-assigns if not specified
+   }
+   # Calls next person in FIFO order, assigns available booth
+   ```
+
+6. **🏢 Automatic Booth Assignment**
+   - System finds next available booth for appointment class
+   - Updates booth status to `occupied`
+   - Updates queue status to `CALLED`
+   - Sends notification to applicant
+
+7. **📸 Biometric Capture Session**
+   ```bash
+   PUT /api/v1/queue/{queueId}/status
+   {
+     "status": "IN_PROGRESS"
+   }
+   # Starts biometric capture session
+   ```
+
+8. **✅ Completion & Booth Release**
+   ```bash
+   PUT /api/v1/queue/{queueId}/status
+   {
+     "status": "COMPLETED"
+   }
+   # Completes session, releases booth for next person
+   ```
+
+### 🏢 Booth Classification System
+
+| Class | Booths | Features | Use Case |
+|-------|--------|----------|----------|
+| **REGULAR** | R1, R2, R3 | Camera + Fingerprint | Standard processing |
+| **PREMIUM** | P1 | Camera + Fingerprint + Signature | Enhanced service |
+| **VIP** | VIP1 | All features + Priority | Executive service |
+
+### 📊 Real-time Monitoring
+
+#### Queue Dashboard
+```bash
+GET /api/v1/queue/monitor/center/{centerId}
+# Returns live queue status, booth occupancy, wait times
+```
+
+#### Analytics
+```bash
+GET /api/v1/queue/stats
+# Queue statistics: waiting, in-progress, completed, avg times
+
+GET /api/v1/booths/stats
+# Booth utilization: active, occupied, available by class
+```
+
+### 🔔 Queue States
+
+| Status | Description | Next States |
+|--------|-------------|-------------|
+| `WAITING` | In FIFO queue | `CALLED`, `CANCELLED` |
+| `CALLED` | Called to booth | `IN_PROGRESS`, `NO_SHOW` |
+| `IN_PROGRESS` | Biometric capture | `COMPLETED` |
+| `COMPLETED` | Service done | Terminal |
+| `CANCELLED` | User cancelled | Terminal |
+| `NO_SHOW` | Didn't show up | Terminal |
+
+### ⚡ Key Features
+
+- **✅ True FIFO**: First-come, first-served with optional priority
+- **🤖 Auto-Assignment**: Automatic booth assignment based on availability
+- **📊 Real-time Analytics**: Live queue monitoring and statistics
+- **🔄 Status Validation**: Prevents invalid state transitions
+- **💳 Payment Integration**: Appointments activate only after payment
+- **🏢 Multi-Center**: Support for multiple biometric centers
+- **📱 Applicant Tracking**: Real-time position and wait time updates
+- **👥 Agent Management**: Biometric agents assigned to specific booths
+
+### 📈 Sample Data Included
+
+- **5 Booths** at ASFAAR-ABUJA HQ (active)
+- **5 Biometric Centers** across Nigeria
+- **Test Users** with different roles (applicants, agents, admins)
+- **Payment System** integrated with appointment lifecycle
 
 ## 🤝 Contributing
 

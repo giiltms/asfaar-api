@@ -389,6 +389,14 @@ export class CreateFormDto {
   description?: string;
 
   @ApiPropertyOptional({
+    description: 'Target country ID for country-specific forms',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsUUID()
+  countryId?: string;
+
+  @ApiPropertyOptional({
     description: 'Form sections',
     type: [CreateFormSectionDto],
   })
@@ -491,6 +499,23 @@ export class FormQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by country ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsUUID()
+  countryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by country ISO code (2-letter)',
+    example: 'SA',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2)
+  countryCode?: string;
 
   @ApiPropertyOptional({
     description: 'Page number',

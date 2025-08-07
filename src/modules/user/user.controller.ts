@@ -40,11 +40,55 @@ export class UserController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description:
+      "Get the authenticated user's profile including addresses and personal information",
+  })
   @ApiResponse({
     status: 200,
-    description: 'Current user profile',
-    type: UserEntity,
+    description: 'Current user profile retrieved successfully including addresses',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          allOf: [
+            { $ref: '#/components/schemas/UserEntity' },
+            {
+              type: 'object',
+              example: {
+                id: '123e4567-e89b-12d3-a456-426614174000',
+                email: 'john.doe@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                fullName: 'John Doe',
+                roles: ['APPLICANT'],
+                isVerified: true,
+                addresses: [
+                  {
+                    id: 'addr123-456',
+                    type: 'HOME',
+                    addressLine1: '123 Main Street',
+                    city: 'New York',
+                    state: 'NY',
+                    country: 'United States',
+                    isDefault: true,
+                  },
+                ],
+                defaultAddress: {
+                  id: 'addr123-456',
+                  type: 'HOME',
+                  addressLine1: '123 Main Street',
+                  city: 'New York',
+                  isDefault: true,
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
   })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize single user entity
   async getProfile(
@@ -60,10 +104,13 @@ export class UserController {
   }
 
   @Patch('me')
-  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiOperation({
+    summary: 'Update current user profile',
+    description: 'Update the authenticated user\'s profile information (addresses are managed separately via address endpoints)'
+  })
   @ApiResponse({
     status: 200,
-    description: 'Profile updated successfully',
+    description: 'Profile updated successfully, includes updated user data with addresses',
     type: UserEntity,
   })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize updated user entity

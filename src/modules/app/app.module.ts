@@ -13,6 +13,10 @@ import { FormSubmissionsModule } from '../form-submissions/form-submissions.modu
 import { BiometricCentersModule } from '../biometric-centers/biometric-centers.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { BiometricAppointmentsModule } from '../biometric-appointments/biometric-appointments.module';
+import { BoothsModule } from '../booths/booths.module';
+import { QueueModule } from '../queue/queue.module';
+import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashboard.module';
+import { CountriesModule } from '../countries/countries.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -33,6 +37,10 @@ import { BiometricAppointmentsModule } from '../biometric-appointments/biometric
     BiometricCentersModule,
     PaymentsModule,
     BiometricAppointmentsModule,
+    BoothsModule,
+    QueueModule,
+    ApplicantDashboardModule,
+    CountriesModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],

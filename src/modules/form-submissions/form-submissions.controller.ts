@@ -36,6 +36,8 @@ import {
   SubmissionQueryDto,
   SaveDraftDto,
   FileUploadDto,
+  AuthenticatedFormDto,
+  AvailableFormsQueryDto,
 } from './dto/submission.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
@@ -47,7 +49,107 @@ import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
 export class FormSubmissionsController {
   constructor(private readonly submissionsService: FormSubmissionsService) {}
 
-  // User Submission Management
+  // User Form Access and Submission Management
+  @Get('forms')
+  @ApiOperation({
+    summary: 'Get available forms for applicant',
+    description:
+      'Get list of all forms available to the authenticated applicant. Can be filtered by country.',
+  })
+  @ApiQuery({
+    name: 'countryId',
+    required: false,
+    description: 'Filter by target country ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'country',
+    required: false,
+    description: 'Filter by country ISO code (2-letter)',
+    example: 'SA',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search forms by name or description',
+    example: 'visa',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Available forms retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              description: { type: 'string' },
+              country: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  isoCode2: { type: 'string' },
+                  flag: { type: 'string' },
+                },
+              },
+              sections: { type: 'number' },
+              estimatedTime: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAvailableForms(
+    @Request() req: any,
+    @Query() query: AvailableFormsQueryDto,
+  ) {
+    const forms = await this.submissionsService.getAvailableFormsForUser(
+      req.user.id,
+      query,
+    );
+    return {
+      success: true,
+      message: 'Available forms retrieved successfully',
+      data: forms,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('forms/:formId')
+  @ApiOperation({
+    summary: 'Get form with progress and current responses',
+    description:
+      'Get complete form template with user progress and current responses',
+  })
+  @ApiParam({ name: 'formId', description: 'Form ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Form with progress retrieved successfully',
+    type: AuthenticatedFormDto,
+  })
+  async getFormWithProgress(
+    @Request() req: any,
+    @Param('formId', ParseUUIDPipe) formId: string,
+  ) {
+    const formData = await this.submissionsService.getFormForUser(
+      req.user.id,
+      formId,
+    );
+    return {
+      success: true,
+      message: 'Form retrieved successfully',
+      data: formData,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Create new form submission (draft)',
