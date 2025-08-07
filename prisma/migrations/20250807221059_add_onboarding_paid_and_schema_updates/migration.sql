@@ -1,18 +1,34 @@
 /*
   Warnings:
 
+  - You are about to drop the column `processorName` on the `payments` table. All the data in the column will be lost.
   - You are about to drop the `DynamicForm` table. If the table is not empty, all the data it contains will be lost.
   - A unique constraint covering the columns `[referenceNumber]` on the table `form_submissions` will be added. If there are existing duplicate values, this will fail.
+  - A unique constraint covering the columns `[reference]` on the table `payments` will be added. If there are existing duplicate values, this will fail.
 
 */
 -- DropForeignKey
 ALTER TABLE "FormSection" DROP CONSTRAINT "FormSection_formId_fkey";
 
 -- DropForeignKey
+ALTER TABLE "_DynamicFormToServiceFee" DROP CONSTRAINT "_DynamicFormToServiceFee_A_fkey";
+
+-- DropForeignKey
 ALTER TABLE "form_submissions" DROP CONSTRAINT "form_submissions_formId_fkey";
 
 -- AlterTable
+ALTER TABLE "ServiceFee" ADD COLUMN     "isOptional" BOOLEAN NOT NULL DEFAULT true;
+
+-- AlterTable
 ALTER TABLE "form_submissions" ADD COLUMN     "referenceNumber" TEXT;
+
+-- AlterTable
+ALTER TABLE "payments" DROP COLUMN "processorName",
+ADD COLUMN     "processor" "PaymentProvider",
+ADD COLUMN     "reference" TEXT;
+
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN     "onboardingPaid" BOOLEAN NOT NULL DEFAULT false;
 
 -- DropTable
 DROP TABLE "DynamicForm";
@@ -83,6 +99,9 @@ CREATE UNIQUE INDEX "application_counters_countryId_year_key" ON "application_co
 -- CreateIndex
 CREATE UNIQUE INDEX "form_submissions_referenceNumber_key" ON "form_submissions"("referenceNumber");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "payments_reference_key" ON "payments"("reference");
+
 -- AddForeignKey
 ALTER TABLE "application_counters" ADD CONSTRAINT "application_counters_countryId_fkey" FOREIGN KEY ("countryId") REFERENCES "countries"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -94,3 +113,6 @@ ALTER TABLE "FormSection" ADD CONSTRAINT "FormSection_formId_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "form_submissions" ADD CONSTRAINT "form_submissions_formId_fkey" FOREIGN KEY ("formId") REFERENCES "dynamic_forms"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_DynamicFormToServiceFee" ADD CONSTRAINT "_DynamicFormToServiceFee_A_fkey" FOREIGN KEY ("A") REFERENCES "dynamic_forms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
