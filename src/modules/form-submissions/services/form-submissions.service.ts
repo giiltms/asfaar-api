@@ -38,18 +38,63 @@ export class FormSubmissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   // Authenticated Form Access
-  async getAvailableFormsForUser(userId: string): Promise<Array<{
-    id: string;
-    name: string;
-    description?: string;
-    sections: number;
-    estimatedTime: number;
-    hasStarted?: boolean;
-    progress?: number;
-  }>> {
+  async getAvailableFormsForUser(
+    userId: string,
+    query?: {
+      countryId?: string;
+      country?: string;
+      search?: string;
+      includeInactive?: boolean;
+    },
+  ): Promise<
+    Array<{
+      id: string;
+      name: string;
+      description?: string;
+      country?: {
+        id: string;
+        name: string;
+        isoCode2: string;
+        flag: string;
+      };
+      sections: number;
+      estimatedTime: number;
+      hasStarted?: boolean;
+      progress?: number;
+    }>
+  > {
+    // Build where clause based on query parameters
+    const where: any = {};
+
+    // Country filtering
+    if (query?.countryId) {
+      where.countryId = query.countryId;
+    } else if (query?.country) {
+      where.country = {
+        isoCode2: query.country.toUpperCase(),
+      };
+    }
+
+    // Search filtering
+    if (query?.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
     // Get all available forms
     const forms = await this.prisma.dynamicForm.findMany({
+      where,
       include: {
+        country: {
+          select: {
+            id: true,
+            name: true,
+            isoCode2: true,
+            flag: true,
+          },
+        },
         sections: {
           include: {
             groups: {
@@ -103,6 +148,14 @@ export class FormSubmissionsService {
           id: form.id,
           name: form.name,
           description: form.description,
+          country: form.country
+            ? {
+                id: form.country.id,
+                name: form.country.name,
+                isoCode2: form.country.isoCode2,
+                flag: form.country.flag,
+              }
+            : undefined,
           sections: sectionsCount,
           estimatedTime,
           hasStarted,
@@ -114,7 +167,10 @@ export class FormSubmissionsService {
     return formsWithMetadata;
   }
 
-  async getFormForUser(userId: string, formId: string): Promise<{
+  async getFormForUser(
+    userId: string,
+    formId: string,
+  ): Promise<{
     form: any;
     progress: FormProgressDto;
     currentResponses: any[];
@@ -175,30 +231,35 @@ export class FormSubmissionsService {
     const progress = await this.getFormProgress(userId, formId);
 
     // Get current responses
-    const currentResponses = submission?.responses.map((response) => ({
-      fieldId: response.fieldId,
-      fieldName: response.fieldName,
-      value: response.value,
-      fileUrls: response.fileUrls,
-      metadata: response.metadata,
-    })) || [];
+    const currentResponses =
+      submission?.responses.map((response) => ({
+        fieldId: response.fieldId,
+        fieldName: response.fieldName,
+        value: response.value,
+        fileUrls: response.fileUrls,
+        metadata: response.metadata,
+      })) || [];
 
     return {
       form,
       progress,
       currentResponses,
-      submission: submission ? {
-        id: submission.id,
-        status: submission.status,
-        submittedAt: submission.submittedAt,
-        createdAt: submission.createdAt,
-        updatedAt: submission.updatedAt,
-      } : null,
+      submission: submission
+        ? {
+            id: submission.id,
+            status: submission.status,
+            submittedAt: submission.submittedAt,
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
+          }
+        : null,
     };
   }
 
   // Helper method for admin to get basic form details
-  async getFormBasicDetails(formId: string): Promise<{ id: string; name: string; description?: string }> {
+  async getFormBasicDetails(
+    formId: string,
+  ): Promise<{ id: string; name: string; description?: string }> {
     const form = await this.prisma.dynamicForm.findUnique({
       where: { id: formId },
       select: {
@@ -257,14 +318,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId instead of formFieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId instead of formFieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -568,15 +629,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),

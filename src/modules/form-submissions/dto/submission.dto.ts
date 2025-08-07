@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -12,8 +12,10 @@ import {
   ValidateNested,
   IsNotEmpty,
   IsDateString,
+  Length,
+  MaxLength,
 } from 'class-validator';
-import { SubmissionStatus } from '@prisma/client';
+import { SubmissionStatus, FieldType } from '@prisma/client';
 
 // Field Response DTOs
 export class CreateFieldResponseDto {
@@ -135,16 +137,24 @@ export class FormProgressDto {
   @ApiProperty({ description: 'Whether form is ready for submission' })
   canSubmit: boolean;
 
-  @ApiProperty({ description: 'Missing required fields across entire form', type: [String] })
+  @ApiProperty({
+    description: 'Missing required fields across entire form',
+    type: [String],
+  })
   missingRequiredFields: string[];
 
-  @ApiProperty({ description: 'Section-by-section progress', type: [SectionProgressDto] })
+  @ApiProperty({
+    description: 'Section-by-section progress',
+    type: [SectionProgressDto],
+  })
   sections: SectionProgressDto[];
 
   @ApiProperty({ description: 'Last updated timestamp' })
   lastUpdated?: Date;
 
-  @ApiProperty({ description: 'Estimated completion time in minutes (optional)' })
+  @ApiProperty({
+    description: 'Estimated completion time in minutes (optional)',
+  })
   estimatedCompletionTime?: number;
 }
 
@@ -353,7 +363,7 @@ export class PublicFormDto {
 
   @ApiPropertyOptional({
     description: 'Form progress (only included for authenticated users)',
-    type: SectionProgressDto
+    type: SectionProgressDto,
   })
   progress?: {
     formId: string;
@@ -376,7 +386,8 @@ export class PublicFormDto {
   };
 
   @ApiPropertyOptional({
-    description: 'Current user responses (only included for authenticated users)'
+    description:
+      'Current user responses (only included for authenticated users)',
   })
   currentResponses?: {
     fieldId: string;
@@ -404,7 +415,10 @@ export class AuthenticatedFormDto {
     };
   };
 
-  @ApiProperty({ description: 'User progress on this form', type: FormProgressDto })
+  @ApiProperty({
+    description: 'User progress on this form',
+    type: FormProgressDto,
+  })
   progress: FormProgressDto;
 
   @ApiProperty({ description: 'Current user responses', type: 'array' })
@@ -622,4 +636,43 @@ export class SubmissionAnalyticsDto {
 
   @ApiProperty({ description: 'Average completion time in minutes' })
   avgCompletionTime?: number;
+}
+
+// Available Forms Query DTO
+export class AvailableFormsQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by target country ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsUUID()
+  countryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by country ISO code (2-letter)',
+    example: 'SA',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  @Transform(({ value }) => value?.toUpperCase())
+  country?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search forms by name or description',
+    example: 'visa',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Include inactive forms (admin only)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  includeInactive?: boolean = false;
 }
