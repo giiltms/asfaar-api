@@ -16,6 +16,7 @@ import { BiometricAppointmentsModule } from '../biometric-appointments/biometric
 import { BoothsModule } from '../booths/booths.module';
 import { QueueModule } from '../queue/queue.module';
 import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashboard.module';
+import { CountriesModule } from '../countries/countries.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -39,6 +40,7 @@ import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashb
     BoothsModule,
     QueueModule,
     ApplicantDashboardModule,
+    CountriesModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],
