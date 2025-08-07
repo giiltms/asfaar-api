@@ -110,32 +110,33 @@ enum QueueStatus {
 }
 
 model User {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  phone       String?   @unique
-  firstName   String?
-  middleName  String?
-  lastName    String?
-  username    String?   @unique
-  gender      Gender?
-  dateOfBirth DateTime?
-  password    String
-  avatar      String?
-  bio         String?
-  website     String?
+  id             String    @id @default(uuid())
+  email          String    @unique
+  phone          String?   @unique
+  firstName      String?
+  middleName     String?
+  lastName       String?
+  username       String?   @unique
+  gender         Gender?
+  dateOfBirth    DateTime?
+  password       String
+  avatar         String?
+  bio            String?
+  website        String?
   // Removed location - replaced with addresses relation
-  nin         String? // National Identity Number
-  state       String? // User's state
-  lga         String? // Local Government Area
-  timezone    String?   @default("UTC")
-  locale      String?   @default("en")
-  roles       Roles[]   @default([APPLICANT])
-  status      Status    @default(ACTIVE)
-  isVerified  Boolean   @default(false)
-  isActive    Boolean   @default(true)
-  lastLoginAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  nin            String? // National Identity Number
+  state          String? // User's state
+  lga            String? // Local Government Area
+  timezone       String?   @default("UTC")
+  locale         String?   @default("en")
+  roles          Roles[]   @default([APPLICANT])
+  status         Status    @default(ACTIVE)
+  isVerified     Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  onboardingPaid Boolean   @default(false)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   tokens        Token[]

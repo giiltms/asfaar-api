@@ -254,4 +254,29 @@ export class UserService {
       data: user, // Already a UserEntity instance
     };
   }
+
+  /**
+   * Mark user onboarding as completed
+   * @param userId The user ID
+   * @returns Updated user entity
+   */
+  async completeOnboarding(userId: string): Promise<UserEntity> {
+    const updatedUser = await this.userRepository.updateUser(userId, {
+      onboardingPaid: true,
+    });
+    return new UserEntity(updatedUser);
+  }
+
+  /**
+   * Check if user has completed onboarding
+   * @param userId The user ID
+   * @returns Boolean indicating onboarding status
+   */
+  async hasCompletedOnboarding(userId: string): Promise<boolean> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+    return user.onboardingPaid;
+  }
 }

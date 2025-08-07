@@ -55,6 +55,42 @@ export class AuthController {
   @Post('sign-in')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User authentication' })
+  @ApiResponse({
+    status: 200,
+    description: 'User authenticated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              example: '123e4567-e89b-12d3-a456-426614174000',
+            },
+            email: { type: 'string', example: 'user@example.com' },
+            firstName: { type: 'string', example: 'John' },
+            lastName: { type: 'string', example: 'Doe' },
+            roles: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['APPLICANT'],
+            },
+            onboardingPaid: { type: 'boolean', example: false },
+          },
+        },
+        accessToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async signIn(@Body() signInDTO: SignInDTO) {
     return this.authService.signIn(signInDTO);
   }
@@ -129,6 +165,7 @@ export class AuthController {
             firstName: { type: 'string' },
             lastName: { type: 'string' },
             roles: { type: 'array', items: { type: 'string' } },
+            onboardingPaid: { type: 'boolean', example: false },
           },
         },
         accessToken: { type: 'string' },

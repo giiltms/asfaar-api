@@ -69,6 +69,13 @@ export default class UserEntity implements User {
   @Expose()
   isActive: boolean;
 
+  @ApiProperty({
+    description: 'Whether the user has completed onboarding payment',
+    example: false,
+  })
+  @Expose()
+  onboardingPaid: boolean;
+
   @Expose()
   lastLoginAt: Date;
 

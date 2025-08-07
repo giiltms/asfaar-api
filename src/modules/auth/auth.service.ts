@@ -199,6 +199,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         roles: user.roles,
+        onboardingPaid: user.onboardingPaid,
       },
       ...tokens,
     };
