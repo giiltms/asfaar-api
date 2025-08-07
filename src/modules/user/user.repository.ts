@@ -41,6 +41,10 @@ export class UserRepository {
             { createdAt: 'asc' }, // Then by creation order
           ],
         },
+        ninVerifications: {
+          orderBy: { createdAt: 'desc' },
+          take: 1, // Get the most recent NIN verification
+        },
       },
     });
   }

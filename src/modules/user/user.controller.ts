@@ -43,11 +43,11 @@ export class UserController {
   @ApiOperation({
     summary: 'Get current user profile',
     description:
-      "Get the authenticated user's profile including addresses and personal information",
+      "Get the authenticated user's profile including addresses, NIN verification details, and personal information",
   })
   @ApiResponse({
     status: 200,
-    description: 'Current user profile retrieved successfully including addresses',
+    description: 'Current user profile retrieved successfully including addresses and NIN verification',
     schema: {
       type: 'object',
       properties: {
@@ -65,6 +65,7 @@ export class UserController {
                 fullName: 'John Doe',
                 roles: ['APPLICANT'],
                 isVerified: true,
+                onboardingPaid: false,
                 addresses: [
                   {
                     id: 'addr123-456',
@@ -83,6 +84,29 @@ export class UserController {
                   city: 'New York',
                   isDefault: true,
                 },
+                currentNinVerification: {
+                  id: 'nin123-456',
+                  nin: '12345678901',
+                  firstName: 'John',
+                  lastName: 'Doe',
+                  dateOfBirth: '1990-01-15T00:00:00Z',
+                  gender: 'MALE',
+                  phoneNumber: '+2349012345678',
+                  verificationStatus: 'VERIFIED',
+                  verificationDate: '2024-01-15T10:30:00Z',
+                  city: 'Lagos',
+                  state: 'Lagos',
+                  country: 'Nigeria',
+                },
+                ninVerifications: [
+                  {
+                    id: 'nin123-456',
+                    nin: '12345678901',
+                    verificationStatus: 'VERIFIED',
+                    verificationDate: '2024-01-15T10:30:00Z',
+                    createdAt: '2024-01-15T10:00:00Z',
+                  },
+                ],
               },
             },
           ],

@@ -107,6 +107,28 @@ export default class UserEntity implements User {
     return this.addresses?.find((addr: any) => addr.isDefault) || null;
   }
 
+  @ApiPropertyOptional({
+    description: 'User NIN verifications (most recent first)',
+    type: 'object',
+    isArray: true,
+  })
+  @Expose()
+  @Type(() => Object)
+  ninVerifications?: any[]; // Using any[] to avoid circular dependency issues
+
+  @ApiPropertyOptional({
+    description: 'Current/latest NIN verification details',
+    type: 'object',
+  })
+  @Expose()
+  @Transform(({ obj }) => {
+    // Return the most recent NIN verification
+    return obj.ninVerifications?.[0] || null;
+  })
+  get currentNinVerification(): any {
+    return this.ninVerifications?.[0] || null;
+  }
+
   @Expose()
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`.trim();
