@@ -105,19 +105,19 @@ export class PaymentsRepository {
     });
   }
 
-  async createPaymentOption(data: Prisma.PaymentOptionCreateInput) {
-    return this.prisma.paymentOption.create({
+  async createServiceFee(data: Prisma.ServiceFeeCreateInput) {
+    return this.prisma.serviceFee.create({
       data,
     });
   }
 
-  async findPaymentOptionById(id: string) {
-    return this.prisma.paymentOption.findUnique({
+  async findServiceFeeById(id: string) {
+    return this.prisma.serviceFee.findUnique({
       where: { id },
     });
   }
 
-  async findAllPaymentOptions(
+  async findAllServiceFees(
     filters: {
       isActive?: boolean;
       currency?: string;
@@ -128,7 +128,7 @@ export class PaymentsRepository {
     const { isActive, currency, search } = filters;
     const { skip, take } = pagination;
 
-    const where: Prisma.PaymentOptionWhereInput = {};
+    const where: Prisma.ServiceFeeWhereInput = {};
 
     if (isActive !== undefined) {
       where.isActive = isActive;
@@ -146,30 +146,30 @@ export class PaymentsRepository {
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.paymentOption.findMany({
+      this.prisma.serviceFee.findMany({
         where,
         skip,
         take,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.paymentOption.count({ where }),
+      this.prisma.serviceFee.count({ where }),
     ]);
 
     return { data, total };
   }
 
-  async updatePaymentOption(
+  async updateServiceFee(
     id: string,
-    data: Prisma.PaymentOptionUpdateInput,
+    data: Prisma.ServiceFeeUpdateInput,
   ) {
-    return this.prisma.paymentOption.update({
+    return this.prisma.serviceFee.update({
       where: { id },
       data,
     });
   }
 
-  async deletePaymentOption(id: string) {
-    return this.prisma.paymentOption.delete({
+  async deleteServiceFee(id: string) {
+    return this.prisma.serviceFee.delete({
       where: { id },
     });
   }

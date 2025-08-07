@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentProvider } from '../../../common/configs/payment.config';
 import { PaystackProvider } from './providers/paystack.provider';
@@ -17,16 +17,22 @@ import {
   TransferResponse,
   WebhookVerificationResult,
 } from './interfaces/payment.interface';
+import { PrismaService } from '@providers/prisma';
 
 export interface InitiatePaymentDto {
-  email: string;
-  amount: number;
+  email?: string;
+  amount?: number;
   currency?: string;
   description?: string;
+  paymentOption?: string;
   metadata?: Record<string, any>;
   paymentMethods?: string[];
   customFields?: Record<string, string>;
+  paymentProvider?: PaymentProvider;
 }
+
+
+
 
 export interface PaymentSummary {
   total: number;
@@ -49,11 +55,24 @@ export class PaymentService {
     private readonly paystackProvider: PaystackProvider,
     private readonly flutterwaveProvider: FlutterwaveProvider,
     private readonly fincraProvider: FincraProvider,
+    private readonly prisma: PrismaService,
   ) {
     const paymentConfig = this.configService.get('payment');
     this.provider = this.createProvider(paymentConfig);
     this.callbackUrl = paymentConfig.PAYMENT_CALLBACK_URL;
     this.cancelUrl = paymentConfig.PAYMENT_CANCEL_URL;
+  }
+
+  private selectProvider(provider?: PaymentProvider): PaymentProviderInterface {
+    switch (provider) {
+      case PaymentProvider.FLUTTERWAVE:
+        return this.flutterwaveProvider;
+      case PaymentProvider.FINCRA:
+        return this.fincraProvider;
+      case PaymentProvider.PAYSTACK:
+      default:
+        return this.paystackProvider;
+    }
   }
 
   private createProvider(paymentConfig: any): PaymentProviderInterface {
@@ -68,6 +87,7 @@ export class PaymentService {
     }
   }
 
+
   /**
    * Initialize a payment transaction
    */
@@ -75,19 +95,25 @@ export class PaymentService {
     data: InitiatePaymentDto,
   ): Promise<PaymentInitializationResponse> {
     try {
+
       const reference = this.generateReference();
+      const provider = this.selectProvider(data.paymentProvider);
+
 
       const paymentData: PaymentInitializationData = {
-        ...data,
+        amount: data.amount,
+        email: data.email,
         currency: data.currency || 'NGN',
         reference,
         callbackUrl: this.callbackUrl,
         cancelUrl: this.cancelUrl,
       };
 
+    
+
       this.logger.log(`Initiating payment: ${reference} for ${data.email}`);
 
-      const result = await this.provider.initializePayment(paymentData);
+      const result = await provider.initializePayment(paymentData);
 
       if (result.success) {
         this.logger.log(`Payment initialized successfully: ${reference}`);
@@ -105,11 +131,14 @@ export class PaymentService {
   /**
    * Verify a payment transaction
    */
-  async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
+  async verifyPayment(reference: string, paymentProvider?: any): Promise<PaymentVerificationResponse> {
     try {
-      this.logger.log(`Verifying payment: ${reference}`);
+      
+      this.logger.log(`Verifying payment: ${paymentProvider}-${reference}`);
 
-      const result = await this.provider.verifyPayment(reference);
+      const provider = this.selectProvider(paymentProvider);
+
+      const result = await provider.verifyPayment(reference);
 
       if (result.success) {
         this.logger.log(

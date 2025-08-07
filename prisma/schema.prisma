@@ -64,7 +64,7 @@ enum PaymentProvider {
   PAYPAL
 }
 
-model PaymentOption {
+model ServiceFee {
   id          String            @id @default(uuid())
   name        String
   description String?
@@ -72,9 +72,14 @@ model PaymentOption {
   currency    String            @default("NGN")
   providers   PaymentProvider[]
   metadata    Json?
+  isOptional  Boolean           @default(true)
   isActive    Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+
+  submissions FormSubmission[]
+  forms       DynamicForm[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum TransactionType {
@@ -625,6 +630,7 @@ model DynamicForm {
 
   sections    FormSection[]
   submissions FormSubmission[]
+  serviceFees ServiceFee[]
 
   @@map("dynamic_forms")
 }
@@ -698,7 +704,10 @@ model FormSubmission {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  responses   FieldResponse[]
+  responses       FieldResponse[]
+  serviceFees     ServiceFee[]
+  totalServiceFee Float?
+
   appointment BiometricAppointment?
   payment     Payment?
 
@@ -1175,8 +1184,8 @@ model Payment {
   id String @id @default(uuid())
 
   // Relations
-  submissionId String         @unique // One payment per form submission
-  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId String?         @unique // One payment per form submission
+  submission   FormSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   // Payment Details
   amount      Float
@@ -1187,11 +1196,12 @@ model Payment {
 
   // Payment Processor Integration
   processorId       String? // Stripe/Paystack/Flutterwave transaction ID
-  processorName     String? // Which payment processor was used
+  processor         PaymentProvider? // Which payment processor was used
   processorResponse Json? // Full response from payment processor
 
   // Payment Metadata
   invoiceNumber String? @unique // Internal invoice number
+  reference     String? @unique // payment reference number
   receiptUrl    String? // URL to payment receipt
   refundReason  String? // Reason for refund if applicable
   refundAmount  Float? // Amount refunded
