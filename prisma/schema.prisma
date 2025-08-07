@@ -72,6 +72,7 @@ model ServiceFee {
   currency    String            @default("NGN")
   providers   PaymentProvider[]
   metadata    Json?
+  isOptional  Boolean           @default(true)
   isActive    Boolean           @default(true)
 
   submissions FormSubmission[]
@@ -999,7 +1000,7 @@ model Payment {
 
   // Payment Processor Integration
   processorId       String? // Stripe/Paystack/Flutterwave transaction ID
-  processor     PaymentProvider? // Which payment processor was used
+  processor         PaymentProvider? // Which payment processor was used
   processorResponse Json? // Full response from payment processor
 
   // Payment Metadata
