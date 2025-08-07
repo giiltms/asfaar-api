@@ -22,8 +22,9 @@ import {
   ReviewSubmissionDto,
   SaveDraftDto,
   SubmissionAnalyticsDto,
-  PublicFormDto,
   CreateFieldResponseDto,
+  FormProgressDto,
+  SectionProgressDto,
 } from '../dto/submission.dto';
 import {
   FORM_NOT_FOUND,
@@ -36,8 +37,90 @@ import {
 export class FormSubmissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Public Form Access (No Authentication Required)
-  async getPublicForm(formId: string): Promise<PublicFormDto> {
+  // Authenticated Form Access
+  async getAvailableFormsForUser(userId: string): Promise<Array<{
+    id: string;
+    name: string;
+    description?: string;
+    sections: number;
+    estimatedTime: number;
+    hasStarted?: boolean;
+    progress?: number;
+  }>> {
+    // Get all available forms
+    const forms = await this.prisma.dynamicForm.findMany({
+      include: {
+        sections: {
+          include: {
+            groups: {
+              include: {
+                fields: true,
+              },
+            },
+          },
+        },
+        submissions: {
+          where: { userId },
+          select: { id: true, status: true, updatedAt: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Process each form to add metadata
+    const formsWithMetadata = await Promise.all(
+      forms.map(async (form) => {
+        // Calculate form metrics
+        let totalFields = 0;
+        const sectionsCount = form.sections.length;
+
+        form.sections.forEach((section) => {
+          section.groups.forEach((group) => {
+            totalFields += group.fields.length;
+          });
+        });
+
+        // Estimate completion time (2 minutes per field)
+        const estimatedTime = Math.max(5, Math.ceil(totalFields * 2));
+
+        // Check if user has started this form
+        const hasStarted = form.submissions.length > 0;
+        let progress = 0;
+
+        if (hasStarted) {
+          try {
+            const formProgress = await this.getFormProgress(userId, form.id);
+            progress = formProgress.overallProgress;
+          } catch (error) {
+            // If progress calculation fails, default to 0
+            progress = 0;
+          }
+        }
+
+        return {
+          id: form.id,
+          name: form.name,
+          description: form.description,
+          sections: sectionsCount,
+          estimatedTime,
+          hasStarted,
+          progress,
+        };
+      }),
+    );
+
+    return formsWithMetadata;
+  }
+
+  async getFormForUser(userId: string, formId: string): Promise<{
+    form: any;
+    progress: FormProgressDto;
+    currentResponses: any[];
+    submission?: any;
+  }> {
+    // Get form with full structure
     const form = await this.prisma.dynamicForm.findUnique({
       where: { id: formId },
       include: {
@@ -59,29 +142,77 @@ export class FormSubmissionsService {
             },
           },
         },
+        country: {
+          select: {
+            id: true,
+            name: true,
+            isoCode2: true,
+            isoCode3: true,
+            currency: true,
+            flag: true,
+          },
+        },
       },
     });
 
     if (!form) {
-      throw new NotFoundException(FORM_NOT_FOUND);
+      throw new NotFoundException('Form not found');
     }
 
-    return this.mapToPublicFormDto(form);
+    // Get user's current submission and progress
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: {
+        userId,
+        formId,
+      },
+      include: {
+        responses: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // Get progress
+    const progress = await this.getFormProgress(userId, formId);
+
+    // Get current responses
+    const currentResponses = submission?.responses.map((response) => ({
+      fieldId: response.fieldId,
+      fieldName: response.fieldName,
+      value: response.value,
+      fileUrls: response.fileUrls,
+      metadata: response.metadata,
+    })) || [];
+
+    return {
+      form,
+      progress,
+      currentResponses,
+      submission: submission ? {
+        id: submission.id,
+        status: submission.status,
+        submittedAt: submission.submittedAt,
+        createdAt: submission.createdAt,
+        updatedAt: submission.updatedAt,
+      } : null,
+    };
   }
 
-  async getPublicForms(): Promise<
-    Array<{ id: string; name: string; description?: string }>
-  > {
-    const forms = await this.prisma.dynamicForm.findMany({
+  // Helper method for admin to get basic form details
+  async getFormBasicDetails(formId: string): Promise<{ id: string; name: string; description?: string }> {
+    const form = await this.prisma.dynamicForm.findUnique({
+      where: { id: formId },
       select: {
         id: true,
         name: true,
         description: true,
       },
-      orderBy: { createdAt: 'desc' },
     });
 
-    return forms;
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+
+    return form;
   }
 
   // Form Submission Management
@@ -126,14 +257,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId instead of formFieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId instead of formFieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -437,15 +568,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-              deleteMany: {},
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -646,6 +777,235 @@ export class FormSubmissionsService {
     };
   }
 
+  /**
+   * Calculate form progress for a user
+   */
+  async getFormProgress(
+    userId: string,
+    formId: string,
+  ): Promise<FormProgressDto> {
+    // Get form with all structure
+    const form = await this.prisma.dynamicForm.findUnique({
+      where: { id: formId },
+      include: {
+        sections: {
+          include: {
+            groups: {
+              include: {
+                fields: {
+                  include: {
+                    options: true,
+                  },
+                  orderBy: { order: 'asc' },
+                },
+              },
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!form) {
+      throw new NotFoundException('Form not found');
+    }
+
+    // Get user's current submission (draft or submitted)
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: {
+        userId,
+        formId,
+      },
+      include: {
+        responses: true,
+      },
+      orderBy: { updatedAt: 'desc' }, // Get the latest submission
+    });
+
+    // Create a map of field responses for quick lookup
+    const responseMap = new Map<string, any>();
+    if (submission?.responses) {
+      submission.responses.forEach((response) => {
+        responseMap.set(response.fieldId, response.value);
+      });
+    }
+
+    // Calculate progress for each section
+    const sectionProgress: SectionProgressDto[] = [];
+    let totalFormFields = 0;
+    let totalFormRequiredFields = 0;
+    let totalCompletedFields = 0;
+    let totalCompletedRequiredFields = 0;
+    let completedSections = 0;
+    const allMissingRequiredFields: string[] = [];
+
+    for (const section of form.sections) {
+      let sectionTotalFields = 0;
+      let sectionRequiredFields = 0;
+      let sectionCompletedFields = 0;
+      let sectionCompletedRequiredFields = 0;
+      const sectionMissingRequired: string[] = [];
+
+      // Count fields in all groups within this section
+      for (const group of section.groups) {
+        for (const field of group.fields) {
+          sectionTotalFields++;
+          totalFormFields++;
+
+          if (field.required) {
+            sectionRequiredFields++;
+            totalFormRequiredFields++;
+          }
+
+          // Check if field has a response
+          const hasResponse = this.isFieldCompleted(
+            field,
+            responseMap.get(field.id),
+          );
+
+          if (hasResponse) {
+            sectionCompletedFields++;
+            totalCompletedFields++;
+
+            if (field.required) {
+              sectionCompletedRequiredFields++;
+              totalCompletedRequiredFields++;
+            }
+          } else if (field.required) {
+            sectionMissingRequired.push(field.label || field.name);
+            allMissingRequiredFields.push(
+              `${section.title}: ${field.label || field.name}`,
+            );
+          }
+        }
+      }
+
+      // Calculate section completion
+      const sectionCompletionPercentage =
+        sectionTotalFields > 0
+          ? Math.round((sectionCompletedFields / sectionTotalFields) * 100)
+          : 0;
+
+      // Section is complete if all required fields are filled
+      const isSectionComplete =
+        sectionRequiredFields === sectionCompletedRequiredFields;
+
+      if (isSectionComplete) {
+        completedSections++;
+      }
+
+      sectionProgress.push({
+        sectionId: section.id,
+        sectionTitle: section.title,
+        sectionOrder: section.order,
+        totalFields: sectionTotalFields,
+        requiredFields: sectionRequiredFields,
+        completedFields: sectionCompletedFields,
+        completedRequiredFields: sectionCompletedRequiredFields,
+        isComplete: isSectionComplete,
+        completionPercentage: sectionCompletionPercentage,
+        missingRequiredFields: sectionMissingRequired,
+      });
+    }
+
+    // Calculate overall progress
+    const overallProgress =
+      totalFormFields > 0
+        ? Math.round((totalCompletedFields / totalFormFields) * 100)
+        : 0;
+
+    // Can submit if all required fields are completed
+    const canSubmit = totalFormRequiredFields === totalCompletedRequiredFields;
+
+    // Estimate completion time (rough estimate: 2 minutes per remaining field)
+    const remainingFields = totalFormFields - totalCompletedFields;
+    const estimatedCompletionTime = remainingFields * 2;
+
+    return {
+      formId: form.id,
+      formName: form.name,
+      userId,
+      submissionId: submission?.id,
+      submissionStatus: submission?.status as SubmissionStatus,
+      totalSections: form.sections.length,
+      completedSections,
+      overallProgress,
+      totalFields: totalFormFields,
+      totalRequiredFields: totalFormRequiredFields,
+      completedFields: totalCompletedFields,
+      completedRequiredFields: totalCompletedRequiredFields,
+      canSubmit,
+      missingRequiredFields: allMissingRequiredFields,
+      sections: sectionProgress,
+      lastUpdated: submission?.updatedAt,
+      estimatedCompletionTime,
+    };
+  }
+
+  /**
+   * Helper method to determine if a field is completed
+   */
+  private isFieldCompleted(field: any, value: any): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    // Handle different field types
+    switch (field.type) {
+      case FieldType.TEXT:
+      case FieldType.TEXTAREA:
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.NUMBER:
+        return (
+          typeof value === 'number' ||
+          (typeof value === 'string' && !isNaN(Number(value)))
+        );
+
+      case FieldType.DATE:
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.SELECT:
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.MULTISELECT:
+        if (Array.isArray(value)) {
+          return value.length > 0;
+        }
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.FILE:
+        // Check if file URLs are provided (handled in field responses)
+        return Array.isArray(value)
+          ? value.length > 0
+          : typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.BOOLEAN:
+        return typeof value === 'boolean';
+
+      case FieldType.SIGNATURE:
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case FieldType.GEOLOCATION:
+        // Geolocation should be an object with lat/lng or coordinates
+        return (
+          typeof value === 'object' &&
+          value !== null &&
+          (value.lat !== undefined || value.latitude !== undefined)
+        );
+
+      default:
+        // For any other field type, check if value exists and is not empty
+        if (Array.isArray(value)) {
+          return value.length > 0;
+        }
+        return typeof value === 'string'
+          ? value.trim().length > 0
+          : value !== null && value !== undefined;
+    }
+  }
+
   // Validation Engine
   private async validateSubmission(
     form: any,
@@ -834,47 +1194,6 @@ export class FormSubmissionsService {
       reviewNotes: submission.reviewNotes,
       form: submission.form,
       user: submission.user,
-    };
-  }
-
-  private mapToPublicFormDto(form: any): PublicFormDto {
-    return {
-      id: form.id,
-      name: form.name,
-      description: form.description,
-      sections: form.sections.map((section: any) => ({
-        id: section.id,
-        title: section.title,
-        description: section.description,
-        order: section.order,
-        groups: section.groups.map((group: any) => ({
-          id: group.id,
-          title: group.title,
-          description: group.description,
-          order: group.order,
-          repeatable: group.repeatable,
-          fields: group.fields.map((field: any) => ({
-            id: field.id,
-            label: field.label,
-            name: field.name,
-            type: field.type,
-            required: field.required,
-            placeholder: field.placeholder,
-            defaultValue: field.defaultValue,
-            validation: field.validation,
-            config: field.config,
-            visibilityCondition: field.visibilityCondition,
-            calculation: field.calculation,
-            order: field.order,
-            options: field.options.map((option: any) => ({
-              id: option.id,
-              label: option.label,
-              value: option.value,
-              order: option.order,
-            })),
-          })),
-        })),
-      })),
     };
   }
 }

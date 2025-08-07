@@ -36,6 +36,7 @@ import {
   SubmissionQueryDto,
   SaveDraftDto,
   FileUploadDto,
+  AuthenticatedFormDto,
 } from './dto/submission.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
@@ -47,7 +48,69 @@ import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
 export class FormSubmissionsController {
   constructor(private readonly submissionsService: FormSubmissionsService) {}
 
-  // User Submission Management
+  // User Form Access and Submission Management
+  @Get('forms')
+  @ApiOperation({
+    summary: 'Get available forms for applicant',
+    description: 'Get list of all forms available to the authenticated applicant',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Available forms retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              description: { type: 'string' },
+              sections: { type: 'number' },
+              estimatedTime: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getAvailableForms(@Request() req: any) {
+    const forms = await this.submissionsService.getAvailableFormsForUser(req.user.id);
+    return {
+      success: true,
+      message: 'Available forms retrieved successfully',
+      data: forms,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('forms/:formId')
+  @ApiOperation({
+    summary: 'Get form with progress and current responses',
+    description: 'Get complete form template with user progress and current responses',
+  })
+  @ApiParam({ name: 'formId', description: 'Form ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Form with progress retrieved successfully',
+    type: AuthenticatedFormDto,
+  })
+  async getFormWithProgress(
+    @Request() req: any,
+    @Param('formId', ParseUUIDPipe) formId: string,
+  ) {
+    const formData = await this.submissionsService.getFormForUser(req.user.id, formId);
+    return {
+      success: true,
+      message: 'Form retrieved successfully',
+      data: formData,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Create new form submission (draft)',

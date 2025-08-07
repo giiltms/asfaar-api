@@ -62,6 +62,92 @@ export class UpdateFieldResponseDto extends PartialType(
   CreateFieldResponseDto,
 ) {}
 
+// Progress tracking DTOs
+export class SectionProgressDto {
+  @ApiProperty({ description: 'Section ID' })
+  sectionId: string;
+
+  @ApiProperty({ description: 'Section title' })
+  sectionTitle: string;
+
+  @ApiProperty({ description: 'Section order' })
+  sectionOrder: number;
+
+  @ApiProperty({ description: 'Total fields in section' })
+  totalFields: number;
+
+  @ApiProperty({ description: 'Required fields in section' })
+  requiredFields: number;
+
+  @ApiProperty({ description: 'Completed fields in section' })
+  completedFields: number;
+
+  @ApiProperty({ description: 'Completed required fields in section' })
+  completedRequiredFields: number;
+
+  @ApiProperty({ description: 'Whether section is considered complete' })
+  isComplete: boolean;
+
+  @ApiProperty({ description: 'Section completion percentage (0-100)' })
+  completionPercentage: number;
+
+  @ApiProperty({ description: 'Missing required field names', type: [String] })
+  missingRequiredFields: string[];
+}
+
+export class FormProgressDto {
+  @ApiProperty({ description: 'Form ID' })
+  formId: string;
+
+  @ApiProperty({ description: 'Form name' })
+  formName: string;
+
+  @ApiProperty({ description: 'User ID' })
+  userId: string;
+
+  @ApiProperty({ description: 'Current submission ID (if exists)' })
+  submissionId?: string;
+
+  @ApiProperty({ description: 'Current submission status' })
+  submissionStatus?: SubmissionStatus;
+
+  @ApiProperty({ description: 'Total sections in form' })
+  totalSections: number;
+
+  @ApiProperty({ description: 'Completed sections' })
+  completedSections: number;
+
+  @ApiProperty({ description: 'Overall progress percentage (0-100)' })
+  overallProgress: number;
+
+  @ApiProperty({ description: 'Total fields in entire form' })
+  totalFields: number;
+
+  @ApiProperty({ description: 'Total required fields in entire form' })
+  totalRequiredFields: number;
+
+  @ApiProperty({ description: 'Completed fields in entire form' })
+  completedFields: number;
+
+  @ApiProperty({ description: 'Completed required fields in entire form' })
+  completedRequiredFields: number;
+
+  @ApiProperty({ description: 'Whether form is ready for submission' })
+  canSubmit: boolean;
+
+  @ApiProperty({ description: 'Missing required fields across entire form', type: [String] })
+  missingRequiredFields: string[];
+
+  @ApiProperty({ description: 'Section-by-section progress', type: [SectionProgressDto] })
+  sections: SectionProgressDto[];
+
+  @ApiProperty({ description: 'Last updated timestamp' })
+  lastUpdated?: Date;
+
+  @ApiProperty({ description: 'Estimated completion time in minutes (optional)' })
+  estimatedCompletionTime?: number;
+}
+
 export class FieldResponseDto {
   @ApiProperty({ description: 'Response ID' })
   id: string;
@@ -218,7 +304,8 @@ export class FormSubmissionDto {
   };
 }
 
-// Public Form DTOs (for unauthenticated access)
+// Public Form DTOs (DEPRECATED - No longer used)
+// Left for backward compatibility, but public form access is no longer supported
 export class PublicFormDto {
   @ApiProperty({ description: 'Form ID' })
   id: string;
@@ -226,22 +313,21 @@ export class PublicFormDto {
   @ApiProperty({ description: 'Form name' })
   name: string;
 
-  @ApiProperty({ description: 'Form description', required: false })
+  @ApiPropertyOptional({ description: 'Form description' })
   description?: string;
 
   @ApiProperty({ description: 'Form sections with fields' })
-  sections: Array<{
+  sections: {
     id: string;
     title: string;
     description?: string;
     order: number;
-    groups: Array<{
+    groups: {
       id: string;
-      title?: string;
+      title: string;
       description?: string;
       order: number;
-      repeatable: boolean;
-      fields: Array<{
+      fields: {
         id: string;
         label: string;
         name: string;
@@ -253,16 +339,91 @@ export class PublicFormDto {
         config?: any;
         visibilityCondition?: any;
         calculation?: any;
+        metadata?: any;
         order: number;
-        options: Array<{
+        options: {
           id: string;
           label: string;
           value: string;
           order: number;
-        }>;
-      }>;
-    }>;
-  }>;
+        }[];
+      }[];
+    }[];
+  }[];
+
+  @ApiPropertyOptional({
+    description: 'Form progress (only included for authenticated users)',
+    type: SectionProgressDto
+  })
+  progress?: {
+    formId: string;
+    formName: string;
+    userId?: string;
+    submissionId?: string;
+    submissionStatus?: SubmissionStatus;
+    totalSections: number;
+    completedSections: number;
+    overallProgress: number;
+    totalFields: number;
+    totalRequiredFields: number;
+    completedFields: number;
+    completedRequiredFields: number;
+    canSubmit: boolean;
+    missingRequiredFields: string[];
+    sections: SectionProgressDto[];
+    lastUpdated?: Date;
+    estimatedCompletionTime?: number;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Current user responses (only included for authenticated users)'
+  })
+  currentResponses?: {
+    fieldId: string;
+    fieldName: string;
+    value: any;
+    fileUrls?: string[];
+  }[];
+}
+
+// New DTO for authenticated form access
+export class AuthenticatedFormDto {
+  @ApiProperty({ description: 'Form details' })
+  form: {
+    id: string;
+    name: string;
+    description?: string;
+    sections: any[];
+    country?: {
+      id: string;
+      name: string;
+      isoCode2: string;
+      isoCode3: string;
+      currency: string;
+      flag: string;
+    };
+  };
+
+  @ApiProperty({ description: 'User progress on this form', type: FormProgressDto })
+  progress: FormProgressDto;
+
+  @ApiProperty({ description: 'Current user responses', type: 'array' })
+  currentResponses: {
+    fieldId: string;
+    fieldName: string;
+    value: any;
+    fileUrls?: string[];
+    metadata?: any;
+  }[];
+
+  @ApiPropertyOptional({ description: 'Current submission details' })
+  submission?: {
+    id: string;
+    status: SubmissionStatus;
+    submittedAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  };
 }
 
 // Submission Management DTOs
