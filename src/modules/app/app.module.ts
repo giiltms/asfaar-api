@@ -15,7 +15,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { BiometricAppointmentsModule } from '../biometric-appointments/biometric-appointments.module';
 import { BoothsModule } from '../booths/booths.module';
 import { QueueModule } from '../queue/queue.module';
-import { UserDashboardModule } from '../user-dashboard/user-dashboard.module';
+import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashboard.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -38,7 +38,7 @@ import { UserDashboardModule } from '../user-dashboard/user-dashboard.module';
     BiometricAppointmentsModule,
     BoothsModule,
     QueueModule,
-    UserDashboardModule,
+    ApplicantDashboardModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],
