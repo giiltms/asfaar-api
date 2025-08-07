@@ -24,6 +24,7 @@
     "db:push": "npx prisma db push",
     "db:deploy": "npx prisma migrate deploy",
     "db:seed": "ts-node src/seed.ts",
+    "db:repair-migrations": "node scripts/fix-migration-state.js",
     "prepare": "husky install"
   },
   "keywords": [
