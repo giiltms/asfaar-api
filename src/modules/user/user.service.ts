@@ -31,6 +31,7 @@ export class UserService {
         roles: true,
         isActive: true,
         isVerified: true,
+        onboardingPaid: true,
         createdAt: true,
         updatedAt: true,
       },

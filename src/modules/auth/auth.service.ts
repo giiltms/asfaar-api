@@ -157,6 +157,8 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         roles: user.roles,
+        isVerified: user.isVerified,
+        onboardingPaid: user.onboardingPaid,
       },
       ...tokens,
     };
@@ -199,6 +201,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         roles: user.roles,
+        isVerified: user.isVerified,
         onboardingPaid: user.onboardingPaid,
       },
       ...tokens,
