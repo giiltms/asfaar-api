@@ -6,7 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { Prisma, Payment, PaymentStatus, Currency, PaymentProvider } from '@prisma/client';
+import {
+  Prisma,
+  Payment,
+  PaymentStatus,
+  Currency,
+  PaymentProvider,
+} from '@prisma/client';
 import {
   CreatePaymentDto,
   UpdatePaymentStatusDto,
@@ -41,11 +47,9 @@ export class PaymentsService {
   async createPayment(
     createDto: any,
     createdBy?: string,
-    reference?: string
+    reference?: string,
   ): Promise<Payment> {
     try {
-
-
       // // Check if submission exists
       // const submission = await this.prisma.formSubmission.findUnique({
       //   where: { id: createDto.submissionId },
@@ -142,46 +146,49 @@ export class PaymentsService {
       //   );
       // }
 
-       // Validate we have service fees to process
+      // Validate we have service fees to process
       if (!initiatePaymentDto?.serviceFees?.length) {
         throw new BadRequestException('At least one service fee is required');
       }
 
       // Fetch all service fees
       const serviceFees = await Promise.all(
-        initiatePaymentDto.serviceFees.map(serviceFeeId => 
-          this.findServiceFeeById(serviceFeeId)
-        )
+        initiatePaymentDto.serviceFees.map((serviceFeeId) =>
+          this.findServiceFeeById(serviceFeeId),
+        ),
       );
 
       // Verify all service fees are valid and active
-      const invalidFees = serviceFees.filter(
-        fee => !fee || !fee.isActive
-      );
-      
+      const invalidFees = serviceFees.filter((fee) => !fee || !fee.isActive);
+
       if (invalidFees.length > 0) {
-        throw new BadRequestException('One or more service fees are invalid or inactive');
+        throw new BadRequestException(
+          'One or more service fees are invalid or inactive',
+        );
       }
 
       // Calculate total amount
-      const totalAmount = serviceFees.reduce(
-        (sum, fee) => sum + fee.amount, 0
-      );
+      const totalAmount = serviceFees.reduce((sum, fee) => sum + fee.amount, 0);
 
       // Generate invoice number
       const invoiceNumber = await this.generateInvoiceNumber();
 
       // Set default values
       const paymentData: Prisma.PaymentCreateInput = {
-        amount: initiatePaymentDto.amount,
+        amount: initiatePaymentDto.amount || totalAmount,
         currency: initiatePaymentDto.currency || Currency.NGN,
         invoiceNumber,
         createdBy,
+        // if submissionId is provided, connect the payment to the submission
+        submission: initiatePaymentDto.submissionId
+          ? {
+              connect: { id: initiatePaymentDto.submissionId },
+            }
+          : undefined,
       };
 
       const payment = await this.prisma.payment.create({
         data: paymentData,
-        
       });
 
       this.logger.log(
@@ -302,7 +309,6 @@ export class PaymentsService {
    * Get a single payment by ID
    */
   async findPaymentById(id: string): Promise<Payment> {
-
     const payment = await this.prisma.payment.findUnique({
       where: { id },
       include: {
@@ -443,7 +449,6 @@ export class PaymentsService {
 
   async createServiceFee(createDto: CreateServiceFeeDto) {
     try {
-
       const serviceFee = await this.prisma.serviceFee.create({
         data: {
           ...createDto,
@@ -528,10 +533,7 @@ export class PaymentsService {
     return serviceFee;
   }
 
-  async updateServiceFee(
-    id: string,
-    updateDto: UpdateServiceFeeDto,
-  ) {
+  async updateServiceFee(id: string, updateDto: UpdateServiceFeeDto) {
     try {
       await this.findServiceFeeById(id);
 

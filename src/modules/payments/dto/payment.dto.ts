@@ -131,8 +131,6 @@ export class InitiatePaymentDto {
   description?: string;
 }
 
-
-
 // DTO for updating payment status (usually via webhooks)
 export class UpdatePaymentStatusDto {
   @ApiProperty({
@@ -361,10 +359,11 @@ export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {
   expiresAt?: Date;
 }
 
-
-
 export class CreateServiceFeeDto {
-  @ApiProperty({ description: 'Name of the payment option', example: 'Visa Fee' })
+  @ApiProperty({
+    description: 'Name of the payment option',
+    example: 'Visa Fee',
+  })
   @IsNotEmpty()
   @IsString()
   name: string;
@@ -421,7 +420,10 @@ export class CreateServiceFeeDto {
 }
 
 export class UpdateServiceFeeDto {
-  @ApiPropertyOptional({ description: 'Name of the payment option', example: 'Visa Fee' })
+  @ApiPropertyOptional({
+    description: 'Name of the payment option',
+    example: 'Visa Fee',
+  })
   @IsOptional()
   @IsString()
   name?: string;

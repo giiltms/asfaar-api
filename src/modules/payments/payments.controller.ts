@@ -40,7 +40,6 @@ import { PaginationQueryDto } from '@common/dtos';
 import { UserService } from '@modules/user/user.service';
 import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
 
-
 /**
  * Controller for managing payments
  * Provides REST API endpoints for payment operations
@@ -53,8 +52,7 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly paymentProviderService: PaymentProviderService,
-    private readonly userService: UserService
-
+    private readonly userService: UserService,
   ) {}
 
   /**
@@ -94,7 +92,7 @@ export class PaymentsController {
     };
   }
 
-     /**
+  /**
    * Get all service fees
    */
   @Get('fee')
@@ -133,20 +131,19 @@ export class PaymentsController {
     required: false,
     type: String,
     description: 'Search by name or description',
-
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Service fee retrieved successfully',
   })
   async findAllServiceFees(
-  @Query(new ValidationPipe({ transform: true })) filters: ServiceFeeFiltersDto,
-  @Query(new ValidationPipe({ transform: true })) pagination: PaginationQueryDto,
+    @Query(new ValidationPipe({ transform: true }))
+    filters: ServiceFeeFiltersDto,
+    @Query(new ValidationPipe({ transform: true }))
+    pagination: PaginationQueryDto,
   ) {
-
-
-  console.log('Filters:', filters);
-  console.log('Pagination:', pagination);
+    console.log('Filters:', filters);
+    console.log('Pagination:', pagination);
 
     const result = await this.paymentsService.findAllServiceFees(
       filters,
@@ -159,7 +156,6 @@ export class PaymentsController {
     };
   }
 
-  
   /**
    * Get all payments with optional filtering and pagination
    */
@@ -232,10 +228,10 @@ export class PaymentsController {
     };
   }
 
-   /**
+  /**
    * Initiate a new payment
    */
-  @Post("initiate")
+  @Post('initiate')
   @ApiOperation({
     summary: 'Initiate a new payment',
     description: 'Initiate a new payment for a form submission',
@@ -251,40 +247,35 @@ export class PaymentsController {
   })
   //@UseGuards(AuthGuard)  // or JwtAuthGuard, or whatever your auth guard is
   @ApiBearerAuth()
-
   async initiatePayment(
     @Request() req: any,
-    @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto
+    @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto,
   ) {
+    const user = req.user;
 
-    const user = req.user
-
-
-     // Validate we have service fees to process
+    // Validate we have service fees to process
     if (!initiatePaymentDto?.serviceFees?.length) {
       throw new BadRequestException('At least one service fee is required');
     }
 
     // Fetch all service fees
     const serviceFees = await Promise.all(
-      initiatePaymentDto.serviceFees.map(serviceFeeId => 
-        this.paymentsService.findServiceFeeById(serviceFeeId)
-      )
+      initiatePaymentDto.serviceFees.map((serviceFeeId) =>
+        this.paymentsService.findServiceFeeById(serviceFeeId),
+      ),
     );
 
     // Verify all service fees are valid and active
-    const invalidFees = serviceFees.filter(
-      fee => !fee || !fee.isActive
-    );
-    
+    const invalidFees = serviceFees.filter((fee) => !fee || !fee.isActive);
+
     if (invalidFees.length > 0) {
-      throw new BadRequestException('One or more service fees are invalid or inactive');
+      throw new BadRequestException(
+        'One or more service fees are invalid or inactive',
+      );
     }
 
     // Calculate total amount
-    const totalAmount = serviceFees.reduce(
-      (sum, fee) => sum + fee.amount, 0
-    );
+    const totalAmount = serviceFees.reduce((sum, fee) => sum + fee.amount, 0);
 
     // Prepare payment data
     const paymentData = {
@@ -294,7 +285,7 @@ export class PaymentsController {
       user: user?.id,
       serviceFees: initiatePaymentDto.serviceFees,
       metadata: {
-        feeDetails: serviceFees.map(fee => ({
+        feeDetails: serviceFees.map((fee) => ({
           id: fee.id,
           name: fee.name,
           amount: fee.amount,
@@ -302,12 +293,15 @@ export class PaymentsController {
       },
     };
 
-
     const payment = await this.paymentProviderService.initiatePayment(
       paymentData,
     );
 
-    await this.paymentsService.createPayment(paymentData, user.id, payment.reference)
+    await this.paymentsService.createPayment(
+      paymentData,
+      user.id,
+      payment.reference,
+    );
 
     return {
       message: 'Payment initiated successfully',
@@ -315,8 +309,7 @@ export class PaymentsController {
     };
   }
 
-
-   /**
+  /**
    * Get a specific payment by ID
    */
   @Get(':reference/verify')
@@ -338,11 +331,12 @@ export class PaymentsController {
     description: 'Payment not found',
   })
   async verifyPayment(@Param('reference') reference: string) {
+    const payment = await this.paymentsService.findPaymentByRef(reference);
 
-    const payment = await this.paymentsService.findPaymentByRef(reference)
-
-
-    const result = await this.paymentProviderService.verifyPayment(reference, payment.processor);
+    const result = await this.paymentProviderService.verifyPayment(
+      reference,
+      payment.processor,
+    );
 
     return {
       message: 'Payment retrieved successfully',
@@ -529,9 +523,6 @@ export class PaymentsController {
     };
   }
 
-
- 
-
   /**
    * Create a new service fee (Admin only)
    */
@@ -548,10 +539,7 @@ export class PaymentsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid input data',
   })
-  async createServiceFee(
-    @Body(ValidationPipe) createDto: CreateServiceFeeDto,
-  ) {
-
+  async createServiceFee(@Body(ValidationPipe) createDto: CreateServiceFeeDto) {
     const option = await this.paymentsService.createServiceFee(createDto);
 
     return {
@@ -559,8 +547,6 @@ export class PaymentsController {
       data: option,
     };
   }
-
- 
 
   /**
    * Get a service fee by ID
@@ -644,15 +630,12 @@ export class PaymentsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Payment option not found',
   })
-  
   async deleteServiceFee(@Param('id', ParseUUIDPipe) id: string) {
     await this.paymentsService.deleteServiceFee(id);
     return {
       message: 'Payment option deleted successfully',
     };
   }
-
-
 
   /**
    * Refund a payment
@@ -725,5 +708,3 @@ export class PaymentsController {
     };
   }
 }
-
-
