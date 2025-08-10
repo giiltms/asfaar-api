@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 // Base DTO for creating a biometric center
 export class CreateBiometricCenterDto {
@@ -235,6 +236,45 @@ export class UpdateBiometricCenterDto extends PartialType(
 
 // DTO for filtering biometric centers
 export class BiometricCenterFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by city',
+    example: 'Abuja',
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by state',
+    example: 'Federal Capital Territory',
+  })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Search by name or code',
+    example: 'ASFAAR',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+export class BiometricCenterQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by city',
     example: 'Abuja',

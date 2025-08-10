@@ -25,6 +25,7 @@ import {
   CreateBiometricCenterDto,
   UpdateBiometricCenterDto,
   BiometricCenterFiltersDto,
+  BiometricCenterQueryDto,
 } from './dto/biometric-center.dto';
 import { BiometricCenterEntity } from './entities/biometric-center.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
@@ -100,6 +101,20 @@ export class BiometricCentersController {
     example: 10,
   })
   @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+    description: 'Field to sort by',
+    example: 'name',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Sort order',
+    example: 'asc',
+  })
+  @ApiQuery({
     name: 'city',
     required: false,
     type: String,
@@ -133,9 +148,10 @@ export class BiometricCentersController {
     type: [BiometricCenterEntity],
   })
   async findAllCenters(
-    @Query() filters: BiometricCenterFiltersDto,
-    @Query() pagination: PaginationQueryDto,
+    @Query(ValidationPipe) query: BiometricCenterQueryDto,
   ) {
+    const { page, limit, sortBy, sortOrder, ...filters } = query;
+    const pagination = { page, limit, sortBy, sortOrder };
     const result = await this.biometricCentersService.findAllCenters(
       filters,
       pagination,
