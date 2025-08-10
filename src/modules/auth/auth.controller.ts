@@ -28,6 +28,7 @@ import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { AuthGuard } from './guard/auth.guard';
 import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -190,7 +191,7 @@ export class AuthController {
     status: 400,
     description: 'Invalid email or already verified',
   })
-  async resendVerification(@Body() body: { email: string }) {
+  async resendVerification(@Body() body: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(body.email);
   }
 }
