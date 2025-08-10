@@ -9,9 +9,11 @@ import {
   IsNumber,
   Min,
   Max,
+  IsInt,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { AppointmentClass } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 export class CreateBoothDto {
   @ApiProperty({
@@ -160,6 +162,47 @@ export class UnassignAgentDto {
 }
 
 export class BoothFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by center ID',
+  })
+  @IsOptional()
+  @IsUUID()
+  centerId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by appointment class',
+    enum: AppointmentClass,
+  })
+  @IsOptional()
+  @IsEnum(AppointmentClass)
+  appointmentClass?: AppointmentClass;
+
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by occupied status',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isOccupied?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by availability (not occupied and active)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  available?: boolean;
+}
+
+export class BoothQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by center ID',
   })

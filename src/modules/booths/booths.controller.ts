@@ -30,6 +30,7 @@ import {
   AssignAgentDto,
   UnassignAgentDto,
   BoothFiltersDto,
+  BoothQueryDto,
   BoothResponseDto,
   BoothStatsDto,
 } from './dto/booth.dto';
@@ -80,8 +81,14 @@ export class BoothsController {
   @ApiOperation({ summary: 'Get all booths with pagination and filtering' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'centerId', required: false, type: String })
-  @ApiQuery({ name: 'appointmentClass', required: false, enum: AppointmentClass })
+  @ApiQuery({
+    name: 'appointmentClass',
+    required: false,
+    enum: AppointmentClass,
+  })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
   @ApiQuery({ name: 'isOccupied', required: false, type: Boolean })
   @ApiQuery({ name: 'available', required: false, type: Boolean })
@@ -89,10 +96,9 @@ export class BoothsController {
     status: HttpStatus.OK,
     description: 'Booths retrieved successfully',
   })
-  async findAllBooths(
-    @Query(ValidationPipe) pagination: PaginationQueryDto,
-    @Query(ValidationPipe) filters: BoothFiltersDto,
-  ) {
+  async findAllBooths(@Query(ValidationPipe) query: BoothQueryDto) {
+    const { page, limit, sortBy, sortOrder, ...filters } = query;
+    const pagination = { page, limit, sortBy, sortOrder };
     const result = await this.boothsService.findAllBooths(filters, pagination);
 
     return {
@@ -318,4 +324,4 @@ export class BoothsController {
       timestamp: new Date().toISOString(),
     };
   }
-} 
+}
