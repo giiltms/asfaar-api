@@ -384,9 +384,9 @@ export class FincraProvider implements PaymentProviderInterface {
   ): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      Authorization: `Bearer ${this.secretKey}`,
       'Content-Type': 'application/json',
       'api-key': this.secretKey,
+      'x-pub-key': this.publicKey,
     };
 
     const config: RequestInit = {
