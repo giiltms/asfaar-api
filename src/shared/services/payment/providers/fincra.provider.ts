@@ -386,7 +386,7 @@ export class FincraProvider implements PaymentProviderInterface {
     const headers = {
       Authorization: `Bearer ${this.secretKey}`,
       'Content-Type': 'application/json',
-      'api-key': this.publicKey,
+      'api-key': this.secretKey,
     };
 
     const config: RequestInit = {
