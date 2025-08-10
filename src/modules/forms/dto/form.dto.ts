@@ -236,7 +236,7 @@ export class FormFieldDto {
 export class CreateInputGroupDto {
   @ApiPropertyOptional({
     description: 'Group title',
-    example: 'Contact Information',
+    example: 'Personal Details',
     maxLength: 200,
   })
   @IsOptional()
@@ -246,7 +246,7 @@ export class CreateInputGroupDto {
 
   @ApiPropertyOptional({
     description: 'Group description',
-    example: 'Your contact details for communication',
+    example: 'Basic personal information',
     maxLength: 500,
   })
   @IsOptional()
@@ -255,7 +255,7 @@ export class CreateInputGroupDto {
   description?: string;
 
   @ApiProperty({
-    description: 'Group order within section',
+    description: 'Group order',
     example: 1,
     minimum: 0,
   })
@@ -263,16 +263,24 @@ export class CreateInputGroupDto {
   @Min(0)
   order: number;
 
-  @ApiProperty({
-    description: 'Whether this group can be repeated',
-    example: false,
+  @ApiPropertyOptional({
+    description: 'Whether this group is repeatable',
     default: false,
   })
+  @IsOptional()
   @IsBoolean()
-  repeatable = false;
+  repeatable?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Fields in this group',
+    description: 'Custom configuration for frontend rendering (JSON)',
+    example: { layout: 'grid', columns: 2, collapsible: true },
+  })
+  @IsOptional()
+  @IsJSON()
+  config?: any;
+
+  @ApiPropertyOptional({
+    description: 'Form fields in this group',
     type: [CreateFormFieldDto],
   })
   @IsOptional()
@@ -288,10 +296,10 @@ export class InputGroupDto {
   @ApiProperty({ description: 'Group ID' })
   id: string;
 
-  @ApiProperty({ description: 'Group title', required: false })
+  @ApiPropertyOptional({ description: 'Group title' })
   title?: string;
 
-  @ApiProperty({ description: 'Group description', required: false })
+  @ApiPropertyOptional({ description: 'Group description' })
   description?: string;
 
   @ApiProperty({ description: 'Group order' })
@@ -299,6 +307,13 @@ export class InputGroupDto {
 
   @ApiProperty({ description: 'Whether group is repeatable' })
   repeatable: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Custom configuration for frontend rendering (JSON)',
+    example: { layout: 'grid', columns: 2, collapsible: true },
+    required: false,
+  })
+  config?: any;
 
   @ApiProperty({ description: 'Form fields', type: [FormFieldDto] })
   fields: FormFieldDto[];

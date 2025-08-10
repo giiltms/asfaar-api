@@ -7,7 +7,10 @@ export default class CountryEntity implements Country {
   @Expose()
   id: string;
 
-  @ApiProperty({ description: 'Country name', example: 'Kingdom of Saudi Arabia' })
+  @ApiProperty({
+    description: 'Country name',
+    example: 'Kingdom of Saudi Arabia',
+  })
   @Expose()
   name: string;
 
@@ -31,7 +34,10 @@ export default class CountryEntity implements Country {
   @Expose()
   currencyName: string | null;
 
-  @ApiPropertyOptional({ description: 'International dial code', example: '+966' })
+  @ApiPropertyOptional({
+    description: 'International dial code',
+    example: '+966',
+  })
   @Expose()
   dialCode: string | null;
 
@@ -39,7 +45,10 @@ export default class CountryEntity implements Country {
   @Expose()
   region: string | null;
 
-  @ApiPropertyOptional({ description: 'Geographic subregion', example: 'Western Asia' })
+  @ApiPropertyOptional({
+    description: 'Geographic subregion',
+    example: 'Western Asia',
+  })
   @Expose()
   subregion: string | null;
 
@@ -51,7 +60,9 @@ export default class CountryEntity implements Country {
   @Expose()
   flag: string | null;
 
-  @ApiProperty({ description: 'Whether country is active for visa applications' })
+  @ApiProperty({
+    description: 'Whether country is active for visa applications',
+  })
   @Expose()
   isActive: boolean;
 
@@ -59,14 +70,29 @@ export default class CountryEntity implements Country {
   @Expose()
   visaProcessingDays: number | null;
 
-  @ApiPropertyOptional({ description: 'Maximum applications per year', example: 5000 })
+  @ApiPropertyOptional({
+    description: 'Maximum applications per year',
+    example: 5000,
+  })
   @Expose()
   maxApplications: number | null;
 
   @ApiPropertyOptional({ description: 'Application fee in USD', example: 150 })
   @Expose()
-  @Transform(({ value }) => (value ? parseFloat(value.toString()) : null))
-  applicationFee: any | null; // Using any because Prisma Decimal can be tricky
+  @Transform(({ value }) => {
+    if (value === null || value === undefined) return null;
+    try {
+      const stringValue =
+        typeof value === 'object' && value.toString
+          ? value.toString()
+          : String(value);
+      const num = parseFloat(stringValue);
+      return Number.isFinite(num) ? num : null;
+    } catch {
+      return null;
+    }
+  })
+  applicationFee: any | null;
 
   @ApiProperty({ description: 'Country creation date' })
   @Expose()
@@ -119,7 +145,9 @@ export default class CountryEntity implements Country {
   get utilizationPercentage(): number {
     const maxApps = this.maxApplications || 1000;
     if (maxApps === 0) return 0;
-    return Math.round((this.currentYearApplications / maxApps) * 100 * 100) / 100;
+    return (
+      Math.round((this.currentYearApplications / maxApps) * 100 * 100) / 100
+    );
   }
 
   // Relations (optional, only included when requested)

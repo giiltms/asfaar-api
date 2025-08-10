@@ -74,6 +74,7 @@ export class FormsService {
                   ? {
                       create: section.groups.map((group) => ({
                         ...group,
+                        config: group.config,
                         fields: group.fields
                           ? {
                               create: group.fields.map((field) => ({
@@ -252,6 +253,7 @@ export class FormsService {
                 description: group.description,
                 order: group.order,
                 repeatable: group.repeatable,
+                config: group.config,
                 fields: {
                   create: group.fields.map((field) => ({
                     label: field.label,
@@ -672,6 +674,7 @@ export class FormsService {
           description: group.description,
           order: group.order,
           repeatable: group.repeatable,
+          config: group.config,
           fields: group.fields.map((field: any) => ({
             id: field.id,
             label: field.label,

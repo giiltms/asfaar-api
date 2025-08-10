@@ -656,6 +656,7 @@ model InputGroup {
   description String?
   order       Int
   repeatable  Boolean     @default(false)
+  config      Json?
 
   fields FormField[]
 }
