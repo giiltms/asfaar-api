@@ -8,6 +8,7 @@ export interface PaymentInitializationData {
   metadata?: Record<string, any>;
   paymentMethods?: string[];
   customFields?: Record<string, string>;
+  customerName?: string;
 }
 
 export interface PaymentInitializationResponse {

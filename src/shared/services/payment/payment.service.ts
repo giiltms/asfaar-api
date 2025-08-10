@@ -1,4 +1,4 @@
- import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentProvider } from '../../../common/configs/payment.config';
 import { PaystackProvider } from './providers/paystack.provider';
@@ -29,10 +29,8 @@ export interface InitiatePaymentDto {
   paymentMethods?: string[];
   customFields?: Record<string, string>;
   paymentProvider?: PaymentProvider;
+  customerName?: string;
 }
-
-
-
 
 export interface PaymentSummary {
   total: number;
@@ -87,7 +85,6 @@ export class PaymentService {
     }
   }
 
-
   /**
    * Initialize a payment transaction
    */
@@ -95,10 +92,8 @@ export class PaymentService {
     data: InitiatePaymentDto,
   ): Promise<PaymentInitializationResponse> {
     try {
-
       const reference = this.generateReference();
       const provider = this.selectProvider(data.paymentProvider);
-
 
       const paymentData: PaymentInitializationData = {
         amount: data.amount,
@@ -107,9 +102,8 @@ export class PaymentService {
         reference,
         callbackUrl: this.callbackUrl,
         cancelUrl: this.cancelUrl,
+        customerName: data.customerName,
       };
-
-    
 
       this.logger.log(`Initiating payment: ${reference} for ${data.email}`);
 
@@ -131,9 +125,11 @@ export class PaymentService {
   /**
    * Verify a payment transaction
    */
-  async verifyPayment(reference: string, paymentProvider?: any): Promise<PaymentVerificationResponse> {
+  async verifyPayment(
+    reference: string,
+    paymentProvider?: any,
+  ): Promise<PaymentVerificationResponse> {
     try {
-      
       this.logger.log(`Verifying payment: ${paymentProvider}-${reference}`);
 
       const provider = this.selectProvider(paymentProvider);

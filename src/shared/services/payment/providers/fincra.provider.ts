@@ -50,7 +50,7 @@ export class FincraProvider implements PaymentProviderInterface {
         amount: data.amount,
         currency: data.currency.toUpperCase(),
         customer: {
-          name: 'Customer',
+          name: data.customerName,
           email: data.email,
         },
         reference: data.reference,

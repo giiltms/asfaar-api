@@ -291,6 +291,7 @@ export class PaymentsController {
           amount: fee.amount,
         })),
       },
+      customerName: `${user.firstName} ${user.lastName}`,
     };
 
     const payment = await this.paymentProviderService.initiatePayment(
