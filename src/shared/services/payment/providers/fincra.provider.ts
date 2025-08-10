@@ -67,10 +67,27 @@ export class FincraProvider implements PaymentProviderInterface {
         payload,
       );
 
-      if (response.success) {
+      // Fincra might return 'status' instead of 'success'
+      const isSuccess = response.success || response.status;
+
+      if (isSuccess && response.data?.link) {
         return {
           success: true,
           authorizationUrl: response.data.link,
+          reference: data.reference,
+          providerData: response.data,
+        };
+      }
+
+      // If response indicates success but no link, still return success but log warning
+      if (isSuccess) {
+        this.logger.warn(
+          'Fincra response successful but no link provided',
+          response,
+        );
+        return {
+          success: true,
+          authorizationUrl: response.data?.link || null,
           reference: data.reference,
           providerData: response.data,
         };
