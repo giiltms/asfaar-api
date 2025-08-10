@@ -643,6 +643,7 @@ model FormSection {
   title       String
   description String?
   order       Int
+  config      Json?
 
   groups InputGroup[]
 }

@@ -336,6 +336,14 @@ export class CreateFormSectionDto {
   order: number;
 
   @ApiPropertyOptional({
+    description: 'Custom configuration for frontend rendering (JSON)',
+    example: { collapsible: true, icon: 'user', theme: 'info' },
+  })
+  @IsOptional()
+  @IsJSON()
+  config?: any;
+
+  @ApiPropertyOptional({
     description: 'Input groups in this section',
     type: [CreateInputGroupDto],
   })
@@ -360,6 +368,13 @@ export class FormSectionDto {
 
   @ApiProperty({ description: 'Section order' })
   order: number;
+
+  @ApiPropertyOptional({
+    description: 'Custom configuration for frontend rendering (JSON)',
+    example: { collapsible: true, icon: 'user', theme: 'info' },
+    required: false,
+  })
+  config?: any;
 
   @ApiProperty({ description: 'Input groups', type: [InputGroupDto] })
   groups: InputGroupDto[];

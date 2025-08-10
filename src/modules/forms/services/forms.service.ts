@@ -69,6 +69,7 @@ export class FormsService {
           ? {
               create: sections.map((section) => ({
                 ...section,
+                config: section.config,
                 groups: section.groups
                   ? {
                       create: section.groups.map((group) => ({
@@ -244,6 +245,7 @@ export class FormsService {
             title: section.title,
             description: section.description,
             order: section.order,
+            config: section.config,
             groups: {
               create: section.groups.map((group) => ({
                 title: group.title,
@@ -663,6 +665,7 @@ export class FormsService {
         title: section.title,
         description: section.description,
         order: section.order,
+        config: section.config,
         groups: section.groups.map((group: any) => ({
           id: group.id,
           title: group.title,
