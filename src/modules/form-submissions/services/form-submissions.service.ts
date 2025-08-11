@@ -1266,14 +1266,6 @@ export class FormSubmissionsService {
       where: { referenceNumber },
       include: {
         user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            nin: true,
-          },
           include: {
             ninVerifications: {
               where: {
