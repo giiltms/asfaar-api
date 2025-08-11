@@ -150,11 +150,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-                id: form.country.id,
-                name: form.country.name,
-                isoCode2: form.country.isoCode2,
-                flag: form.country.flag,
-              }
+              id: form.country.id,
+              name: form.country.name,
+              isoCode2: form.country.isoCode2,
+              flag: form.country.flag,
+            }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -246,12 +246,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-            id: submission.id,
-            status: submission.status,
-            submittedAt: submission.submittedAt,
-            createdAt: submission.createdAt,
-            updatedAt: submission.updatedAt,
-          }
+          id: submission.id,
+          status: submission.status,
+          submittedAt: submission.submittedAt,
+          createdAt: submission.createdAt,
+          updatedAt: submission.updatedAt,
+        }
         : null,
     };
   }
@@ -318,14 +318,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId instead of formFieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId instead of formFieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -629,15 +629,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-              deleteMany: {},
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -1255,6 +1255,192 @@ export class FormSubmissionsService {
       reviewNotes: submission.reviewNotes,
       form: submission.form,
       user: submission.user,
+    };
+  }
+
+  /**
+   * Get applicant information by reference number for gatehouse verification
+   */
+  async getApplicantInfoByReference(referenceNumber: string): Promise<any> {
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { referenceNumber },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            nin: true,
+          },
+          include: {
+            ninVerifications: {
+              where: {
+                verificationStatus: 'VERIFIED',
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 1,
+              select: {
+                photo: true,
+                nin: true,
+                verificationDate: true,
+              },
+            },
+          },
+        },
+        form: {
+          include: {
+            country: {
+              select: {
+                id: true,
+                name: true,
+                isoCode2: true,
+                isoCode3: true,
+                flag: true,
+              },
+            },
+          },
+        },
+        appointment: {
+          include: {
+            center: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+                city: true,
+                state: true,
+                phone: true,
+              },
+            },
+            queueEntry: {
+              include: {
+                booth: {
+                  select: {
+                    id: true,
+                    boothNumber: true,
+                    appointmentClass: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      return null;
+    }
+
+    // Get the most recent verified NIN data
+    const ninVerification = submission.user.ninVerifications?.[0];
+
+    // Calculate appointment time validation if appointment exists
+    let appointmentData = null;
+    if (submission.appointment) {
+      const now = new Date();
+      const appointmentDate = submission.appointment.appointmentDate;
+      const appointmentTime = submission.appointment.appointmentTime;
+
+      // Check if appointment is today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const apptDateOnly = appointmentDate ? new Date(appointmentDate) : null;
+      if (apptDateOnly) {
+        apptDateOnly.setHours(0, 0, 0, 0);
+      }
+      const isToday = apptDateOnly
+        ? apptDateOnly.getTime() === today.getTime()
+        : false;
+
+      // Calculate time difference
+      const appointmentDateTime = appointmentTime || appointmentDate;
+      const timeDiffMs = appointmentDateTime
+        ? appointmentDateTime.getTime() - now.getTime()
+        : 0;
+      const minutesUntilAppointment = Math.round(timeDiffMs / (1000 * 60));
+      const hasTimePassed = minutesUntilAppointment < 0;
+
+      // Format dates for display
+      const appointmentDateFormatted = appointmentDate
+        ? appointmentDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+        : 'Not set';
+
+      const appointmentTimeFormatted = appointmentTime
+        ? appointmentTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
+        : 'Not set';
+
+      appointmentData = {
+        id: submission.appointment.id,
+        appointmentDate: submission.appointment.appointmentDate,
+        appointmentTime: submission.appointment.appointmentTime,
+        appointmentDateFormatted,
+        appointmentTimeFormatted,
+        appointmentClass: submission.appointment.appointmentClass,
+        status: submission.appointment.status,
+        isToday,
+        hasTimePassed,
+        minutesUntilAppointment,
+        center: submission.appointment.center
+          ? {
+            name: submission.appointment.center.name,
+            address: submission.appointment.center.address,
+            city: submission.appointment.center.city,
+            state: submission.appointment.center.state,
+            phone: submission.appointment.center.phone,
+          }
+          : null,
+        booth: submission.appointment.queueEntry?.booth
+          ? {
+            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+            appointmentClass:
+              submission.appointment.queueEntry.booth.appointmentClass,
+          }
+          : null,
+      };
+    }
+
+    return {
+      referenceNumber: submission.referenceNumber,
+      applicant: {
+        firstName: submission.user.firstName,
+        lastName: submission.user.lastName,
+        email: submission.user.email,
+        phone: submission.user.phone,
+        photo: ninVerification?.photo || null,
+        nin: ninVerification?.nin || submission.user.nin || null,
+      },
+      form: {
+        id: submission.form.id,
+        name: submission.form.name,
+        country: submission.form.country
+          ? {
+            name: submission.form.country.name,
+            isoCode2: submission.form.country.isoCode2,
+            isoCode3: submission.form.country.isoCode3,
+            flag: submission.form.country.flag,
+          }
+          : null,
+      },
+      submission: {
+        id: submission.id,
+        status: submission.status,
+        submittedAt: submission.submittedAt,
+        reviewedAt: submission.reviewedAt,
+      },
+      appointment: appointmentData,
     };
   }
 }
