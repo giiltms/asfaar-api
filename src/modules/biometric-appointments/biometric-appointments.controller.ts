@@ -26,6 +26,7 @@ import {
   RescheduleAppointmentDto,
   CompleteBiometricCaptureDto,
   AppointmentFiltersDto,
+  AppointmentQueryDto,
   UpdateAppointmentDto,
 } from './dto/biometric-appointment.dto';
 import { BiometricAppointmentEntity } from './entities/biometric-appointment.entity';
@@ -111,17 +112,52 @@ export class BiometricAppointmentsController {
     example: 10,
   })
   @ApiQuery({
-    name: 'status',
+    name: 'sortBy',
     required: false,
     type: String,
+    description: 'Field to sort by',
+    example: 'appointmentDate',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Sort order',
+    example: 'desc',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'RESCHEDULED'],
     description: 'Filter by appointment status',
-    example: 'ACTIVE',
+    example: 'CONFIRMED',
+  })
+  @ApiQuery({
+    name: 'appointmentClass',
+    required: false,
+    enum: ['REGULAR', 'PREMIUM', 'EXPRESS'],
+    description: 'Filter by appointment class',
+    example: 'REGULAR',
   })
   @ApiQuery({
     name: 'centerId',
     required: false,
     type: String,
     description: 'Filter by biometric center',
+    example: 'uuid-string',
+  })
+  @ApiQuery({
+    name: 'userId',
+    required: false,
+    type: String,
+    description: 'Filter by user ID',
+    example: 'uuid-string',
+  })
+  @ApiQuery({
+    name: 'submissionId',
+    required: false,
+    type: String,
+    description: 'Filter by submission ID',
     example: 'uuid-string',
   })
   @ApiQuery({
@@ -138,17 +174,27 @@ export class BiometricAppointmentsController {
     description: 'Filter appointments to this date (YYYY-MM-DD)',
     example: '2024-02-28',
   })
+  @ApiQuery({
+    name: 'biometricsCaptured',
+    required: false,
+    type: Boolean,
+    description: 'Filter by whether biometrics are captured',
+    example: false,
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Appointments retrieved successfully',
     type: [BiometricAppointmentEntity],
   })
   async findAllAppointments(
-    @Query() filters: AppointmentFiltersDto,
-    @Query() pagination: PaginationQueryDto,
+    @Query() query: AppointmentQueryDto,
     // TODO: Extract user ID from JWT token for user-specific filtering
     // @CurrentUser() user: User,
   ) {
+    // Extract pagination and filters from the combined query
+    const { page, limit, sortBy, sortOrder, ...filters } = query;
+    const pagination = { page, limit, sortBy, sortOrder };
+
     // For now, not filtering by user (admin view)
     const result = await this.appointmentsService.findAllAppointments(
       filters,

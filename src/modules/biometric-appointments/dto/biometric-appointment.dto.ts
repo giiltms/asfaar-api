@@ -11,6 +11,7 @@ import {
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { AppointmentClass, AppointmentStatus } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 // Base DTO for creating a biometric appointment
 export class CreateBiometricAppointmentDto {
@@ -165,6 +166,80 @@ export class CompleteBiometricCaptureDto {
 
 // DTO for filtering appointments
 export class AppointmentFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by appointment status',
+    example: 'ACTIVE',
+    enum: AppointmentStatus,
+  })
+  @IsOptional()
+  @IsEnum(AppointmentStatus)
+  status?: AppointmentStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filter by appointment class',
+    example: 'REGULAR',
+    enum: AppointmentClass,
+  })
+  @IsOptional()
+  @IsEnum(AppointmentClass)
+  appointmentClass?: AppointmentClass;
+
+  @ApiPropertyOptional({
+    description: 'Filter by biometric center ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  centerId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by user ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by submission ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  submissionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter appointments from this date (YYYY-MM-DD)',
+    example: '2024-02-01',
+  })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter appointments to this date (YYYY-MM-DD)',
+    example: '2024-02-28',
+  })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by whether biometrics are captured',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  biometricsCaptured?: boolean;
+}
+
+// Combined DTO for appointments query with pagination and filters
+export class AppointmentQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by appointment status',
     example: 'ACTIVE',
