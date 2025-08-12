@@ -35,6 +35,9 @@ import {
   CreateFormFieldDto,
   UpdateFormFieldDto,
   FormQueryDto,
+  AssociateServiceFeesDto,
+  UpdateFormServiceFeesDto,
+  FormServiceFeeDto,
 } from './dto/form.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
@@ -419,5 +422,99 @@ export class FormsController {
   @ApiDefaultResponse({})
   async deleteField(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.formsService.deleteField(id);
+  }
+
+  // Service Fee Management Endpoints
+  @Get(':id/service-fees')
+  @ApiOperation({ summary: 'Get service fees associated with a form' })
+  @ApiParam({
+    name: 'id',
+    description: 'Form ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiOkBaseResponse({ dto: FormServiceFeeDto, isArray: true })
+  @ApiDefaultResponse({})
+  async getFormServiceFees(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<FormServiceFeeDto[]> {
+    return this.formsService.getFormServiceFees(id);
+  }
+
+  @Post(':id/service-fees')
+  @ApiOperation({ summary: 'Associate service fees with a form' })
+  @ApiParam({
+    name: 'id',
+    description: 'Form ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Service fees associated successfully',
+    type: [FormServiceFeeDto],
+  })
+  @ApiDefaultResponse({})
+  async associateServiceFees(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() associateDto: AssociateServiceFeesDto,
+  ): Promise<FormServiceFeeDto[]> {
+    return this.formsService.associateServiceFees(
+      id,
+      associateDto.serviceFeeIds,
+    );
+  }
+
+  @Put(':id/service-fees')
+  @ApiOperation({ summary: 'Update service fees associated with a form' })
+  @ApiParam({
+    name: 'id',
+    description: 'Form ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiOkBaseResponse({ dto: FormServiceFeeDto, isArray: true })
+  @ApiDefaultResponse({})
+  async updateFormServiceFees(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateFormServiceFeesDto,
+  ): Promise<FormServiceFeeDto[]> {
+    return this.formsService.updateFormServiceFees(id, updateDto.serviceFeeIds);
+  }
+
+  @Delete(':id/service-fees/:serviceFeeId')
+  @ApiOperation({ summary: 'Remove a specific service fee from a form' })
+  @ApiParam({
+    name: 'id',
+    description: 'Form ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiParam({
+    name: 'serviceFeeId',
+    description: 'Service Fee ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiOkBaseResponse({ dto: FormServiceFeeDto, isArray: true })
+  @ApiDefaultResponse({})
+  async removeServiceFeeFromForm(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('serviceFeeId', ParseUUIDPipe) serviceFeeId: string,
+  ): Promise<FormServiceFeeDto[]> {
+    return this.formsService.removeServiceFeeFromForm(id, serviceFeeId);
+  }
+
+  @Delete(':id/service-fees')
+  @ApiOperation({ summary: 'Remove all service fees from a form' })
+  @ApiParam({
+    name: 'id',
+    description: 'Form ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'All service fees removed successfully',
+  })
+  @ApiDefaultResponse({})
+  async removeAllServiceFeesFromForm(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ message: string }> {
+    return this.formsService.removeAllServiceFeesFromForm(id);
   }
 }

@@ -614,6 +614,125 @@ export class FormsService {
     };
   }
 
+  // Service Fee Management Methods
+  async getFormServiceFees(formId: string) {
+    const form = await this.prisma.dynamicForm.findUnique({
+      where: { id: formId },
+      include: {
+        serviceFees: {
+          where: { isActive: true },
+          orderBy: { name: 'asc' },
+        },
+      },
+    });
+
+    if (!form) {
+      throw new NotFoundException(`Form with ID ${formId} not found`);
+    }
+
+    return form.serviceFees;
+  }
+
+  async associateServiceFees(formId: string, serviceFeeIds: string[]) {
+    // Verify form exists
+    const form = await this.getFormById(formId);
+
+    // Verify all service fees exist and are active
+    const serviceFees = await this.prisma.serviceFee.findMany({
+      where: {
+        id: { in: serviceFeeIds },
+        isActive: true,
+      },
+    });
+
+    if (serviceFees.length !== serviceFeeIds.length) {
+      const foundIds = serviceFees.map((fee) => fee.id);
+      const missingIds = serviceFeeIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Service fees not found or inactive: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // Associate service fees with form
+    await this.prisma.dynamicForm.update({
+      where: { id: formId },
+      data: {
+        serviceFees: {
+          connect: serviceFeeIds.map((id) => ({ id })),
+        },
+      },
+    });
+
+    return this.getFormServiceFees(formId);
+  }
+
+  async updateFormServiceFees(formId: string, serviceFeeIds: string[]) {
+    // Verify form exists
+    const form = await this.getFormById(formId);
+
+    // Verify all service fees exist and are active
+    const serviceFees = await this.prisma.serviceFee.findMany({
+      where: {
+        id: { in: serviceFeeIds },
+        isActive: true,
+      },
+    });
+
+    if (serviceFees.length !== serviceFeeIds.length) {
+      const foundIds = serviceFees.map((fee) => fee.id);
+      const missingIds = serviceFeeIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Service fees not found or inactive: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // Replace all service fees with new ones
+    await this.prisma.dynamicForm.update({
+      where: { id: formId },
+      data: {
+        serviceFees: {
+          set: serviceFeeIds.map((id) => ({ id })),
+        },
+      },
+    });
+
+    return this.getFormServiceFees(formId);
+  }
+
+  async removeServiceFeeFromForm(formId: string, serviceFeeId: string) {
+    // Verify form exists
+    await this.getFormById(formId);
+
+    // Remove service fee from form
+    await this.prisma.dynamicForm.update({
+      where: { id: formId },
+      data: {
+        serviceFees: {
+          disconnect: { id: serviceFeeId },
+        },
+      },
+    });
+
+    return this.getFormServiceFees(formId);
+  }
+
+  async removeAllServiceFeesFromForm(formId: string) {
+    // Verify form exists
+    await this.getFormById(formId);
+
+    // Remove all service fees from form
+    await this.prisma.dynamicForm.update({
+      where: { id: formId },
+      data: {
+        serviceFees: {
+          set: [],
+        },
+      },
+    });
+
+    return { message: 'All service fees removed from form successfully' };
+  }
+
   // Helper Methods
   private getFormInclude() {
     return {

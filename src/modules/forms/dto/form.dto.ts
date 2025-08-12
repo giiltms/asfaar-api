@@ -233,7 +233,10 @@ export class FormFieldDto {
   @ApiProperty({ description: 'Field metadata', required: false })
   metadata?: any;
 
-  @ApiProperty({ description: 'Field data source configuration', required: false })
+  @ApiProperty({
+    description: 'Field data source configuration',
+    required: false,
+  })
   source?: any;
 
   @ApiProperty({ description: 'Field order' })
@@ -598,4 +601,53 @@ export class FormQueryDto {
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';
+}
+
+// Service Fee Association DTOs
+export class AssociateServiceFeesDto {
+  @ApiProperty({
+    description: 'Array of service fee IDs to associate with the form',
+    type: [String],
+    example: ['fee-id-1', 'fee-id-2'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsUUID(4, { each: true })
+  serviceFeeIds: string[];
+}
+
+export class UpdateFormServiceFeesDto {
+  @ApiProperty({
+    description:
+      'Array of service fee IDs that should be associated with the form',
+    type: [String],
+    example: ['fee-id-1', 'fee-id-2'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsUUID(4, { each: true })
+  serviceFeeIds: string[];
+}
+
+export class FormServiceFeeDto {
+  @ApiProperty({ description: 'Service fee ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Service fee name' })
+  name: string;
+
+  @ApiProperty({ description: 'Service fee description' })
+  description?: string;
+
+  @ApiProperty({ description: 'Amount in kobo' })
+  amount: number;
+
+  @ApiProperty({ description: 'Currency' })
+  currency: string;
+
+  @ApiProperty({ description: 'Whether fee is optional' })
+  isOptional: boolean;
+
+  @ApiProperty({ description: 'Whether fee is active' })
+  isActive: boolean;
 }
