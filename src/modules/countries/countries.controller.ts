@@ -42,6 +42,28 @@ import {
 export class CountriesController {
   constructor(private readonly countriesService: CountriesService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create a new country' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Country created successfully',
+    type: BaseResponseDto<CountryEntity>,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Country already exists',
+  })
+  async createCountry(@Body() createCountryDto: CreateCountryDto) {
+    const country = await this.countriesService.createCountry(createCountryDto);
+
+    return {
+      success: true,
+      message: 'Country created successfully',
+      data: plainToInstance(CountryEntity, country),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all active countries' })
   @ApiResponse({
@@ -88,7 +110,10 @@ export class CountriesController {
     description: 'Country retrieved successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   async getCountryByCode(@Param('code') code: string) {
     const country = await this.countriesService.findCountryByCode(code);
 
@@ -108,7 +133,10 @@ export class CountriesController {
     description: 'Country retrieved successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   async getCountryById(@Param('id') id: string) {
     const country = await this.countriesService.findCountryById(id, true);
 
@@ -123,7 +151,11 @@ export class CountriesController {
   @Get(':code/application-stats')
   @ApiOperation({ summary: 'Get application statistics for a country' })
   @ApiParam({ name: 'code', description: 'ISO 2 or 3 letter country code' })
-  @ApiQuery({ name: 'year', required: false, description: 'Year for statistics' })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    description: 'Year for statistics',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Country application statistics retrieved successfully',
@@ -165,7 +197,10 @@ export class AdminCountriesController {
     description: 'Country created successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Country already exists' })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Country already exists',
+  })
   async createCountry(@Body() createCountryDto: CreateCountryDto) {
     const country = await this.countriesService.createCountry(createCountryDto);
 
@@ -191,7 +226,7 @@ export class AdminCountriesController {
       success: true,
       message: 'Countries retrieved successfully',
       data: {
-        countries: plainToInstance(CountryEntity, result.data),
+        countries: result.data,
         meta: result.meta,
       },
       timestamp: new Date().toISOString(),
@@ -217,7 +252,9 @@ export class AdminCountriesController {
   }
 
   @Get('by-region-all')
-  @ApiOperation({ summary: 'Get all countries grouped by region (including inactive)' })
+  @ApiOperation({
+    summary: 'Get all countries grouped by region (including inactive)',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Countries grouped by region retrieved successfully',
@@ -241,7 +278,10 @@ export class AdminCountriesController {
     description: 'Country retrieved successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   async getCountryByIdAdmin(@Param('id') id: string) {
     const country = await this.countriesService.findCountryById(id, true);
 
@@ -261,13 +301,22 @@ export class AdminCountriesController {
     description: 'Country updated successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Country details conflict' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Country details conflict',
+  })
   async updateCountry(
     @Param('id') id: string,
     @Body() updateCountryDto: UpdateCountryDto,
   ) {
-    const country = await this.countriesService.updateCountry(id, updateCountryDto);
+    const country = await this.countriesService.updateCountry(
+      id,
+      updateCountryDto,
+    );
 
     return {
       success: true,
@@ -285,7 +334,10 @@ export class AdminCountriesController {
     description: 'Country activated successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   async activateCountry(@Param('id') id: string) {
     const country = await this.countriesService.activateCountry(id);
 
@@ -305,7 +357,10 @@ export class AdminCountriesController {
     description: 'Country deactivated successfully',
     type: BaseResponseDto<CountryEntity>,
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Cannot deactivate country with active forms',
@@ -328,7 +383,10 @@ export class AdminCountriesController {
     status: HttpStatus.OK,
     description: 'Country deleted successfully',
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Country not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
   async deleteCountry(@Param('id') id: string) {
     await this.countriesService.deleteCountry(id);
 
@@ -338,4 +396,4 @@ export class AdminCountriesController {
       timestamp: new Date().toISOString(),
     };
   }
-} 
+}
