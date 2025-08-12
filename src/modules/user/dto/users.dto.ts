@@ -386,11 +386,13 @@ export class ListUsersDTO {
   @Transform(({ value }) => value?.trim())
   search?: string;
 
-  @ApiPropertyOptional({ enum: Roles, isArray: true })
+  @ApiPropertyOptional({
+    enum: Roles,
+    description: 'Filter users by their roles',
+  })
   @IsOptional()
-  @IsArray()
-  @IsEnum(Roles, { each: true })
-  roles?: Roles[];
+  @IsEnum(Roles)
+  role?: Roles;
 
   @ApiPropertyOptional({ enum: Status })
   @IsOptional()

@@ -202,8 +202,8 @@ export class UserService {
       ];
     }
 
-    if (query.roles && query.roles.length > 0) {
-      where.roles = { hasSome: query.roles };
+    if (query.role) {
+      where.roles = { hasSome: [query.role] };
     }
 
     if (query.status) {
