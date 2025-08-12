@@ -688,6 +688,7 @@ export class FormsService {
             visibilityCondition: field.visibilityCondition,
             calculation: field.calculation,
             metadata: field.metadata,
+            source: field.source,
             order: field.order,
             options: field.options.map((option: any) => ({
               id: option.id,

@@ -166,6 +166,14 @@ export class CreateFormFieldDto {
   @IsJSON()
   metadata?: any;
 
+  @ApiPropertyOptional({
+    description: 'Field data source configuration (JSON)',
+    example: { endpoint: '/api/states', valueField: 'id', labelField: 'name' },
+  })
+  @IsOptional()
+  @IsJSON()
+  source?: any;
+
   @ApiProperty({
     description: 'Field order within group',
     example: 1,
@@ -224,6 +232,9 @@ export class FormFieldDto {
 
   @ApiProperty({ description: 'Field metadata', required: false })
   metadata?: any;
+
+  @ApiProperty({ description: 'Field data source configuration', required: false })
+  source?: any;
 
   @ApiProperty({ description: 'Field order' })
   order: number;

@@ -676,6 +676,7 @@ model FormField {
   visibilityCondition Json? // e.g., { "field": "is_married", "value": "yes" }
   calculation         Json? // e.g., { "expression": "${income} - ${expenses}" }
   metadata            Json? // e.g., { "captureTimestamp": true }
+  source              Json? // e.g., { "endpoint": "/api/states", "valueField": "id", "labelField": "name" }
   order               Int
 
   options   FieldOption[] // for SELECT / MULTISELECT
