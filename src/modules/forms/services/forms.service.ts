@@ -63,8 +63,16 @@ export class FormsService {
 
     const form = await this.prisma.dynamicForm.create({
       data: {
-        ...formData,
-        countryId,
+        name: formData.name,
+        description: formData.description,
+        ...(countryId ? { country: { connect: { id: countryId } } } : {}),
+        ...(createFormDto.applicationType
+          ? {
+              applicationType: {
+                connect: { code: createFormDto.applicationType },
+              },
+            }
+          : {}),
         sections: sections
           ? {
               create: sections.map((section) => ({
@@ -107,8 +115,16 @@ export class FormsService {
     limit: number;
     totalPages: number;
   }> {
-    const { search, page, limit, sortBy, sortOrder, countryId, countryCode } =
-      queryDto;
+    const {
+      search,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      countryId,
+      countryCode,
+      applicationType,
+    } = queryDto;
     const skip = (page - 1) * limit;
 
     const where: Prisma.DynamicFormWhereInput = {};
@@ -127,7 +143,14 @@ export class FormsService {
     } else if (countryCode) {
       where.country = {
         isoCode2: countryCode.toUpperCase(),
-      };
+      } as any;
+    }
+
+    // Application type filtering
+    if (applicationType) {
+      where.applicationType = {
+        code: applicationType,
+      } as any;
     }
 
     const orderBy = this.buildOrderBy(sortBy, sortOrder);
@@ -146,6 +169,9 @@ export class FormsService {
               isoCode2: true,
               flag: true,
             },
+          },
+          applicationType: {
+            select: { id: true, name: true, code: true },
           },
           sections: {
             include: {
@@ -197,11 +223,22 @@ export class FormsService {
       throw new NotFoundException(FORM_NOT_FOUND);
     }
 
-    const { sections, ...formData } = updateFormDto;
+    const { sections, countryId, applicationType, name, description } =
+      updateFormDto as any;
+
+    const data: Prisma.DynamicFormUpdateInput = {};
+    if (typeof name === 'string') data.name = name;
+    if (typeof description === 'string') data.description = description;
+    if (countryId) {
+      data.country = { connect: { id: countryId } } as any;
+    }
+    if (applicationType) {
+      data.applicationType = { connect: { code: applicationType } } as any;
+    }
 
     const updatedForm = await this.prisma.dynamicForm.update({
       where: { id },
-      data: formData,
+      data,
       include: this.getFormInclude(),
     });
 
@@ -736,6 +773,9 @@ export class FormsService {
   // Helper Methods
   private getFormInclude() {
     return {
+      applicationType: {
+        select: { id: true, name: true, code: true },
+      },
       sections: {
         orderBy: { order: 'asc' as const },
         include: {
@@ -824,15 +864,19 @@ export class FormsService {
         })),
       })),
       submissionCount: form.submissions?.length || 0,
-      serviceFees: form.serviceFees?.map((fee: any) => ({
-        id: fee.id,
-        name: fee.name,
-        description: fee.description,
-        amount: fee.amount,
-        currency: fee.currency,
-        isOptional: fee.isOptional,
-        isActive: fee.isActive,
-      })) || [],
+      applicationType: form.applicationType
+        ? { code: form.applicationType.code, name: form.applicationType.name }
+        : null,
+      serviceFees:
+        form.serviceFees?.map((fee: any) => ({
+          id: fee.id,
+          name: fee.name,
+          description: fee.description,
+          amount: fee.amount,
+          currency: fee.currency,
+          isOptional: fee.isOptional,
+          isActive: fee.isActive,
+        })) || [],
     };
   }
 

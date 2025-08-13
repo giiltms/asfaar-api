@@ -455,6 +455,14 @@ export class CreateFormDto {
   countryId?: string;
 
   @ApiPropertyOptional({
+    description: 'Application type CODE linked to this form (e.g., TOURIST)',
+    example: 'TOURIST',
+  })
+  @IsOptional()
+  @IsString()
+  applicationType?: string;
+
+  @ApiPropertyOptional({
     description: 'Form sections',
     type: [CreateFormSectionDto],
   })
@@ -503,6 +511,9 @@ export class FormDto {
 
   @ApiProperty({ description: 'Creation timestamp' })
   createdAt: Date;
+
+  @ApiProperty({ description: 'Application type info', required: false })
+  applicationType?: { code: string; name: string } | null;
 
   @ApiProperty({ description: 'Form sections', type: [FormSectionDto] })
   sections: FormSectionDto[];
@@ -601,6 +612,14 @@ export class FormQueryDto {
   @IsString()
   @MaxLength(2)
   countryCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by application type CODE (e.g., TOURIST)',
+    example: 'TOURIST',
+  })
+  @IsOptional()
+  @IsString()
+  applicationType?: string;
 
   @ApiPropertyOptional({
     description: 'Page number',

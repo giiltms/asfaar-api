@@ -32,6 +32,62 @@ async function main() {
   await prisma.auditLog.deleteMany();
   await prisma.user.deleteMany();
 
+  // Create application types
+  console.log('📄 Creating application types...');
+  const applicationTypes = await prisma.$transaction([
+    prisma.applicationType.upsert({
+      where: { code: 'TOURIST' },
+      update: {},
+      create: {
+        code: 'TOURIST',
+        name: 'Tourist',
+        description: 'Tourism / holiday visits',
+        isActive: true,
+      },
+    }),
+    prisma.applicationType.upsert({
+      where: { code: 'BUSINESS' },
+      update: {},
+      create: {
+        code: 'BUSINESS',
+        name: 'Business',
+        description: 'Business visits and meetings',
+        isActive: true,
+      },
+    }),
+    prisma.applicationType.upsert({
+      where: { code: 'STUDENT' },
+      update: {},
+      create: {
+        code: 'STUDENT',
+        name: 'Student',
+        description: 'Study permits and student visas',
+        isActive: true,
+      },
+    }),
+    prisma.applicationType.upsert({
+      where: { code: 'WORK' },
+      update: {},
+      create: {
+        code: 'WORK',
+        name: 'Work',
+        description: 'Employment and work visas',
+        isActive: true,
+      },
+    }),
+    prisma.applicationType.upsert({
+      where: { code: 'TRANSIT' },
+      update: {},
+      create: {
+        code: 'TRANSIT',
+        name: 'Transit',
+        description: 'Transit through the country',
+        isActive: true,
+      },
+    }),
+  ]);
+  console.log(`✅ Created ${applicationTypes.length} application types`);
+
   // Create countries - Gulf Arab Countries target list
   console.log('🌍 Creating Gulf Arab countries...');
   const countries = await Promise.all([

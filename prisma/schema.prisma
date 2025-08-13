@@ -600,6 +600,7 @@ model Country {
   // Relations
   forms               DynamicForm[]
   applicationCounters ApplicationCounter[]
+  applicationTypes    ApplicationType[]
 
   @@map("countries")
 }
@@ -628,6 +629,10 @@ model DynamicForm {
   // Country-specific forms
   country   Country? @relation(fields: [countryId], references: [id])
   countryId String?
+
+  // Single application type per form (reference by code)
+  applicationType     ApplicationType? @relation(fields: [applicationTypeCode], references: [code])
+  applicationTypeCode String?
 
   sections    FormSection[]
   submissions FormSubmission[]
@@ -1234,4 +1239,17 @@ model Payment {
   @@index([paidAt])
   @@index([createdAt])
   @@map("payments")
+}
+
+model ApplicationType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique // e.g., TOURIST, BUSINESS, STUDENT
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  countries Country[]
+  forms     DynamicForm[]
 }
