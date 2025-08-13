@@ -14,6 +14,7 @@ import {
   ValidateNested,
   Min,
   IsNotEmpty,
+  IsObject,
 } from 'class-validator';
 import { FieldType } from '@prisma/client';
 
@@ -128,7 +129,7 @@ export class CreateFormFieldDto {
     example: { minLength: 2, maxLength: 100, pattern: '^[A-Za-z\\s]+$' },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   validation?: any;
 
   @ApiPropertyOptional({
@@ -136,7 +137,7 @@ export class CreateFormFieldDto {
     example: { rows: 3, prefix: '₦', suffix: '.00' },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   config?: any;
 
   @ApiPropertyOptional({
@@ -144,7 +145,7 @@ export class CreateFormFieldDto {
     example: { field: 'marital_status', operator: 'equals', value: 'married' },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   visibilityCondition?: any;
 
   @ApiPropertyOptional({
@@ -155,7 +156,7 @@ export class CreateFormFieldDto {
     },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   calculation?: any;
 
   @ApiPropertyOptional({
@@ -163,7 +164,7 @@ export class CreateFormFieldDto {
     example: { captureTimestamp: true, captureLocation: false },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   metadata?: any;
 
   @ApiPropertyOptional({
@@ -171,7 +172,7 @@ export class CreateFormFieldDto {
     example: { endpoint: '/api/states', valueField: 'id', labelField: 'name' },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   source?: any;
 
   @ApiPropertyOptional({
@@ -179,7 +180,7 @@ export class CreateFormFieldDto {
     example: { accept: ['.pdf', '.jpg', '.png'], maxSize: '5MB', multiple: false },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   fileTypes?: any;
 
   @ApiProperty({
@@ -304,7 +305,7 @@ export class CreateInputGroupDto {
     example: { layout: 'grid', columns: 2, collapsible: true },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   config?: any;
 
   @ApiPropertyOptional({
@@ -383,7 +384,7 @@ export class CreateFormSectionDto {
     example: { collapsible: true, icon: 'user', theme: 'info' },
   })
   @IsOptional()
-  @IsJSON()
+  @IsObject()
   config?: any;
 
   @ApiPropertyOptional({

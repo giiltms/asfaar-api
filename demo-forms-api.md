@@ -30,6 +30,48 @@ curl -X POST "http://localhost:3000/api/v1/forms" \
   -d @sample-visa-form.json
 ```
 
+Required/important fields in the request body:
+
+```json
+{
+  "name": "Tourist Visa Application Form",
+  "description": "Complete tourist visa application form",
+  "applicationType": "TOURIST", // Application Type CODE
+  "countryId": "<UUID>", // Optional: link to a country
+  "sections": [
+    {
+      "title": "Documents",
+      "order": 1,
+      "groups": [
+        {
+          "order": 1,
+          "fields": [
+            {
+              "label": "Passport Copy",
+              "name": "passport_copy",
+              "type": "FILE",
+              "required": true,
+              "fileTypes": {
+                "accept": ["image/*", "application/pdf"],
+                "maxSize": "5MB",
+                "multiple": false
+              },
+              "order": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Notes:
+
+- `applicationType` must be an existing Application Type code (e.g., `TOURIST`, `BUSINESS`).
+- FILE fields should use `fileTypes` (accept, maxSize, multiple) instead of legacy `config.acceptedTypes`.
+- You can still pass `countryId` to associate the form with a country.
+
 Response:
 
 ```json
@@ -38,8 +80,10 @@ Response:
   "data": {
     "id": "form-123-456",
     "name": "Tourist Visa Application Form",
-    "description": "Complete tourist visa application form for international travelers",
-    "sections": [...]
+    "description": "Complete tourist visa application form",
+    "applicationType": { "code": "TOURIST", "name": "Tourist" },
+    "sections": [...],
+    "serviceFees": []
   }
 }
 ```
@@ -259,6 +303,34 @@ curl -X POST "http://localhost:3000/api/v1/forms/groups/group-456/fields" \
     },
     "order": 5
   }'
+```
+
+#### Update a Form's Application Type
+
+```bash
+curl -X PUT "http://localhost:3000/api/v1/forms/<FORM_ID>" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -d '{ "applicationType": "BUSINESS" }'
+```
+
+#### Manage Application Types
+
+```bash
+# Create
+auth POST /api/v1/application-types { code, name, description?, isActive? }
+
+# List
+auth GET  /api/v1/application-types?isActive=true&search=tour
+
+# Get by code
+auth GET  /api/v1/application-types/TOURIST
+
+# Update by code
+auth PUT  /api/v1/application-types/TOURIST { name?, description?, isActive?, code? }
+
+# Delete by code
+auth DELETE /api/v1/application-types/TOURIST
 ```
 
 ## Advanced Features
