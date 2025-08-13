@@ -61,6 +61,23 @@ export class FormsService {
       }
     }
 
+    // Validate application type exists if provided
+    if (createFormDto.applicationType) {
+      const appType = await this.prisma.applicationType.findUnique({
+        where: { code: createFormDto.applicationType },
+      });
+      if (!appType) {
+        throw new NotFoundException(
+          `Application type with code ${createFormDto.applicationType} not found`,
+        );
+      }
+      if (appType.isActive === false) {
+        throw new BadRequestException(
+          `Application type ${createFormDto.applicationType} is inactive`,
+        );
+      }
+    }
+
     const form = await this.prisma.dynamicForm.create({
       data: {
         name: formData.name,
@@ -68,38 +85,38 @@ export class FormsService {
         ...(countryId ? { country: { connect: { id: countryId } } } : {}),
         ...(createFormDto.applicationType
           ? {
-              applicationType: {
-                connect: { code: createFormDto.applicationType },
-              },
-            }
+            applicationType: {
+              connect: { code: createFormDto.applicationType },
+            },
+          }
           : {}),
         sections: sections
           ? {
-              create: sections.map((section) => ({
-                ...section,
-                config: section.config,
-                groups: section.groups
-                  ? {
-                      create: section.groups.map((group) => ({
-                        ...group,
-                        config: group.config,
-                        fields: group.fields
-                          ? {
-                              create: group.fields.map((field) => ({
-                                ...field,
-                                options: field.options
-                                  ? {
-                                      create: field.options,
-                                    }
-                                  : undefined,
-                              })),
+            create: sections.map((section) => ({
+              ...section,
+              config: section.config,
+              groups: section.groups
+                ? {
+                  create: section.groups.map((group) => ({
+                    ...group,
+                    config: group.config,
+                    fields: group.fields
+                      ? {
+                        create: group.fields.map((field) => ({
+                          ...field,
+                          options: field.options
+                            ? {
+                              create: field.options,
                             }
-                          : undefined,
-                      })),
-                    }
-                  : undefined,
-              })),
-            }
+                            : undefined,
+                        })),
+                      }
+                      : undefined,
+                  })),
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: this.getFormInclude(),
@@ -226,6 +243,35 @@ export class FormsService {
     const { sections, countryId, applicationType, name, description } =
       updateFormDto as any;
 
+    // Validate relations up front for clear errors
+    if (countryId) {
+      const country = await this.prisma.country.findUnique({
+        where: { id: countryId },
+      });
+      if (!country) {
+        throw new NotFoundException(`Country with ID ${countryId} not found`);
+      }
+      if (!country.isActive) {
+        throw new BadRequestException('Cannot link form to inactive country');
+      }
+    }
+
+    if (applicationType) {
+      const appType = await this.prisma.applicationType.findUnique({
+        where: { code: applicationType },
+      });
+      if (!appType) {
+        throw new NotFoundException(
+          `Application type with code ${applicationType} not found`,
+        );
+      }
+      if (appType.isActive === false) {
+        throw new BadRequestException(
+          `Application type ${applicationType} is inactive`,
+        );
+      }
+    }
+
     const data: Prisma.DynamicFormUpdateInput = {};
     if (typeof name === 'string') data.name = name;
     if (typeof description === 'string') data.description = description;
@@ -341,22 +387,22 @@ export class FormsService {
         formId,
         groups: sectionDto.groups
           ? {
-              create: sectionDto.groups.map((group) => ({
-                ...group,
-                fields: group.fields
-                  ? {
-                      create: group.fields.map((field) => ({
-                        ...field,
-                        options: field.options
-                          ? {
-                              create: field.options,
-                            }
-                          : undefined,
-                      })),
-                    }
-                  : undefined,
-              })),
-            }
+            create: sectionDto.groups.map((group) => ({
+              ...group,
+              fields: group.fields
+                ? {
+                  create: group.fields.map((field) => ({
+                    ...field,
+                    options: field.options
+                      ? {
+                        create: field.options,
+                      }
+                      : undefined,
+                  })),
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -436,15 +482,15 @@ export class FormsService {
         sectionId,
         fields: groupDto.fields
           ? {
-              create: groupDto.fields.map((field) => ({
-                ...field,
-                options: field.options
-                  ? {
-                      create: field.options,
-                    }
-                  : undefined,
-              })),
-            }
+            create: groupDto.fields.map((field) => ({
+              ...field,
+              options: field.options
+                ? {
+                  create: field.options,
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -542,8 +588,8 @@ export class FormsService {
         groupId,
         options: fieldDto.options
           ? {
-              create: fieldDto.options,
-            }
+            create: fieldDto.options,
+          }
           : undefined,
       },
       include: {
