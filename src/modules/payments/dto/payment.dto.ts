@@ -16,6 +16,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Currency, PaymentStatus, PaymentMethodType } from '@prisma/client';
 import { PaymentProvider } from '@common/configs/payment.config';
 import { PaymentProvider as PrismaPaymentProvider } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 // Base DTO for creating a payment
 export class CreatePaymentDto {
@@ -478,6 +479,29 @@ export class UpdateServiceFeeDto {
 }
 
 export class ServiceFeeFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by active status',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by currency',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search by name or description',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+export class ServiceFeeQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by active status',
   })

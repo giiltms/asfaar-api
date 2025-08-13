@@ -31,6 +31,7 @@ import {
   UpdatePaymentDto,
   InitiatePaymentDto,
   ServiceFeeFiltersDto,
+  ServiceFeeQueryDto,
   CreateServiceFeeDto,
   UpdateServiceFeeDto,
 } from './dto/payment.dto';
@@ -100,50 +101,18 @@ export class PaymentsController {
     summary: 'Get service fees',
     description: 'Get all service fees with filtering and pagination',
   })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number for pagination',
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Number of items per page',
-    example: 10,
-  })
-  @ApiQuery({
-    name: 'isActive',
-    required: false,
-    type: Boolean,
-    description: 'Filter by active status',
-  })
-  @ApiQuery({
-    name: 'currency',
-    required: false,
-    type: String,
-    description: 'Filter by currency',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Search by name or description',
-  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Service fee retrieved successfully',
   })
   async findAllServiceFees(
     @Query(new ValidationPipe({ transform: true }))
-    filters: ServiceFeeFiltersDto,
-    @Query(new ValidationPipe({ transform: true }))
-    pagination: PaginationQueryDto,
+    query: ServiceFeeQueryDto,
   ) {
-    console.log('Filters:', filters);
-    console.log('Pagination:', pagination);
+    const { page, limit, sortBy, sortOrder, isActive, currency, search } = query;
+
+    const filters = { isActive, currency, search };
+    const pagination = { page, limit, sortBy, sortOrder };
 
     const result = await this.paymentsService.findAllServiceFees(
       filters,
