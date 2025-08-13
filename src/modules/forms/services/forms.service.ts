@@ -757,6 +757,10 @@ export class FormsService {
       submissions: {
         select: { id: true },
       },
+      serviceFees: {
+        where: { isActive: true },
+        orderBy: { name: 'asc' as const },
+      },
     };
   }
 
@@ -820,6 +824,15 @@ export class FormsService {
         })),
       })),
       submissionCount: form.submissions?.length || 0,
+      serviceFees: form.serviceFees?.map((fee: any) => ({
+        id: fee.id,
+        name: fee.name,
+        description: fee.description,
+        amount: fee.amount,
+        currency: fee.currency,
+        isOptional: fee.isOptional,
+        isActive: fee.isActive,
+      })) || [],
     };
   }
 

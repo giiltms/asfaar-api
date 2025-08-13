@@ -467,6 +467,30 @@ export class CreateFormDto {
 
 export class UpdateFormDto extends PartialType(CreateFormDto) {}
 
+// Service Fee DTO (declared before FormDto to avoid forward reference issues)
+export class FormServiceFeeDto {
+  @ApiProperty({ description: 'Service fee ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Service fee name' })
+  name: string;
+
+  @ApiProperty({ description: 'Service fee description' })
+  description?: string;
+
+  @ApiProperty({ description: 'Amount in kobo' })
+  amount: number;
+
+  @ApiProperty({ description: 'Currency' })
+  currency: string;
+
+  @ApiProperty({ description: 'Whether fee is optional' })
+  isOptional: boolean;
+
+  @ApiProperty({ description: 'Whether fee is active' })
+  isActive: boolean;
+}
+
 export class FormDto {
   @ApiProperty({ description: 'Form ID' })
   id: string;
@@ -485,6 +509,9 @@ export class FormDto {
 
   @ApiProperty({ description: 'Number of submissions' })
   submissionCount?: number;
+
+  @ApiProperty({ description: 'Service fees associated with this form', type: [FormServiceFeeDto] })
+  serviceFees?: FormServiceFeeDto[];
 }
 
 // Builder DTOs for adding components
@@ -641,27 +668,4 @@ export class UpdateFormServiceFeesDto {
   @IsString({ each: true })
   @IsUUID(4, { each: true })
   serviceFeeIds: string[];
-}
-
-export class FormServiceFeeDto {
-  @ApiProperty({ description: 'Service fee ID' })
-  id: string;
-
-  @ApiProperty({ description: 'Service fee name' })
-  name: string;
-
-  @ApiProperty({ description: 'Service fee description' })
-  description?: string;
-
-  @ApiProperty({ description: 'Amount in kobo' })
-  amount: number;
-
-  @ApiProperty({ description: 'Currency' })
-  currency: string;
-
-  @ApiProperty({ description: 'Whether fee is optional' })
-  isOptional: boolean;
-
-  @ApiProperty({ description: 'Whether fee is active' })
-  isActive: boolean;
 }
