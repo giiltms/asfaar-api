@@ -174,6 +174,14 @@ export class CreateFormFieldDto {
   @IsJSON()
   source?: any;
 
+  @ApiPropertyOptional({
+    description: 'File upload configuration (JSON)',
+    example: { accept: ['.pdf', '.jpg', '.png'], maxSize: '5MB', multiple: false },
+  })
+  @IsOptional()
+  @IsJSON()
+  fileTypes?: any;
+
   @ApiProperty({
     description: 'Field order within group',
     example: 1,
@@ -238,6 +246,12 @@ export class FormFieldDto {
     required: false,
   })
   source?: any;
+
+  @ApiProperty({
+    description: 'File upload configuration',
+    required: false,
+  })
+  fileTypes?: any;
 
   @ApiProperty({ description: 'Field order' })
   order: number;

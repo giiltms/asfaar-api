@@ -808,6 +808,7 @@ export class FormsService {
             calculation: field.calculation,
             metadata: field.metadata,
             source: field.source,
+            fileTypes: field.fileTypes,
             order: field.order,
             options: field.options.map((option: any) => ({
               id: option.id,

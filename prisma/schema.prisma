@@ -677,6 +677,7 @@ model FormField {
   calculation         Json? // e.g., { "expression": "${income} - ${expenses}" }
   metadata            Json? // e.g., { "captureTimestamp": true }
   source              Json? // e.g., { "endpoint": "/api/states", "valueField": "id", "labelField": "name" }
+  fileTypes           Json? // e.g., { "accept": [".pdf", ".jpg", ".png"], "maxSize": "5MB", "multiple": false }
   order               Int
 
   options   FieldOption[] // for SELECT / MULTISELECT
