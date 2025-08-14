@@ -8,6 +8,8 @@ import {
   formSubmissionReferenceMiddleware,
   paymentEmailMiddleware,
   setMailServiceForPaymentMiddleware,
+  embassySubmissionEmailMiddleware,
+  setMailServiceForEmbassyMiddleware,
 } from '@providers/prisma';
 import { MailModule } from '@modules/mail/mail.module';
 import { MailService } from '@modules/mail/services/mail.service';
@@ -41,6 +43,7 @@ import { MailService } from '@modules/mail/services/mail.service';
         middlewares: [
           formSubmissionReferenceMiddleware(),
           paymentEmailMiddleware(),
+          embassySubmissionEmailMiddleware(),
         ],
       },
     }),
@@ -53,7 +56,8 @@ export class CoreModule implements OnModuleInit {
   constructor(private readonly mailService: MailService) {}
 
   onModuleInit() {
-    // Inject MailService into the payment email middleware
+    // Inject MailService into the middlewares
     setMailServiceForPaymentMiddleware(this.mailService);
+    setMailServiceForEmbassyMiddleware(this.mailService);
   }
 }

@@ -14,6 +14,14 @@ export interface PaymentConfirmationData {
   applicationId: string;
 }
 
+export interface EmbassySubmissionData {
+  userName: string;
+  userEmail: string;
+  referenceNumber: string;
+  embassyName: string;
+  submissionDate: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -137,6 +145,32 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send payment confirmation email to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendEmbassySubmissionNotification(data: EmbassySubmissionData): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: 'Application Submitted to Embassy - Asfaar Visa Services',
+        template: 'embassysubmission',
+        context: {
+          userName: data.userName,
+          referenceNumber: data.referenceNumber,
+          embassyName: data.embassyName,
+          submissionDate: data.submissionDate,
+        },
+      });
+
+      this.logger.log(
+        `Embassy submission notification sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send embassy submission notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;
