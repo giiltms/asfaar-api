@@ -947,6 +947,20 @@ export class FormsService {
       fieldCount,
       submissionCount: form.submissions?.length || 0,
       status: 'draft', // TODO: Add status field to schema
+      applicationType: form.applicationType
+        ? {
+            code: form.applicationType.code,
+            name: form.applicationType.name,
+          }
+        : undefined,
+      country: form.country
+        ? {
+            id: form.country.id,
+            name: form.country.name,
+            isoCode2: form.country.isoCode2,
+            flag: form.country.flag,
+          }
+        : undefined,
     };
   }
 }

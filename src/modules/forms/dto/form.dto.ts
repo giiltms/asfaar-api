@@ -592,6 +592,36 @@ export class FormSummaryDto {
 
   @ApiProperty({ description: 'Form status' })
   status: 'draft' | 'published' | 'archived';
+
+  @ApiPropertyOptional({
+    description: 'Application type information',
+    type: 'object',
+    properties: {
+      code: { type: 'string', example: 'TOURIST' },
+      name: { type: 'string', example: 'Tourist Visa' },
+    },
+  })
+  applicationType?: {
+    code: string;
+    name: string;
+  };
+
+  @ApiPropertyOptional({
+    description: 'Country information',
+    type: 'object',
+    properties: {
+      id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+      name: { type: 'string', example: 'Saudi Arabia' },
+      isoCode2: { type: 'string', example: 'SA' },
+      flag: { type: 'string', example: '🇸🇦' },
+    },
+  })
+  country?: {
+    id: string;
+    name: string;
+    isoCode2: string;
+    flag?: string;
+  };
 }
 
 // Query DTOs
