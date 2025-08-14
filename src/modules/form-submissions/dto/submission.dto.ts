@@ -674,6 +674,14 @@ export class AvailableFormsQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
+    description: 'Filter by application type code (e.g., TOURIST, BUSINESS)',
+    example: 'TOURIST',
+  })
+  @IsOptional()
+  @IsString()
+  applicationType?: string;
+
+  @ApiPropertyOptional({
     description: 'Include inactive forms (admin only)',
     example: false,
   })

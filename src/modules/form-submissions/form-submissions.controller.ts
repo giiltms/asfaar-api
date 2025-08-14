@@ -74,6 +74,12 @@ export class FormSubmissionsController {
     description: 'Search forms by name or description',
     example: 'visa',
   })
+  @ApiQuery({
+    name: 'applicationType',
+    required: false,
+    description: 'Filter by application type code (e.g., TOURIST, BUSINESS)',
+    example: 'TOURIST',
+  })
   @ApiResponse({
     status: 200,
     description: 'Available forms retrieved successfully',

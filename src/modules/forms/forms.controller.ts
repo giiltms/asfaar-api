@@ -79,6 +79,11 @@ export class FormsController {
     required: false,
     description: 'Filter by country ISO code (2-letter)',
   })
+  @ApiQuery({
+    name: 'applicationType',
+    required: false,
+    description: 'Filter by application type code (e.g., TOURIST, BUSINESS)',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiQuery({ name: 'sortBy', required: false, description: 'Sort field' })
