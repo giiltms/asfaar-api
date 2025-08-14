@@ -1,10 +1,16 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, OnModuleInit } from '@nestjs/common';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../providers/prisma/prisma.module';
 import { DatabaseService } from './database/database.service';
 import { CacheService } from './cache/cache.service';
-import { formSubmissionReferenceMiddleware } from '@providers/prisma';
+import {
+  formSubmissionReferenceMiddleware,
+  paymentEmailMiddleware,
+  setMailServiceForPaymentMiddleware,
+} from '@providers/prisma';
+import { MailModule } from '@modules/mail/mail.module';
+import { MailService } from '@modules/mail/services/mail.service';
 
 @Global()
 @Module({
@@ -32,11 +38,22 @@ import { formSubmissionReferenceMiddleware } from '@providers/prisma';
     PrismaModule.forRoot({
       isGlobal: true,
       prismaServiceOptions: {
-        middlewares: [formSubmissionReferenceMiddleware()],
+        middlewares: [
+          formSubmissionReferenceMiddleware(),
+          paymentEmailMiddleware(),
+        ],
       },
     }),
+    MailModule,
   ],
   providers: [DatabaseService, CacheService],
   exports: [DatabaseService, CacheService, PrismaModule, RedisModule],
 })
-export class CoreModule {}
+export class CoreModule implements OnModuleInit {
+  constructor(private readonly mailService: MailService) {}
+
+  onModuleInit() {
+    // Inject MailService into the payment email middleware
+    setMailServiceForPaymentMiddleware(this.mailService);
+  }
+}

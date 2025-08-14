@@ -2,6 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 
+export interface PaymentConfirmationData {
+  userName: string;
+  userEmail: string;
+  referenceNumber: string;
+  paymentReference: string;
+  transactionId: string;
+  amount: number;
+  currency: string;
+  paymentDate: string;
+  applicationId: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -89,6 +101,42 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send email verification to ${email}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendPaymentConfirmation(data: PaymentConfirmationData): Promise<void> {
+    try {
+      const dashboardUrl = this.configService.get(
+        'SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: 'Payment Confirmation - Asfaar Visa Services',
+        template: 'paymentconfirmation',
+        context: {
+          userName: data.userName,
+          referenceNumber: data.referenceNumber,
+          paymentReference: data.paymentReference,
+          transactionId: data.transactionId,
+          amount: data.amount,
+          currency: data.currency,
+          paymentDate: data.paymentDate,
+          applicationId: data.applicationId,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `Payment confirmation email sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send payment confirmation email to ${data.userEmail}:`,
         error.message,
       );
       throw error;
