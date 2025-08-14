@@ -7,6 +7,7 @@ export * from './middlewares/create-user.middleware';
 export * from './middlewares/form-submission-reference.middleware';
 export * from './middlewares/payment-email.middleware';
 export * from './middlewares/embassy-submission-email.middleware';
+export * from './middlewares/biometric-capture-email.middleware';
 export * from './prisma-client-exception.filter';
 export * from './interfaces';
 export * from './prisma.constants';

@@ -22,6 +22,14 @@ export interface EmbassySubmissionData {
   submissionDate: string;
 }
 
+export interface BiometricCaptureData {
+  userName: string;
+  userEmail: string;
+  referenceNumber: string;
+  centerName: string;
+  captureDate: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -171,6 +179,32 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send embassy submission notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendBiometricCaptureNotification(data: BiometricCaptureData): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: 'Biometric Capture Completed - Asfaar Visa Services',
+        template: 'biometriccapturing',
+        context: {
+          userName: data.userName,
+          referenceNumber: data.referenceNumber,
+          centerName: data.centerName,
+          captureDate: data.captureDate,
+        },
+      });
+
+      this.logger.log(
+        `Biometric capture notification sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send biometric capture notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;

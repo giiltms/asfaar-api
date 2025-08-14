@@ -10,6 +10,8 @@ import {
   setMailServiceForPaymentMiddleware,
   embassySubmissionEmailMiddleware,
   setMailServiceForEmbassyMiddleware,
+  biometricCaptureEmailMiddleware,
+  setMailServiceForBiometricMiddleware,
 } from '@providers/prisma';
 import { MailModule } from '@modules/mail/mail.module';
 import { MailService } from '@modules/mail/services/mail.service';
@@ -44,6 +46,7 @@ import { MailService } from '@modules/mail/services/mail.service';
           formSubmissionReferenceMiddleware(),
           paymentEmailMiddleware(),
           embassySubmissionEmailMiddleware(),
+          biometricCaptureEmailMiddleware(),
         ],
       },
     }),
@@ -59,5 +62,6 @@ export class CoreModule implements OnModuleInit {
     // Inject MailService into the middlewares
     setMailServiceForPaymentMiddleware(this.mailService);
     setMailServiceForEmbassyMiddleware(this.mailService);
+    setMailServiceForBiometricMiddleware(this.mailService);
   }
 }
