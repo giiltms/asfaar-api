@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaModule } from '../providers/prisma/prisma.module';
 import { DatabaseService } from './database/database.service';
 import { CacheService } from './cache/cache.service';
+import { formSubmissionReferenceMiddleware } from '@providers/prisma';
 
 @Global()
 @Module({
@@ -31,7 +32,7 @@ import { CacheService } from './cache/cache.service';
     PrismaModule.forRoot({
       isGlobal: true,
       prismaServiceOptions: {
-        middlewares: [],
+        middlewares: [formSubmissionReferenceMiddleware()],
       },
     }),
   ],

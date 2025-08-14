@@ -181,7 +181,7 @@ describe('PaymentsService', () => {
     });
 
     it('should throw ConflictException when payment already exists', async () => {
-      // This test is currently disabled as conflict validation is commented out in the service  
+      // This test is currently disabled as conflict validation is commented out in the service
       // TODO: Uncomment when payment conflict validation is re-enabled
       expect(true).toBe(true); // Placeholder test
     });

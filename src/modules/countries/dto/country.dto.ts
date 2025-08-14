@@ -15,7 +15,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 export class CreateCountryDto {
-  @ApiProperty({ description: 'Country name', example: 'Kingdom of Saudi Arabia' })
+  @ApiProperty({
+    description: 'Country name',
+    example: 'Kingdom of Saudi Arabia',
+  })
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)
@@ -54,7 +57,10 @@ export class CreateCountryDto {
   @Length(1, 50)
   currencyName?: string;
 
-  @ApiPropertyOptional({ description: 'International dial code', example: '+966' })
+  @ApiPropertyOptional({
+    description: 'International dial code',
+    example: '+966',
+  })
   @IsOptional()
   @IsString()
   dialCode?: string;
@@ -65,7 +71,10 @@ export class CreateCountryDto {
   @Length(1, 50)
   region?: string;
 
-  @ApiPropertyOptional({ description: 'Geographic subregion', example: 'Western Asia' })
+  @ApiPropertyOptional({
+    description: 'Geographic subregion',
+    example: 'Western Asia',
+  })
   @IsOptional()
   @IsString()
   @Length(1, 50)
@@ -82,7 +91,10 @@ export class CreateCountryDto {
   @IsString()
   flag?: string;
 
-  @ApiPropertyOptional({ description: 'Whether country is active for visa applications', default: true })
+  @ApiPropertyOptional({
+    description: 'Whether country is active for visa applications',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
@@ -96,7 +108,10 @@ export class CreateCountryDto {
   @Type(() => Number)
   visaProcessingDays?: number;
 
-  @ApiPropertyOptional({ description: 'Maximum applications per year', example: 5000 })
+  @ApiPropertyOptional({
+    description: 'Maximum applications per year',
+    example: 5000,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -112,14 +127,20 @@ export class CreateCountryDto {
 }
 
 export class UpdateCountryDto {
-  @ApiPropertyOptional({ description: 'Country name', example: 'Kingdom of Saudi Arabia' })
+  @ApiPropertyOptional({
+    description: 'Country name',
+    example: 'Kingdom of Saudi Arabia',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   @Length(2, 100)
   name?: string;
 
-  @ApiPropertyOptional({ description: 'ISO 2-letter country code', example: 'SA' })
+  @ApiPropertyOptional({
+    description: 'ISO 2-letter country code',
+    example: 'SA',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -127,7 +148,10 @@ export class UpdateCountryDto {
   @Transform(({ value }) => value?.toUpperCase())
   isoCode2?: string;
 
-  @ApiPropertyOptional({ description: 'ISO 3-letter country code', example: 'SAU' })
+  @ApiPropertyOptional({
+    description: 'ISO 3-letter country code',
+    example: 'SAU',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -135,7 +159,10 @@ export class UpdateCountryDto {
   @Transform(({ value }) => value?.toUpperCase())
   isoCode3?: string;
 
-  @ApiPropertyOptional({ description: 'ISO numeric country code', example: '682' })
+  @ApiPropertyOptional({
+    description: 'ISO numeric country code',
+    example: '682',
+  })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -155,7 +182,10 @@ export class UpdateCountryDto {
   @Length(1, 50)
   currencyName?: string;
 
-  @ApiPropertyOptional({ description: 'International dial code', example: '+966' })
+  @ApiPropertyOptional({
+    description: 'International dial code',
+    example: '+966',
+  })
   @IsOptional()
   @IsString()
   dialCode?: string;
@@ -166,7 +196,10 @@ export class UpdateCountryDto {
   @Length(1, 50)
   region?: string;
 
-  @ApiPropertyOptional({ description: 'Geographic subregion', example: 'Western Asia' })
+  @ApiPropertyOptional({
+    description: 'Geographic subregion',
+    example: 'Western Asia',
+  })
   @IsOptional()
   @IsString()
   @Length(1, 50)
@@ -183,7 +216,9 @@ export class UpdateCountryDto {
   @IsString()
   flag?: string;
 
-  @ApiPropertyOptional({ description: 'Whether country is active for visa applications' })
+  @ApiPropertyOptional({
+    description: 'Whether country is active for visa applications',
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
@@ -197,7 +232,10 @@ export class UpdateCountryDto {
   @Type(() => Number)
   visaProcessingDays?: number;
 
-  @ApiPropertyOptional({ description: 'Maximum applications per year', example: 5000 })
+  @ApiPropertyOptional({
+    description: 'Maximum applications per year',
+    example: 5000,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -257,10 +295,24 @@ export class CountryFiltersDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: 'Sort field',
-    enum: ['name', 'isoCode2', 'region', 'visaProcessingDays', 'applicationFee', 'createdAt']
+    enum: [
+      'name',
+      'isoCode2',
+      'region',
+      'visaProcessingDays',
+      'applicationFee',
+      'createdAt',
+    ],
   })
   @IsOptional()
-  @IsIn(['name', 'isoCode2', 'region', 'visaProcessingDays', 'applicationFee', 'createdAt'])
+  @IsIn([
+    'name',
+    'isoCode2',
+    'region',
+    'visaProcessingDays',
+    'applicationFee',
+    'createdAt',
+  ])
   sortBy?: string = 'name';
 
   @ApiPropertyOptional({ description: 'Sort order', enum: ['asc', 'desc'] })
@@ -313,4 +365,4 @@ export class CountryApplicationStatsDto {
 
   @ApiProperty({ description: 'Utilization percentage' })
   utilizationPercentage: number;
-} 
+}

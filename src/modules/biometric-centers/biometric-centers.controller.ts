@@ -147,9 +147,7 @@ export class BiometricCentersController {
     description: 'Biometric centers retrieved successfully',
     type: [BiometricCenterEntity],
   })
-  async findAllCenters(
-    @Query(ValidationPipe) query: BiometricCenterQueryDto,
-  ) {
+  async findAllCenters(@Query(ValidationPipe) query: BiometricCenterQueryDto) {
     const { page, limit, sortBy, sortOrder, ...filters } = query;
     const pagination = { page, limit, sortBy, sortOrder };
     const result = await this.biometricCentersService.findAllCenters(

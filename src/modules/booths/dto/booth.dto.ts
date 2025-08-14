@@ -334,4 +334,4 @@ export class BoothStatsDto {
 
   @ApiProperty()
   withoutAgent: number;
-} 
+}

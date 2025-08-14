@@ -16,7 +16,7 @@ import { UserModule } from '@modules/user/user.module';
   imports: [
     PrismaModule, // For database operations
     AuthModule, // For authentication guards
-UserModule,
+    UserModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, UserService],

@@ -47,7 +47,8 @@ export class UserController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Current user profile retrieved successfully including addresses and NIN verification',
+    description:
+      'Current user profile retrieved successfully including addresses and NIN verification',
     schema: {
       type: 'object',
       properties: {
@@ -130,11 +131,13 @@ export class UserController {
   @Patch('me')
   @ApiOperation({
     summary: 'Update current user profile',
-    description: 'Update the authenticated user\'s profile information (addresses are managed separately via address endpoints)'
+    description:
+      "Update the authenticated user's profile information (addresses are managed separately via address endpoints)",
   })
   @ApiResponse({
     status: 200,
-    description: 'Profile updated successfully, includes updated user data with addresses',
+    description:
+      'Profile updated successfully, includes updated user data with addresses',
     type: UserEntity,
   })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize updated user entity

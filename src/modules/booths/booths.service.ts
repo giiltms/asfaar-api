@@ -97,7 +97,10 @@ export class BoothsService {
 
       return booth;
     } catch (error) {
-      this.logger.error(`Failed to create booth: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create booth: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -265,7 +268,10 @@ export class BoothsService {
       const existingBooth = await this.findBoothById(id);
 
       // Check for booth number conflicts if updating booth number
-      if (updateDto.boothNumber && updateDto.boothNumber !== existingBooth.boothNumber) {
+      if (
+        updateDto.boothNumber &&
+        updateDto.boothNumber !== existingBooth.boothNumber
+      ) {
         const conflictingBooth = await this.prisma.booth.findFirst({
           where: {
             centerId: existingBooth.centerId,
@@ -356,7 +362,10 @@ export class BoothsService {
         },
       });
 
-      if (hasData._count.queueEntries > 0 || hasData._count.biometricSessions > 0) {
+      if (
+        hasData._count.queueEntries > 0 ||
+        hasData._count.biometricSessions > 0
+      ) {
         // Soft delete by deactivating
         return this.updateBooth(id, { isActive: false }, lastModifiedBy);
       }
@@ -502,7 +511,9 @@ export class BoothsService {
       });
 
       this.logger.log(
-        `Unassigned agent from booth ${updatedBooth.boothNumber}${reason ? `: ${reason}` : ''}`,
+        `Unassigned agent from booth ${updatedBooth.boothNumber}${
+          reason ? `: ${reason}` : ''
+        }`,
       );
 
       return updatedBooth;
@@ -566,7 +577,9 @@ export class BoothsService {
         this.prisma.booth.count({ where }),
         this.prisma.booth.count({ where: { ...where, isActive: true } }),
         this.prisma.booth.count({ where: { ...where, isOccupied: true } }),
-        this.prisma.booth.count({ where: { ...where, agentId: { not: null } } }),
+        this.prisma.booth.count({
+          where: { ...where, agentId: { not: null } },
+        }),
       ]);
 
       const available = await this.prisma.booth.count({
@@ -577,9 +590,18 @@ export class BoothsService {
 
       // Get stats by appointment class
       const byClass = {
-        [AppointmentClass.REGULAR]: await this.getClassStats(AppointmentClass.REGULAR, where),
-        [AppointmentClass.VIP]: await this.getClassStats(AppointmentClass.VIP, where),
-        [AppointmentClass.PREMIUM]: await this.getClassStats(AppointmentClass.PREMIUM, where),
+        [AppointmentClass.REGULAR]: await this.getClassStats(
+          AppointmentClass.REGULAR,
+          where,
+        ),
+        [AppointmentClass.VIP]: await this.getClassStats(
+          AppointmentClass.VIP,
+          where,
+        ),
+        [AppointmentClass.PREMIUM]: await this.getClassStats(
+          AppointmentClass.PREMIUM,
+          where,
+        ),
       };
 
       return {
@@ -619,7 +641,9 @@ export class BoothsService {
     }
 
     if (!agent.isActive) {
-      throw new BadRequestException('Agent must be active to be assigned to a booth');
+      throw new BadRequestException(
+        'Agent must be active to be assigned to a booth',
+      );
     }
   }
 
@@ -643,4 +667,4 @@ export class BoothsService {
 
     return { total, available, occupied };
   }
-} 
+}

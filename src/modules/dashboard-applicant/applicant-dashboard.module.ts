@@ -10,4 +10,4 @@ import { ApplicantDashboardService } from './applicant-dashboard.service';
   providers: [ApplicantDashboardService],
   exports: [ApplicantDashboardService],
 })
-export class ApplicantDashboardModule {} 
+export class ApplicantDashboardModule {}

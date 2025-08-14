@@ -158,10 +158,7 @@ export class PaymentsRepository {
     return { data, total };
   }
 
-  async updateServiceFee(
-    id: string,
-    data: Prisma.ServiceFeeUpdateInput,
-  ) {
+  async updateServiceFee(id: string, data: Prisma.ServiceFeeUpdateInput) {
     return this.prisma.serviceFee.update({
       where: { id },
       data,

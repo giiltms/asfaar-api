@@ -141,7 +141,7 @@ describe('BiometricCentersService', () => {
             ...createCenterDto,
             createdBy: 'admin-1',
           }),
-        })
+        }),
       );
     });
 
@@ -149,7 +149,9 @@ describe('BiometricCentersService', () => {
       // Arrange
       prismaService.user.findUnique.mockResolvedValue(mockManager); // Mock manager found
       const conflictingCenter = { ...mockCenter, name: createCenterDto.name }; // Same name
-      prismaService.biometricCenter.findFirst.mockResolvedValue(conflictingCenter);
+      prismaService.biometricCenter.findFirst.mockResolvedValue(
+        conflictingCenter,
+      );
 
       // Act & Assert
       await expect(
@@ -161,7 +163,9 @@ describe('BiometricCentersService', () => {
       // Arrange
       prismaService.user.findUnique.mockResolvedValue(mockManager); // Mock manager found
       const conflictingCenter = { ...mockCenter, code: createCenterDto.code }; // Same code
-      prismaService.biometricCenter.findFirst.mockResolvedValue(conflictingCenter);
+      prismaService.biometricCenter.findFirst.mockResolvedValue(
+        conflictingCenter,
+      );
 
       // Act & Assert
       await expect(
@@ -207,9 +211,15 @@ describe('BiometricCentersService', () => {
             country: 'Nigeria', // default value
             appointmentDuration: 30, // default value
             bufferTime: 15, // default value
-            workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'], // default
+            workingDays: [
+              'MONDAY',
+              'TUESDAY',
+              'WEDNESDAY',
+              'THURSDAY',
+              'FRIDAY',
+            ], // default
           }),
-        })
+        }),
       );
     });
   });
@@ -286,7 +296,7 @@ describe('BiometricCentersService', () => {
             expect.objectContaining({ name: 'asc' }),
           ]),
           include: expect.any(Object),
-        })
+        }),
       );
     });
   });
@@ -366,7 +376,11 @@ describe('BiometricCentersService', () => {
       prismaService.biometricCenter.update.mockResolvedValue(updatedCenter);
 
       // Act
-      const result = await service.updateCenter('center-1', updateCenterDto, 'admin-1');
+      const result = await service.updateCenter(
+        'center-1',
+        updateCenterDto,
+        'admin-1',
+      );
 
       // Assert
       expect(result).toEqual(updatedCenter);
@@ -377,7 +391,7 @@ describe('BiometricCentersService', () => {
             ...updateCenterDto,
             lastModifiedBy: 'admin-1',
           }),
-        })
+        }),
       );
     });
 
@@ -416,7 +430,7 @@ describe('BiometricCentersService', () => {
             isActive: false,
             lastModifiedBy: 'admin-1',
           }),
-        })
+        }),
       );
     });
 
@@ -453,7 +467,7 @@ describe('BiometricCentersService', () => {
             isActive: true,
           }),
           orderBy: expect.objectContaining({ name: 'asc' }),
-        })
+        }),
       );
     });
   });
@@ -479,7 +493,7 @@ describe('BiometricCentersService', () => {
             isActive: true,
           }),
           orderBy: expect.objectContaining({ name: 'asc' }),
-        })
+        }),
       );
     });
   });
@@ -494,7 +508,9 @@ describe('BiometricCentersService', () => {
         workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
       };
 
-      prismaService.biometricCenter.findUnique.mockResolvedValue(availableCenter);
+      prismaService.biometricCenter.findUnique.mockResolvedValue(
+        availableCenter,
+      );
       prismaService.biometricAppointment.count.mockResolvedValue(20); // 20 booked slots
 
       // Test for a Monday
@@ -519,18 +535,25 @@ describe('BiometricCentersService', () => {
         isActive: false,
       };
 
-      prismaService.biometricCenter.findUnique.mockResolvedValue(inactiveCenter);
+      prismaService.biometricCenter.findUnique.mockResolvedValue(
+        inactiveCenter,
+      );
 
       // Act
-      const result = await service.checkCenterAvailability('center-1', new Date('2026-06-15'));
+      const result = await service.checkCenterAvailability(
+        'center-1',
+        new Date('2026-06-15'),
+      );
 
       // Assert
-      expect(result).toEqual(expect.objectContaining({
-        isAvailable: false,
-        capacity: 0,
-        bookedSlots: 0,
-        availableSlots: 0,
-      }));
+      expect(result).toEqual(
+        expect.objectContaining({
+          isAvailable: false,
+          capacity: 0,
+          bookedSlots: 0,
+          availableSlots: 0,
+        }),
+      );
     });
 
     it('should return availability based on capacity and bookings', async () => {
@@ -542,14 +565,19 @@ describe('BiometricCentersService', () => {
         workingDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
       };
 
-      prismaService.biometricCenter.findUnique.mockResolvedValue(availableCenter);
+      prismaService.biometricCenter.findUnique.mockResolvedValue(
+        availableCenter,
+      );
       prismaService.biometricAppointment.count.mockResolvedValue(100); // Fully booked
 
-      // Test for a Saturday  
+      // Test for a Saturday
       const saturday = new Date('2026-06-13'); // A Saturday
 
       // Act
-      const result = await service.checkCenterAvailability('center-1', saturday);
+      const result = await service.checkCenterAvailability(
+        'center-1',
+        saturday,
+      );
 
       // Assert
       expect(result).toEqual({
@@ -570,4 +598,4 @@ describe('BiometricCentersService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
-}); 
+});

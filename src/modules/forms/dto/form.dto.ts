@@ -177,7 +177,11 @@ export class CreateFormFieldDto {
 
   @ApiPropertyOptional({
     description: 'File upload configuration (JSON)',
-    example: { accept: ['.pdf', '.jpg', '.png'], maxSize: '5MB', multiple: false },
+    example: {
+      accept: ['.pdf', '.jpg', '.png'],
+      maxSize: '5MB',
+      multiple: false,
+    },
   })
   @IsOptional()
   @IsObject()
@@ -522,7 +526,10 @@ export class FormDto {
   @ApiProperty({ description: 'Number of submissions' })
   submissionCount?: number;
 
-  @ApiProperty({ description: 'Service fees associated with this form', type: [FormServiceFeeDto] })
+  @ApiProperty({
+    description: 'Service fees associated with this form',
+    type: [FormServiceFeeDto],
+  })
   serviceFees?: FormServiceFeeDto[];
 }
 

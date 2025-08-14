@@ -90,4 +90,4 @@ export class BoothEntity {
   constructor(partial: Partial<BoothEntity>) {
     Object.assign(this, partial);
   }
-} 
+}

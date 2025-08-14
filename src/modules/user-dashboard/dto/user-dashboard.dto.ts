@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsDateString, IsEnum, IsUUID } from 'class-validator';
-import { SubmissionStatus, AppointmentStatus, PaymentStatus, QueueStatus } from '@prisma/client';
+import {
+  SubmissionStatus,
+  AppointmentStatus,
+  PaymentStatus,
+  QueueStatus,
+} from '@prisma/client';
 
 export class ApplicationStatsDto {
   @ApiProperty({
@@ -285,4 +290,4 @@ export class DashboardFiltersDto {
   @IsOptional()
   @IsUUID()
   formId?: string;
-} 
+}

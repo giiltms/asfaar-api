@@ -47,7 +47,7 @@ export class QueueController {
   @Post('check-in')
   @ApiOperation({
     summary: 'Check in to queue',
-    description: 'Add applicant to FIFO queue for biometric capture'
+    description: 'Add applicant to FIFO queue for biometric capture',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -79,7 +79,7 @@ export class QueueController {
   @Get('position/:appointmentId')
   @ApiOperation({
     summary: 'Get queue position',
-    description: 'Get current position and estimated wait time for appointment'
+    description: 'Get current position and estimated wait time for appointment',
   })
   @ApiParam({ name: 'appointmentId', type: String })
   @ApiResponse({
@@ -107,7 +107,7 @@ export class QueueController {
   @Post('call-next')
   @ApiOperation({
     summary: 'Call next in queue',
-    description: 'Call next person in FIFO order and assign to available booth'
+    description: 'Call next person in FIFO order and assign to available booth',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -130,7 +130,9 @@ export class QueueController {
 
     return {
       success: true,
-      message: `Called next person to booth ${queueEntry.boothId ? `booth-${queueEntry.boothId}` : 'available booth'}`,
+      message: `Called next person to booth ${
+        queueEntry.boothId ? `booth-${queueEntry.boothId}` : 'available booth'
+      }`,
       data: queueEntity,
       timestamp: new Date().toISOString(),
     };
@@ -139,12 +141,16 @@ export class QueueController {
   @Get()
   @ApiOperation({
     summary: 'Get all queue entries',
-    description: 'Get queue entries with filtering and pagination'
+    description: 'Get queue entries with filtering and pagination',
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'centerId', required: false, type: String })
-  @ApiQuery({ name: 'appointmentClass', required: false, enum: AppointmentClass })
+  @ApiQuery({
+    name: 'appointmentClass',
+    required: false,
+    enum: AppointmentClass,
+  })
   @ApiQuery({ name: 'status', required: false, enum: QueueStatus })
   @ApiQuery({ name: 'boothId', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
@@ -158,7 +164,10 @@ export class QueueController {
     @Query(ValidationPipe) pagination: PaginationQueryDto,
     @Query(ValidationPipe) filters: QueueFiltersDto,
   ) {
-    const result = await this.queueService.findAllQueueEntries(filters, pagination);
+    const result = await this.queueService.findAllQueueEntries(
+      filters,
+      pagination,
+    );
 
     return {
       success: true,
@@ -171,7 +180,7 @@ export class QueueController {
   @Get('stats')
   @ApiOperation({
     summary: 'Get queue statistics',
-    description: 'Get comprehensive queue statistics and analytics'
+    description: 'Get comprehensive queue statistics and analytics',
   })
   @ApiQuery({ name: 'centerId', required: false, type: String })
   @ApiResponse({
@@ -195,10 +204,14 @@ export class QueueController {
   @Get('center/:centerId')
   @ApiOperation({
     summary: 'Get queue for specific center',
-    description: 'Get current queue status for a specific biometric center'
+    description: 'Get current queue status for a specific biometric center',
   })
   @ApiParam({ name: 'centerId', type: String })
-  @ApiQuery({ name: 'appointmentClass', required: false, enum: AppointmentClass })
+  @ApiQuery({
+    name: 'appointmentClass',
+    required: false,
+    enum: AppointmentClass,
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Center queue retrieved successfully',
@@ -229,7 +242,7 @@ export class QueueController {
   @Put(':queueId/status')
   @ApiOperation({
     summary: 'Update queue entry status',
-    description: 'Update status of a queue entry (admin/agent only)'
+    description: 'Update status of a queue entry (admin/agent only)',
   })
   @ApiParam({ name: 'queueId', type: String })
   @ApiResponse({
@@ -249,7 +262,10 @@ export class QueueController {
     @Param('queueId', ParseUUIDPipe) queueId: string,
     @Body(ValidationPipe) updateDto: UpdateQueueStatusDto,
   ): Promise<BaseResponseDto<QueueEntity>> {
-    const queueEntry = await this.queueService.updateQueueStatus(queueId, updateDto);
+    const queueEntry = await this.queueService.updateQueueStatus(
+      queueId,
+      updateDto,
+    );
     const queueEntity = new QueueEntity(queueEntry);
 
     return {
@@ -263,7 +279,7 @@ export class QueueController {
   @Put(':queueId/cancel')
   @ApiOperation({
     summary: 'Cancel queue entry',
-    description: 'Cancel a queue entry and release booth if assigned'
+    description: 'Cancel a queue entry and release booth if assigned',
   })
   @ApiParam({ name: 'queueId', type: String })
   @ApiBody({
@@ -284,7 +300,10 @@ export class QueueController {
     @Param('queueId', ParseUUIDPipe) queueId: string,
     @Body() body?: { reason?: string },
   ): Promise<BaseResponseDto<QueueEntity>> {
-    const queueEntry = await this.queueService.cancelQueueEntry(queueId, body?.reason);
+    const queueEntry = await this.queueService.cancelQueueEntry(
+      queueId,
+      body?.reason,
+    );
     const queueEntity = new QueueEntity(queueEntry);
 
     return {
@@ -298,7 +317,7 @@ export class QueueController {
   @Get('my-position/:appointmentId')
   @ApiOperation({
     summary: 'Get my queue position (applicant view)',
-    description: 'Get queue position for applicants to see their status'
+    description: 'Get queue position for applicants to see their status',
   })
   @ApiParam({ name: 'appointmentId', type: String })
   @ApiResponse({
@@ -323,7 +342,7 @@ export class QueueController {
   @Put('bulk-update')
   @ApiOperation({
     summary: 'Bulk update queue entries',
-    description: 'Update multiple queue entries at once (admin only)'
+    description: 'Update multiple queue entries at once (admin only)',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -347,16 +366,14 @@ export class QueueController {
   @Get('monitor/center/:centerId')
   @ApiOperation({
     summary: 'Real-time queue monitor',
-    description: 'Get real-time queue status for center dashboard'
+    description: 'Get real-time queue status for center dashboard',
   })
   @ApiParam({ name: 'centerId', type: String })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Real-time queue status',
   })
-  async monitorCenterQueue(
-    @Param('centerId', ParseUUIDPipe) centerId: string,
-  ) {
+  async monitorCenterQueue(@Param('centerId', ParseUUIDPipe) centerId: string) {
     const [stats, activeQueue] = await Promise.all([
       this.queueService.getQueueStats(centerId),
       this.queueService.findAllQueueEntries(
@@ -375,4 +392,4 @@ export class QueueController {
       },
     };
   }
-} 
+}

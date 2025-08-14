@@ -48,7 +48,9 @@ export class CountriesService {
           conflictField = 'ISO 2-letter code';
         } else if (existingCountry.isoCode3 === createCountryDto.isoCode3) {
           conflictField = 'ISO 3-letter code';
-        } else if (existingCountry.numericCode === createCountryDto.numericCode) {
+        } else if (
+          existingCountry.numericCode === createCountryDto.numericCode
+        ) {
           conflictField = 'numeric code';
         }
 
@@ -67,7 +69,10 @@ export class CountriesService {
       this.logger.log(`Created country: ${country.name} (${country.isoCode2})`);
       return country;
     } catch (error) {
-      this.logger.error(`Failed to create country: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create country: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -172,7 +177,10 @@ export class CountriesService {
         meta,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch countries: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch countries: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -193,7 +201,10 @@ export class CountriesService {
 
       return this.findAllCountries(activeFilters);
     } catch (error) {
-      this.logger.error(`Failed to fetch active countries: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch active countries: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -201,20 +212,23 @@ export class CountriesService {
   /**
    * Get country by ID
    */
-  async findCountryById(id: string, includeRelations = false): Promise<Country> {
+  async findCountryById(
+    id: string,
+    includeRelations = false,
+  ): Promise<Country> {
     try {
       const include = includeRelations
         ? {
-          forms: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              createdAt: true,
+            forms: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                createdAt: true,
+              },
             },
-          },
-          applicationCounters: true,
-        }
+            applicationCounters: true,
+          }
         : undefined;
 
       const country = await this.prisma.country.findUnique({
@@ -228,7 +242,10 @@ export class CountriesService {
 
       return country;
     } catch (error) {
-      this.logger.error(`Failed to fetch country by ID: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch country by ID: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -260,7 +277,10 @@ export class CountriesService {
 
       return country;
     } catch (error) {
-      this.logger.error(`Failed to fetch country by code: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch country by code: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -339,10 +359,15 @@ export class CountriesService {
         },
       });
 
-      this.logger.log(`Updated country: ${updatedCountry.name} (${updatedCountry.isoCode2})`);
+      this.logger.log(
+        `Updated country: ${updatedCountry.name} (${updatedCountry.isoCode2})`,
+      );
       return updatedCountry;
     } catch (error) {
-      this.logger.error(`Failed to update country: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update country: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -353,10 +378,15 @@ export class CountriesService {
   async activateCountry(id: string): Promise<Country> {
     try {
       const country = await this.updateCountry(id, { isActive: true });
-      this.logger.log(`Activated country: ${country.name} (${country.isoCode2})`);
+      this.logger.log(
+        `Activated country: ${country.name} (${country.isoCode2})`,
+      );
       return country;
     } catch (error) {
-      this.logger.error(`Failed to activate country: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to activate country: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -397,7 +427,10 @@ export class CountriesService {
       await this.deactivateCountry(id);
       this.logger.log(`Soft deleted country with ID: ${id}`);
     } catch (error) {
-      this.logger.error(`Failed to delete country: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete country: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -450,10 +483,15 @@ export class CountriesService {
         inactive: totalCountries - activeCountries,
         byRegion,
         totalCapacity: capacityStats._sum.maxApplications || 0,
-        averageProcessingDays: Math.round(capacityStats._avg.visaProcessingDays || 0),
+        averageProcessingDays: Math.round(
+          capacityStats._avg.visaProcessingDays || 0,
+        ),
       };
     } catch (error) {
-      this.logger.error(`Failed to get country statistics: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get country statistics: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -482,7 +520,8 @@ export class CountriesService {
       const totalApplications = counter?.counter || 0;
       const maxApplications = country.maxApplications || 1000;
       const remainingSlots = Math.max(0, maxApplications - totalApplications);
-      const utilizationPercentage = Math.round((totalApplications / maxApplications) * 100 * 100) / 100;
+      const utilizationPercentage =
+        Math.round((totalApplications / maxApplications) * 100 * 100) / 100;
 
       return {
         countryId: country.id,
@@ -495,7 +534,10 @@ export class CountriesService {
         utilizationPercentage,
       };
     } catch (error) {
-      this.logger.error(`Failed to get country application stats: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get country application stats: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -505,7 +547,9 @@ export class CountriesService {
    */
   async getCountriesByRegion(activeOnly = true) {
     try {
-      const where: Prisma.CountryWhereInput = activeOnly ? { isActive: true } : {};
+      const where: Prisma.CountryWhereInput = activeOnly
+        ? { isActive: true }
+        : {};
 
       const countries = await this.prisma.country.findMany({
         where,
@@ -536,8 +580,11 @@ export class CountriesService {
 
       return groupedByRegion;
     } catch (error) {
-      this.logger.error(`Failed to get countries by region: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get countries by region: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
-} 
+}

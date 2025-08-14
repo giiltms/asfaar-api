@@ -120,7 +120,9 @@ describe('BiometricAppointmentsService', () => {
       ],
     }).compile();
 
-    service = module.get<BiometricAppointmentsService>(BiometricAppointmentsService);
+    service = module.get<BiometricAppointmentsService>(
+      BiometricAppointmentsService,
+    );
     prismaService = module.get(PrismaService);
     paymentsService = module.get(PaymentsService);
     biometricCentersService = module.get(BiometricCentersService);
@@ -156,7 +158,9 @@ describe('BiometricAppointmentsService', () => {
       biometricCentersService.findCenterById.mockResolvedValue(mockCenter);
       biometricCentersService.checkCenterAvailability.mockResolvedValue(true);
       prismaService.biometricAppointment.findFirst.mockResolvedValue(null);
-      prismaService.biometricAppointment.create.mockResolvedValue(mockAppointment);
+      prismaService.biometricAppointment.create.mockResolvedValue(
+        mockAppointment,
+      );
 
       // Act
       const result = await service.createAppointment(
@@ -195,7 +199,9 @@ describe('BiometricAppointmentsService', () => {
         ...mockSubmission,
         userId: 'other-user',
       };
-      prismaService.formSubmission.findUnique.mockResolvedValue(otherUserSubmission);
+      prismaService.formSubmission.findUnique.mockResolvedValue(
+        otherUserSubmission,
+      );
 
       // Act & Assert
       await expect(
@@ -206,7 +212,9 @@ describe('BiometricAppointmentsService', () => {
     it('should throw ConflictException when appointment already exists', async () => {
       // Arrange
       prismaService.formSubmission.findUnique.mockResolvedValue(mockSubmission);
-      prismaService.biometricAppointment.findUnique.mockResolvedValue(mockAppointment);
+      prismaService.biometricAppointment.findUnique.mockResolvedValue(
+        mockAppointment,
+      );
 
       // Act & Assert
       await expect(
@@ -220,15 +228,20 @@ describe('BiometricAppointmentsService', () => {
         ...mockSubmission,
         payment: null,
       };
-      prismaService.formSubmission.findUnique.mockResolvedValue(submissionWithoutPayment);
+      prismaService.formSubmission.findUnique.mockResolvedValue(
+        submissionWithoutPayment,
+      );
       prismaService.biometricAppointment.findUnique.mockResolvedValue(null);
 
       // Act & Assert
       await expect(
         service.createAppointment(createAppointmentDto, 'user-1', 'user-1'),
       ).rejects.toThrow(BadRequestException);
-      expect(await service.createAppointment(createAppointmentDto, 'user-1', 'user-1').catch(e => e.message))
-        .toContain('Payment must be created before booking an appointment');
+      expect(
+        await service
+          .createAppointment(createAppointmentDto, 'user-1', 'user-1')
+          .catch((e) => e.message),
+      ).toContain('Payment must be created before booking an appointment');
     });
 
     it('should throw BadRequestException when payment is not completed', async () => {
@@ -240,7 +253,9 @@ describe('BiometricAppointmentsService', () => {
           status: PaymentStatus.PENDING,
         },
       };
-      prismaService.formSubmission.findUnique.mockResolvedValue(submissionWithPendingPayment);
+      prismaService.formSubmission.findUnique.mockResolvedValue(
+        submissionWithPendingPayment,
+      );
       prismaService.biometricAppointment.findUnique.mockResolvedValue(null);
 
       // Act & Assert
@@ -277,7 +292,11 @@ describe('BiometricAppointmentsService', () => {
 
       // Act & Assert
       await expect(
-        service.createAppointment(incompleteAcknowledgmentDto, 'user-1', 'user-1'),
+        service.createAppointment(
+          incompleteAcknowledgmentDto,
+          'user-1',
+          'user-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -317,7 +336,9 @@ describe('BiometricAppointmentsService', () => {
       prismaService.biometricAppointment.findUnique.mockResolvedValue(null);
       biometricCentersService.findCenterById.mockResolvedValue(mockCenter);
       biometricCentersService.checkCenterAvailability.mockResolvedValue(true);
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(mockAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        mockAppointment,
+      );
 
       // Act & Assert
       await expect(
@@ -349,13 +370,17 @@ describe('BiometricAppointmentsService', () => {
         rescheduleCount: 1,
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(rescheduleableAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        rescheduleableAppointment,
+      );
       biometricCentersService.findCenterById.mockResolvedValue(mockCenter);
       biometricCentersService.checkCenterAvailability.mockResolvedValue(true);
       prismaService.biometricAppointment.findFirst
         .mockResolvedValueOnce(rescheduleableAppointment) // For findAppointmentById
         .mockResolvedValueOnce(null); // For conflict check
-      prismaService.biometricAppointment.update.mockResolvedValue(rescheduledAppointment);
+      prismaService.biometricAppointment.update.mockResolvedValue(
+        rescheduledAppointment,
+      );
 
       // Act
       const result = await service.rescheduleAppointment(
@@ -384,11 +409,18 @@ describe('BiometricAppointmentsService', () => {
         status: AppointmentStatus.COMPLETED,
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(completedAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        completedAppointment,
+      );
 
       // Act & Assert
       await expect(
-        service.rescheduleAppointment('appointment-1', rescheduleDto, 'user-1', 'user-1'),
+        service.rescheduleAppointment(
+          'appointment-1',
+          rescheduleDto,
+          'user-1',
+          'user-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -414,8 +446,12 @@ describe('BiometricAppointmentsService', () => {
         capturedBy: 'staff-1',
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(activeAppointment);
-      prismaService.biometricAppointment.update.mockResolvedValue(completedAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        activeAppointment,
+      );
+      prismaService.biometricAppointment.update.mockResolvedValue(
+        completedAppointment,
+      );
 
       // Act
       const result = await service.completeBiometricCapture(
@@ -445,11 +481,17 @@ describe('BiometricAppointmentsService', () => {
         status: AppointmentStatus.PENDING,
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(pendingAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        pendingAppointment,
+      );
 
       // Act & Assert
       await expect(
-        service.completeBiometricCapture('appointment-1', captureDto, 'staff-1'),
+        service.completeBiometricCapture(
+          'appointment-1',
+          captureDto,
+          'staff-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -467,8 +509,12 @@ describe('BiometricAppointmentsService', () => {
         status: AppointmentStatus.CANCELLED,
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(cancellableAppointment);
-      prismaService.biometricAppointment.update.mockResolvedValue(cancelledAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        cancellableAppointment,
+      );
+      prismaService.biometricAppointment.update.mockResolvedValue(
+        cancelledAppointment,
+      );
 
       // Act
       const result = await service.cancelAppointment(
@@ -497,11 +543,18 @@ describe('BiometricAppointmentsService', () => {
         status: AppointmentStatus.COMPLETED,
       };
 
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(completedAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        completedAppointment,
+      );
 
       // Act & Assert
       await expect(
-        service.cancelAppointment('appointment-1', 'reason', 'user-1', 'user-1'),
+        service.cancelAppointment(
+          'appointment-1',
+          'reason',
+          'user-1',
+          'user-1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -512,7 +565,9 @@ describe('BiometricAppointmentsService', () => {
       const mockAppointments = [mockAppointment];
       const totalCount = 1;
 
-      prismaService.biometricAppointment.findMany.mockResolvedValue(mockAppointments);
+      prismaService.biometricAppointment.findMany.mockResolvedValue(
+        mockAppointments,
+      );
       prismaService.biometricAppointment.count.mockResolvedValue(totalCount);
 
       // Act
@@ -557,8 +612,8 @@ describe('BiometricAppointmentsService', () => {
           appointmentClass: AppointmentClass.VIP,
           centerId: 'center-1',
           appointmentDate: {
-                          gte: new Date('2026-06-01'),
-              lte: new Date('2026-06-30'),
+            gte: new Date('2026-06-01'),
+            lte: new Date('2026-06-30'),
           },
           biometricsCaptured: false,
         }),
@@ -575,10 +630,10 @@ describe('BiometricAppointmentsService', () => {
       // Arrange
       prismaService.biometricAppointment.count
         .mockResolvedValueOnce(100) // total
-        .mockResolvedValueOnce(60)  // active
-        .mockResolvedValueOnce(30)  // completed
-        .mockResolvedValueOnce(5)   // pending
-        .mockResolvedValueOnce(5);  // cancelled
+        .mockResolvedValueOnce(60) // active
+        .mockResolvedValueOnce(30) // completed
+        .mockResolvedValueOnce(5) // pending
+        .mockResolvedValueOnce(5); // cancelled
 
       prismaService.biometricAppointment.groupBy.mockResolvedValue([
         { status: AppointmentStatus.ACTIVE, _count: { _all: 60 } },
@@ -618,17 +673,24 @@ describe('BiometricAppointmentsService', () => {
   describe('findAppointmentById', () => {
     it('should return appointment when found', async () => {
       // Arrange
-      prismaService.biometricAppointment.findFirst.mockResolvedValue(mockAppointment);
+      prismaService.biometricAppointment.findFirst.mockResolvedValue(
+        mockAppointment,
+      );
 
       // Act
-      const result = await service.findAppointmentById('appointment-1', 'user-1');
+      const result = await service.findAppointmentById(
+        'appointment-1',
+        'user-1',
+      );
 
       // Assert
       expect(result).toEqual(mockAppointment);
-      expect(prismaService.biometricAppointment.findFirst).toHaveBeenCalledWith({
-        where: { id: 'appointment-1', userId: 'user-1' },
-        include: expect.any(Object),
-      });
+      expect(prismaService.biometricAppointment.findFirst).toHaveBeenCalledWith(
+        {
+          where: { id: 'appointment-1', userId: 'user-1' },
+          include: expect.any(Object),
+        },
+      );
     });
 
     it('should throw NotFoundException when appointment not found', async () => {
@@ -641,4 +703,4 @@ describe('BiometricAppointmentsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
-}); 
+});

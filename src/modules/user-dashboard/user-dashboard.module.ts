@@ -10,4 +10,4 @@ import { UserDashboardService } from './user-dashboard.service';
   providers: [UserDashboardService],
   exports: [UserDashboardService],
 })
-export class UserDashboardModule {} 
+export class UserDashboardModule {}

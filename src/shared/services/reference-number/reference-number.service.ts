@@ -16,7 +16,9 @@ export class ReferenceNumberService {
    * Generate a unique reference number for an application
    * Format: SA25001234 (CountryCode + Year + 6-digit sequence)
    */
-  async generateReferenceNumber(options: ReferenceNumberOptions): Promise<string> {
+  async generateReferenceNumber(
+    options: ReferenceNumberOptions,
+  ): Promise<string> {
     const { countryCode, year = new Date().getFullYear() } = options;
 
     try {
@@ -75,11 +77,16 @@ export class ReferenceNumberService {
       const sequenceNumber = counter.counter.toString().padStart(6, '0');
       const referenceNumber = `${countryCode.toUpperCase()}${yearSuffix}${sequenceNumber}`;
 
-      this.logger.log(`Generated reference number: ${referenceNumber} for country: ${countryCode}, year: ${year}, sequence: ${counter.counter}`);
+      this.logger.log(
+        `Generated reference number: ${referenceNumber} for country: ${countryCode}, year: ${year}, sequence: ${counter.counter}`,
+      );
 
       return referenceNumber;
     } catch (error) {
-      this.logger.error(`Failed to generate reference number: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to generate reference number: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -172,7 +179,10 @@ export class ReferenceNumberService {
 
       return submission;
     } catch (error) {
-      this.logger.error(`Failed to find application by reference: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to find application by reference: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -207,11 +217,15 @@ export class ReferenceNumberService {
         year: currentYear,
         totalApplications: counter?.counter || 0,
         maxApplications: country.maxApplications || 1000,
-        remainingSlots: (country.maxApplications || 1000) - (counter?.counter || 0),
+        remainingSlots:
+          (country.maxApplications || 1000) - (counter?.counter || 0),
       };
     } catch (error) {
-      this.logger.error(`Failed to get application stats: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to get application stats: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
-} 
+}

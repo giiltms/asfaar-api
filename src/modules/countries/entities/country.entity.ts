@@ -164,4 +164,4 @@ export default class CountryEntity implements Country {
   constructor(partial: Partial<CountryEntity>) {
     Object.assign(this, partial);
   }
-} 
+}

@@ -83,7 +83,7 @@ export class QueueEntity {
   get canCancel(): boolean {
     const cancellableStatuses = [
       QueueStatus.WAITING,
-      QueueStatus.CALLED
+      QueueStatus.CALLED,
     ] as QueueStatus[];
     return cancellableStatuses.includes(this.status);
   }
@@ -146,4 +146,4 @@ export class QueueEntity {
   constructor(partial: Partial<QueueEntity>) {
     Object.assign(this, partial);
   }
-} 
+}

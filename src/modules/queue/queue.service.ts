@@ -7,7 +7,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { BoothsService } from '@modules/booths/booths.service';
-import { QueueEntry, QueueStatus, AppointmentClass, AppointmentStatus } from '@prisma/client';
+import {
+  QueueEntry,
+  QueueStatus,
+  AppointmentClass,
+  AppointmentStatus,
+} from '@prisma/client';
 import {
   CheckInDto,
   UpdateQueueStatusDto,
@@ -68,9 +73,7 @@ export class QueueService {
       });
 
       if (existingQueueEntry) {
-        throw new ConflictException(
-          'Appointment is already in queue',
-        );
+        throw new ConflictException('Appointment is already in queue');
       }
 
       // Calculate estimated wait time based on current queue
@@ -87,7 +90,9 @@ export class QueueService {
           appointmentClass: appointment.appointmentClass,
           priority: checkInDto.priority || 0,
           estimatedWaitTime,
-          estimatedServiceTime: await this.getAverageServiceTime(appointment.appointmentClass),
+          estimatedServiceTime: await this.getAverageServiceTime(
+            appointment.appointmentClass,
+          ),
         },
         include: {
           appointment: {
@@ -129,7 +134,9 @@ export class QueueService {
   /**
    * Get queue position and status for appointment
    */
-  async getQueuePosition(appointmentId: string): Promise<QueuePositionResponseDto> {
+  async getQueuePosition(
+    appointmentId: string,
+  ): Promise<QueuePositionResponseDto> {
     try {
       const queueEntry = await this.prisma.queueEntry.findUnique({
         where: { appointmentId },
@@ -313,7 +320,9 @@ export class QueueService {
       });
 
       if (!queueEntry) {
-        throw new NotFoundException(`Queue entry with ID "${queueId}" not found`);
+        throw new NotFoundException(
+          `Queue entry with ID "${queueId}" not found`,
+        );
       }
 
       // Validate status transition
@@ -416,7 +425,10 @@ export class QueueService {
   /**
    * Cancel queue entry
    */
-  async cancelQueueEntry(queueId: string, reason?: string): Promise<QueueEntry> {
+  async cancelQueueEntry(
+    queueId: string,
+    reason?: string,
+  ): Promise<QueueEntry> {
     return this.updateQueueStatus(queueId, {
       status: QueueStatus.CANCELLED,
       reason,
@@ -462,7 +474,11 @@ export class QueueService {
 
       if (filters.activeOnly) {
         where.status = {
-          in: [QueueStatus.WAITING, QueueStatus.CALLED, QueueStatus.IN_PROGRESS],
+          in: [
+            QueueStatus.WAITING,
+            QueueStatus.CALLED,
+            QueueStatus.IN_PROGRESS,
+          ],
         };
       }
 
@@ -550,29 +566,46 @@ export class QueueService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const [
-        total,
-        waiting,
-        called,
-        inProgress,
-        completed,
-        cancelled,
-        noShow,
-      ] = await Promise.all([
-        this.prisma.queueEntry.count({ where }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.WAITING } }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.CALLED } }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.IN_PROGRESS } }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.COMPLETED } }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.CANCELLED } }),
-        this.prisma.queueEntry.count({ where: { ...where, status: QueueStatus.NO_SHOW } }),
-      ]);
+      const [total, waiting, called, inProgress, completed, cancelled, noShow] =
+        await Promise.all([
+          this.prisma.queueEntry.count({ where }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.WAITING },
+          }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.CALLED },
+          }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.IN_PROGRESS },
+          }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.COMPLETED },
+          }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.CANCELLED },
+          }),
+          this.prisma.queueEntry.count({
+            where: { ...where, status: QueueStatus.NO_SHOW },
+          }),
+        ]);
 
       // Get stats by appointment class
       const byClass = {
-        [AppointmentClass.REGULAR]: await this.getClassQueueStats(AppointmentClass.REGULAR, where, today),
-        [AppointmentClass.VIP]: await this.getClassQueueStats(AppointmentClass.VIP, where, today),
-        [AppointmentClass.PREMIUM]: await this.getClassQueueStats(AppointmentClass.PREMIUM, where, today),
+        [AppointmentClass.REGULAR]: await this.getClassQueueStats(
+          AppointmentClass.REGULAR,
+          where,
+          today,
+        ),
+        [AppointmentClass.VIP]: await this.getClassQueueStats(
+          AppointmentClass.VIP,
+          where,
+          today,
+        ),
+        [AppointmentClass.PREMIUM]: await this.getClassQueueStats(
+          AppointmentClass.PREMIUM,
+          where,
+          today,
+        ),
       };
 
       // Calculate average times
@@ -592,7 +625,8 @@ export class QueueService {
         },
       });
 
-      const efficiency = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+      const efficiency =
+        scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
 
       // Find peak hour (simplified - could be more sophisticated)
       const peakHour = await this.findPeakHour(where, today);
@@ -631,12 +665,13 @@ export class QueueService {
     }
 
     if (!appointment.center.isActive) {
-      throw new BadRequestException(
-        'Cannot join queue at inactive center',
-      );
+      throw new BadRequestException('Cannot join queue at inactive center');
     }
 
-    if (!appointment.submission?.payment || appointment.submission.payment.status !== 'COMPLETED') {
+    if (
+      !appointment.submission?.payment ||
+      appointment.submission.payment.status !== 'COMPLETED'
+    ) {
       throw new BadRequestException(
         'Payment must be completed before joining queue',
       );
@@ -724,7 +759,9 @@ export class QueueService {
   /**
    * Private helper: Get average service time by class
    */
-  private async getAverageServiceTime(appointmentClass: AppointmentClass): Promise<number> {
+  private async getAverageServiceTime(
+    appointmentClass: AppointmentClass,
+  ): Promise<number> {
     // Base service times (could be configurable)
     const baseTimes = {
       [AppointmentClass.REGULAR]: 15,
@@ -739,7 +776,9 @@ export class QueueService {
   /**
    * Private helper: Calculate current position in queue
    */
-  private async calculateCurrentPosition(queueEntry: QueueEntry): Promise<number> {
+  private async calculateCurrentPosition(
+    queueEntry: QueueEntry,
+  ): Promise<number> {
     if (queueEntry.status !== QueueStatus.WAITING) {
       return 0; // Not waiting anymore
     }
@@ -765,10 +804,17 @@ export class QueueService {
   /**
    * Private helper: Validate status transition
    */
-  private validateStatusTransition(current: QueueStatus, next: QueueStatus): void {
+  private validateStatusTransition(
+    current: QueueStatus,
+    next: QueueStatus,
+  ): void {
     const validTransitions: Record<QueueStatus, QueueStatus[]> = {
       [QueueStatus.WAITING]: [QueueStatus.CALLED, QueueStatus.CANCELLED],
-      [QueueStatus.CALLED]: [QueueStatus.IN_PROGRESS, QueueStatus.NO_SHOW, QueueStatus.CANCELLED],
+      [QueueStatus.CALLED]: [
+        QueueStatus.IN_PROGRESS,
+        QueueStatus.NO_SHOW,
+        QueueStatus.CANCELLED,
+      ],
       [QueueStatus.IN_PROGRESS]: [QueueStatus.COMPLETED, QueueStatus.CANCELLED],
       [QueueStatus.COMPLETED]: [], // Terminal state
       [QueueStatus.NO_SHOW]: [], // Terminal state
@@ -878,4 +924,4 @@ export class QueueService {
     // Simplified - in production use more sophisticated analysis
     return '14:00'; // Default peak hour
   }
-} 
+}

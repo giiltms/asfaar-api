@@ -7,19 +7,28 @@ export class GatehouseApplicantDto {
   @ApiProperty({ description: 'Applicant last name', example: 'Doe' })
   lastName: string;
 
-  @ApiProperty({ description: 'Applicant email', example: 'john.doe@example.com' })
+  @ApiProperty({
+    description: 'Applicant email',
+    example: 'john.doe@example.com',
+  })
   email: string;
 
-  @ApiPropertyOptional({ description: 'Applicant phone', example: '+234567890123' })
+  @ApiPropertyOptional({
+    description: 'Applicant phone',
+    example: '+234567890123',
+  })
   phone?: string;
 
   @ApiPropertyOptional({
     description: 'Applicant photo from NIN verification (base64 or URL)',
-    example: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...'
+    example: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...',
   })
   photo?: string;
 
-  @ApiPropertyOptional({ description: 'NIN (National Identity Number)', example: '12345678901' })
+  @ApiPropertyOptional({
+    description: 'NIN (National Identity Number)',
+    example: '12345678901',
+  })
   nin?: string;
 }
 
@@ -41,7 +50,10 @@ export class GatehouseFormDto {
   @ApiProperty({ description: 'Form ID' })
   id: string;
 
-  @ApiProperty({ description: 'Form name', example: 'Saudi Arabia Visa Application' })
+  @ApiProperty({
+    description: 'Form name',
+    example: 'Saudi Arabia Visa Application',
+  })
   name: string;
 
   @ApiPropertyOptional({ description: 'Country information' })
@@ -55,10 +67,16 @@ export class GatehouseSubmissionDto {
   @ApiProperty({ description: 'Submission status', example: 'SUBMITTED' })
   status: string;
 
-  @ApiPropertyOptional({ description: 'Date when submitted', format: 'date-time' })
+  @ApiPropertyOptional({
+    description: 'Date when submitted',
+    format: 'date-time',
+  })
   submittedAt?: Date;
 
-  @ApiPropertyOptional({ description: 'Date when reviewed', format: 'date-time' })
+  @ApiPropertyOptional({
+    description: 'Date when reviewed',
+    format: 'date-time',
+  })
   reviewedAt?: Date;
 }
 
@@ -66,7 +84,10 @@ export class GatehouseCenterDto {
   @ApiProperty({ description: 'Center name', example: 'ASFAAR-ABUJA HQ' })
   name: string;
 
-  @ApiProperty({ description: 'Center address', example: '14 Yedseram Street, Maitama' })
+  @ApiProperty({
+    description: 'Center address',
+    example: '14 Yedseram Street, Maitama',
+  })
   address: string;
 
   @ApiProperty({ description: 'Center city', example: 'Abuja' })
@@ -75,7 +96,10 @@ export class GatehouseCenterDto {
   @ApiProperty({ description: 'Center state', example: 'FCT' })
   state: string;
 
-  @ApiPropertyOptional({ description: 'Center phone', example: '+234123456789' })
+  @ApiPropertyOptional({
+    description: 'Center phone',
+    example: '+234123456789',
+  })
   phone?: string;
 }
 
@@ -91,16 +115,30 @@ export class GatehouseAppointmentDto {
   @ApiProperty({ description: 'Appointment ID' })
   id: string;
 
-  @ApiProperty({ description: 'Appointment date (CRITICAL for verification)', format: 'date-time', example: '2025-01-15T00:00:00.000Z' })
+  @ApiProperty({
+    description: 'Appointment date (CRITICAL for verification)',
+    format: 'date-time',
+    example: '2025-01-15T00:00:00.000Z',
+  })
   appointmentDate: Date;
 
-  @ApiProperty({ description: 'Appointment time (CRITICAL for verification)', format: 'date-time', example: '2025-01-15T09:00:00.000Z' })
+  @ApiProperty({
+    description: 'Appointment time (CRITICAL for verification)',
+    format: 'date-time',
+    example: '2025-01-15T09:00:00.000Z',
+  })
   appointmentTime: Date;
 
-  @ApiProperty({ description: 'Human-readable appointment date', example: 'January 15, 2025' })
+  @ApiProperty({
+    description: 'Human-readable appointment date',
+    example: 'January 15, 2025',
+  })
   appointmentDateFormatted: string;
 
-  @ApiProperty({ description: 'Human-readable appointment time', example: '9:00 AM' })
+  @ApiProperty({
+    description: 'Human-readable appointment time',
+    example: '9:00 AM',
+  })
   appointmentTimeFormatted: string;
 
   @ApiProperty({ description: 'Appointment class', example: 'REGULAR' })
@@ -109,13 +147,22 @@ export class GatehouseAppointmentDto {
   @ApiProperty({ description: 'Appointment status', example: 'CONFIRMED' })
   status: string;
 
-  @ApiProperty({ description: 'Whether appointment is scheduled for today', example: false })
+  @ApiProperty({
+    description: 'Whether appointment is scheduled for today',
+    example: false,
+  })
   isToday: boolean;
 
-  @ApiProperty({ description: 'Whether appointment time has passed', example: false })
+  @ApiProperty({
+    description: 'Whether appointment time has passed',
+    example: false,
+  })
   hasTimePassed: boolean;
 
-  @ApiProperty({ description: 'Minutes until/since appointment (negative if passed)', example: 45 })
+  @ApiProperty({
+    description: 'Minutes until/since appointment (negative if passed)',
+    example: 45,
+  })
   minutesUntilAppointment: number;
 
   @ApiPropertyOptional({ description: 'Biometric center information' })
@@ -126,7 +173,10 @@ export class GatehouseAppointmentDto {
 }
 
 export class GatehouseResponseDto {
-  @ApiProperty({ description: 'Application reference number', example: 'SA25001234' })
+  @ApiProperty({
+    description: 'Application reference number',
+    example: 'SA25001234',
+  })
   referenceNumber: string;
 
   @ApiProperty({ description: 'Applicant basic information' })
@@ -138,6 +188,8 @@ export class GatehouseResponseDto {
   @ApiProperty({ description: 'Submission information' })
   submission: GatehouseSubmissionDto;
 
-  @ApiPropertyOptional({ description: 'Biometric appointment information with time validation' })
+  @ApiPropertyOptional({
+    description: 'Biometric appointment information with time validation',
+  })
   appointment?: GatehouseAppointmentDto;
-} 
+}

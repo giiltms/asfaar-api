@@ -302,4 +302,4 @@ export class BulkUpdateQueueDto {
   @IsOptional()
   @IsString()
   reason?: string;
-} 
+}

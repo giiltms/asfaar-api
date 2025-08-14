@@ -11,4 +11,4 @@ import { QueueService } from './queue.service';
   providers: [QueueService],
   exports: [QueueService],
 })
-export class QueueModule {} 
+export class QueueModule {}

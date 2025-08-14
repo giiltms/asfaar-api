@@ -41,7 +41,8 @@ export class ApplicationsController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Applicant information retrieved successfully with appointment time validation',
+    description:
+      'Applicant information retrieved successfully with appointment time validation',
     type: GatehouseResponseDto,
   })
   @ApiResponse({
@@ -60,12 +61,15 @@ export class ApplicationsController {
       throw new BadRequestException('Invalid reference number format');
     }
 
-    const applicantInfo = await this.submissionsService.getApplicantInfoByReference(
-      referenceNumber,
-    );
+    const applicantInfo =
+      await this.submissionsService.getApplicantInfoByReference(
+        referenceNumber,
+      );
 
     if (!applicantInfo) {
-      throw new NotFoundException(`Application with reference number "${referenceNumber}" not found`);
+      throw new NotFoundException(
+        `Application with reference number "${referenceNumber}" not found`,
+      );
     }
 
     return {
@@ -75,4 +79,4 @@ export class ApplicationsController {
       timestamp: new Date().toISOString(),
     };
   }
-} 
+}

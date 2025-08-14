@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 // Load test environment variables if file exists
 const envTestPath = join(process.cwd(), '.env.test');
 if (existsSync(envTestPath)) {
-config({
+  config({
     path: envTestPath,
   });
 } else {

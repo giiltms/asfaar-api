@@ -296,6 +296,12 @@ export class FormSubmissionDto {
   @ApiProperty({ description: 'Review notes', required: false })
   reviewNotes?: string;
 
+  @ApiPropertyOptional({
+    description: 'Reference Number',
+    example: 'SA25000001',
+  })
+  referenceNumber?: string;
+
   // Include form details for convenience
   @ApiPropertyOptional({ description: 'Form details', required: false })
   form?: {
