@@ -35,13 +35,11 @@ export class CreateFieldResponseDto {
   fieldName: string;
 
   @ApiPropertyOptional({
-    description:
-      'Field response value as string (booleans should be "true"/"false", arrays should be JSON stringified)',
+    description: 'Field response value (can be string, number, boolean, array)',
     example: 'John Doe',
   })
   @IsOptional()
-  @IsString()
-  value?: string;
+  value?: any;
 
   @ApiPropertyOptional({
     description: 'File upload URLs for file fields',

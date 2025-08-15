@@ -731,7 +731,7 @@ model FieldResponse {
   field        FormField      @relation(fields: [fieldId], references: [id])
   fieldId      String // Changed from formFieldId to fieldId
   fieldName    String // Added for easier reference
-  value        String? // stringified value (text, select value, etc.)
+  value        Json? // JSON value (text, select value, boolean, array, etc.)
   fileUrls     String[] // for file inputs
   metadata     Json? // Additional metadata for the response
   createdAt    DateTime       @default(now())
