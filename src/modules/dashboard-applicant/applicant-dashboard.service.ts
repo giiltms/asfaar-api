@@ -13,6 +13,9 @@ import {
   QuickApplicationDto,
   ApplicantDashboardDto,
   DashboardFiltersDto,
+  ApplicationLogDto,
+  ApplicationTimelineEventDto,
+  ApplicationLogListDto,
 } from './dto/applicant-dashboard.dto';
 
 @Injectable()
@@ -703,5 +706,198 @@ export class ApplicantDashboardService {
     }
 
     return result;
+  }
+
+  /**
+   * Get application logs with timeline for user
+   */
+  async getApplicationLogs(userId: string): Promise<ApplicationLogListDto> {
+    try {
+      const submissions = await this.prisma.formSubmission.findMany({
+        where: {
+          userId,
+          status: {
+            not: SubmissionStatus.DRAFT, // Exclude draft submissions
+          },
+        },
+        include: {
+          form: {
+            include: {
+              applicationType: true,
+              country: true,
+            },
+          },
+          payment: true,
+          appointment: {
+            include: {
+              center: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const applications = await Promise.all(
+        submissions.map(async (submission) => {
+          const timeline = await this.buildApplicationTimeline(submission);
+
+          return {
+            referenceNumber:
+              submission.referenceNumber || `REF-${submission.id.slice(-8)}`,
+            applicationType: submission.form.applicationType?.name || 'Unknown',
+            country: submission.form.country?.name || 'Unknown',
+            status: submission.status,
+            timeline,
+            createdAt: submission.createdAt.toISOString(),
+            updatedAt: submission.updatedAt.toISOString(),
+          };
+        }),
+      );
+
+      return {
+        applications,
+        total: applications.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get application logs for user ${userId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Build timeline events for an application
+   */
+  private async buildApplicationTimeline(
+    submission: any,
+  ): Promise<ApplicationTimelineEventDto[]> {
+    const timeline: ApplicationTimelineEventDto[] = [];
+
+    // 1. Application Created
+    timeline.push({
+      type: 'APPLICATION_CREATED',
+      title: 'Application Created',
+      description: 'Your application has been created',
+      date: submission.createdAt.toISOString(),
+      completed: true,
+      metadata: {
+        submissionId: submission.id,
+        formName: submission.form.name,
+      },
+    });
+
+    // 2. Payment Processed
+    if (submission.payment) {
+      const paymentCompleted =
+        submission.payment.status === PaymentStatus.COMPLETED;
+      timeline.push({
+        type: 'PAYMENT_PROCESSED',
+        title: 'Payment Processed',
+        description: paymentCompleted
+          ? 'Application fee payment confirmed'
+          : `Payment ${submission.payment.status.toLowerCase()}`,
+        date:
+          submission.payment.paidAt?.toISOString() ||
+          submission.payment.createdAt.toISOString(),
+        completed: paymentCompleted,
+        metadata: {
+          amount: submission.payment.amount,
+          currency: submission.payment.currency,
+          status: submission.payment.status,
+        },
+      });
+    }
+
+    // 3. Biometric Scheduled
+    if (submission.appointment) {
+      const appointment = submission.appointment;
+      const isScheduled = appointment.appointmentDate !== null;
+
+      timeline.push({
+        type: 'BIOMETRIC_SCHEDULED',
+        title: 'Biometric Scheduled',
+        description: isScheduled
+          ? 'Appointment scheduled for biometric capture'
+          : 'Biometric appointment pending scheduling',
+        date:
+          appointment.appointmentDate?.toISOString() ||
+          appointment.createdAt.toISOString(),
+        completed: isScheduled,
+        metadata: {
+          centerId: appointment.centerId,
+          centerName: appointment.center?.name,
+          appointmentClass: appointment.appointmentClass,
+          status: appointment.status,
+          appointmentDate: appointment.appointmentDate?.toISOString(),
+        },
+      });
+
+      // 4. Biometric Completed
+      if (appointment.biometricsCaptured) {
+        timeline.push({
+          type: 'BIOMETRIC_COMPLETED',
+          title: 'Biometric Capture Completed',
+          description: 'Biometric capture has been completed',
+          date:
+            appointment.capturedAt?.toISOString() ||
+            appointment.updatedAt.toISOString(),
+          completed: true,
+          metadata: {
+            capturedBy: appointment.capturedBy,
+            captureQuality: appointment.captureQuality,
+          },
+        });
+      }
+    }
+
+    // 5. Application Processing
+    if (submission.status === SubmissionStatus.REVIEWED) {
+      timeline.push({
+        type: 'APPLICATION_PROCESSING',
+        title: 'Processing',
+        description: 'Application under review',
+        date:
+          submission.reviewedAt?.toISOString() ||
+          submission.updatedAt.toISOString(),
+        completed: true,
+        metadata: {
+          reviewedBy: submission.reviewedBy,
+          reviewNotes: submission.reviewNotes,
+        },
+      });
+    }
+
+    // 6. Decision Made
+    if (
+      submission.status === SubmissionStatus.APPROVED ||
+      submission.status === SubmissionStatus.REJECTED
+    ) {
+      const isApproved = submission.status === SubmissionStatus.APPROVED;
+      timeline.push({
+        type: 'DECISION_MADE',
+        title: isApproved ? 'Application Approved' : 'Application Rejected',
+        description: isApproved
+          ? 'Final decision on your application - Approved'
+          : 'Final decision on your application - Rejected',
+        date:
+          submission.reviewedAt?.toISOString() ||
+          submission.updatedAt.toISOString(),
+        completed: true,
+        metadata: {
+          decision: submission.status,
+          reviewedBy: submission.reviewedBy,
+          reviewNotes: submission.reviewNotes,
+        },
+      });
+    }
+
+    // Sort timeline by date
+    return timeline.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
   }
 }

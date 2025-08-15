@@ -26,6 +26,7 @@ import {
   QuickApplicationDto,
   ApplicantDashboardDto,
   DashboardFiltersDto,
+  ApplicationLogListDto,
 } from './dto/applicant-dashboard.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { SubmissionStatus } from '@prisma/client';
@@ -298,6 +299,31 @@ export class ApplicantDashboardController {
         upcomingAppointments: upcomingAppointments.length,
         inProgress,
       },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('application-logs')
+  @ApiOperation({
+    summary: 'Get application logs for applicant',
+    description: 'Get comprehensive application logs with timeline for all user applications',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application logs retrieved successfully',
+    type: ApplicationLogListDto,
+  })
+  async getApplicationLogs(
+    @Request() req: any,
+  ): Promise<BaseResponseDto<ApplicationLogListDto>> {
+    const userId = req.user.id;
+
+    const logs = await this.dashboardService.getApplicationLogs(userId);
+
+    return {
+      success: true,
+      message: 'Application logs retrieved successfully',
+      data: logs,
       timestamp: new Date().toISOString(),
     };
   }

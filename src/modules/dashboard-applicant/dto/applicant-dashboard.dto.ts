@@ -291,3 +291,108 @@ export class DashboardFiltersDto {
   @IsUUID()
   formId?: string;
 }
+
+// Application Log DTOs
+export class ApplicationTimelineEventDto {
+  @ApiProperty({
+    description: 'Timeline event type',
+    enum: [
+      'APPLICATION_CREATED',
+      'PAYMENT_PROCESSED',
+      'BIOMETRIC_SCHEDULED',
+      'BIOMETRIC_COMPLETED',
+      'APPLICATION_PROCESSING',
+      'DECISION_MADE',
+    ],
+  })
+  type: string;
+
+  @ApiProperty({
+    description: 'Event title',
+    example: 'Application Created',
+  })
+  title: string;
+
+  @ApiProperty({
+    description: 'Event description',
+    example: 'Your application has been created',
+  })
+  description: string;
+
+  @ApiProperty({
+    description: 'Event date',
+    example: '2025-07-29T00:00:00.000Z',
+  })
+  date: string;
+
+  @ApiProperty({
+    description: 'Whether this event is completed',
+    example: true,
+  })
+  completed: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata for the event',
+    example: { appointmentDate: '2025-08-04T10:00:00.000Z' },
+  })
+  metadata?: Record<string, any>;
+}
+
+export class ApplicationLogDto {
+  @ApiProperty({
+    description: 'Application reference number',
+    example: 'SA2025560692',
+  })
+  referenceNumber: string;
+
+  @ApiProperty({
+    description: 'Application type',
+    example: 'umrah',
+  })
+  applicationType: string;
+
+  @ApiProperty({
+    description: 'Destination country',
+    example: 'Saudi Arabia',
+  })
+  country: string;
+
+  @ApiProperty({
+    description: 'Current application status',
+    enum: SubmissionStatus,
+    example: SubmissionStatus.SUBMITTED,
+  })
+  status: SubmissionStatus;
+
+  @ApiProperty({
+    description: 'Application timeline events',
+    type: [ApplicationTimelineEventDto],
+  })
+  timeline: ApplicationTimelineEventDto[];
+
+  @ApiProperty({
+    description: 'When the application was created',
+    example: '2025-07-29T00:00:00.000Z',
+  })
+  createdAt: string;
+
+  @ApiProperty({
+    description: 'Last updated date',
+    example: '2025-08-04T00:00:00.000Z',
+  })
+  updatedAt: string;
+}
+
+export class ApplicationLogListDto {
+  @ApiProperty({
+    description: 'List of application logs',
+    type: [ApplicationLogDto],
+  })
+  applications: ApplicationLogDto[];
+
+  @ApiProperty({
+    description: 'Total number of applications',
+    example: 3,
+  })
+  total: number;
+}
