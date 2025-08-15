@@ -2,13 +2,14 @@ import { Logger } from '@nestjs/common';
 import { Prisma, PrismaClient, SubmissionStatus } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-const prismaInternal = new PrismaClient();
+const prismaClient = new PrismaClient();
 const logger = new Logger('FormSubmissionReferenceMiddleware');
 
 async function generateReferenceNumberForForm(
   formId: string,
+  prismaClient: any,
 ): Promise<string | null> {
-  const form = await prismaInternal.dynamicForm.findUnique({
+  const form = await prismaClient.dynamicForm.findUnique({
     where: { id: formId },
     include: { country: { select: { id: true, isoCode2: true } } },
   });
@@ -26,7 +27,7 @@ async function generateReferenceNumberForForm(
   const countryCode = form.country.isoCode2.toUpperCase();
   const year = new Date().getFullYear();
   try {
-    const counter = await prismaInternal.$transaction(async (tx) => {
+    const counter = await prismaClient.$transaction(async (tx) => {
       let applicationCounter = await tx.applicationCounter.findUnique({
         where: { countryId_year: { countryId, year } },
       });
@@ -45,7 +46,7 @@ async function generateReferenceNumberForForm(
     const yearSuffix = year.toString().slice(-2);
     const sequenceNumber = counter.counter.toString().padStart(6, '0');
     const ref = `${countryCode}${yearSuffix}${sequenceNumber}`;
-    logger.debug(`Generated reference ${ref} for form ${formId}`);
+    logger.log(`Generated reference ${ref} for form ${formId}`);
     return ref;
   } catch (error) {
     logger.error(
@@ -62,11 +63,16 @@ function isSubmitted(status: SubmissionStatus | string | undefined): boolean {
 }
 
 export function formSubmissionReferenceMiddleware(): Prisma.Middleware {
-  return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
+  return async function middleware(params: Prisma.MiddlewareParams, next) {
+    logger.log(
+      `Middleware triggered: model=${params.model}, action=${params.action}`,
+    );
+
     if (params.model !== 'FormSubmission') {
       return next(params);
     }
 
+    logger.log('Processing FormSubmission operation');
     let formIdForRetry: string | undefined;
     let attemptedReferenceOnce = false;
 
@@ -75,11 +81,17 @@ export function formSubmissionReferenceMiddleware(): Prisma.Middleware {
       const status: SubmissionStatus | string | undefined = data.status;
       const formId: string | undefined = data.formId;
       const hasRef = Boolean(data.referenceNumber);
+
       if (formId) {
         formIdForRetry = formId;
       }
+
       if (formId && !hasRef && isSubmitted(status)) {
-        const referenceNumber = await generateReferenceNumberForForm(formId);
+        // Use the bound 'this' context which should be the PrismaClient instance
+        const referenceNumber = await generateReferenceNumberForForm(
+          formId,
+          prismaClient,
+        );
         if (referenceNumber) {
           params.args.data.referenceNumber = referenceNumber;
           attemptedReferenceOnce = true;
@@ -96,9 +108,10 @@ export function formSubmissionReferenceMiddleware(): Prisma.Middleware {
       const data = params.args?.data || {};
       const newStatus: SubmissionStatus | string | undefined = data.status;
       const hasRefInPayload = Boolean(data.referenceNumber);
+
       if (!hasRefInPayload && isSubmitted(newStatus)) {
         try {
-          const existing = await prismaInternal.formSubmission.findUnique({
+          const existing = await prismaClient.formSubmission.findUnique({
             where,
           });
           if (existing) {
@@ -106,6 +119,7 @@ export function formSubmissionReferenceMiddleware(): Prisma.Middleware {
             if (!existing.referenceNumber) {
               const referenceNumber = await generateReferenceNumberForForm(
                 existing.formId,
+                prismaClient,
               );
               if (referenceNumber) {
                 params.args.data.referenceNumber = referenceNumber;
@@ -140,11 +154,15 @@ export function formSubmissionReferenceMiddleware(): Prisma.Middleware {
       const isRefConflict =
         isUniqueViolation &&
         targets.some((t) => `${t}`.toLowerCase().includes('referencenumber'));
+
       if (isRefConflict && formIdForRetry && !attemptedReferenceOnce) {
         logger.warn(
           'referenceNumber unique conflict detected. Retrying once with a new reference.',
         );
-        const newRef = await generateReferenceNumberForForm(formIdForRetry);
+        const newRef = await generateReferenceNumberForForm(
+          formIdForRetry,
+          prismaClient,
+        );
         if (newRef) {
           if (!params.args) params.args = {} as any;
           if (!params.args.data) params.args.data = {};

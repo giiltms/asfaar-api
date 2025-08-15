@@ -9,7 +9,10 @@ import {
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaServiceOptions } from './interfaces';
 import { PRISMA_SERVICE_OPTIONS } from './prisma.constants';
-import { PrismaMiddleware } from './prisma.middleware';
+import { formSubmissionReferenceMiddleware } from './middlewares/form-submission-reference.middleware';
+import { embassySubmissionEmailMiddleware } from './middlewares/embassy-submission-email.middleware';
+import { paymentEmailMiddleware } from './middlewares/payment-email.middleware';
+import { biometricCaptureEmailMiddleware } from './middlewares/biometric-capture-email.middleware';
 
 @Injectable()
 export class PrismaService
@@ -17,13 +20,11 @@ export class PrismaService
     Prisma.PrismaClientOptions,
     'query' | 'info' | 'warn' | 'error' | 'beforeExit'
   >
-  implements OnModuleInit
-{
+  implements OnModuleInit {
   constructor(
     @Optional()
     @Inject(PRISMA_SERVICE_OPTIONS)
     private readonly prismaServiceOptions: PrismaServiceOptions = {},
-    private readonly prismaMiddleware: PrismaMiddleware,
   ) {
     super(prismaServiceOptions.prismaOptions);
 
@@ -33,7 +34,10 @@ export class PrismaService
       );
     }
 
-    // this.$use(this.prismaMiddleware.createCampaignMiddleware());
+    this.$use(formSubmissionReferenceMiddleware());
+    this.$use(embassySubmissionEmailMiddleware());
+    this.$use(paymentEmailMiddleware());
+    this.$use(biometricCaptureEmailMiddleware());
   }
 
   async onModuleInit() {

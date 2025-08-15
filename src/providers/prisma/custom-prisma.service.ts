@@ -7,7 +7,9 @@ export class CustomPrismaService<Client extends PrismaClientLike> {
   constructor(
     @Inject(CUSTOM_PRISMA_CLIENT)
     public client: Client,
-  ) {}
+  ) {
+    console.log('🔄 CustomPrismaService constructor');
+  }
 
   async enableShutdownHooks(app: INestApplicationContext) {
     this.client.$on('beforeExit', async () => {

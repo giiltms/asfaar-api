@@ -6,20 +6,13 @@ import {
 } from './interfaces';
 import { PRISMA_SERVICE_OPTIONS } from './prisma.constants';
 import { PrismaService } from './prisma.service';
-import { PrismaMiddleware } from './prisma.middleware';
 import { UserRepository } from '@modules/user/user.repository';
 import { MailService } from '@modules/mail/services/mail.service';
 import { MailModule } from '@modules/mail/mail.module';
 import { PrismaClient } from '@prisma/client';
 
 @Module({
-  providers: [
-    PrismaService,
-    PrismaClient,
-    PrismaMiddleware,
-    UserRepository,
-    MailService,
-  ],
+  providers: [PrismaService, PrismaClient, UserRepository, MailService],
   exports: [PrismaService],
   imports: [MailModule],
 })
