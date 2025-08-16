@@ -33,7 +33,6 @@ import {
   QueuePositionResponseDto,
   BulkUpdateQueueDto,
 } from './dto/queue.dto';
-import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { AppointmentClass, QueueStatus } from '@prisma/client';
 
@@ -145,6 +144,8 @@ export class QueueController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'centerId', required: false, type: String })
   @ApiQuery({
     name: 'appointmentClass',
@@ -160,13 +161,10 @@ export class QueueController {
     status: HttpStatus.OK,
     description: 'Queue entries retrieved successfully',
   })
-  async findAllQueueEntries(
-    @Query(ValidationPipe) pagination: PaginationQueryDto,
-    @Query(ValidationPipe) filters: QueueFiltersDto,
-  ) {
+  async findAllQueueEntries(@Query(ValidationPipe) filters: QueueFiltersDto) {
     const result = await this.queueService.findAllQueueEntries(
       filters,
-      pagination,
+      filters,
     );
 
     return {

@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { AppointmentClass, QueueStatus } from '@prisma/client';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 export class CheckInDto {
   @ApiProperty({
@@ -80,7 +81,7 @@ export class CallNextDto {
   boothId?: string;
 }
 
-export class QueueFiltersDto {
+export class QueueFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by center ID',
   })
