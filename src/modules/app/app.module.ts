@@ -18,6 +18,7 @@ import { QueueModule } from '../queue/queue.module';
 import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashboard.module';
 import { CountriesModule } from '../countries/countries.module';
 import { ApplicationTypesModule } from '../application-types/application-types.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -43,6 +44,7 @@ import { ApplicationTypesModule } from '../application-types/application-types.m
     ApplicantDashboardModule,
     CountriesModule,
     ApplicationTypesModule,
+    WebhooksModule,
     // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],
