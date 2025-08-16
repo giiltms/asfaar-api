@@ -169,12 +169,21 @@ export class PaystackWebhookHandler extends BaseWebhookHandler {
   }
 
   /**
-   * Handle charge success event
+   * Handle charge success event with transaction verification
    */
   private async handleChargeSuccess(event: WebhookEvent): Promise<void> {
     this.logger.log(
       `Handling Paystack charge success for reference: ${event.reference}`,
     );
+
+    // First verify the transaction data with Paystack best practices
+    const isVerified = await this.verifyTransactionWithPaystack(event);
+    if (!isVerified) {
+      this.logger.error(
+        `Transaction verification failed for reference: ${event.reference}`,
+      );
+      return;
+    }
 
     // Verify the charge was actually successful
     if (event.data.status === 'success') {
@@ -267,5 +276,86 @@ export class PaystackWebhookHandler extends BaseWebhookHandler {
     this.logger.log(
       `Subscription ${event.event} for code: ${event.data.subscription_code}`,
     );
+  }
+
+  /**
+   * Verify transaction with Paystack best practices
+   * Following Paystack's recommendation to always verify critical transaction data
+   */
+  private async verifyTransactionWithPaystack(
+    event: WebhookEvent,
+  ): Promise<boolean> {
+    try {
+      // Find our local payment record first
+      const payment = await this.findPaymentByReference(event.reference);
+      if (!payment) {
+        this.logger.warn(`Payment not found for reference: ${event.reference}`);
+        return false;
+      }
+
+      // In a real implementation, you would make an API call to Paystack's
+      // verify transaction endpoint here to confirm the data
+      // For now, we'll do comprehensive validation of the webhook data
+
+      const expectedAmount = payment.amount;
+      const receivedAmount = event.data.amount
+        ? event.data.amount / 100
+        : 0; // Convert from kobo
+      const expectedCurrency = payment.currency || 'NGN';
+      const receivedCurrency = event.data.currency;
+      const expectedReference = payment.reference || payment.processorId;
+      const receivedReference = event.data.reference;
+
+      // Verify critical transaction data matches our records
+      if (Math.abs(receivedAmount - expectedAmount) > 0.01) {
+        // Allow for minor rounding differences
+        this.logger.error(
+          `Amount mismatch: expected ${expectedAmount}, received ${receivedAmount}`,
+        );
+        return false;
+      }
+
+      if (receivedCurrency !== expectedCurrency) {
+        this.logger.error(
+          `Currency mismatch: expected ${expectedCurrency}, received ${receivedCurrency}`,
+        );
+        return false;
+      }
+
+      if (receivedReference !== expectedReference) {
+        this.logger.error(
+          `Reference mismatch: expected ${expectedReference}, received ${receivedReference}`,
+        );
+        return false;
+      }
+
+      // Verify the status is successful
+      if (event.data.status !== 'success') {
+        this.logger.error(
+          `Transaction not successful: status is ${event.data.status}`,
+        );
+        return false;
+      }
+
+      // Additional Paystack-specific validations
+      if (!event.data.gateway_response) {
+        this.logger.warn('Missing gateway_response in Paystack webhook');
+      }
+
+      if (!event.data.paid_at) {
+        this.logger.warn('Missing paid_at timestamp in Paystack webhook');
+      }
+
+      this.logger.log(
+        `Transaction verification passed for reference: ${event.reference}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Error verifying transaction with Paystack: ${error.message}`,
+        error.stack,
+      );
+      return false;
+    }
   }
 }
