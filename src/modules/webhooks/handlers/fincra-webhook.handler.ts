@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'crypto';
 import { PrismaService } from '../../../providers/prisma/prisma.service';
-import { PaymentsService } from '../../payments/payments.service';
+import { PaymentsService } from '@modules/payments/payments.service';
 import { BaseWebhookHandler } from './base-webhook.handler';
 import {
   WebhookEvent,
@@ -29,11 +29,11 @@ export class FincraWebhookHandler
   private readonly webhookSecret: string;
 
   constructor(
-    protected readonly prismaService: PrismaService,
+    protected readonly prisma: PrismaService,
     protected readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
   ) {
-    super(prismaService, paymentsService);
+    super(prisma, paymentsService);
     this.webhookSecret = this.configService.get<string>(
       'FINCRA_WEBHOOK_SECRET',
     );

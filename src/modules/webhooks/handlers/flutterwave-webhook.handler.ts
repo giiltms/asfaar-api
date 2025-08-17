@@ -12,8 +12,8 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
   private readonly webhookSecret: string;
 
   constructor(
-    prisma: PrismaService,
-    paymentsService: PaymentsService,
+    protected readonly prisma: PrismaService,
+    protected readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
   ) {
     super(prisma, paymentsService);

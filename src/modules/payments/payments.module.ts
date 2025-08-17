@@ -19,7 +19,7 @@ import { UserModule } from '@modules/user/user.module';
     UserModule,
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, UserService],
+  providers: [PaymentsService],
   exports: [PaymentsService], // Export service for use in other modules
 })
 export class PaymentsModule {}

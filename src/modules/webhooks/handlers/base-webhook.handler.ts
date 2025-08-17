@@ -10,7 +10,7 @@ import {
 
 @Injectable()
 export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
-  protected readonly logger = new Logger(this.constructor.name);
+  protected readonly logger = new Logger(BaseWebhookHandler.name);
 
   constructor(
     protected readonly prisma: PrismaService,
