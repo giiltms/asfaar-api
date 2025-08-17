@@ -366,3 +366,13 @@ export class CountryApplicationStatsDto {
   @ApiProperty({ description: 'Utilization percentage' })
   utilizationPercentage: number;
 }
+
+// DTO for country logo upload
+export class UploadCountryLogoDto {
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Country logo image file (PNG, JPG, JPEG, SVG)',
+  })
+  logo: Express.Multer.File;
+}

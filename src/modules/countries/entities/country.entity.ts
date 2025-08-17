@@ -60,6 +60,13 @@ export default class CountryEntity implements Country {
   @Expose()
   flag: string | null;
 
+  @ApiPropertyOptional({ 
+    description: 'Country logo/emblem URL', 
+    example: '/uploads/countries/logos/sa-logo.png' 
+  })
+  @Expose()
+  logoUrl: string | null;
+
   @ApiProperty({
     description: 'Whether country is active for visa applications',
   })

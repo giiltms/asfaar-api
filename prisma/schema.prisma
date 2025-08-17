@@ -586,6 +586,7 @@ model Country {
   subregion    String? // e.g., "Western Asia"
   capital      String? // e.g., "Riyadh"
   flag         String? // Flag emoji or URL
+  logoUrl      String? // Country logo/emblem URL
   isActive     Boolean @default(true)
 
   // Form and application settings

@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { LocalStorageService } from '@providers/localstorage/localstorage.service';
 import { Country, Prisma } from '@prisma/client';
 import { PaginationUtils } from '@common/utils/pagination.utils';
 import {
@@ -20,7 +21,10 @@ import {
 export class CountriesService {
   private readonly logger = new Logger(CountriesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly localStorageService: LocalStorageService,
+  ) {}
 
   /**
    * Create a new country
@@ -219,16 +223,16 @@ export class CountriesService {
     try {
       const include = includeRelations
         ? {
-            forms: {
-              select: {
-                id: true,
-                name: true,
-                description: true,
-                createdAt: true,
-              },
+          forms: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              createdAt: true,
             },
-            applicationCounters: true,
-          }
+          },
+          applicationCounters: true,
+        }
         : undefined;
 
       const country = await this.prisma.country.findUnique({
@@ -582,6 +586,123 @@ export class CountriesService {
     } catch (error) {
       this.logger.error(
         `Failed to get countries by region: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Upload country logo
+   */
+  async uploadCountryLogo(
+    countryId: string,
+    file: Express.Multer.File,
+  ): Promise<Country> {
+    try {
+      // Validate file type
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/svg+xml',
+      ];
+
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        throw new BadRequestException(
+          'Invalid file type. Only JPEG, PNG, and SVG files are allowed.',
+        );
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        throw new BadRequestException(
+          'File size too large. Maximum size is 5MB.',
+        );
+      }
+
+      // Check if country exists
+      const country = await this.prisma.country.findUnique({
+        where: { id: countryId },
+      });
+
+      if (!country) {
+        throw new NotFoundException(`Country with ID ${countryId} not found`);
+      }
+
+      // Generate filename based on country code
+      const fileExtension = file.originalname.split('.').pop();
+      const filename = `${country.isoCode2.toLowerCase()}-logo.${fileExtension}`;
+
+      // Upload file
+      const logoPath = await this.localStorageService.upload(
+        { ...file, originalname: filename },
+        'countries/logos'
+      );
+
+      // Update country with logo URL
+      const updatedCountry = await this.prisma.country.update({
+        where: { id: countryId },
+        data: {
+          logoUrl: `/uploads/${logoPath}`,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`Logo uploaded for country: ${country.name}`);
+      return updatedCountry;
+
+    } catch (error) {
+      this.logger.error(
+        `Failed to upload logo for country ${countryId}:`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Delete country logo
+   */
+  async deleteCountryLogo(countryId: string): Promise<Country> {
+    try {
+      const country = await this.prisma.country.findUnique({
+        where: { id: countryId },
+      });
+
+      if (!country) {
+        throw new NotFoundException(`Country with ID ${countryId} not found`);
+      }
+
+      if (!country.logoUrl) {
+        throw new BadRequestException('Country does not have a logo to delete');
+      }
+
+      // Delete file from storage
+      const filePath = country.logoUrl.replace('/uploads/', '');
+      try {
+        await this.localStorageService.delete(filePath);
+      } catch (deleteError) {
+        this.logger.warn(`Failed to delete file: ${filePath}`, deleteError);
+        // Continue with database update even if file deletion fails
+      }
+
+      // Update country to remove logo URL
+      const updatedCountry = await this.prisma.country.update({
+        where: { id: countryId },
+        data: {
+          logoUrl: null,
+          updatedAt: new Date(),
+        },
+      });
+
+      this.logger.log(`Logo deleted for country: ${country.name}`);
+      return updatedCountry;
+
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete logo for country ${countryId}:`,
         error.stack,
       );
       throw error;

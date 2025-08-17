@@ -11,7 +11,13 @@ import {
   UseGuards,
   HttpStatus,
   SerializeOptions,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -19,6 +25,8 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
@@ -31,6 +39,7 @@ import {
   CountryFiltersDto,
   CountryStatsDto,
   CountryApplicationStatsDto,
+  UploadCountryLogoDto,
 } from './dto/country.dto';
 
 // Public Countries Controller (for form creation, etc.)
@@ -393,6 +402,99 @@ export class AdminCountriesController {
     return {
       success: true,
       message: 'Country deleted successfully',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':id/logo')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor('logo'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload country logo',
+    description: 'Upload a logo image for a country. Supports JPEG, PNG, and SVG formats (max 5MB).'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Country ID',
+    example: 'uuid-string',
+  })
+  @ApiBody({
+    description: 'Country logo file',
+    type: UploadCountryLogoDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Logo uploaded successfully',
+    type: CountryEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid file type or size',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
+  async uploadCountryLogo(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({
+            fileType: /(jpeg|jpg|png|svg)$/
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ): Promise<BaseResponseDto<CountryEntity>> {
+    const country = await this.countriesService.uploadCountryLogo(id, file);
+
+    return {
+      success: true,
+      message: 'Country logo uploaded successfully',
+      data: plainToInstance(CountryEntity, country),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Delete(':id/logo')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Delete country logo',
+    description: 'Remove the logo from a country.'
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Country ID',
+    example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Logo deleted successfully',
+    type: CountryEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Country does not have a logo',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Country not found',
+  })
+  async deleteCountryLogo(
+    @Param('id') id: string,
+  ): Promise<BaseResponseDto<CountryEntity>> {
+    const country = await this.countriesService.deleteCountryLogo(id);
+
+    return {
+      success: true,
+      message: 'Country logo deleted successfully',
+      data: plainToInstance(CountryEntity, country),
       timestamp: new Date().toISOString(),
     };
   }
