@@ -5,9 +5,9 @@ import { PaymentsModule } from '@modules/payments/payments.module';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
 import { WebhookSignatureGuard } from './guards/webhook-signature.guard';
-import { BaseWebhookHandler } from './handlers/base-webhook.handler';
 import { FlutterwaveWebhookHandler } from './handlers/flutterwave-webhook.handler';
 import { PaystackWebhookHandler } from './handlers/paystack-webhook.handler';
+import { FincraWebhookHandler } from './handlers/fincra-webhook.handler';
 
 @Module({
   imports: [
@@ -21,10 +21,8 @@ import { PaystackWebhookHandler } from './handlers/paystack-webhook.handler';
     WebhookSignatureGuard,
     FlutterwaveWebhookHandler,
     PaystackWebhookHandler,
-    // Add other handlers here as they're implemented:
-    // StripeWebhookHandler,
-    // FincraWebhookHandler,
+    FincraWebhookHandler,
   ],
   exports: [WebhooksService],
 })
-export class WebhooksModule {} 
+export class WebhooksModule {}

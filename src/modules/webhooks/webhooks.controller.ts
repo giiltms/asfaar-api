@@ -18,11 +18,11 @@ import {
 } from '@nestjs/swagger';
 import { WebhooksService } from './webhooks.service';
 import {
-  WebhookSignatureGuard,
   FlutterwaveWebhookGuard,
   PaystackWebhookGuard,
-  StripeWebhookGuard,
   FincraWebhookGuard,
+  StripeWebhookGuard,
+  WebhookSignatureGuard,
 } from './guards/webhook-signature.guard';
 import {
   WebhookResponseDto,
@@ -165,33 +165,35 @@ export class WebhooksController {
     };
   }
 
+  /**
+   * Fincra Webhook Endpoint
+   * Receives webhook notifications from Fincra payment gateway
+   * Documentation: https://docs.fincra.com/docs/setup-webhook
+   */
   @Post('fincra')
-  @FincraWebhookGuard()
-  @UseGuards(WebhookSignatureGuard)
   @ApiOperation({
-    summary: 'Fincra webhook endpoint',
-    description: 'Handle Fincra payment webhook events',
+    summary: 'Fincra Payment Webhook',
+    description: 'Receives webhook notifications from Fincra payment gateway',
   })
   @ApiHeader({
-    name: 'x-fincra-signature',
-    description: 'Fincra webhook signature',
+    name: 'signature',
+    description: 'HMAC SHA512 signature for webhook verification',
     required: true,
   })
   @ApiResponse({
-    status: HttpStatus.OK,
+    status: 200,
     description: 'Webhook processed successfully',
     type: WebhookResponseDto,
   })
   @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid webhook signature or payload',
+    status: 401,
+    description: 'Invalid signature',
   })
+  @UseGuards(FincraWebhookGuard)
   async handleFincraWebhook(
     @Body() payload: FincraWebhookDto,
     @Req() request: any,
   ): Promise<WebhookResponseDto> {
-    this.logger.log('Received Fincra webhook');
-
     const result = await this.webhooksService.processWebhook(
       'FINCRA',
       payload,

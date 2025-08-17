@@ -298,9 +298,7 @@ export class PaystackWebhookHandler extends BaseWebhookHandler {
       // For now, we'll do comprehensive validation of the webhook data
 
       const expectedAmount = payment.amount;
-      const receivedAmount = event.data.amount
-        ? event.data.amount / 100
-        : 0; // Convert from kobo
+      const receivedAmount = event.data.amount ? event.data.amount / 100 : 0; // Convert from kobo
       const expectedCurrency = payment.currency || 'NGN';
       const receivedCurrency = event.data.currency;
       const expectedReference = payment.reference || payment.processorId;

@@ -61,7 +61,8 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           break;
         default:
           this.logger.warn(
-            `Unhandled event type: ${event.event
+            `Unhandled event type: ${
+              event.event
             } for ${this.getProviderName()}`,
           );
       }
@@ -70,12 +71,14 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       await this.recordProcessedEvent(event);
 
       this.logger.log(
-        `Successfully processed ${this.getProviderName()} webhook event: ${event.event
+        `Successfully processed ${this.getProviderName()} webhook event: ${
+          event.event
         }`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to process ${this.getProviderName()} webhook event: ${event.event
+        `Failed to process ${this.getProviderName()} webhook event: ${
+          event.event
         }`,
         error.stack,
       );

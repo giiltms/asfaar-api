@@ -109,5 +109,5 @@ export class WebhookSignatureGuard implements CanActivate {
 // Provider-specific guard decorators
 export const FlutterwaveWebhookGuard = WebhookProvider('FLUTTERWAVE');
 export const PaystackWebhookGuard = WebhookProvider('PAYSTACK');
-export const StripeWebhookGuard = WebhookProvider('STRIPE');
 export const FincraWebhookGuard = WebhookProvider('FINCRA');
+export const StripeWebhookGuard = WebhookProvider('STRIPE');

@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { FlutterwaveWebhookHandler } from './handlers/flutterwave-webhook.handler';
 import { PaystackWebhookHandler } from './handlers/paystack-webhook.handler';
+import { FincraWebhookHandler } from './handlers/fincra-webhook.handler';
 import {
   WebhookProcessingResult,
   WebhookHandlerInterface,
@@ -13,17 +14,13 @@ export class WebhooksService {
 
   constructor(
     private readonly flutterwaveHandler: FlutterwaveWebhookHandler,
-    private readonly paystackHandler: PaystackWebhookHandler, // Add other handlers as needed
+    private readonly paystackHandler: PaystackWebhookHandler,
+    private readonly fincraHandler: FincraWebhookHandler,
   ) {
-    // Register all webhook handlers
+    // Register webhook handlers
     this.handlers.set('FLUTTERWAVE', this.flutterwaveHandler);
     this.handlers.set('PAYSTACK', this.paystackHandler);
-    // this.handlers.set('STRIPE', this.stripeHandler);
-    // this.handlers.set('FINCRA', this.fincraHandler);
-
-    this.logger.log(
-      `Initialized webhook service with ${this.handlers.size} providers`,
-    );
+    this.handlers.set('FINCRA', this.fincraHandler);
   }
 
   /**
