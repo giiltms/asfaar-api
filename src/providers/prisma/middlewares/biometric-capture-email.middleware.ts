@@ -70,15 +70,15 @@ async function sendBiometricCaptureEmail(appointmentId: string): Promise<void> {
     // Format capture date
     const captureDate = appointment.capturedAt
       ? appointment.capturedAt.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
       : new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
 
     // Prepare email data
     const emailData = {
@@ -96,7 +96,9 @@ async function sendBiometricCaptureEmail(appointmentId: string): Promise<void> {
     );
   } catch (error) {
     logger.error(
-      `Failed to send biometric capture email for appointment ${appointmentId}: ${(error as Error).message}`,
+      `Failed to send biometric capture email for appointment ${appointmentId}: ${
+        (error as Error).message
+      }`,
     );
     // Don't throw - this is a non-critical side effect
   }
@@ -114,32 +116,43 @@ export function biometricCaptureEmailMiddleware(): Prisma.Middleware {
       const newStatus: AppointmentStatus | string | undefined = data.status;
 
       // Check if status is being updated to COMPLETED
-      if (newStatus === AppointmentStatus.COMPLETED || newStatus === 'COMPLETED') {
+      if (
+        newStatus === AppointmentStatus.COMPLETED ||
+        newStatus === 'COMPLETED'
+      ) {
         try {
           // Get the current appointment to check if status is actually changing
-          const currentAppointment = await prismaInternal.biometricAppointment.findUnique({
-            where,
-            select: { id: true, status: true },
-          });
+          const currentAppointment =
+            await prismaInternal.biometricAppointment.findUnique({
+              where,
+              select: { id: true, status: true },
+            });
 
-          if (currentAppointment && currentAppointment.status !== AppointmentStatus.COMPLETED) {
+          if (
+            currentAppointment &&
+            currentAppointment.status !== AppointmentStatus.COMPLETED
+          ) {
             // Status is changing to COMPLETED, proceed with update first
             const result = await next(params);
 
             // Then send email asynchronously (don't block the response)
             setImmediate(() => {
-              sendBiometricCaptureEmail(currentAppointment.id).catch((error) => {
-                logger.error(
-                  `Async biometric capture email send failed for appointment ${currentAppointment.id}: ${error.message}`,
-                );
-              });
+              sendBiometricCaptureEmail(currentAppointment.id).catch(
+                (error) => {
+                  logger.error(
+                    `Async biometric capture email send failed for appointment ${currentAppointment.id}: ${error.message}`,
+                  );
+                },
+              );
             });
 
             return result;
           }
         } catch (error) {
           logger.error(
-            `Error in biometric capture email middleware: ${(error as Error).message}`,
+            `Error in biometric capture email middleware: ${
+              (error as Error).message
+            }`,
           );
           // Continue with normal flow even if email logic fails
         }
@@ -148,4 +161,4 @@ export function biometricCaptureEmailMiddleware(): Prisma.Middleware {
 
     return next(params);
   };
-} 
+}
