@@ -189,7 +189,8 @@ export class WebhooksController {
     status: 401,
     description: 'Invalid signature',
   })
-  @UseGuards(FincraWebhookGuard)
+  @FincraWebhookGuard()
+  @UseGuards(WebhookSignatureGuard)
   async handleFincraWebhook(
     @Body() payload: FincraWebhookDto,
     @Req() request: any,

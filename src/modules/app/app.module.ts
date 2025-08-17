@@ -45,7 +45,6 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     CountriesModule,
     ApplicationTypesModule,
     WebhooksModule,
-    // PostsModule, // Add PostsModule when it exists
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
