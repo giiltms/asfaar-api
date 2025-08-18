@@ -664,7 +664,8 @@ export class SubmissionQueryDto {
   paymentCompleted?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Filter by cancellation status (admin only - hidden from user queries)',
+    description:
+      'Filter by cancellation status (admin only - hidden from user queries)',
     example: false,
   })
   @IsOptional()
@@ -734,9 +735,10 @@ export class ReviewSubmissionDto {
 // File Upload DTOs
 export class FileUploadDto {
   @ApiProperty({
-    description: 'Field ID this file belongs to',
+    description: 'Field ID this file belongs to (required for validation)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
+  @IsNotEmpty()
   @IsUUID()
   fieldId: string;
 

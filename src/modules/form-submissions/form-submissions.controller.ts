@@ -15,6 +15,8 @@ import {
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -358,7 +360,12 @@ export class FormSubmissionsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Upload single file for form field',
-    description: 'Upload a single file for a specific form field',
+    description:
+      'Upload a single file for a specific form field with validation based on field configuration',
+  })
+  @ApiBody({
+    description: 'File upload data',
+    type: FileUploadDto,
   })
   @ApiResponse({
     status: 201,
@@ -373,22 +380,46 @@ export class FormSubmissionsController {
             fileUrl: { type: 'string' },
             fileName: { type: 'string' },
             fileSize: { type: 'number' },
+            mimeType: { type: 'string' },
+            fieldId: { type: 'string' },
           },
         },
+        timestamp: { type: 'string' },
       },
     },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'File validation failed (size, type, or field configuration)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Form field not found',
   })
   @ApiDefaultResponse({})
   async uploadSingleFile(
     @Request() req: any,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // 50MB global max
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
     @Body() uploadDto: FileUploadDto,
   ) {
-    // TODO: Implement file upload logic with storage service
+    const result = await this.submissionsService.uploadSingleFile(
+      req.user.id,
+      file,
+      uploadDto,
+    );
+
     return {
-      fileUrl: `https://storage.example.com/uploads/${file.filename}`,
-      fileName: file.originalname,
-      fileSize: file.size,
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -397,7 +428,12 @@ export class FormSubmissionsController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Upload multiple files for form field',
-    description: 'Upload multiple files for a specific form field',
+    description:
+      'Upload multiple files for a specific form field with validation based on field configuration',
+  })
+  @ApiBody({
+    description: 'Multiple file upload data',
+    type: FileUploadDto,
   })
   @ApiResponse({
     status: 201,
@@ -417,27 +453,52 @@ export class FormSubmissionsController {
                   fileUrl: { type: 'string' },
                   fileName: { type: 'string' },
                   fileSize: { type: 'number' },
+                  mimeType: { type: 'string' },
                 },
               },
             },
+            fieldId: { type: 'string' },
+            totalFiles: { type: 'number' },
+            totalSize: { type: 'number' },
           },
         },
+        timestamp: { type: 'string' },
       },
     },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'File validation failed (size, type, field configuration, or multiple files not allowed)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Form field not found',
   })
   @ApiDefaultResponse({})
   async uploadMultipleFiles(
     @Request() req: any,
-    @UploadedFiles() files: Express.Multer.File[],
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // 50MB per file
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    files: Express.Multer.File[],
     @Body() uploadDto: FileUploadDto,
   ) {
-    // TODO: Implement file upload logic with storage service
+    const result = await this.submissionsService.uploadMultipleFiles(
+      req.user.id,
+      files,
+      uploadDto,
+    );
+
     return {
-      files: files.map((file) => ({
-        fileUrl: `https://storage.example.com/uploads/${file.filename}`,
-        fileName: file.originalname,
-        fileSize: file.size,
-      })),
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
     };
   }
 }

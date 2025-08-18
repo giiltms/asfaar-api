@@ -966,4 +966,30 @@ export class FormsService {
         : undefined,
     };
   }
+
+  /**
+   * Get form field by ID for validation purposes
+   */
+  async getFormField(fieldId: string): Promise<any> {
+    const field = await this.prisma.formField.findUnique({
+      where: { id: fieldId },
+      include: {
+        group: {
+          include: {
+            section: {
+              include: {
+                form: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!field) {
+      throw new NotFoundException(`Form field with ID ${fieldId} not found`);
+    }
+
+    return field;
+  }
 }

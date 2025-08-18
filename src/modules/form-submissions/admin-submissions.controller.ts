@@ -333,14 +333,14 @@ export class AdminSubmissionsController {
     const avgCompletionTime =
       completedSubmissions.length > 0
         ? completedSubmissions.reduce((acc, submission) => {
-          if (submission.submittedAt && submission.createdAt) {
-            const timeDiff =
-              new Date(submission.submittedAt).getTime() -
-              new Date(submission.createdAt).getTime();
-            return acc + timeDiff / 1000 / 60; // Convert to minutes
-          }
-          return acc;
-        }, 0) / completedSubmissions.length
+            if (submission.submittedAt && submission.createdAt) {
+              const timeDiff =
+                new Date(submission.submittedAt).getTime() -
+                new Date(submission.createdAt).getTime();
+              return acc + timeDiff / 1000 / 60; // Convert to minutes
+            }
+            return acc;
+          }, 0) / completedSubmissions.length
         : 0;
 
     const completionRate =

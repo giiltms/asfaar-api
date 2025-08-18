@@ -26,6 +26,7 @@ import {
   FormProgressDto,
   SectionProgressDto,
   CancelSubmissionDto,
+  FileUploadDto,
 } from '../dto/submission.dto';
 import {
   FORM_NOT_FOUND,
@@ -1633,5 +1634,231 @@ export class FormSubmissionsService {
       },
       appointment: appointmentData,
     };
+  }
+
+  /**
+   * Upload single file with field validation
+   */
+  async uploadSingleFile(
+    userId: string,
+    file: Express.Multer.File,
+    uploadDto: FileUploadDto,
+  ): Promise<{
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    fieldId: string;
+  }> {
+    // 1. Get field configuration for validation
+    const field = await this.getFormFieldForUpload(uploadDto.fieldId);
+
+    // 2. Validate file against field configuration
+    await this.validateFileAgainstField(file, field);
+
+    // 3. Upload file to storage
+    const fileUrl = await this.saveFileToStorage(
+      file,
+      userId,
+      uploadDto.fieldId,
+    );
+
+    return {
+      fileUrl,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      fieldId: uploadDto.fieldId,
+    };
+  }
+
+  /**
+   * Upload multiple files with field validation
+   */
+  async uploadMultipleFiles(
+    userId: string,
+    files: Express.Multer.File[],
+    uploadDto: FileUploadDto,
+  ): Promise<{
+    files: Array<{
+      fileUrl: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+    }>;
+    fieldId: string;
+    totalFiles: number;
+    totalSize: number;
+  }> {
+    // 1. Get field configuration for validation
+    const field = await this.getFormFieldForUpload(uploadDto.fieldId);
+
+    // 2. Validate that multiple files are allowed
+    const fileConfig = field.fileTypes as any;
+    if (!fileConfig?.multiple && files.length > 1) {
+      throw new BadRequestException(
+        'Multiple files not allowed for this field',
+      );
+    }
+
+    // 3. Validate each file against field configuration
+    for (const file of files) {
+      await this.validateFileAgainstField(file, field);
+    }
+
+    // 4. Upload all files to storage
+    const uploadedFiles = await Promise.all(
+      files.map(async (file) => {
+        const fileUrl = await this.saveFileToStorage(
+          file,
+          userId,
+          uploadDto.fieldId,
+        );
+        return {
+          fileUrl,
+          fileName: file.originalname,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+        };
+      }),
+    );
+
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+    return {
+      files: uploadedFiles,
+      fieldId: uploadDto.fieldId,
+      totalFiles: files.length,
+      totalSize,
+    };
+  }
+
+  /**
+   * Get form field for upload validation
+   */
+  private async getFormFieldForUpload(fieldId: string): Promise<any> {
+    const field = await this.prisma.formField.findUnique({
+      where: { id: fieldId },
+    });
+
+    if (!field) {
+      throw new NotFoundException(`Form field with ID ${fieldId} not found`);
+    }
+
+    if (field.type !== 'FILE') {
+      throw new BadRequestException('Field is not a file upload field');
+    }
+
+    return field;
+  }
+
+  /**
+   * Validate file against field configuration
+   */
+  private async validateFileAgainstField(
+    file: Express.Multer.File,
+    field: any,
+  ): Promise<void> {
+    const fileConfig = field.fileTypes as any;
+
+    if (!fileConfig) {
+      throw new BadRequestException(
+        'File upload configuration not found for field',
+      );
+    }
+
+    // 1. Validate file size
+    const maxSize = this.parseFileSize(fileConfig.maxSize || '10MB');
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        `File size ${this.formatFileSize(
+          file.size,
+        )} exceeds maximum allowed size ${fileConfig.maxSize || '10MB'}`,
+      );
+    }
+
+    // 2. Validate file type
+    const allowedTypes = fileConfig.accept || ['*/*'];
+    const isValidType = this.validateFileType(file, allowedTypes);
+    if (!isValidType) {
+      throw new BadRequestException(
+        `File type ${
+          file.mimetype
+        } is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * Validate file type against allowed types
+   */
+  private validateFileType(
+    file: Express.Multer.File,
+    allowedTypes: string[],
+  ): boolean {
+    for (const allowedType of allowedTypes) {
+      if (allowedType === '*/*') return true;
+
+      // Check MIME type
+      if (file.mimetype === allowedType) return true;
+
+      // Check wildcard MIME types (e.g., 'image/*')
+      if (allowedType.includes('/*')) {
+        const baseType = allowedType.split('/')[0];
+        if (file.mimetype.startsWith(baseType + '/')) return true;
+      }
+
+      // Check file extensions
+      if (allowedType.startsWith('.')) {
+        const fileExt = '.' + file.originalname.split('.').pop()?.toLowerCase();
+        if (fileExt === allowedType.toLowerCase()) return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Parse file size string to bytes
+   */
+  private parseFileSize(sizeString: string): number {
+    const units = { KB: 1024, MB: 1024 * 1024, GB: 1024 * 1024 * 1024 };
+    const match = sizeString.match(/^(\d+(?:\.\d+)?)\s*(KB|MB|GB)$/i);
+
+    if (!match) return 10 * 1024 * 1024; // Default 10MB
+
+    const [, size, unit] = match;
+    return parseFloat(size) * units[unit.toUpperCase() as keyof typeof units];
+  }
+
+  /**
+   * Format file size for display
+   */
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Save file to storage (placeholder - should use actual storage service)
+   */
+  private async saveFileToStorage(
+    file: Express.Multer.File,
+    userId: string,
+    fieldId: string,
+  ): Promise<string> {
+    // TODO: Replace with actual storage service implementation
+    // For now, return a mock URL
+    const timestamp = Date.now();
+    const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${userId}_${fieldId}_${timestamp}_${sanitizedFileName}`;
+
+    // Mock storage URL - replace with actual storage service
+    return `https://storage.example.com/uploads/${fileName}`;
   }
 }
