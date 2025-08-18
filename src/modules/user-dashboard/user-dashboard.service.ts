@@ -99,7 +99,7 @@ export class UserDashboardService {
           where: { ...where, status: SubmissionStatus.SUBMITTED },
         }),
         this.prisma.formSubmission.count({
-          where: { ...where, status: SubmissionStatus.REVIEWED },
+          where: { ...where, status: SubmissionStatus.UNDER_REVIEW },
         }),
         this.prisma.formSubmission.count({
           where: { ...where, status: SubmissionStatus.APPROVED },
@@ -211,13 +211,13 @@ export class UserDashboardService {
       // Calculate days since submission
       const daysSinceSubmission = submission.submittedAt
         ? Math.floor(
-            (Date.now() - submission.submittedAt.getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
+          (Date.now() - submission.submittedAt.getTime()) /
+          (1000 * 60 * 60 * 24),
+        )
         : Math.floor(
-            (Date.now() - submission.createdAt.getTime()) /
-              (1000 * 60 * 60 * 24),
-          );
+          (Date.now() - submission.createdAt.getTime()) /
+          (1000 * 60 * 60 * 24),
+        );
 
       // Estimate completion date
       const estimatedCompletion = this.estimateCompletionDate(submission);
@@ -420,7 +420,7 @@ export class UserDashboardService {
 
     // Stage 3: Under Review
     if (
-      submission.status === SubmissionStatus.REVIEWED &&
+      submission.status === SubmissionStatus.UNDER_REVIEW &&
       submission.reviewedAt
     ) {
       stages.push({
@@ -432,7 +432,7 @@ export class UserDashboardService {
       });
     } else if (
       [
-        SubmissionStatus.REVIEWED,
+        SubmissionStatus.UNDER_REVIEW,
         SubmissionStatus.APPROVED,
         SubmissionStatus.REJECTED,
       ].includes(submission.status)
@@ -440,7 +440,7 @@ export class UserDashboardService {
       stages.push({
         stageName: 'Under Review',
         status:
-          submission.status === SubmissionStatus.REVIEWED
+          submission.status === SubmissionStatus.UNDER_REVIEW
             ? 'IN_PROGRESS'
             : 'COMPLETED',
         timestamp: submission.reviewedAt || new Date(),
@@ -511,9 +511,8 @@ export class UserDashboardService {
             ? 'COMPLETED'
             : 'IN_PROGRESS',
         timestamp: submission.appointment.createdAt,
-        notes: `Appointment scheduled at ${
-          submission.appointment.center?.name
-        } on ${submission.appointment.appointmentDate.toDateString()}`,
+        notes: `Appointment scheduled at ${submission.appointment.center?.name
+          } on ${submission.appointment.appointmentDate.toDateString()}`,
       });
 
       // Stage 7: Queue Status
@@ -569,7 +568,7 @@ export class UserDashboardService {
       nextAction = 'Wait for review';
     }
 
-    if (submission.status === SubmissionStatus.REVIEWED) {
+    if (submission.status === SubmissionStatus.UNDER_REVIEW) {
       progressPercentage = 50;
       nextAction = 'Wait for decision';
     }
@@ -625,7 +624,7 @@ export class UserDashboardService {
       daysToAdd = 14; // 2 weeks for completion
     } else if (submission.status === SubmissionStatus.SUBMITTED) {
       daysToAdd = 7; // 1 week for review
-    } else if (submission.status === SubmissionStatus.REVIEWED) {
+    } else if (submission.status === SubmissionStatus.UNDER_REVIEW) {
       daysToAdd = 3; // 3 days for decision
     } else if (
       submission.status === SubmissionStatus.APPROVED &&

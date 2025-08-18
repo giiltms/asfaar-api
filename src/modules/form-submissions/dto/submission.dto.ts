@@ -272,6 +272,96 @@ export class FormSubmissionDto {
   @ApiProperty({ description: 'Submission status', enum: SubmissionStatus })
   status: SubmissionStatus;
 
+  @ApiPropertyOptional({
+    description: 'Previous status (for tracking workflow changes)',
+    enum: SubmissionStatus,
+  })
+  previousStatus?: SubmissionStatus;
+
+  // Biometric tracking
+  @ApiProperty({
+    description: 'Whether biometrics are required for this submission',
+  })
+  biometricRequired: boolean;
+
+  @ApiProperty({
+    description: 'Whether biometric capture has been completed',
+  })
+  biometricCompleted: boolean;
+
+  @ApiPropertyOptional({
+    description: 'When biometric capture was completed',
+  })
+  biometricCompletedAt?: Date;
+
+  // Flag management
+  @ApiProperty({
+    description: 'Whether this submission has been flagged for review',
+  })
+  isFlagged: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Reason why submission was flagged',
+  })
+  flagReason?: string;
+
+  @ApiPropertyOptional({
+    description: 'When submission was flagged',
+  })
+  flaggedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'ID of staff member who flagged the submission',
+  })
+  flaggedBy?: string;
+
+  // Query management
+  @ApiProperty({
+    description: 'Whether additional information has been requested',
+  })
+  isQueried: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Message/question sent to applicant',
+  })
+  queryMessage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Applicant response to query',
+  })
+  queryResponse?: string;
+
+  @ApiPropertyOptional({
+    description: 'When query was sent',
+  })
+  queriedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'When applicant responded to query',
+  })
+  queryResponseAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'ID of staff member who sent the query',
+  })
+  queriedBy?: string;
+
+  // Payment tracking
+  @ApiProperty({
+    description: 'Whether payment is required for this submission',
+  })
+  paymentRequired: boolean;
+
+  @ApiProperty({
+    description: 'Whether payment has been completed',
+  })
+  paymentCompleted: boolean;
+
+  @ApiPropertyOptional({
+    description: 'When payment was completed',
+  })
+  paymentCompletedAt?: Date;
+
   @ApiProperty({ description: 'Field responses', type: [FieldResponseDto] })
   responses: FieldResponseDto[];
 
@@ -499,6 +589,60 @@ export class SubmissionQueryDto {
   dateTo?: string;
 
   @ApiPropertyOptional({
+    description: 'Filter by flagged status',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isFlagged?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by query status',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isQueried?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by biometric requirement',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  biometricRequired?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by biometric completion status',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  biometricCompleted?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by payment requirement',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  paymentRequired?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by payment completion status',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  paymentCompleted?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Page number',
     example: 1,
     minimum: 1,
@@ -690,4 +834,111 @@ export class AvailableFormsQueryDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   includeInactive?: boolean = false;
+}
+
+// DTOs for Flag Management
+export class FlagSubmissionDto {
+  @ApiProperty({
+    description: 'Reason for flagging the submission',
+    example: 'Suspicious document formatting detected',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(500)
+  reason: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional notes about the flag',
+    example: 'Requires manual document verification',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}
+
+// DTOs for Query Management
+export class QuerySubmissionDto {
+  @ApiProperty({
+    description: 'Message/question to send to the applicant',
+    example: 'Please provide a clearer copy of your passport photo page',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(1000)
+  message: string;
+}
+
+export class RespondToQueryDto {
+  @ApiProperty({
+    description: 'Applicant response to the query',
+    example: 'I have uploaded a new copy of my passport photo page',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(1000)
+  response: string;
+}
+
+// DTOs for Status Management
+export class UpdateSubmissionStatusDto {
+  @ApiProperty({
+    description: 'New status for the submission',
+    enum: SubmissionStatus,
+    example: SubmissionStatus.UNDER_REVIEW,
+  })
+  @IsNotEmpty()
+  @IsEnum(SubmissionStatus)
+  status: SubmissionStatus;
+
+  @ApiPropertyOptional({
+    description: 'Reason for status change',
+    example: 'All documents verified and payment confirmed',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional notes about the status change',
+    example: 'Ready for embassy processing',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}
+
+// DTO for Status History
+export class SubmissionStatusLogDto {
+  @ApiProperty({ description: 'Status log ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Submission ID' })
+  submissionId: string;
+
+  @ApiPropertyOptional({
+    description: 'Previous status',
+    enum: SubmissionStatus,
+  })
+  fromStatus?: SubmissionStatus;
+
+  @ApiProperty({
+    description: 'New status',
+    enum: SubmissionStatus,
+  })
+  toStatus: SubmissionStatus;
+
+  @ApiPropertyOptional({ description: 'Reason for status change' })
+  reason?: string;
+
+  @ApiPropertyOptional({ description: 'Additional notes' })
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'User who changed the status' })
+  changedBy?: string;
+
+  @ApiProperty({ description: 'When the status was changed' })
+  changedAt: Date;
 }

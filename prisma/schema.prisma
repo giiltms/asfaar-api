@@ -83,7 +83,7 @@ model ServiceFee {
   isOptional  Boolean           @default(true)
   isActive    Boolean           @default(true)
 
-  feeType     FeeType?
+  feeType FeeType?
 
   submissions FormSubmission[]
   forms       DynamicForm[]
@@ -710,29 +710,77 @@ model FieldOption {
 }
 
 model FormSubmission {
-  id              String           @id @default(uuid())
-  referenceNumber String?          @unique // e.g., "SA25001234" - Generated when submitted
-  form            DynamicForm      @relation(fields: [formId], references: [id])
+  id              String      @id @default(uuid())
+  referenceNumber String?     @unique // e.g., "SA25001234" - Generated when submitted
+  form            DynamicForm @relation(fields: [formId], references: [id])
   formId          String
   userId          String // Changed from applicantId to userId for consistency
-  user            User             @relation(fields: [userId], references: [id])
-  status          SubmissionStatus @default(DRAFT)
-  submittedAt     DateTime?
-  reviewedAt      DateTime?
-  reviewedBy      String? // ID of the reviewer
-  reviewNotes     String? // Review comments
-  metadata        Json? // Additional metadata for the submission
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  user            User        @relation(fields: [userId], references: [id])
+
+  // Enhanced Status Tracking
+  status         SubmissionStatus  @default(DRAFT)
+  previousStatus SubmissionStatus? // Track previous state for workflow
+
+  // Direct Biometric Tracking
+  biometricRequired    Boolean   @default(false)
+  biometricCompleted   Boolean   @default(false)
+  biometricCompletedAt DateTime?
+
+  // Flag Management
+  isFlagged  Boolean   @default(false)
+  flagReason String? // Why it was flagged
+  flaggedAt  DateTime?
+  flaggedBy  String? // Staff member who flagged it
+
+  // Query Management (requesting additional info from applicant)
+  isQueried       Boolean   @default(false)
+  queryMessage    String? // Message/question to applicant
+  queryResponse   String? // Applicant's response
+  queriedAt       DateTime?
+  queryResponseAt DateTime?
+  queriedBy       String? // Staff who queried
+
+  // Direct Payment Tracking
+  paymentRequired    Boolean   @default(false)
+  paymentCompleted   Boolean   @default(false)
+  paymentCompletedAt DateTime?
+
+  // Existing review fields
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  reviewedBy  String? // ID of the reviewer
+  reviewNotes String? // Review comments
+  metadata    Json? // Additional metadata for the submission
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   responses       FieldResponse[]
   serviceFees     ServiceFee[]
   totalServiceFee Float?
+  statusLogs      SubmissionStatusLog[] // Audit trail for status changes
 
   appointment BiometricAppointment?
   payment     Payment?
 
   @@map("form_submissions")
+}
+
+// Audit trail for submission status changes
+model SubmissionStatusLog {
+  id           String         @id @default(uuid())
+  submissionId String
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  fromStatus SubmissionStatus? // Previous status (null for initial status)
+  toStatus   SubmissionStatus // New status
+  reason     String? // Reason for status change
+  notes      String? // Additional notes about the change
+
+  changedBy String? // User ID who changed the status
+  changedAt DateTime @default(now())
+
+  @@index([submissionId, changedAt])
+  @@map("submission_status_logs")
 }
 
 model FieldResponse {
@@ -765,11 +813,23 @@ enum FieldType {
 }
 
 enum SubmissionStatus {
+  // Initial States
   DRAFT
-  SUBMITTED
-  REVIEWED
-  APPROVED // Added APPROVED status
-  REJECTED
+  SUBMITTED // applicant submits an application
+
+  // Review States
+  UNDER_REVIEW // when the application is ready for a verification officer
+  FLAGGED // when it should go to security
+  QUERIED // when there is something wrong with the documents or information provided
+
+  // Processing States
+  PROCESSING // when embassy is processing the application
+  PENDING_BIOMETRICS // when the user has an appointment and is yet to do biometrics
+
+  // Final States
+  APPROVED // embassy approves it
+  REJECTED // embassy rejects the application
+  CANCELLED // applicant cancels the application
 }
 
 enum AddressType {
