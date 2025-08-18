@@ -621,6 +621,10 @@ export class FormSummaryDto {
       name: { type: 'string', example: 'Saudi Arabia' },
       isoCode2: { type: 'string', example: 'SA' },
       flag: { type: 'string', example: '🇸🇦' },
+      logoUrl: {
+        type: 'string',
+        example: '/uploads/countries/logos/sa-logo.png',
+      },
     },
   })
   country?: {
@@ -628,6 +632,7 @@ export class FormSummaryDto {
     name: string;
     isoCode2: string;
     flag?: string;
+    logoUrl?: string;
   };
 }
 

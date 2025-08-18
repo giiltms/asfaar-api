@@ -186,6 +186,7 @@ export class FormsService {
               name: true,
               isoCode2: true,
               flag: true,
+              logoUrl: true,
             },
           },
           applicationType: {
@@ -960,6 +961,7 @@ export class FormsService {
           name: form.country.name,
           isoCode2: form.country.isoCode2,
           flag: form.country.flag,
+          logoUrl: form.country.logoUrl,
         }
         : undefined,
     };

@@ -235,7 +235,7 @@ export class AdminCountriesController {
       success: true,
       message: 'Countries retrieved successfully',
       data: {
-        countries: result.data,
+        countries: plainToInstance(CountryEntity, result.data),
         meta: result.meta,
       },
       timestamp: new Date().toISOString(),
@@ -413,7 +413,8 @@ export class AdminCountriesController {
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Upload country logo',
-    description: 'Upload a logo image for a country. Supports JPEG, PNG, and SVG formats (max 5MB).'
+    description:
+      'Upload a logo image for a country. Supports JPEG, PNG, and SVG formats (max 5MB).',
   })
   @ApiParam({
     name: 'id',
@@ -444,7 +445,7 @@ export class AdminCountriesController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
           new FileTypeValidator({
-            fileType: /(jpeg|jpg|png|svg)$/
+            fileType: /(jpeg|jpg|png|svg)$/,
           }),
         ],
       }),
@@ -466,7 +467,7 @@ export class AdminCountriesController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Delete country logo',
-    description: 'Remove the logo from a country.'
+    description: 'Remove the logo from a country.',
   })
   @ApiParam({
     name: 'id',
