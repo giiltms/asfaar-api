@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Currency, PaymentStatus, PaymentMethodType } from '@prisma/client';
+import { Currency, PaymentStatus, PaymentMethodType, FeeType } from '@prisma/client';
 import { PaymentProvider } from '@common/configs/payment.config';
 import { PaymentProvider as PrismaPaymentProvider } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
@@ -395,6 +395,15 @@ export class CreateServiceFeeDto {
   currency?: string;
 
   @ApiPropertyOptional({
+    description: 'Type of service fee',
+    enum: FeeType,
+    example: FeeType.APPLICATION,
+  })
+  @IsOptional()
+  @IsEnum(FeeType)
+  feeType?: FeeType;
+
+  @ApiPropertyOptional({
     description: 'Allowed payment providers',
     type: [String],
     enum: PrismaPaymentProvider,
@@ -454,6 +463,15 @@ export class UpdateServiceFeeDto {
   currency?: string;
 
   @ApiPropertyOptional({
+    description: 'Type of service fee',
+    enum: FeeType,
+    example: FeeType.APPLICATION,
+  })
+  @IsOptional()
+  @IsEnum(FeeType)
+  feeType?: FeeType;
+
+  @ApiPropertyOptional({
     description: 'Allowed payment providers',
     type: [String],
     enum: PrismaPaymentProvider,
@@ -484,6 +502,15 @@ export class ServiceFeeFiltersDto {
   })
   @IsOptional()
   @IsBoolean()
+
+  @ApiPropertyOptional({
+    description: 'Type of service fee',
+    enum: FeeType,
+    example: FeeType.APPLICATION,
+  })
+  @IsOptional()
+  @IsEnum(FeeType)
+  feeType?: FeeType;
   isActive?: boolean;
 
   @ApiPropertyOptional({
@@ -507,6 +534,15 @@ export class ServiceFeeQueryDto extends PaginationQueryDto {
   })
   @IsOptional()
   @IsBoolean()
+
+  @ApiPropertyOptional({
+    description: 'Type of service fee',
+    enum: FeeType,
+    example: FeeType.APPLICATION,
+  })
+  @IsOptional()
+  @IsEnum(FeeType)
+  feeType?: FeeType;
   isActive?: boolean;
 
   @ApiPropertyOptional({

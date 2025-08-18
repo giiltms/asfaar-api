@@ -16,7 +16,7 @@ import {
   IsNotEmpty,
   IsObject,
 } from 'class-validator';
-import { FieldType } from '@prisma/client';
+import { FieldType, FeeType } from '@prisma/client';
 
 // Field Option DTOs (base level - no dependencies)
 export class CreateFieldOptionDto {
@@ -496,6 +496,13 @@ export class FormServiceFeeDto {
 
   @ApiProperty({ description: 'Currency' })
   currency: string;
+
+  @ApiPropertyOptional({
+    description: 'Type of service fee',
+    enum: FeeType,
+    example: FeeType.APPLICATION,
+  })
+  feeType?: FeeType;
 
   @ApiProperty({ description: 'Whether fee is optional' })
   isOptional: boolean;

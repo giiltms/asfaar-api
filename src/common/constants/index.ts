@@ -4,3 +4,4 @@ export * from './order.constants';
 export * from './upload.constants';
 export * from './roles.constants';
 export * from './pagination.constants';
+export * from './fee-type.constants';

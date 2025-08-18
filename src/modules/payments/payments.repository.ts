@@ -122,10 +122,11 @@ export class PaymentsRepository {
       isActive?: boolean;
       currency?: string;
       search?: string;
+      feeType?: any; // Using any temporarily until Prisma client is regenerated
     } = {},
     pagination: { skip?: number; take?: number } = {},
   ) {
-    const { isActive, currency, search } = filters;
+    const { isActive, currency, search, feeType } = filters;
     const { skip, take } = pagination;
 
     const where: Prisma.ServiceFeeWhereInput = {};
@@ -136,6 +137,10 @@ export class PaymentsRepository {
 
     if (currency) {
       where.currency = currency;
+    }
+
+    if (feeType) {
+      where.feeType = feeType;
     }
 
     if (search) {

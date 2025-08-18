@@ -109,10 +109,10 @@ export class PaymentsController {
     @Query(new ValidationPipe({ transform: true }))
     query: ServiceFeeQueryDto,
   ) {
-    const { page, limit, sortBy, sortOrder, isActive, currency, search } =
+    const { page, limit, sortBy, sortOrder, isActive, currency, search, feeType } =
       query;
 
-    const filters = { isActive, currency, search };
+    const filters = { isActive, currency, search, feeType };
     const pagination = { page, limit, sortBy, sortOrder };
 
     const result = await this.paymentsService.findAllServiceFees(

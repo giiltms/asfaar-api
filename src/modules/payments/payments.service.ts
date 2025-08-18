@@ -182,8 +182,8 @@ export class PaymentsService {
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
-              connect: { id: initiatePaymentDto.submissionId },
-            }
+            connect: { id: initiatePaymentDto.submissionId },
+          }
           : undefined,
       };
 
@@ -474,7 +474,7 @@ export class PaymentsService {
     pagination: PaginationQueryDto = {},
   ) {
     const { page = 1, limit = 10 } = pagination;
-    const { isActive, currency, search } = filters;
+    const { isActive, currency, search, feeType } = filters;
 
     const skip = (page - 1) * limit;
 
@@ -482,11 +482,12 @@ export class PaymentsService {
       where: {
         isActive,
         currency,
+        feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
       skip,
@@ -498,11 +499,12 @@ export class PaymentsService {
       where: {
         isActive,
         currency,
+        feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
     });

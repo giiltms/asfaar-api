@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "FeeType" AS ENUM ('ONBOARDING', 'APPLICATION', 'UPGRADE', 'RESCHEDULING', 'ADDITIONAL_CHARGE');
+
+-- AlterTable
+ALTER TABLE "ServiceFee" ADD COLUMN     "feeType" "FeeType";
