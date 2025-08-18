@@ -821,6 +821,15 @@ export class FormsService {
   // Helper Methods
   private getFormInclude() {
     return {
+      country: {
+        select: {
+          id: true,
+          name: true,
+          isoCode2: true,
+          flag: true,
+          logoUrl: true,
+        },
+      },
       applicationType: {
         select: { id: true, name: true, code: true },
       },
@@ -925,6 +934,15 @@ export class FormsService {
           isOptional: fee.isOptional,
           isActive: fee.isActive,
         })) || [],
+      country: form.country
+        ? {
+          id: form.country.id,
+          name: form.country.name,
+          isoCode2: form.country.isoCode2,
+          flag: form.country.flag,
+          logoUrl: form.country.logoUrl,
+        }
+        : undefined,
     };
   }
 
