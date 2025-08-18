@@ -24,6 +24,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
@@ -38,6 +39,7 @@ import {
   FileUploadDto,
   AuthenticatedFormDto,
   AvailableFormsQueryDto,
+  CancelSubmissionDto,
 } from './dto/submission.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
@@ -318,6 +320,36 @@ export class FormSubmissionsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
     return this.submissionsService.deleteSubmission(req.user.id, id);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel submission',
+    description:
+      'Cancel a submitted application (soft delete). Only SUBMITTED, UNDER_REVIEW, FLAGGED, or QUERIED applications can be cancelled.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    description: 'Cancellation details',
+    type: CancelSubmissionDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Submission cancelled successfully',
+    type: FormSubmissionDto,
+  })
+  @ApiDefaultResponse({})
+  async cancelSubmission(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() cancelDto: CancelSubmissionDto,
+  ): Promise<FormSubmissionDto> {
+    return this.submissionsService.cancelSubmission(req.user.id, id, cancelDto);
   }
 
   // File Upload Endpoints

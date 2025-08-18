@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
   Delete,
   Body,
@@ -187,6 +188,31 @@ export class AdminSubmissionsController {
     await this.submissionsService.deleteSubmission('admin', id);
   }
 
+  @Post(':id/restore')
+  // TODO: Add proper role-based authorization
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Restore cancelled submission (admin)',
+    description:
+      'Restore a cancelled submission back to its previous status (admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Submission restored successfully',
+    type: FormSubmissionDto,
+  })
+  @ApiDefaultResponse({})
+  async restoreSubmission(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<FormSubmissionDto> {
+    return this.submissionsService.restoreSubmission(id);
+  }
+
   @Get('user/:userId')
   // TODO: Add proper role-based authorization
   @ApiOperation({
@@ -307,14 +333,14 @@ export class AdminSubmissionsController {
     const avgCompletionTime =
       completedSubmissions.length > 0
         ? completedSubmissions.reduce((acc, submission) => {
-            if (submission.submittedAt && submission.createdAt) {
-              const timeDiff =
-                new Date(submission.submittedAt).getTime() -
-                new Date(submission.createdAt).getTime();
-              return acc + timeDiff / 1000 / 60; // Convert to minutes
-            }
-            return acc;
-          }, 0) / completedSubmissions.length
+          if (submission.submittedAt && submission.createdAt) {
+            const timeDiff =
+              new Date(submission.submittedAt).getTime() -
+              new Date(submission.createdAt).getTime();
+            return acc + timeDiff / 1000 / 60; // Convert to minutes
+          }
+          return acc;
+        }, 0) / completedSubmissions.length
         : 0;
 
     const completionRate =

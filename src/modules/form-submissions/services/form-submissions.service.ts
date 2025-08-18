@@ -25,6 +25,7 @@ import {
   CreateFieldResponseDto,
   FormProgressDto,
   SectionProgressDto,
+  CancelSubmissionDto,
 } from '../dto/submission.dto';
 import {
   FORM_NOT_FOUND,
@@ -560,6 +561,7 @@ export class FormSubmissionsService {
 
     const where: Prisma.FormSubmissionWhereInput = {
       userId,
+      isCancelled: false, // 🔑 Hide cancelled submissions from user view
       ...(formId && { formId }),
       ...(status && { status }),
       ...(search && {
@@ -687,6 +689,147 @@ export class FormSubmissionsService {
     });
   }
 
+  async cancelSubmission(
+    userId: string,
+    submissionId: string,
+    cancelDto: CancelSubmissionDto,
+  ): Promise<FormSubmissionDto> {
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        appointment: true,
+        payment: true,
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
+    }
+
+    if (submission.userId !== userId) {
+      throw new ForbiddenException(FORBIDDEN_RESOURCE);
+    }
+
+    if (submission.isCancelled) {
+      throw new BadRequestException('Submission is already cancelled');
+    }
+
+    // Business rules for what can be cancelled
+    const cancellableStatuses: SubmissionStatus[] = [
+      SubmissionStatus.SUBMITTED,
+      SubmissionStatus.UNDER_REVIEW,
+      SubmissionStatus.FLAGGED,
+      SubmissionStatus.QUERIED,
+    ];
+
+    if (!cancellableStatuses.includes(submission.status)) {
+      throw new BadRequestException(
+        `Cannot cancel application in ${submission.status} status. Only SUBMITTED, UNDER_REVIEW, FLAGGED, or QUERIED applications can be cancelled.`,
+      );
+    }
+
+    // Cancel the submission (soft delete)
+    const cancelledSubmission = await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: SubmissionStatus.CANCELLED,
+        previousStatus: submission.status,
+        isCancelled: true,
+        cancelledAt: new Date(),
+        cancelledBy: userId,
+        cancellationReason: cancelDto.reason,
+      },
+      include: {
+        form: true,
+        user: true,
+        responses: {
+          include: { field: true },
+        },
+        appointment: true,
+        payment: true,
+      },
+    });
+
+    // Cancel related appointments if they exist
+    if (submission.appointment) {
+      await this.prisma.biometricAppointment.update({
+        where: { id: submission.appointment.id },
+        data: {
+          status: 'CANCELLED', // Assuming AppointmentStatus.CANCELLED exists
+        },
+      });
+    }
+
+    // Log the status change
+    await this.prisma.submissionStatusLog.create({
+      data: {
+        submissionId,
+        fromStatus: submission.status,
+        toStatus: SubmissionStatus.CANCELLED,
+        reason: `Cancelled by user: ${cancelDto.reason}`,
+        changedBy: userId,
+      },
+    });
+
+    // TODO: Add notification to admins if submission was under review
+    // TODO: Handle payment refund logic if needed
+
+    return this.mapToSubmissionDto(cancelledSubmission);
+  }
+
+  async restoreSubmission(submissionId: string): Promise<FormSubmissionDto> {
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+    });
+
+    if (!submission) {
+      throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
+    }
+
+    if (!submission.isCancelled) {
+      throw new BadRequestException('Submission is not cancelled');
+    }
+
+    if (!submission.previousStatus) {
+      throw new BadRequestException('Cannot restore: no previous status found');
+    }
+
+    // Restore the submission
+    const restoredSubmission = await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: submission.previousStatus,
+        previousStatus: SubmissionStatus.CANCELLED,
+        isCancelled: false,
+        cancelledAt: null,
+        cancelledBy: null,
+        cancellationReason: null,
+      },
+      include: {
+        form: true,
+        user: true,
+        responses: {
+          include: { field: true },
+        },
+        appointment: true,
+        payment: true,
+      },
+    });
+
+    // Log the status change
+    await this.prisma.submissionStatusLog.create({
+      data: {
+        submissionId,
+        fromStatus: SubmissionStatus.CANCELLED,
+        toStatus: submission.previousStatus,
+        reason: 'Restored by admin',
+        changedBy: 'admin', // TODO: Pass actual admin user ID
+      },
+    });
+
+    return this.mapToSubmissionDto(restoredSubmission);
+  }
+
   // Admin Methods
   async getAllSubmissions(queryDto: SubmissionQueryDto): Promise<{
     submissions: FormSubmissionDto[];
@@ -706,6 +849,7 @@ export class FormSubmissionsService {
       dateTo,
       sortBy,
       sortOrder,
+      isCancelled,
     } = queryDto;
     const skip = (page - 1) * limit;
 
@@ -713,6 +857,7 @@ export class FormSubmissionsService {
       ...(formId && { formId }),
       ...(userId && { userId }),
       ...(status && { status }),
+      ...(isCancelled !== undefined && { isCancelled }), // Allow admin to filter by cancellation status
       ...(search && {
         OR: [
           { referenceNumber: { contains: search, mode: 'insensitive' } },
@@ -1280,6 +1425,12 @@ export class FormSubmissionsService {
       paymentRequired: submission.paymentRequired || false,
       paymentCompleted: submission.paymentCompleted || false,
       paymentCompletedAt: submission.paymentCompletedAt,
+
+      // Cancellation tracking
+      isCancelled: submission.isCancelled || false,
+      cancelledAt: submission.cancelledAt,
+      cancelledBy: submission.cancelledBy,
+      cancellationReason: submission.cancellationReason,
 
       responses: submission.responses.map((response: any) => ({
         id: response.id,

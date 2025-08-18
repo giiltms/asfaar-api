@@ -745,6 +745,12 @@ model FormSubmission {
   paymentCompleted   Boolean   @default(false)
   paymentCompletedAt DateTime?
 
+  // Cancellation Tracking (Soft Delete)
+  isCancelled        Boolean   @default(false)
+  cancelledAt        DateTime?
+  cancelledBy        String? // User ID who cancelled
+  cancellationReason String? // Reason for cancellation
+
   // Existing review fields
   submittedAt DateTime?
   reviewedAt  DateTime?

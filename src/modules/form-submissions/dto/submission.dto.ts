@@ -362,6 +362,27 @@ export class FormSubmissionDto {
   })
   paymentCompletedAt?: Date;
 
+  // Cancellation tracking
+  @ApiProperty({
+    description: 'Whether this submission has been cancelled (soft delete)',
+  })
+  isCancelled: boolean;
+
+  @ApiPropertyOptional({
+    description: 'When submission was cancelled',
+  })
+  cancelledAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'ID of user who cancelled the submission',
+  })
+  cancelledBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Reason for cancellation',
+  })
+  cancellationReason?: string;
+
   @ApiProperty({ description: 'Field responses', type: [FieldResponseDto] })
   responses: FieldResponseDto[];
 
@@ -641,6 +662,15 @@ export class SubmissionQueryDto {
   @IsBoolean()
   @Type(() => Boolean)
   paymentCompleted?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Filter by cancellation status (admin only - hidden from user queries)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isCancelled?: boolean;
 
   @ApiPropertyOptional({
     description: 'Page number',
@@ -941,4 +971,17 @@ export class SubmissionStatusLogDto {
 
   @ApiProperty({ description: 'When the status was changed' })
   changedAt: Date;
+}
+
+// DTO for Cancelling Submissions
+export class CancelSubmissionDto {
+  @ApiProperty({
+    description: 'Reason for cancelling the application',
+    example: 'Travel plans changed',
+    maxLength: 500,
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(500)
+  reason: string;
 }

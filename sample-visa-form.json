@@ -1,6 +1,8 @@
 {
   "name": "Tourist Visa Application Form",
   "description": "Complete tourist visa application form for international travelers",
+  "applicationType": "TOURIST",
+  "countryId": "123e4567-e89b-12d3-a456-426614174000",
   "sections": [
     {
       "title": "Personal Information",
@@ -167,16 +169,8 @@
                 { "label": "Tourism", "value": "TOURISM", "order": 1 },
                 { "label": "Business", "value": "BUSINESS", "order": 2 },
                 { "label": "Family Visit", "value": "FAMILY", "order": 3 },
-                {
-                  "label": "Medical Treatment",
-                  "value": "MEDICAL",
-                  "order": 4
-                },
-                {
-                  "label": "Conference/Seminar",
-                  "value": "CONFERENCE",
-                  "order": 5
-                },
+                { "label": "Medical Treatment", "value": "MEDICAL", "order": 4 },
+                { "label": "Conference/Seminar", "value": "CONFERENCE", "order": 5 },
                 { "label": "Other", "value": "OTHER", "order": 6 }
               ]
             },
@@ -246,9 +240,10 @@
               "name": "passport_copy",
               "type": "FILE",
               "required": true,
-              "config": {
-                "acceptedTypes": ["image/*", "application/pdf"],
-                "maxSize": "5MB"
+              "fileTypes": {
+                "accept": ["image/*", "application/pdf"],
+                "maxSize": "5MB",
+                "multiple": false
               },
               "order": 1
             },
@@ -257,9 +252,10 @@
               "name": "passport_photo",
               "type": "FILE",
               "required": true,
-              "config": {
-                "acceptedTypes": ["image/*"],
-                "maxSize": "2MB"
+              "fileTypes": {
+                "accept": ["image/*"],
+                "maxSize": "2MB",
+                "multiple": false
               },
               "order": 2
             },
@@ -268,9 +264,10 @@
               "name": "financial_statement",
               "type": "FILE",
               "required": true,
-              "config": {
-                "acceptedTypes": ["application/pdf", "image/*"],
-                "maxSize": "10MB"
+              "fileTypes": {
+                "accept": ["application/pdf", "image/*"],
+                "maxSize": "10MB",
+                "multiple": false
               },
               "order": 3
             },
@@ -279,9 +276,10 @@
               "name": "travel_insurance",
               "type": "FILE",
               "required": false,
-              "config": {
-                "acceptedTypes": ["application/pdf", "image/*"],
-                "maxSize": "5MB"
+              "fileTypes": {
+                "accept": ["application/pdf", "image/*"],
+                "maxSize": "5MB",
+                "multiple": false
               },
               "order": 4
             }
