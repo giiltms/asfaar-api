@@ -60,7 +60,13 @@ export class AdminSubmissionsController {
     required: false,
     description: 'Filter by status',
   })
-  @ApiQuery({ name: 'search', required: false, description: 'Search term' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Search term (searches reference number, form name, description, and user details)',
+    example: 'SA25000001',
+  })
   @ApiQuery({
     name: 'dateFrom',
     required: false,

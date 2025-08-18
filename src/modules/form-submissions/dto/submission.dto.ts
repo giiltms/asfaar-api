@@ -474,8 +474,9 @@ export class SubmissionQueryDto {
   status?: SubmissionStatus;
 
   @ApiPropertyOptional({
-    description: 'Search term (searches in form name and user details)',
-    example: 'visa application',
+    description:
+      'Search term (searches in reference number, form name, description, and user details)',
+    example: 'SA25000001 or visa application',
   })
   @IsOptional()
   @IsString()

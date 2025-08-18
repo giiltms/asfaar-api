@@ -218,7 +218,13 @@ export class FormSubmissionsController {
     required: false,
     description: 'Filter by status',
   })
-  @ApiQuery({ name: 'search', required: false, description: 'Search term' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Search term (searches reference number, form name, and description)',
+    example: 'SA25000001',
+  })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiResponse({
