@@ -214,6 +214,38 @@ export class NinVerificationService {
         },
       });
 
+      // Save to NinVerification model
+      await this.prisma.ninVerification.create({
+        data: {
+          nin: tempNinData.nin,
+          firstName: tempNinData.firstName,
+          middleName: tempNinData.middleName,
+          lastName: tempNinData.lastName,
+          fullName: tempNinData.fullName,
+          dateOfBirth: new Date(tempNinData.dateOfBirth),
+          gender: tempNinData.gender as Gender,
+          phoneNumber: tempNinData.phoneNumber,
+          verifiedPhoneNumber: tempNinData.verifiedPhoneNumber,
+          photo: tempNinData.photo,
+          addressLine1: tempNinData.addressLine1,
+          addressLine2: tempNinData.addressLine2,
+          city: tempNinData.city,
+          state: tempNinData.state,
+          lga: tempNinData.lga,
+          postalCode: tempNinData.postalCode,
+          country: tempNinData.country,
+          birthState: tempNinData.birthState,
+          birthLga: tempNinData.birthLga,
+          verificationStatus: 'VERIFIED',
+          verificationMethod: 'YOUVERIFY',
+          verificationId: tempNinData.verificationId,
+          trackingId: tempNinData.trackingId,
+          verificationDate: tempNinData.verificationDate || new Date(),
+          rawData: tempNinData.rawData,
+          userId: userId,
+        },
+      });
+
       // Delete temp data
       await this.prisma.tempNINData.delete({
         where: { id: request.tempNinId },
