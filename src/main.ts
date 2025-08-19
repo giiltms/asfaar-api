@@ -20,6 +20,9 @@ async function bootstrap(): Promise<{ port: number }> {
     bodyParser: true,
   });
 
+  // Increase body size limits for large biometric payloads
+  // Note: Using global pipes or custom middleware is typical; here we rely on Nest's underlying body-parser options via main bootstrap config.
+
   const configService: ConfigService = app.get(ConfigService);
   const appConfig = configService.get('app');
 

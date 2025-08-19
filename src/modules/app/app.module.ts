@@ -19,6 +19,7 @@ import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashb
 import { CountriesModule } from '../countries/countries.module';
 import { ApplicationTypesModule } from '../application-types/application-types.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { BiometricDataModule } from '../biometric-data/biometric-data.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -45,6 +46,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     CountriesModule,
     ApplicationTypesModule,
     WebhooksModule,
+    BiometricDataModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],

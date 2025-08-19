@@ -172,6 +172,7 @@ model User {
   biometricAppointments BiometricAppointment[]
   booths                Booth[]                @relation("BoothAgent")
   biometricSessions     BiometricSession[]     @relation("BiometricAgent")
+  biometricData         BiometricData[]
 
   @@map("users")
 }
@@ -765,8 +766,9 @@ model FormSubmission {
   totalServiceFee Float?
   statusLogs      SubmissionStatusLog[] // Audit trail for status changes
 
-  appointment BiometricAppointment?
-  payment     Payment?
+  appointment   BiometricAppointment?
+  payment       Payment?
+  biometricData BiometricData?
 
   @@map("form_submissions")
 }
@@ -1329,4 +1331,128 @@ model ApplicationType {
 
   countries Country[]
   forms     DynamicForm[]
+}
+
+// Biometric Data Model - Stores actual biometric data for users
+model BiometricData {
+  id String @id @default(uuid())
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional relation to form submission if captured during application process
+  submissionId String?         @unique
+  submission   FormSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Photo Data
+  photoUrl      String? // URL to stored photo
+  photoHash     String? // Hash for integrity verification
+  photoMetadata Json? // Additional photo metadata (dimensions, format, etc.)
+
+  // Fingerprint Data
+  fingerprintData     Json? // Encrypted fingerprint template data
+  fingerprintHash     String? // Hash for integrity verification
+  fingerprintMetadata Json? // Additional fingerprint metadata (quality scores, etc.)
+
+  // Signature Data (if needed)
+  signatureUrl      String?
+  signatureHash     String?
+  signatureMetadata Json?
+
+  // Quality and Validation
+  photoQualityScore       Float? // Quality score 0-100
+  fingerprintQualityScore Float? // Quality score 0-100
+  overallQualityScore     Float? // Combined quality score
+
+  // Status and Validation
+  isVerified         Boolean @default(false) // Whether data has been verified
+  verificationStatus String? // PENDING, VERIFIED, REJECTED, NEEDS_RETAKES
+  verificationNotes  String? // Notes from verification process
+
+  // Capture Information
+  capturedBy      String? // ID of the biometric agent who captured the data
+  capturedAt      DateTime? // When the data was captured
+  captureDevice   String? // Device used for capture
+  captureLocation String? // Location where capture occurred
+
+  // Security and Privacy
+  isEncrypted         Boolean @default(true) // Whether data is encrypted
+  encryptionKey       String? // Reference to encryption key (not the actual key)
+  dataRetentionPolicy String? // How long to retain this data
+
+  // Audit Fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String? // Who created this record
+  lastModifiedBy String? // Last person who modified
+
+  // 442 Fingerprint relation (individual fingers)
+  fingerprintFingers FingerprintData[]
+
+  @@unique([userId, submissionId]) // One biometric record per user per submission (if submissionId is provided)
+  // Indexes for performance
+  @@index([userId])
+  @@index([submissionId])
+  @@index([capturedAt])
+  @@index([isVerified])
+  @@index([verificationStatus])
+  @@map("biometric_data")
+}
+
+// Finger Position Enum for 442 capture
+enum FingerPosition {
+  LEFT_THUMB
+  LEFT_INDEX
+  LEFT_MIDDLE
+  LEFT_RING
+  LEFT_LITTLE
+  RIGHT_THUMB
+  RIGHT_INDEX
+  RIGHT_MIDDLE
+  RIGHT_RING
+  RIGHT_LITTLE
+}
+
+// Individual Finger Data Model for 442 captures
+model FingerprintData {
+  id String @id @default(uuid())
+
+  // Relations
+  biometricDataId String
+  biometricData   BiometricData @relation(fields: [biometricDataId], references: [id], onDelete: Cascade)
+
+  // Finger Information
+  fingerPosition FingerPosition
+  fingerName     String
+
+  // Template Data
+  templateData   Json?
+  templateHash   String?
+  templateFormat String?
+
+  // Quality Information
+  qualityScore    Float?
+  captureAttempts Int     @default(1)
+  isAcceptable    Boolean @default(false)
+
+  // Capture Details
+  capturedAt    DateTime?
+  captureDevice String?
+  captureMethod String?
+
+  // Metadata
+  metadata Json?
+
+  // Audit Fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes & Constraints
+  @@unique([biometricDataId, fingerPosition])
+  @@index([biometricDataId])
+  @@index([fingerPosition])
+  @@index([qualityScore])
+  @@index([isAcceptable])
+  @@map("fingerprint_data")
 }
