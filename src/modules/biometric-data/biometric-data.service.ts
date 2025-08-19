@@ -52,8 +52,8 @@ export class BiometricDataService {
     // Check if biometric data already exists for this submission
     const existingData = submissionId
       ? await this.prisma.biometricData.findUnique({
-        where: { submissionId },
-      })
+          where: { submissionId },
+        })
       : null;
 
     if (existingData) {
@@ -116,24 +116,24 @@ export class BiometricDataService {
       ...(dto.photoHash !== undefined ? { photoHash: dto.photoHash } : {}),
       ...(dto.photoMetadata !== undefined
         ? {
-          photoMetadata:
-            dto.photoMetadata as unknown as Prisma.InputJsonValue,
-        }
+            photoMetadata:
+              dto.photoMetadata as unknown as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.fingerprintData !== undefined
         ? {
-          fingerprintData:
-            dto.fingerprintData as unknown as Prisma.InputJsonValue,
-        }
+            fingerprintData:
+              dto.fingerprintData as unknown as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.fingerprintHash !== undefined
         ? { fingerprintHash: dto.fingerprintHash }
         : {}),
       ...(dto.fingerprintMetadata !== undefined
         ? {
-          fingerprintMetadata:
-            dto.fingerprintMetadata as unknown as Prisma.InputJsonValue,
-        }
+            fingerprintMetadata:
+              dto.fingerprintMetadata as unknown as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.signatureUrl !== undefined
         ? { signatureUrl: dto.signatureUrl }
@@ -143,9 +143,9 @@ export class BiometricDataService {
         : {}),
       ...(dto.signatureMetadata !== undefined
         ? {
-          signatureMetadata:
-            dto.signatureMetadata as unknown as Prisma.InputJsonValue,
-        }
+            signatureMetadata:
+              dto.signatureMetadata as unknown as Prisma.InputJsonValue,
+          }
         : {}),
       ...(dto.photoQualityScore !== undefined
         ? { photoQualityScore: dto.photoQualityScore }
@@ -179,12 +179,12 @@ export class BiometricDataService {
 
     const record = existing
       ? await this.prisma.biometricData.update({
-        where: { id: existing.id },
-        data,
-      })
+          where: { id: existing.id },
+          data,
+        })
       : await this.prisma.biometricData.create({
-        data: data as Prisma.BiometricDataUncheckedCreateInput,
-      });
+          data: data as Prisma.BiometricDataUncheckedCreateInput,
+        });
 
     return this.mapToResponseDto(record);
   }
@@ -470,8 +470,7 @@ export class BiometricDataService {
           },
           update: {
             fingerName: f.fingerName ?? this.getFingerName(f.fingerPosition),
-            templateData:
-              (f.templateData as unknown) as Prisma.InputJsonValue,
+            templateData: f.templateData as unknown as Prisma.InputJsonValue,
             templateHash: f.templateHash,
             templateFormat: f.templateFormat ?? 'ISO-19794-2',
             qualityScore: f.qualityScore,
@@ -479,15 +478,14 @@ export class BiometricDataService {
             isAcceptable: f.isAcceptable ?? false,
             captureDevice: f.captureDevice,
             captureMethod: f.captureMethod ?? 'optical',
-            metadata: (f.metadata as unknown) as Prisma.InputJsonValue,
+            metadata: f.metadata as unknown as Prisma.InputJsonValue,
             capturedAt: new Date(),
           },
           create: {
             biometricDataId,
             fingerPosition: f.fingerPosition as any,
             fingerName: f.fingerName ?? this.getFingerName(f.fingerPosition),
-            templateData:
-              (f.templateData as unknown) as Prisma.InputJsonValue,
+            templateData: f.templateData as unknown as Prisma.InputJsonValue,
             templateHash: f.templateHash,
             templateFormat: f.templateFormat ?? 'ISO-19794-2',
             qualityScore: f.qualityScore,
@@ -495,11 +493,11 @@ export class BiometricDataService {
             isAcceptable: f.isAcceptable ?? false,
             captureDevice: f.captureDevice,
             captureMethod: f.captureMethod ?? 'optical',
-            metadata: (f.metadata as unknown) as Prisma.InputJsonValue,
+            metadata: f.metadata as unknown as Prisma.InputJsonValue,
             capturedAt: new Date(),
           },
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -539,9 +537,9 @@ export class BiometricDataService {
     const data: Prisma.FingerprintDataUpdateInput = {
       ...(update.templateData !== undefined
         ? {
-          templateData:
-            update.templateData as unknown as Prisma.InputJsonValue,
-        }
+            templateData:
+              update.templateData as unknown as Prisma.InputJsonValue,
+          }
         : {}),
       ...(update.metadata !== undefined
         ? { metadata: update.metadata as unknown as Prisma.InputJsonValue }
