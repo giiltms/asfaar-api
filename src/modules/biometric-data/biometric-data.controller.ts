@@ -259,7 +259,7 @@ export class BiometricDataController {
         fingerName?: string;
         templateData?: Record<string, unknown>;
         templateHash?: string;
-        templateFormat?: string;
+        templateFormat?: string; // recommend ISO-19794-2 for Suprema G10
         qualityScore?: number;
         captureAttempts?: number;
         isAcceptable?: boolean;

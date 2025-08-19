@@ -71,6 +71,8 @@ export class FingerprintFingerDto {
   @Max(100)
   qualityScore?: number;
 
+  // If templateData is provided, templateFormat is recommended
+
   @ApiPropertyOptional({
     description: 'Number of capture attempts',
     default: 1,

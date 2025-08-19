@@ -1390,7 +1390,7 @@ model BiometricData {
   // 442 Fingerprint relation (individual fingers)
   fingerprintFingers FingerprintData[]
 
-  @@unique([userId, submissionId]) // One biometric record per user per submission (if submissionId is provided)
+  // Note: submissionId is unique, ensuring one record per submission
   // Indexes for performance
   @@index([userId])
   @@index([submissionId])
@@ -1454,5 +1454,6 @@ model FingerprintData {
   @@index([fingerPosition])
   @@index([qualityScore])
   @@index([isAcceptable])
+  @@index([biometricDataId, isAcceptable])
   @@map("fingerprint_data")
 }

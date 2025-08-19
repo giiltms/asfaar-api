@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FingerPositionDto, FingerTemplateFormatDto } from './fingerprint-finger.dto';
 
 export class BiometricDataResponseDto {
   @ApiProperty({ description: 'Unique identifier' })
@@ -27,6 +28,23 @@ export class BiometricDataResponseDto {
 
   @ApiPropertyOptional({ description: 'Fingerprint metadata' })
   fingerprintMetadata?: Record<string, any>;
+
+  @ApiPropertyOptional({ description: 'Per-finger 442 data' })
+  fingerprintFingers?: Array<{
+    id?: string;
+    fingerPosition: FingerPositionDto;
+    fingerName: string;
+    templateFormat?: FingerTemplateFormatDto;
+    templateData?: Record<string, unknown>;
+    templateHash?: string;
+    qualityScore?: number;
+    isAcceptable?: boolean;
+    captureAttempts?: number;
+    capturedAt?: Date;
+    captureDevice?: string;
+    captureMethod?: string;
+    metadata?: Record<string, unknown>;
+  }>;
 
   @ApiPropertyOptional({ description: 'URL to the captured signature' })
   signatureUrl?: string;

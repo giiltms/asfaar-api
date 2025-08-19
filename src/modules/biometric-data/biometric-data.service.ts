@@ -49,15 +49,12 @@ export class BiometricDataService {
       }
     }
 
-    // Check if biometric data already exists for this user and submission
-    const existingData = await this.prisma.biometricData.findUnique({
-      where: {
-        userId_submissionId: {
-          userId,
-          submissionId: submissionId || null,
-        },
-      },
-    });
+    // Check if biometric data already exists for this submission
+    const existingData = submissionId
+      ? await this.prisma.biometricData.findUnique({
+        where: { submissionId },
+      })
+      : null;
 
     if (existingData) {
       throw new BadRequestException(
@@ -247,6 +244,7 @@ export class BiometricDataService {
             status: true,
           },
         },
+        fingerprintFingers: true,
       },
     });
 
@@ -460,25 +458,49 @@ export class BiometricDataService {
     if (!fingerprintFingers || fingerprintFingers.length === 0) {
       return;
     }
-
-    await this.prisma.fingerprintData.createMany({
-      data: fingerprintFingers.map((f) => ({
-        biometricDataId,
-        fingerPosition: f.fingerPosition as any,
-        fingerName: f.fingerName ?? this.getFingerName(f.fingerPosition),
-        templateData: f.templateData as unknown as Prisma.InputJsonValue,
-        templateHash: f.templateHash,
-        templateFormat: f.templateFormat ?? 'ISO-19794-2',
-        qualityScore: f.qualityScore,
-        captureAttempts: f.captureAttempts ?? 1,
-        isAcceptable: f.isAcceptable ?? false,
-        captureDevice: f.captureDevice,
-        captureMethod: f.captureMethod ?? 'optical',
-        metadata: f.metadata as unknown as Prisma.InputJsonValue,
-        capturedAt: new Date(),
-      })),
-      skipDuplicates: true,
-    });
+    // Upsert each finger to avoid silent skip and ensure idempotency
+    await this.prisma.$transaction(
+      fingerprintFingers.map((f) =>
+        this.prisma.fingerprintData.upsert({
+          where: {
+            biometricDataId_fingerPosition: {
+              biometricDataId,
+              fingerPosition: f.fingerPosition as any,
+            },
+          },
+          update: {
+            fingerName: f.fingerName ?? this.getFingerName(f.fingerPosition),
+            templateData:
+              (f.templateData as unknown) as Prisma.InputJsonValue,
+            templateHash: f.templateHash,
+            templateFormat: f.templateFormat ?? 'ISO-19794-2',
+            qualityScore: f.qualityScore,
+            captureAttempts: f.captureAttempts ?? 1,
+            isAcceptable: f.isAcceptable ?? false,
+            captureDevice: f.captureDevice,
+            captureMethod: f.captureMethod ?? 'optical',
+            metadata: (f.metadata as unknown) as Prisma.InputJsonValue,
+            capturedAt: new Date(),
+          },
+          create: {
+            biometricDataId,
+            fingerPosition: f.fingerPosition as any,
+            fingerName: f.fingerName ?? this.getFingerName(f.fingerPosition),
+            templateData:
+              (f.templateData as unknown) as Prisma.InputJsonValue,
+            templateHash: f.templateHash,
+            templateFormat: f.templateFormat ?? 'ISO-19794-2',
+            qualityScore: f.qualityScore,
+            captureAttempts: f.captureAttempts ?? 1,
+            isAcceptable: f.isAcceptable ?? false,
+            captureDevice: f.captureDevice,
+            captureMethod: f.captureMethod ?? 'optical',
+            metadata: (f.metadata as unknown) as Prisma.InputJsonValue,
+            capturedAt: new Date(),
+          },
+        })
+      )
+    );
   }
 
   /**
@@ -587,6 +609,7 @@ export class BiometricDataService {
       fingerprintData: biometricData.fingerprintData,
       fingerprintHash: biometricData.fingerprintHash,
       fingerprintMetadata: biometricData.fingerprintMetadata,
+      fingerprintFingers: biometricData.fingerprintFingers,
       signatureUrl: biometricData.signatureUrl,
       signatureHash: biometricData.signatureHash,
       signatureMetadata: biometricData.signatureMetadata,

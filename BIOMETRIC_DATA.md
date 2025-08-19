@@ -22,6 +22,7 @@
 
 - `id: string`
 - `userId: string`, `submissionId?: string`
+- Uniqueness: `submissionId` is unique (one biometric record per submission)
 - `photoUrl?: string`, `photoHash?: string`, `photoMetadata?: object`
 - `fingerprintData?: object`, `fingerprintHash?: string`, `fingerprintMetadata?: object`
 - `signatureUrl?: string`, `signatureHash?: string`, `signatureMetadata?: object`
@@ -126,6 +127,11 @@ Response (201):
 ```json
 { "biometricDataId": "biodata-uuid" }
 ```
+
+Behavior
+
+- Idempotent upsert per finger position. Re-sending a finger with the same `fingerPosition` updates it.
+- Requires that a biometric record already exists for the submission reference (create it via `by-reference/:referenceNumber`).
 
 ---
 
@@ -302,10 +308,13 @@ Response (200):
 ## Notes & Best Practices
 
 - Always send encrypted fingerprint templates; store only encrypted payload.
-- Set `templateFormat` for interoperability (e.g., `ISO-19794-2` for Suprema G10).
+- Set `templateFormat` when providing `templateData` (recommended `ISO-19794-2` for Suprema G10).
 - Use `referenceNumber` endpoints at capture stations to avoid extra ID lookups.
 - Populate `templateHash` and `photoHash` for integrity verification.
 - Aim for quality scores ≥ 70 for acceptance; retake if necessary.
+- One `BiometricData` per submission; `submissionId` is unique.
+- `GET /biometric-data/:id` includes `fingerprintFingers` for 442 details.
+- 442 create endpoints upsert per finger; to retake a finger, post the same `fingerPosition` again.
 
 ---
 
