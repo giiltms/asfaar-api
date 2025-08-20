@@ -20,7 +20,7 @@ import { CountriesModule } from '../countries/countries.module';
 import { ApplicationTypesModule } from '../application-types/application-types.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { BiometricDataModule } from '../biometric-data/biometric-data.module';
-import { DashboardOfficerModule } from '../dashboard-officer/dashboard-officer.module';
+import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -48,7 +48,7 @@ import { DashboardOfficerModule } from '../dashboard-officer/dashboard-officer.m
     ApplicationTypesModule,
     WebhooksModule,
     BiometricDataModule,
-    DashboardOfficerModule,
+    DashboardVerificationModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
