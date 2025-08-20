@@ -15,6 +15,213 @@ export class DashboardOfficerService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Transform flat form responses into hierarchical structure for frontend
+   */
+  private transformFormResponses(responses: any[]): any {
+    if (!responses || responses.length === 0) {
+      return {
+        sections: [],
+        summary: {
+          totalFields: 0,
+          completedFields: 0,
+          requiredFields: 0,
+          completedRequiredFields: 0,
+          completionPercentage: 0,
+          sections: [],
+        },
+      };
+    }
+
+    // Group responses by section and group
+    const sectionsMap = new Map<string, any>();
+    let totalFields = 0;
+    let completedFields = 0;
+    let requiredFields = 0;
+    let completedRequiredFields = 0;
+
+    responses.forEach((response) => {
+      const sectionName = response.field.group.section.title;
+      const groupName = response.field.group.title || 'Default Group';
+      const sectionOrder = response.field.group.section.order;
+      const groupOrder = response.field.group.order;
+
+      // Initialize section if not exists
+      if (!sectionsMap.has(sectionName)) {
+        sectionsMap.set(sectionName, {
+          sectionName,
+          sectionOrder,
+          groups: new Map<string, any>(),
+        });
+      }
+
+      const section = sectionsMap.get(sectionName)!;
+
+      // Initialize group if not exists
+      if (!section.groups.has(groupName)) {
+        section.groups.set(groupName, {
+          groupName,
+          groupOrder,
+          fields: [],
+        });
+      }
+
+      const group = section.groups.get(groupName)!;
+
+      // Create field object with frontend-friendly metadata
+      const field = {
+        fieldId: response.fieldId,
+        fieldName: response.fieldName,
+        fieldLabel: response.field.label,
+        fieldType: response.field.type,
+        value: response.value,
+        fileUrls: response.fileUrls || [],
+        isRequired: response.field.required,
+        displayOrder: response.field.order,
+        isCompleted: this.isFieldCompleted(response),
+        validationStatus: this.getFieldValidationStatus(response),
+        displayValue: this.getFieldDisplayValue(response),
+      };
+
+      group.fields.push(field);
+
+      // Update summary statistics
+      totalFields++;
+      if (field.isCompleted) {
+        completedFields++;
+      }
+      if (field.isRequired) {
+        requiredFields++;
+        if (field.isCompleted) {
+          completedRequiredFields++;
+        }
+      }
+    });
+
+    // Convert maps to arrays and sort
+    const sections = Array.from(sectionsMap.values())
+      .sort((a, b) => a.sectionOrder - b.sectionOrder)
+      .map((section) => ({
+        ...section,
+        groups: Array.from(section.groups.values())
+          .sort((a: any, b: any) => a.groupOrder - b.groupOrder)
+          .map((group: any) => ({
+            ...group,
+            fields: group.fields.sort(
+              (a: any, b: any) => a.displayOrder - b.displayOrder,
+            ),
+          })),
+      }));
+
+    // Calculate section-level statistics
+    const sectionStats = sections.map((section) => {
+      const sectionFields = section.groups.reduce(
+        (total, group) => total + group.fields.length,
+        0,
+      );
+      const sectionCompleted = section.groups.reduce(
+        (total, group) =>
+          total + group.fields.filter((field) => field.isCompleted).length,
+        0,
+      );
+      return {
+        sectionName: section.sectionName,
+        totalFields: sectionFields,
+        completedFields: sectionCompleted,
+        completionPercentage:
+          sectionFields > 0
+            ? Math.round((sectionCompleted / sectionFields) * 100)
+            : 0,
+      };
+    });
+
+    return {
+      sections,
+      summary: {
+        totalFields,
+        completedFields,
+        requiredFields,
+        completedRequiredFields,
+        completionPercentage:
+          totalFields > 0
+            ? Math.round((completedFields / totalFields) * 100)
+            : 0,
+        sections: sectionStats,
+      },
+    };
+  }
+
+  /**
+   * Check if a field is completed (has a value)
+   */
+  private isFieldCompleted(response: any): boolean {
+    if (response.fileUrls && response.fileUrls.length > 0) {
+      return true;
+    }
+    if (response.value === null || response.value === undefined) {
+      return false;
+    }
+    if (typeof response.value === 'string') {
+      return response.value.trim().length > 0;
+    }
+    if (Array.isArray(response.value)) {
+      return response.value.length > 0;
+    }
+    return true;
+  }
+
+  /**
+   * Get validation status for a field
+   */
+  private getFieldValidationStatus(
+    response: any,
+  ): 'valid' | 'invalid' | 'missing' | 'optional' {
+    const isCompleted = this.isFieldCompleted(response);
+
+    if (!response.field.required) {
+      return 'optional';
+    }
+
+    if (!isCompleted) {
+      return 'missing';
+    }
+
+    // Basic validation - can be extended with more complex rules
+    if (response.field.type === 'EMAIL' && response.value) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(response.value) ? 'valid' : 'invalid';
+    }
+
+    return 'valid';
+  }
+
+  /**
+   * Get human-readable display value for a field
+   */
+  private getFieldDisplayValue(response: any): string {
+    if (response.fileUrls && response.fileUrls.length > 0) {
+      return `${response.fileUrls.length} file(s) uploaded`;
+    }
+
+    if (response.value === null || response.value === undefined) {
+      return 'Not provided';
+    }
+
+    if (typeof response.value === 'string') {
+      return response.value;
+    }
+
+    if (Array.isArray(response.value)) {
+      return response.value.join(', ');
+    }
+
+    if (typeof response.value === 'boolean') {
+      return response.value ? 'Yes' : 'No';
+    }
+
+    return String(response.value);
+  }
+
+  /**
    * Get applications with biometric data for verification officer review
    */
   async getApplicationsForReview(
@@ -181,19 +388,9 @@ export class DashboardOfficerService {
                 }
               : null,
           },
-          formResponses:
-            submission.responses?.map((response) => ({
-              fieldId: response.fieldId,
-              fieldName: response.fieldName,
-              fieldLabel: response.field.label,
-              fieldType: response.field.type,
-              sectionName: response.field.group.section.title,
-              groupName: response.field.group.title || 'Default Group',
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              isRequired: response.field.required,
-              displayOrder: response.field.order,
-            })) || [],
+          formResponses: this.transformFormResponses(
+            submission.responses || [],
+          ),
           ninVerification: ninVerification
             ? {
                 id: ninVerification.id,
@@ -405,19 +602,7 @@ export class DashboardOfficerService {
             }
           : null,
       },
-      formResponses:
-        submission.responses?.map((response) => ({
-          fieldId: response.fieldId,
-          fieldName: response.fieldName,
-          fieldLabel: response.field.label,
-          fieldType: response.field.type,
-          sectionName: response.field.group.section.title,
-          groupName: response.field.group.title || 'Default Group',
-          value: response.value,
-          fileUrls: response.fileUrls || [],
-          isRequired: response.field.required,
-          displayOrder: response.field.order,
-        })) || [],
+      formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
             id: ninVerification.id,

@@ -71,20 +71,48 @@ export class ApplicationReviewDto {
   };
 
   @ApiProperty({
-    description: 'Form field responses - the actual data entered by applicant',
+    description:
+      'Form field responses organized by sections and groups for easy frontend rendering',
   })
-  formResponses: Array<{
-    fieldId: string;
-    fieldName: string;
-    fieldLabel: string;
-    fieldType: string;
-    sectionName: string;
-    groupName: string;
-    value: any; // The actual value entered by the applicant
-    fileUrls: string[]; // For file upload fields
-    isRequired: boolean;
-    displayOrder: number;
-  }>;
+  formResponses: {
+    // Hierarchical structure organized by sections
+    sections: Array<{
+      sectionName: string;
+      sectionOrder: number;
+      groups: Array<{
+        groupName: string;
+        groupOrder: number;
+        fields: Array<{
+          fieldId: string;
+          fieldName: string;
+          fieldLabel: string;
+          fieldType: string;
+          value: any; // The actual value entered by the applicant
+          fileUrls: string[]; // For file upload fields
+          isRequired: boolean;
+          displayOrder: number;
+          // Frontend-friendly metadata
+          isCompleted: boolean; // Whether field has a value
+          validationStatus: 'valid' | 'invalid' | 'missing' | 'optional';
+          displayValue: string; // Human-readable value for display
+        }>;
+      }>;
+    }>;
+    // Summary statistics for quick overview
+    summary: {
+      totalFields: number;
+      completedFields: number;
+      requiredFields: number;
+      completedRequiredFields: number;
+      completionPercentage: number;
+      sections: Array<{
+        sectionName: string;
+        totalFields: number;
+        completedFields: number;
+        completionPercentage: number;
+      }>;
+    };
+  };
 
   @ApiProperty({ description: 'NIN verification data' })
   ninVerification: {
