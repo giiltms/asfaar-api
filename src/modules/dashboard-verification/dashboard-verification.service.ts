@@ -3,7 +3,9 @@ import { PrismaService } from '@providers/prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
 import {
   ApplicationReviewDto,
-  VerificationReviewDto,
+  FlagApplicationDto,
+  QueryApplicationDto,
+  ProcessApplicationDto,
   VerificationReviewListDto,
   VerificationStatsDto,
 } from './dto/verification-review.dto';
@@ -666,29 +668,29 @@ export class DashboardVerificationService {
   }
 
   /**
-   * Review and update application verification status
+   * Flag application and send to security department
    */
-  async reviewApplication(
-    reviewDto: VerificationReviewDto,
+  async flagApplication(
+    flagDto: FlagApplicationDto,
     reviewerId: string,
   ): Promise<{ success: boolean; message: string }> {
-    const { submissionId, verificationStatus, reviewNotes, rejectionReason } =
-      reviewDto;
+    const { submissionId, targetDepartment, flagReason, notes } = flagDto;
 
-    // Update submission status
+    // Update submission with flagged status
     await this.prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
-        status:
-          this.mapVerificationStatusToSubmissionStatus(verificationStatus),
+        status: SubmissionStatus.FLAGGED,
         reviewedAt: new Date(),
         reviewedBy: reviewerId,
-        reviewNotes,
+        reviewNotes: notes,
         metadata: {
-          ...(rejectionReason && { rejectionReason }),
-          verificationStatus,
+          action: 'FLAGGED',
+          targetDepartment,
+          flagReason,
           reviewedBy: reviewerId,
           reviewedAt: new Date().toISOString(),
+          ...(notes && { notes }),
         },
       },
     });
@@ -702,17 +704,130 @@ export class DashboardVerificationService {
       await this.prisma.biometricData.update({
         where: { id: biometricData.id },
         data: {
-          isVerified: verificationStatus === 'VERIFIED',
-          verificationStatus,
-          verificationNotes: reviewNotes,
+          verificationStatus: 'FLAGGED',
+          verificationNotes: `Flagged to ${targetDepartment}: ${flagReason}`,
           lastModifiedBy: reviewerId,
         },
       });
     }
 
+    this.logger.log(
+      `Application ${submissionId} flagged to ${targetDepartment} by ${reviewerId}`,
+    );
+
     return {
       success: true,
-      message: `Application ${verificationStatus.toLowerCase()} successfully`,
+      message: `Application flagged and sent to ${targetDepartment} successfully`,
+    };
+  }
+
+  /**
+   * Query application and request more information
+   */
+  async queryApplication(
+    queryDto: QueryApplicationDto,
+    reviewerId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const { submissionId, queryMessage, requiredDocuments, notes } = queryDto;
+
+    // Update submission with queried status
+    await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: SubmissionStatus.QUERIED,
+        reviewedAt: new Date(),
+        reviewedBy: reviewerId,
+        reviewNotes: notes,
+        metadata: {
+          action: 'QUERIED',
+          queryMessage,
+          ...(requiredDocuments && { requiredDocuments }),
+          reviewedBy: reviewerId,
+          reviewedAt: new Date().toISOString(),
+          ...(notes && { notes }),
+        },
+      },
+    });
+
+    // Update biometric data verification status if exists
+    const biometricData = await this.prisma.biometricData.findFirst({
+      where: { submissionId },
+    });
+
+    if (biometricData) {
+      await this.prisma.biometricData.update({
+        where: { id: biometricData.id },
+        data: {
+          verificationStatus: 'NEEDS_REVIEW',
+          verificationNotes: `Query: ${queryMessage}${requiredDocuments ? ` - Required: ${requiredDocuments}` : ''
+            }`,
+          lastModifiedBy: reviewerId,
+        },
+      });
+    }
+
+    this.logger.log(
+      `Application ${submissionId} queried by ${reviewerId}: ${queryMessage}`,
+    );
+
+    return {
+      success: true,
+      message: 'Application queried and notification sent to applicant',
+    };
+  }
+
+  /**
+   * Send application to embassy for processing
+   */
+  async processApplication(
+    processDto: ProcessApplicationDto,
+    reviewerId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const { submissionId, processingNotes, priority = 'NORMAL' } = processDto;
+
+    // Update submission with processing status
+    await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: SubmissionStatus.PROCESSING,
+        reviewedAt: new Date(),
+        reviewedBy: reviewerId,
+        reviewNotes: processingNotes,
+        metadata: {
+          action: 'PROCESSING',
+          priority,
+          reviewedBy: reviewerId,
+          reviewedAt: new Date().toISOString(),
+          sentToEmbassy: true,
+          ...(processingNotes && { processingNotes }),
+        },
+      },
+    });
+
+    // Update biometric data verification status if exists
+    const biometricData = await this.prisma.biometricData.findFirst({
+      where: { submissionId },
+    });
+
+    if (biometricData) {
+      await this.prisma.biometricData.update({
+        where: { id: biometricData.id },
+        data: {
+          isVerified: true,
+          verificationStatus: 'VERIFIED',
+          verificationNotes: `Verified and sent to embassy for processing (Priority: ${priority})`,
+          lastModifiedBy: reviewerId,
+        },
+      });
+    }
+
+    this.logger.log(
+      `Application ${submissionId} sent to embassy by ${reviewerId} (Priority: ${priority})`,
+    );
+
+    return {
+      success: true,
+      message: `Application verified and sent to embassy for processing (Priority: ${priority})`,
     };
   }
 
@@ -723,7 +838,7 @@ export class DashboardVerificationService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [pendingReview, verifiedToday, rejectedToday, needsRetakes] =
+    const [pendingReview, flaggedToday, queriedToday, processingToday] =
       await Promise.all([
         // Pending review count
         this.prisma.formSubmission.count({
@@ -739,33 +854,36 @@ export class DashboardVerificationService {
           },
         }),
 
-        // Verified today count
+        // Flagged today count
         this.prisma.formSubmission.count({
           where: {
             biometricCompleted: true,
             reviewedAt: {
               gte: today,
             },
-            status: SubmissionStatus.APPROVED,
+            status: SubmissionStatus.FLAGGED,
           },
         }),
 
-        // Rejected today count
+        // Queried today count
         this.prisma.formSubmission.count({
           where: {
             biometricCompleted: true,
             reviewedAt: {
               gte: today,
             },
-            status: SubmissionStatus.REJECTED,
-          },
-        }),
-
-        // Needs retakes count
-        this.prisma.formSubmission.count({
-          where: {
-            biometricCompleted: true,
             status: SubmissionStatus.QUERIED,
+          },
+        }),
+
+        // Processing today count
+        this.prisma.formSubmission.count({
+          where: {
+            biometricCompleted: true,
+            reviewedAt: {
+              gte: today,
+            },
+            status: SubmissionStatus.PROCESSING,
           },
         }),
       ]);
@@ -775,28 +893,10 @@ export class DashboardVerificationService {
 
     return {
       pendingReview,
-      verifiedToday,
-      rejectedToday,
-      needsRetakes,
+      flaggedToday,
+      queriedToday,
+      processingToday,
       averageVerificationTime,
     };
-  }
-
-  /**
-   * Map verification status to submission status
-   */
-  private mapVerificationStatusToSubmissionStatus(
-    verificationStatus: string,
-  ): SubmissionStatus {
-    switch (verificationStatus) {
-      case 'VERIFIED':
-        return SubmissionStatus.APPROVED;
-      case 'REJECTED':
-        return SubmissionStatus.REJECTED;
-      case 'NEEDS_RETAKES':
-        return SubmissionStatus.QUERIED;
-      default:
-        return SubmissionStatus.UNDER_REVIEW;
-    }
   }
 }

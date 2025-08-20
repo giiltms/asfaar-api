@@ -1,33 +1,95 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEnum, IsUUID } from 'class-validator';
 
-export enum VerificationStatus {
-  PENDING = 'PENDING',
-  VERIFIED = 'VERIFIED',
-  REJECTED = 'REJECTED',
-  NEEDS_RETAKES = 'NEEDS_RETAKES',
+// New enums for correct verification officer actions
+export enum VerificationAction {
+  FLAGGED = 'FLAGGED',
+  QUERIED = 'QUERIED',
+  PROCESSING = 'PROCESSING',
 }
 
+export enum SecurityDepartment {
+  SECURITY_OFFICER = 'SECURITY_OFFICER',
+  EMBASSY_OFFICER = 'EMBASSY_OFFICER',
+  ASFAAR_ADMIN = 'ASFAAR_ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+}
+
+// DTO for flagging an application to security
+export class FlagApplicationDto {
+  @ApiProperty({ description: 'Application submission ID' })
+  @IsUUID()
+  submissionId: string;
+
+  @ApiProperty({
+    description: 'Security department to send to',
+    enum: SecurityDepartment,
+  })
+  @IsEnum(SecurityDepartment)
+  targetDepartment: SecurityDepartment;
+
+  @ApiProperty({ description: 'Reason for flagging' })
+  @IsString()
+  flagReason: string;
+
+  @ApiPropertyOptional({ description: 'Additional notes' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// DTO for querying an application (requesting more info)
+export class QueryApplicationDto {
+  @ApiProperty({ description: 'Application submission ID' })
+  @IsUUID()
+  submissionId: string;
+
+  @ApiProperty({ description: 'Query message to applicant' })
+  @IsString()
+  queryMessage: string;
+
+  @ApiPropertyOptional({ description: 'Specific documents or info needed' })
+  @IsOptional()
+  @IsString()
+  requiredDocuments?: string;
+
+  @ApiPropertyOptional({ description: 'Additional notes' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+// DTO for sending to embassy processing
+export class ProcessApplicationDto {
+  @ApiProperty({ description: 'Application submission ID' })
+  @IsUUID()
+  submissionId: string;
+
+  @ApiPropertyOptional({ description: 'Processing notes' })
+  @IsOptional()
+  @IsString()
+  processingNotes?: string;
+
+  @ApiPropertyOptional({ description: 'Priority level' })
+  @IsOptional()
+  @IsString()
+  priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+}
+
+// Legacy DTO for backward compatibility (can be removed later)
 export class VerificationReviewDto {
   @ApiProperty({ description: 'Application submission ID' })
   @IsUUID()
   submissionId: string;
 
-  @ApiProperty({ description: 'Verification status', enum: VerificationStatus })
-  @IsEnum(VerificationStatus)
-  verificationStatus: VerificationStatus;
+  @ApiProperty({ description: 'Verification action', enum: VerificationAction })
+  @IsEnum(VerificationAction)
+  verificationAction: VerificationAction;
 
   @ApiPropertyOptional({ description: 'Review notes and comments' })
   @IsOptional()
   @IsString()
   reviewNotes?: string;
-
-  @ApiPropertyOptional({
-    description: 'Rejection reason if status is REJECTED',
-  })
-  @IsOptional()
-  @IsString()
-  rejectionReason?: string;
 }
 
 export class ApplicationReviewDto {
@@ -192,14 +254,14 @@ export class VerificationStatsDto {
   @ApiProperty({ description: 'Total applications pending review' })
   pendingReview: number;
 
-  @ApiProperty({ description: 'Total applications verified today' })
-  verifiedToday: number;
+  @ApiProperty({ description: 'Total applications flagged today' })
+  flaggedToday: number;
 
-  @ApiProperty({ description: 'Total applications rejected today' })
-  rejectedToday: number;
+  @ApiProperty({ description: 'Total applications queried today' })
+  queriedToday: number;
 
-  @ApiProperty({ description: 'Total applications requiring retakes' })
-  needsRetakes: number;
+  @ApiProperty({ description: 'Total applications sent to processing today' })
+  processingToday: number;
 
   @ApiProperty({ description: 'Average verification time in minutes' })
   averageVerificationTime: number;

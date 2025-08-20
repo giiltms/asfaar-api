@@ -22,7 +22,9 @@ import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { DashboardVerificationService } from './dashboard-verification.service';
 import {
   ApplicationReviewDto,
-  VerificationReviewDto,
+  FlagApplicationDto,
+  QueryApplicationDto,
+  ProcessApplicationDto,
   VerificationReviewListDto,
   VerificationStatsDto,
 } from './dto/verification-review.dto';
@@ -71,11 +73,12 @@ export class DashboardVerificationController {
     @Query('limit') limit = 10,
     @Query('status') status?: string,
   ): Promise<BaseResponseDto<VerificationReviewListDto>> {
-    const result = await this.dashboardVerificationService.getApplicationsForReview(
-      page,
-      limit,
-      status,
-    );
+    const result =
+      await this.dashboardVerificationService.getApplicationsForReview(
+        page,
+        limit,
+        status,
+      );
 
     return {
       success: true,
@@ -104,9 +107,10 @@ export class DashboardVerificationController {
   async getApplicationForReview(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
   ): Promise<BaseResponseDto<ApplicationReviewDto>> {
-    const result = await this.dashboardVerificationService.getApplicationForReview(
-      submissionId,
-    );
+    const result =
+      await this.dashboardVerificationService.getApplicationForReview(
+        submissionId,
+      );
 
     return {
       success: true,
@@ -116,15 +120,15 @@ export class DashboardVerificationController {
     };
   }
 
-  @Post('applications/:submissionId/review')
+  @Post('applications/:submissionId/flag')
   @ApiOperation({
-    summary: 'Review and update application verification status',
+    summary: 'Flag application and send to security department',
     description:
-      'Review application and update verification status (VERIFIED, REJECTED, NEEDS_RETAKES)',
+      'Flag an application for security review and specify which department should handle it',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Application reviewed successfully',
+    description: 'Application flagged successfully',
     schema: {
       type: 'object',
       properties: {
@@ -139,16 +143,103 @@ export class DashboardVerificationController {
     description: 'Application not found',
   })
   @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
-  async reviewApplication(
+  async flagApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
-    @Body() reviewDto: VerificationReviewDto,
+    @Body() flagDto: FlagApplicationDto,
     @Request() req: any,
   ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
     // Ensure the submissionId in the body matches the param
-    reviewDto.submissionId = submissionId;
+    flagDto.submissionId = submissionId;
 
-    const result = await this.dashboardVerificationService.reviewApplication(
-      reviewDto,
+    const result = await this.dashboardVerificationService.flagApplication(
+      flagDto,
+      req.user.id,
+    );
+
+    return {
+      success: true,
+      message: result.message,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post('applications/:submissionId/query')
+  @ApiOperation({
+    summary: 'Query application and request more information',
+    description:
+      'Send query to applicant requesting additional documents or information',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application queried successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        timestamp: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Application not found',
+  })
+  @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
+  async queryApplication(
+    @Param('submissionId', ParseUUIDPipe) submissionId: string,
+    @Body() queryDto: QueryApplicationDto,
+    @Request() req: any,
+  ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
+    // Ensure the submissionId in the body matches the param
+    queryDto.submissionId = submissionId;
+
+    const result = await this.dashboardVerificationService.queryApplication(
+      queryDto,
+      req.user.id,
+    );
+
+    return {
+      success: true,
+      message: result.message,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post('applications/:submissionId/process')
+  @ApiOperation({
+    summary: 'Send application to embassy for processing',
+    description: 'Approve application and send to embassy for final processing',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Application sent for processing successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        timestamp: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Application not found',
+  })
+  @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
+  async processApplication(
+    @Param('submissionId', ParseUUIDPipe) submissionId: string,
+    @Body() processDto: ProcessApplicationDto,
+    @Request() req: any,
+  ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
+    // Ensure the submissionId in the body matches the param
+    processDto.submissionId = submissionId;
+
+    const result = await this.dashboardVerificationService.processApplication(
+      processDto,
       req.user.id,
     );
 
@@ -171,7 +262,8 @@ export class DashboardVerificationController {
     type: VerificationStatsDto,
   })
   async getVerificationStats(): Promise<BaseResponseDto<VerificationStatsDto>> {
-    const result = await this.dashboardVerificationService.getVerificationStats();
+    const result =
+      await this.dashboardVerificationService.getVerificationStats();
 
     return {
       success: true,
