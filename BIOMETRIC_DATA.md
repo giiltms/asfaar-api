@@ -1,355 +1,470 @@
-### Biometric Data API
+# Biometric Data API Documentation
 
-#### Overview
+## Overview
 
-- Capture and manage applicant biometrics: photos, signatures, and fingerprints.
-- Supports 442 fingerprints (4 left, 4 right, 2 thumbs) with per-finger quality and metadata.
-- Allows upsert by application `referenceNumber` for biometric officer workflows.
+The Biometric Data API provides comprehensive functionality for capturing, storing, and managing biometric information for visa applications. This includes fingerprint data (442 format), photo captures, and integration with the verification workflow.
 
-#### Auth
-
-- All endpoints require Bearer JWT: `Authorization: Bearer <token>`.
-
-#### Base URL
-
-- Examples assume: `API=/api/v1/biometric-data`
-
----
-
-## Data Models (Simplified)
+## Data Models
 
 ### BiometricData
 
-- `id: string`
-- `userId: string`, `submissionId?: string`
-- Uniqueness: `submissionId` is unique (one biometric record per submission)
-- `photoUrl?: string`, `photoHash?: string`, `photoMetadata?: object`
-- `fingerprintData?: object`, `fingerprintHash?: string`, `fingerprintMetadata?: object`
-- `signatureUrl?: string`, `signatureHash?: string`, `signatureMetadata?: object`
-- `photoQualityScore?: number`, `fingerprintQualityScore?: number`, `overallQualityScore?: number`
-- `isVerified: boolean`, `verificationStatus?: string`, `verificationNotes?: string`
-- `capturedBy?: string`, `capturedAt?: string`, `captureDevice?: string`, `captureLocation?: string`
-- `isEncrypted: boolean`, `encryptionKey?: string`, `dataRetentionPolicy?: string`
-- `createdAt: string`, `updatedAt: string`, `createdBy?: string`, `lastModifiedBy?: string`
-- `fingerprintFingers?: FingerprintData[]`
+- **id**: Unique identifier
+- **userId**: Reference to the user account
+- **submissionId**: Reference to the form submission (optional)
+- **photoUrl**: URL to the captured photo
+- **photoHash**: Hash for photo integrity verification
+- **encryptionKeyRef**: Reference to encryption key (not the actual key)
+- **verificationStatus**: Current verification status
+- **verificationNotes**: Notes from verification officers
+- **lastModifiedBy**: ID of the last person who modified the record
+- **fingerprintFingers**: Array of individual finger data (442 structure)
 
-### FingerprintData (per finger)
+### FingerprintData
 
-- `fingerPosition: 'LEFT_THUMB'|'LEFT_INDEX'|'LEFT_MIDDLE'|'LEFT_RING'|'LEFT_LITTLE'|'RIGHT_THUMB'|'RIGHT_INDEX'|'RIGHT_MIDDLE'|'RIGHT_RING'|'RIGHT_LITTLE'`
-- `fingerName: string`
-- `templateFormat?: 'ISO-19794-2'|'ANSI-378'|'PROPRIETARY'`
-- `templateData?: object` (encrypted payload + metadata)
-- `templateHash?: string`
-- `qualityScore?: number (0-100)`, `captureAttempts?: number`, `isAcceptable?: boolean`
-- `capturedAt?: string`, `captureDevice?: string`, `captureMethod?: string`
-- `metadata?: object`
+- **id**: Unique identifier
+- **biometricDataId**: Reference to the parent biometric record
+- **fingerPosition**: Position of the finger (LEFT_THUMB, LEFT_INDEX, etc.)
+- **templateData**: Encrypted fingerprint template
+- **templateFormat**: Format of the template (ISO_19794_2, ANSI_378, etc.)
+- **qualityScore**: Quality score of the captured template
+- **captureDate**: When the fingerprint was captured
 
----
+## API Endpoints
 
-## Endpoints
+### 1. Create Biometric Data Record
 
-### Create/Update by Reference Number
+**POST** `/api/v1/biometric-data`
 
-POST `${API}/by-reference/:referenceNumber`
+Creates a new biometric data record for a user.
 
-Request (any subset of fields from CreateBiometricDataDto):
-
-```bash
-curl -X POST "$HOST$API/by-reference/SA25001234" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{
-    "photoUrl": "https://cdn.example.com/photos/abc.jpg",
-    "photoHash": "sha256:...",
-    "photoQualityScore": 95,
-    "capturedBy": "agent-uuid",
-    "captureDevice": "Suprema G10",
-    "captureLocation": "ABJ-CENTER-A/Booth-3",
-    "isEncrypted": true
-  }'
-```
-
-Response (200):
+**Request Body:**
 
 ```json
 {
-  "id": "biodata-uuid",
   "userId": "user-uuid",
   "submissionId": "submission-uuid",
-  "photoUrl": "https://cdn.example.com/photos/abc.jpg",
-  "photoHash": "sha256:...",
-  "photoQualityScore": 95,
-  "isVerified": false,
-  "capturedBy": "agent-uuid",
-  "captureDevice": "Suprema G10",
-  "captureLocation": "ABJ-CENTER-A/Booth-3",
-  "isEncrypted": true,
-  "createdAt": "2025-08-19T12:15:00.000Z",
-  "updatedAt": "2025-08-19T12:15:00.000Z"
+  "photoUrl": "https://example.com/photo.jpg",
+  "photoHash": "sha256-hash",
+  "verificationStatus": "PENDING",
+  "verificationNotes": "Initial capture"
 }
 ```
 
----
-
-### Attach 442 Fingers by Reference
-
-POST `${API}/by-reference/:referenceNumber/fingers`
-
-Request (send 10 items or partial batches):
-
-```bash
-curl -X POST "$HOST$API/by-reference/SA25001234/fingers" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{
-    "fingerprintFingers": [
-      {
-        "fingerPosition": "LEFT_THUMB",
-        "templateFormat": "ISO-19794-2",
-        "templateData": {
-          "encrypted": true,
-          "algorithm": "AES-256-GCM",
-          "template": "base64-encoded-encrypted-template",
-          "version": "2011",
-          "deviceInfo": {"manufacturer":"Suprema","model":"G10"}
-        },
-        "templateHash": "sha256:...",
-        "qualityScore": 90,
-        "isAcceptable": true,
-        "captureAttempts": 1,
-        "captureDevice": "Suprema G10",
-        "captureMethod": "optical"
-      }
-    ]
-  }'
-```
-
-Response (201):
-
-```json
-{ "biometricDataId": "biodata-uuid" }
-```
-
-Behavior
-
-- Idempotent upsert per finger position. Re-sending a finger with the same `fingerPosition` updates it.
-- Requires that a biometric record already exists for the submission reference (create it via `by-reference/:referenceNumber`).
-
----
-
-### Create 442 Fingers by BiometricData ID
-
-POST `${API}/:id/fingers`
-
-Request:
-
-```bash
-curl -X POST "$HOST$API/biodata-uuid/fingers" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{
-    "fingerprintFingers": [
-      {"fingerPosition":"LEFT_INDEX","templateFormat":"ISO-19794-2","templateData":{"encrypted":true,"template":"<base64>"},"qualityScore":88}
-    ]
-  }'
-```
-
-Response (201):
-
-```json
-{ "success": true }
-```
-
----
-
-### Update Single Finger
-
-PATCH `${API}/:id/finger/:position`
-
-Request:
-
-```bash
-curl -X PATCH "$HOST$API/biodata-uuid/finger/LEFT_THUMB" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{
-    "qualityScore": 95,
-    "isAcceptable": true,
-    "templateData": {"encrypted": true, "template": "<base64-new>"},
-    "templateHash": "sha256:new..."
-  }'
-```
-
-Response (200):
+**Response:**
 
 ```json
 {
-  "id": "finger-uuid",
-  "biometricDataId": "biodata-uuid",
-  "fingerPosition": "LEFT_THUMB",
-  "fingerName": "Left Thumb",
-  "qualityScore": 95,
-  "isAcceptable": true,
-  "capturedAt": "2025-08-19T12:30:00.000Z",
-  "captureDevice": "Suprema G10",
-  "templateFormat": "ISO-19794-2"
+  "success": true,
+  "data": {
+    "id": "biometric-uuid",
+    "userId": "user-uuid",
+    "submissionId": "submission-uuid",
+    "photoUrl": "https://example.com/photo.jpg",
+    "verificationStatus": "PENDING",
+    "createdAt": "2025-01-15T10:30:00Z"
+  }
 }
 ```
 
----
+### 2. Create 442 Fingerprint Data
 
-### Get Biometric Data by ID
+**POST** `/api/v1/biometric-data/:id/fingerprints`
 
-GET `${API}/:id`
+Creates or updates fingerprint data for all 10 fingers (442 format).
 
-Response (200):
+**Request Body:**
 
 ```json
 {
-  "id": "biodata-uuid",
-  "userId": "user-uuid",
-  "submissionId": "submission-uuid",
-  "photoUrl": "https://cdn.example.com/photos/abc.jpg",
-  "photoQualityScore": 95,
-  "fingerprintQualityScore": 88,
-  "overallQualityScore": 90.8,
-  "isVerified": false,
-  "capturedBy": "agent-uuid",
-  "captureDevice": "Suprema G10",
-  "isEncrypted": true,
-  "createdAt": "2025-08-19T12:15:00.000Z",
-  "updatedAt": "2025-08-19T12:30:00.000Z",
-  "fingerprintFingers": [
+  "fingerprints": [
     {
       "fingerPosition": "LEFT_THUMB",
-      "qualityScore": 90,
-      "isAcceptable": true
+      "templateData": "base64-encoded-template",
+      "templateFormat": "ISO_19794_2",
+      "qualityScore": 85
     },
     {
-      "fingerPosition": "RIGHT_THUMB",
-      "qualityScore": 89,
-      "isAcceptable": true
+      "fingerPosition": "LEFT_INDEX",
+      "templateData": "base64-encoded-template",
+      "templateFormat": "ISO_19794_2",
+      "qualityScore": 90
+    }
+    // ... all 10 fingers
+  ]
+}
+```
+
+**Notes:**
+
+- Uses upsert logic to prevent duplicates
+- Supports ISO-19794-2, ANSI-378, and proprietary formats
+- Automatically handles 442 structure (4 left, 4 right, 2 thumbs)
+
+### 3. Submit by Reference Number
+
+**POST** `/api/v1/biometric-data/by-reference/:referenceNumber`
+
+Submit biometric data using application reference number instead of direct IDs.
+
+**Request Body:**
+
+```json
+{
+  "photoUrl": "https://example.com/photo.jpg",
+  "photoHash": "sha256-hash",
+  "fingerprints": [
+    // ... fingerprint data
+  ]
+}
+```
+
+### 4. Photo Upload
+
+**POST** `/api/v1/biometric-data/by-reference/:referenceNumber/photo`
+
+Upload a photo for an applicant using multipart form data.
+
+**Request:**
+
+- **Content-Type**: `multipart/form-data`
+- **Body**: Form with `photo` file field
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "photoUrl": "https://example.com/uploads/photo.jpg",
+    "photoHash": "sha256-hash"
+  }
+}
+```
+
+## Verification Officer Actions
+
+The verification officer dashboard provides three distinct actions for processing applications:
+
+### 1. Flag Application
+
+**POST** `/api/v1/dashboard/verification/applications/:submissionId/flag`
+
+Flags an application for security review by a specific department.
+
+**Request Body:**
+
+```json
+{
+  "targetDepartment": "SECURITY_OFFICER",
+  "flagReason": "Additional security screening required",
+  "notes": "Applicant has travel history to restricted countries"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Application flagged and sent to SECURITY_OFFICER successfully",
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+### 2. Query Application
+
+**POST** `/api/v1/dashboard/verification/applications/:submissionId/query`
+
+Requests additional information or documents from the applicant.
+
+**Request Body:**
+
+```json
+{
+  "queryMessage": "Please provide additional proof of employment",
+  "requiredDocuments": [
+    "Employment letter from current employer",
+    "Recent payslips (last 3 months)",
+    "Bank statements showing salary deposits"
+  ],
+  "notes": "Employment verification incomplete"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Application queried and notification sent to applicant",
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+**Email Notification:**
+
+- Applicant receives an email with query details
+- Includes required documents list
+- Provides direct link to update and resubmit application
+
+### 3. Process Application
+
+**POST** `/api/v1/dashboard/verification/applications/:submissionId/process`
+
+Sends verified application to embassy for final processing.
+
+**Request Body:**
+
+```json
+{
+  "processingNotes": "All documents verified and biometrics completed",
+  "priority": "NORMAL"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Application verified and sent to embassy for processing (Priority: NORMAL)",
+  "timestamp": "2025-01-15T10:30:00Z"
+}
+```
+
+## Applicant Update and Resubmission
+
+When an application is queried, applicants can update and resubmit their applications:
+
+### 1. View Queried Applications
+
+**GET** `/api/v1/submissions/queried`
+
+Get all applications that need additional information or documents.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "submission-uuid",
+      "referenceNumber": "SA25000001",
+      "status": "QUERIED",
+      "queryMessage": "Please provide additional proof of employment",
+      "requiredDocuments": ["Employment letter", "Payslips"],
+      "queriedAt": "2025-01-15T10:30:00Z"
     }
   ]
 }
 ```
 
----
+### 2. Update and Resubmit
 
-### Get by User
+**PUT** `/api/v1/submissions/:id/resubmit`
 
-GET `${API}/user/:userId`
+Update a queried application and resubmit it for review.
 
-Response (200):
-
-```json
-[
-  { "id": "biodata-uuid-1", "submissionId": "sub-1", "isVerified": false },
-  { "id": "biodata-uuid-2", "submissionId": "sub-2", "isVerified": true }
-]
-```
-
----
-
-### Get by Submission
-
-GET `${API}/submission/:submissionId`
-
-Response (200):
-
-```json
-{ "id": "biodata-uuid", "submissionId": "submission-uuid", "isVerified": false }
-```
-
----
-
-### Verify Biometric Data
-
-POST `${API}/:id/verify`
-
-Request:
-
-```bash
-curl -X POST "$HOST$API/biodata-uuid/verify" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"verificationStatus":"VERIFIED","verificationNotes":"High quality"}'
-```
-
-Response (200):
+**Request Body:**
 
 ```json
 {
-  "id": "biodata-uuid",
-  "isVerified": true,
-  "verificationStatus": "VERIFIED",
-  "verificationNotes": "High quality"
+  "responses": [
+    {
+      "fieldId": "field-uuid",
+      "fieldName": "employment_letter",
+      "value": "Updated employment information",
+      "fileUrls": ["https://example.com/employment_letter.pdf"]
+    }
+  ]
 }
 ```
 
----
-
-### Stats Overview
-
-GET `${API}/stats/overview`
-
-Response (200):
-
-```json
-{
-  "totalRecords": 120,
-  "verifiedRecords": 96,
-  "pendingVerification": 24,
-  "qualityStats": {
-    "average": { "photo": 89.2, "fingerprint": 86.5, "overall": 88.1 },
-    "minimum": { "photo": 60, "fingerprint": 58, "overall": 59 },
-    "maximum": { "photo": 99, "fingerprint": 98, "overall": 98 }
-  }
-}
-```
-
----
-
-## Notes & Best Practices
-
-- Always send encrypted fingerprint templates; store only encrypted payload.
-- Set `templateFormat` when providing `templateData` (recommended `ISO-19794-2` for Suprema G10).
-- Use `referenceNumber` endpoints at capture stations to avoid extra ID lookups.
-- Populate `templateHash` and `photoHash` for integrity verification.
-- Aim for quality scores ≥ 70 for acceptance; retake if necessary.
-- One `BiometricData` per submission; `submissionId` is unique.
-- `GET /biometric-data/:id` includes `fingerprintFingers` for 442 details.
-- 442 create endpoints upsert per finger; to retake a finger, post the same `fingerPosition` again.
-
----
-
-### Upload Photo by Reference Number
-
-POST `${API}/by-reference/:referenceNumber/photo`
-
-Request (multipart/form-data):
-
-```bash
-curl -X POST "$HOST$API/by-reference/SA25001234/photo" \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "photo=@/path/to/photo.jpg"
-```
-
-Response (201):
+**Response:**
 
 ```json
 {
   "success": true,
-  "photoUrl": "/uploads/biometrics/photos/1724061300-photo.jpg",
-  "biometricData": {
-    "id": "biodata-uuid",
-    "userId": "user-uuid",
-    "submissionId": "submission-uuid",
-    "photoUrl": "/uploads/biometrics/photos/1724061300-photo.jpg",
-    "isVerified": false,
-    "capturedBy": "agent-uuid",
-    "createdAt": "2025-08-19T12:15:00.000Z",
-    "updatedAt": "2025-08-19T12:16:00.000Z"
+  "data": {
+    "id": "submission-uuid",
+    "status": "SUBMITTED",
+    "isQueried": false,
+    "queryResponse": "Application updated and resubmitted on 2025-01-15T10:30:00Z",
+    "submittedAt": "2025-01-15T10:30:00Z"
   }
 }
 ```
 
-Notes
+## Verification Dashboard
 
-- Form field name is `photo`.
-- The file is stored via local storage provider and URL saved to `biometric_data.photoUrl`.
+### Get Applications for Review
+
+**GET** `/api/v1/dashboard/verification/applications\*\*
+
+Retrieves applications ready for verification officer review.
+
+**Query Parameters:**
+
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10)
+- `status`: Filter by status
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "applications": [
+      {
+        "id": "submission-uuid",
+        "referenceNumber": "SA25000001",
+        "status": "UNDER_REVIEW",
+        "applicant": {
+          "firstName": "John",
+          "lastName": "Doe",
+          "email": "john.doe@example.com"
+        },
+        "formResponses": {
+          "sections": [
+            {
+              "sectionName": "Personal Information",
+              "groups": [
+                {
+                  "groupName": "Basic Details",
+                  "fields": [
+                    {
+                      "fieldName": "first_name",
+                      "value": "John",
+                      "isCompleted": true,
+                      "validationStatus": "valid"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "summary": {
+            "totalFields": 25,
+            "completedFields": 23,
+            "completionPercentage": 92
+          }
+        },
+        "biometricData": {
+          "verificationStatus": "PENDING",
+          "photoUrl": "https://example.com/photo.jpg"
+        }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 10
+  }
+}
+```
+
+### Get Verification Statistics
+
+**GET** `/api/v1/dashboard/verification/stats`
+
+Retrieves verification statistics for the dashboard.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "pendingReview": 15,
+    "flaggedToday": 3,
+    "queriedToday": 5,
+    "processingToday": 8,
+    "averageVerificationTime": 45
+  }
+}
+```
+
+## Security and Best Practices
+
+### Data Encryption
+
+- Fingerprint templates are encrypted before storage
+- Encryption keys are managed separately from the application
+- Photo hashes ensure data integrity
+
+### Access Control
+
+- Biometric officers can only access their assigned applications
+- Verification officers have read-only access to form data
+- Applicants can only update their own queried applications
+
+### Audit Trail
+
+- All status changes are logged with timestamps
+- User actions are tracked for compliance
+- Complete history of verification decisions
+
+### Data Retention
+
+- Biometric data is retained according to regulatory requirements
+- Temporary data is automatically cleaned up
+- Archive policies are configurable
+
+## Error Handling
+
+### Common Error Responses
+
+**400 Bad Request:**
+
+```json
+{
+  "success": false,
+  "message": "Invalid fingerprint data format",
+  "error": "VALIDATION_ERROR"
+}
+```
+
+**404 Not Found:**
+
+```json
+{
+  "success": false,
+  "message": "Application not found",
+  "error": "NOT_FOUND"
+}
+```
+
+**403 Forbidden:**
+
+```json
+{
+  "success": false,
+  "message": "Access denied to this application",
+  "error": "FORBIDDEN"
+}
+```
+
+## Integration Notes
+
+### Frontend Considerations
+
+- Form responses are structured hierarchically for easy rendering
+- Completion status and validation information is included
+- File uploads are handled through dedicated endpoints
+
+### Email Notifications
+
+- Automatic notifications for queried applications
+- Configurable email templates
+- Support for multiple email providers
+
+### Status Workflow
+
+- DRAFT → SUBMITTED → UNDER_REVIEW → QUERIED → SUBMITTED → PROCESSING
+- FLAGGED applications go to security review
+- PROCESSING applications are sent to embassy
+
+## Support
+
+For technical support or questions about the Biometric Data API, please contact the development team or refer to the internal documentation.

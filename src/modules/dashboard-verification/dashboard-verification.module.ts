@@ -3,9 +3,10 @@ import { DashboardVerificationController } from './dashboard-verification.contro
 import { DashboardVerificationService } from './dashboard-verification.service';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { MailModule } from '@modules/mail/mail.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, MailModule],
   controllers: [DashboardVerificationController],
   providers: [DashboardVerificationService],
   exports: [DashboardVerificationService],

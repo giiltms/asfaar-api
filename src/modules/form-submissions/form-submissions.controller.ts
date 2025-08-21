@@ -262,6 +262,17 @@ export class FormSubmissionsController {
     return this.submissionsService.getUserSubmissions(req.user.id, queryDto);
   }
 
+  @Get('queried')
+  @ApiOperation({
+    summary: 'Get my queried applications',
+    description: 'Get applications that need additional information or documents',
+  })
+  @ApiOkBaseResponse({ dto: FormSubmissionDto, isArray: true })
+  @ApiDefaultResponse({ type: FormSubmissionDto, isArray: true })
+  async getQueriedSubmissions(@Request() req: any): Promise<FormSubmissionDto[]> {
+    return this.submissionsService.getQueriedSubmissions(req.user.id);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get submission by ID',
@@ -299,6 +310,26 @@ export class FormSubmissionsController {
     @Body() updateDto: UpdateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
     return this.submissionsService.updateSubmission(req.user.id, id, updateDto);
+  }
+
+  @Put(':id/resubmit')
+  @ApiOperation({
+    summary: 'Update and resubmit queried application',
+    description: 'Update a queried application and resubmit it for review (only queried applications)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiOkBaseResponse({ dto: FormSubmissionDto })
+  @ApiDefaultResponse({ type: FormSubmissionDto })
+  async updateQueriedSubmission(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateFormSubmissionDto,
+  ): Promise<FormSubmissionDto> {
+    return this.submissionsService.updateQueriedSubmission(req.user.id, id, updateDto);
   }
 
   @Delete(':id')

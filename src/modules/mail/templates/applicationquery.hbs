@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Application Query - Action Required</title>
+    <link
+      href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      body { font-family: 'Inter', sans-serif; background-color: #f9f9f9;
+      margin: 0; padding: 0; color: #333; } .container { background-color:
+      #ffffff; max-width: 700px; margin: 40px auto; border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border-top:
+      5px solid #f57c00; } .header { background: linear-gradient(90deg, #f57c00
+      0%, #ff9800 100%); padding: 30px; text-align: center; color: white; }
+      .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+      .section { padding: 30px; line-height: 1.6; } .section h2 { color:
+      #f57c00; font-size: 20px; margin-top: 0; } .query-box { margin: 20px 0;
+      padding: 20px; border-radius: 6px; background-color: #fff3e0; border: 1px
+      solid #ffcc02; color: #e65100; } .query-box h3 { margin-top: 0; color:
+      #e65100; } .required-docs { margin: 20px 0; padding: 15px;
+      background-color: #f5f5f5; border-radius: 6px; border-left: 4px solid
+      #f57c00; } .required-docs h4 { margin-top: 0; color: #f57c00; }
+      .required-docs ul { margin: 10px 0; padding-left: 20px; } .required-docs
+      li { margin: 5px 0; } .action-button { display: inline-block; background:
+      linear-gradient(90deg, #f57c00 0%, #ff9800 100%); color: white; padding:
+      15px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;
+      margin: 20px 0; text-align: center; } .action-button:hover { background:
+      linear-gradient(90deg, #e65100 0%, #f57c00 100%); } .footer { font-size:
+      12px; color: #777; text-align: center; padding: 25px; background-color:
+      #fff8e1; } .footer a { color: #f57c00; text-decoration: none; } .info-box
+      { background-color: #e3f2fd; border: 1px solid #2196f3; border-radius:
+      6px; padding: 15px; margin: 20px 0; } .info-box h4 { margin-top: 0; color:
+      #1976d2; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>ASFAAR VISA SERVICES</h1>
+      </div>
+
+      <div class='section'>
+        <h2>Hello {{userName}},</h2>
+
+        <div class='query-box'>
+          <h3>⚠️ Application Query - Action Required</h3>
+          <p><strong>Reference Number:</strong> {{referenceNumber}}</p>
+          <p><strong>Query Date:</strong> {{queryDate}}</p>
+        </div>
+
+        <p>Our verification team has reviewed your visa application and requires
+          additional information or documents to proceed with processing.</p>
+
+        <div class='info-box'>
+          <h4>📋 Query Details</h4>
+          <p>{{queryMessage}}</p>
+        </div>
+
+        {{#if requiredDocuments.length}}
+          <div class='required-docs'>
+            <h4>📄 Required Documents/Information</h4>
+            <ul>
+              {{#each requiredDocuments}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
+          </div>
+        {{/if}}
+
+        <p><strong>Next Steps:</strong></p>
+        <ol>
+          <li>Review the query details above</li>
+          <li>Gather the required documents or information</li>
+          <li>Log into your account and update your application</li>
+          <li>Resubmit your application for review</li>
+        </ol>
+
+        <div style='text-align: center;'>
+          <a href='{{applicationUrl}}' class='action-button'>
+            📝 Update & Resubmit Application
+          </a>
+        </div>
+
+        <p><strong>Important Notes:</strong></p>
+        <ul>
+          <li>Please respond to this query within 7 days to avoid delays</li>
+          <li>Ensure all documents are clear and legible</li>
+          <li>If you have any questions, please contact our support team</li>
+        </ul>
+
+        <p>Thank you for your cooperation. We look forward to processing your
+          application once the required information is provided.</p>
+      </div>
+
+      <div class='footer'>
+        <p>This is an automated message from ASFAAR Visa Services.</p>
+        <p>If you have any questions, please contact us at
+          <a
+            href='mailto:support@asfaarvisaservices.com'
+          >support@asfaarvisaservices.com</a></p>
+        <p>© 2025 ASFAAR Visa Services. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

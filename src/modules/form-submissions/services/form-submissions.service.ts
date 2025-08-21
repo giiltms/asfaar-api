@@ -160,11 +160,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-                id: form.country.id,
-                name: form.country.name,
-                isoCode2: form.country.isoCode2,
-                flag: form.country.flag,
-              }
+              id: form.country.id,
+              name: form.country.name,
+              isoCode2: form.country.isoCode2,
+              flag: form.country.flag,
+            }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -256,12 +256,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-            id: submission.id,
-            status: submission.status,
-            submittedAt: submission.submittedAt,
-            createdAt: submission.createdAt,
-            updatedAt: submission.updatedAt,
-          }
+          id: submission.id,
+          status: submission.status,
+          submittedAt: submission.submittedAt,
+          createdAt: submission.createdAt,
+          updatedAt: submission.updatedAt,
+        }
         : null,
     };
   }
@@ -328,14 +328,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId instead of formFieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId instead of formFieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -650,21 +650,108 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-              deleteMany: {},
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
     });
 
     return this.mapToSubmissionDto(submission);
+  }
+
+  /**
+   * Update and resubmit a queried application
+   * This allows applicants to respond to verification officer queries
+   */
+  async updateQueriedSubmission(
+    userId: string,
+    submissionId: string,
+    updateDto: UpdateFormSubmissionDto,
+  ): Promise<FormSubmissionDto> {
+    const existingSubmission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+    });
+
+    if (!existingSubmission) {
+      throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
+    }
+
+    if (existingSubmission.userId !== userId) {
+      throw new ForbiddenException(FORBIDDEN_RESOURCE);
+    }
+
+    if (existingSubmission.status !== SubmissionStatus.QUERIED) {
+      throw new BadRequestException('Only queried submissions can be updated and resubmitted');
+    }
+
+    if (!existingSubmission.isQueried) {
+      throw new BadRequestException('Submission is not marked as queried');
+    }
+
+    const { responses, ...submissionData } = updateDto;
+
+    // Update the submission with new responses and mark as resubmitted
+    const submission = await this.prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        ...submissionData,
+        status: SubmissionStatus.SUBMITTED, // Change back to submitted for review
+        isQueried: false, // Mark as no longer queried
+        queryResponse: `Application updated and resubmitted on ${new Date().toISOString()}`,
+        queryResponseAt: new Date(),
+        submittedAt: new Date(), // Update submission date
+        responses: responses
+          ? {
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
+          : undefined,
+        statusLogs: {
+          create: {
+            fromStatus: SubmissionStatus.QUERIED,
+            toStatus: SubmissionStatus.SUBMITTED,
+            reason: 'Application updated and resubmitted after query',
+            notes: 'Applicant responded to verification officer query and resubmitted application',
+            changedBy: userId,
+          },
+        },
+      },
+      include: this.getSubmissionInclude(),
+    });
+
+    return this.mapToSubmissionDto(submission);
+  }
+
+  /**
+   * Get queried applications for a user
+   * These are applications that need additional information or documents
+   */
+  async getQueriedSubmissions(userId: string): Promise<FormSubmissionDto[]> {
+    const submissions = await this.prisma.formSubmission.findMany({
+      where: {
+        userId,
+        status: SubmissionStatus.QUERIED,
+        isQueried: true,
+      },
+      include: this.getSubmissionInclude(),
+      orderBy: { queriedAt: 'desc' },
+    });
+
+    return submissions.map((submission) => this.mapToSubmissionDto(submission));
   }
 
   async deleteSubmission(userId: string, submissionId: string): Promise<void> {
@@ -1559,18 +1646,18 @@ export class FormSubmissionsService {
       // Format dates for display
       const appointmentDateFormatted = appointmentDate
         ? appointmentDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
         : 'Not set';
 
       const appointmentTimeFormatted = appointmentTime
         ? appointmentTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
         : 'Not set';
 
       appointmentData = {
@@ -1586,19 +1673,19 @@ export class FormSubmissionsService {
         minutesUntilAppointment,
         center: submission.appointment.center
           ? {
-              name: submission.appointment.center.name,
-              address: submission.appointment.center.address,
-              city: submission.appointment.center.city,
-              state: submission.appointment.center.state,
-              phone: submission.appointment.center.phone,
-            }
+            name: submission.appointment.center.name,
+            address: submission.appointment.center.address,
+            city: submission.appointment.center.city,
+            state: submission.appointment.center.state,
+            phone: submission.appointment.center.phone,
+          }
           : null,
         booth: submission.appointment.queueEntry?.booth
           ? {
-              boothNumber: submission.appointment.queueEntry.booth.boothNumber,
-              appointmentClass:
-                submission.appointment.queueEntry.booth.appointmentClass,
-            }
+            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+            appointmentClass:
+              submission.appointment.queueEntry.booth.appointmentClass,
+          }
           : null,
       };
     }
@@ -1618,12 +1705,12 @@ export class FormSubmissionsService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-              name: submission.form.country.name,
-              isoCode2: submission.form.country.isoCode2,
-              isoCode3: submission.form.country.isoCode3,
-              flag: submission.form.country.flag,
-              logoUrl: submission.form.country.logoUrl,
-            }
+            name: submission.form.country.name,
+            isoCode2: submission.form.country.isoCode2,
+            isoCode3: submission.form.country.isoCode3,
+            flag: submission.form.country.flag,
+            logoUrl: submission.form.country.logoUrl,
+          }
           : null,
       },
       submission: {
@@ -1782,8 +1869,7 @@ export class FormSubmissionsService {
     const isValidType = this.validateFileType(file, allowedTypes);
     if (!isValidType) {
       throw new BadRequestException(
-        `File type ${
-          file.mimetype
+        `File type ${file.mimetype
         } is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
       );
     }

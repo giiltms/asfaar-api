@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsUUID, IsArray } from 'class-validator';
 
 // New enums for correct verification officer actions
 export enum VerificationAction {
@@ -50,8 +50,9 @@ export class QueryApplicationDto {
 
   @ApiPropertyOptional({ description: 'Specific documents or info needed' })
   @IsOptional()
-  @IsString()
-  requiredDocuments?: string;
+  @IsArray()
+  @IsString({ each: true })
+  requiredDocuments?: string[];
 
   @ApiPropertyOptional({ description: 'Additional notes' })
   @IsOptional()

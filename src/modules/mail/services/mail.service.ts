@@ -30,6 +30,16 @@ export interface BiometricCaptureData {
   captureDate: string;
 }
 
+export interface ApplicationQueryData {
+  userName: string;
+  userEmail: string;
+  referenceNumber: string;
+  queryMessage: string;
+  requiredDocuments?: string[];
+  queryDate: string;
+  applicationUrl: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -159,7 +169,9 @@ export class MailService {
     }
   }
 
-  async sendEmbassySubmissionNotification(data: EmbassySubmissionData): Promise<void> {
+  async sendEmbassySubmissionNotification(
+    data: EmbassySubmissionData,
+  ): Promise<void> {
     try {
       await this.mailerService.sendMail({
         to: data.userEmail,
@@ -185,7 +197,9 @@ export class MailService {
     }
   }
 
-  async sendBiometricCaptureNotification(data: BiometricCaptureData): Promise<void> {
+  async sendBiometricCaptureNotification(
+    data: BiometricCaptureData,
+  ): Promise<void> {
     try {
       await this.mailerService.sendMail({
         to: data.userEmail,
@@ -205,6 +219,42 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send biometric capture notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendApplicationQueryNotification(
+    data: ApplicationQueryData,
+  ): Promise<void> {
+    try {
+      const dashboardUrl = this.configService.get(
+        'SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: 'Application Query - Action Required - Asfaar Visa Services',
+        template: 'applicationquery',
+        context: {
+          userName: data.userName,
+          referenceNumber: data.referenceNumber,
+          queryMessage: data.queryMessage,
+          requiredDocuments: data.requiredDocuments || [],
+          queryDate: data.queryDate,
+          applicationUrl: data.applicationUrl,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `Application query notification sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send application query notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;

@@ -2,6 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
 import {
+  MailService,
+  ApplicationQueryData,
+} from '@modules/mail/services/mail.service';
+import {
   ApplicationReviewDto,
   FlagApplicationDto,
   QueryApplicationDto,
@@ -14,7 +18,10 @@ import {
 export class DashboardVerificationService {
   private readonly logger = new Logger(DashboardVerificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   /**
    * Transform flat form responses into hierarchical structure for frontend
@@ -382,12 +389,12 @@ export class DashboardVerificationService {
             name: submission.form.name,
             country: submission.form.country
               ? {
-                name: submission.form.country.name,
-                isoCode2: submission.form.country.isoCode2,
-                isoCode3: submission.form.country.isoCode3,
-                flag: submission.form.country.flag,
-                logoUrl: submission.form.country.logoUrl,
-              }
+                  name: submission.form.country.name,
+                  isoCode2: submission.form.country.isoCode2,
+                  isoCode3: submission.form.country.isoCode3,
+                  flag: submission.form.country.flag,
+                  logoUrl: submission.form.country.logoUrl,
+                }
               : null,
           },
           formResponses: this.transformFormResponses(
@@ -395,63 +402,63 @@ export class DashboardVerificationService {
           ),
           ninVerification: ninVerification
             ? {
-              id: ninVerification.id,
-              nin: ninVerification.nin,
-              firstName: ninVerification.firstName,
-              lastName: ninVerification.lastName,
-              fullName: ninVerification.fullName,
-              dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-              gender: ninVerification.gender,
-              phoneNumber: ninVerification.phoneNumber,
-              photo: ninVerification.photo,
-              verificationStatus: ninVerification.verificationStatus,
-              verificationDate:
-                ninVerification.verificationDate?.toISOString(),
-              address: {
-                line1: ninVerification.addressLine1,
-                city: ninVerification.city,
-                state: ninVerification.state,
-                lga: ninVerification.lga,
-                country: ninVerification.country,
-              },
-            }
+                id: ninVerification.id,
+                nin: ninVerification.nin,
+                firstName: ninVerification.firstName,
+                lastName: ninVerification.lastName,
+                fullName: ninVerification.fullName,
+                dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+                gender: ninVerification.gender,
+                phoneNumber: ninVerification.phoneNumber,
+                photo: ninVerification.photo,
+                verificationStatus: ninVerification.verificationStatus,
+                verificationDate:
+                  ninVerification.verificationDate?.toISOString(),
+                address: {
+                  line1: ninVerification.addressLine1,
+                  city: ninVerification.city,
+                  state: ninVerification.state,
+                  lga: ninVerification.lga,
+                  country: ninVerification.country,
+                },
+              }
             : null,
           biometricData: biometricData
             ? {
-              id: biometricData.id,
-              photoUrl: biometricData.photoUrl,
-              photoQualityScore: biometricData.photoQualityScore,
-              fingerprintQualityScore: biometricData.fingerprintQualityScore,
-              overallQualityScore: biometricData.overallQualityScore,
-              isVerified: biometricData.isVerified,
-              verificationStatus: biometricData.verificationStatus,
-              capturedAt: biometricData.capturedAt?.toISOString(),
-              capturedBy: biometricData.capturedBy,
-              captureDevice: biometricData.captureDevice,
-              fingerprintFingers:
-                biometricData.fingerprintFingers?.map((finger) => ({
-                  fingerPosition: finger.fingerPosition,
-                  fingerName: finger.fingerName,
-                  qualityScore: finger.qualityScore,
-                  isAcceptable: finger.isAcceptable,
-                  capturedAt: finger.capturedAt?.toISOString(),
-                })) || [],
-            }
+                id: biometricData.id,
+                photoUrl: biometricData.photoUrl,
+                photoQualityScore: biometricData.photoQualityScore,
+                fingerprintQualityScore: biometricData.fingerprintQualityScore,
+                overallQualityScore: biometricData.overallQualityScore,
+                isVerified: biometricData.isVerified,
+                verificationStatus: biometricData.verificationStatus,
+                capturedAt: biometricData.capturedAt?.toISOString(),
+                capturedBy: biometricData.capturedBy,
+                captureDevice: biometricData.captureDevice,
+                fingerprintFingers:
+                  biometricData.fingerprintFingers?.map((finger) => ({
+                    fingerPosition: finger.fingerPosition,
+                    fingerName: finger.fingerName,
+                    qualityScore: finger.qualityScore,
+                    isAcceptable: finger.isAcceptable,
+                    capturedAt: finger.capturedAt?.toISOString(),
+                  })) || [],
+              }
             : null,
           userProfilePhoto: submission.user.avatar,
           appointment: submission.appointment
             ? {
-              id: submission.appointment.id,
-              appointmentDate:
-                submission.appointment.appointmentDate?.toISOString(),
-              center: {
-                name: submission.appointment.center.name,
-                address: submission.appointment.center.address,
-                city: submission.appointment.center.city,
-                state: submission.appointment.center.state,
-              },
-              status: submission.appointment.status,
-            }
+                id: submission.appointment.id,
+                appointmentDate:
+                  submission.appointment.appointmentDate?.toISOString(),
+                center: {
+                  name: submission.appointment.center.name,
+                  address: submission.appointment.center.address,
+                  city: submission.appointment.center.city,
+                  state: submission.appointment.center.state,
+                },
+                status: submission.appointment.status,
+              }
             : null,
         };
       },
@@ -596,73 +603,73 @@ export class DashboardVerificationService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-            name: submission.form.country.name,
-            isoCode2: submission.form.country.isoCode2,
-            isoCode3: submission.form.country.isoCode3,
-            flag: submission.form.country.flag,
-            logoUrl: submission.form.country.logoUrl,
-          }
+              name: submission.form.country.name,
+              isoCode2: submission.form.country.isoCode2,
+              isoCode3: submission.form.country.isoCode3,
+              flag: submission.form.country.flag,
+              logoUrl: submission.form.country.logoUrl,
+            }
           : null,
       },
       formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
-          id: ninVerification.id,
-          nin: ninVerification.nin,
-          firstName: ninVerification.firstName,
-          lastName: ninVerification.lastName,
-          fullName: ninVerification.fullName,
-          dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-          gender: ninVerification.gender,
-          phoneNumber: ninVerification.phoneNumber,
-          photo: ninVerification.photo,
-          verificationStatus: ninVerification.verificationStatus,
-          verificationDate: ninVerification.verificationDate?.toISOString(),
-          address: {
-            line1: ninVerification.addressLine1,
-            city: ninVerification.city,
-            state: ninVerification.state,
-            lga: ninVerification.lga,
-            country: ninVerification.country,
-          },
-        }
+            id: ninVerification.id,
+            nin: ninVerification.nin,
+            firstName: ninVerification.firstName,
+            lastName: ninVerification.lastName,
+            fullName: ninVerification.fullName,
+            dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+            gender: ninVerification.gender,
+            phoneNumber: ninVerification.phoneNumber,
+            photo: ninVerification.photo,
+            verificationStatus: ninVerification.verificationStatus,
+            verificationDate: ninVerification.verificationDate?.toISOString(),
+            address: {
+              line1: ninVerification.addressLine1,
+              city: ninVerification.city,
+              state: ninVerification.state,
+              lga: ninVerification.lga,
+              country: ninVerification.country,
+            },
+          }
         : null,
       biometricData: biometricData
         ? {
-          id: biometricData.id,
-          photoUrl: biometricData.photoUrl,
-          photoQualityScore: biometricData.photoQualityScore,
-          fingerprintQualityScore: biometricData.fingerprintQualityScore,
-          overallQualityScore: biometricData.overallQualityScore,
-          isVerified: biometricData.isVerified,
-          verificationStatus: biometricData.verificationStatus,
-          capturedAt: biometricData.capturedAt?.toISOString(),
-          capturedBy: biometricData.capturedBy,
-          captureDevice: biometricData.captureDevice,
-          fingerprintFingers:
-            biometricData.fingerprintFingers?.map((finger) => ({
-              fingerPosition: finger.fingerPosition,
-              fingerName: finger.fingerName,
-              qualityScore: finger.qualityScore,
-              isAcceptable: finger.isAcceptable,
-              capturedAt: finger.capturedAt?.toISOString(),
-            })) || [],
-        }
+            id: biometricData.id,
+            photoUrl: biometricData.photoUrl,
+            photoQualityScore: biometricData.photoQualityScore,
+            fingerprintQualityScore: biometricData.fingerprintQualityScore,
+            overallQualityScore: biometricData.overallQualityScore,
+            isVerified: biometricData.isVerified,
+            verificationStatus: biometricData.verificationStatus,
+            capturedAt: biometricData.capturedAt?.toISOString(),
+            capturedBy: biometricData.capturedBy,
+            captureDevice: biometricData.captureDevice,
+            fingerprintFingers:
+              biometricData.fingerprintFingers?.map((finger) => ({
+                fingerPosition: finger.fingerPosition,
+                fingerName: finger.fingerName,
+                qualityScore: finger.qualityScore,
+                isAcceptable: finger.isAcceptable,
+                capturedAt: finger.capturedAt?.toISOString(),
+              })) || [],
+          }
         : null,
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment
         ? {
-          id: submission.appointment.id,
-          appointmentDate:
-            submission.appointment.appointmentDate?.toISOString(),
-          center: {
-            name: submission.appointment.center.name,
-            address: submission.appointment.center.address,
-            city: submission.appointment.center.city,
-            state: submission.appointment.center.state,
-          },
-          status: submission.appointment.status,
-        }
+            id: submission.appointment.id,
+            appointmentDate:
+              submission.appointment.appointmentDate?.toISOString(),
+            center: {
+              name: submission.appointment.center.name,
+              address: submission.appointment.center.address,
+              city: submission.appointment.center.city,
+              state: submission.appointment.center.state,
+            },
+            status: submission.appointment.status,
+          }
         : null,
     };
   }
@@ -691,6 +698,15 @@ export class DashboardVerificationService {
           reviewedBy: reviewerId,
           reviewedAt: new Date().toISOString(),
           ...(notes && { notes }),
+        },
+        statusLogs: {
+          create: {
+            fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
+            toStatus: SubmissionStatus.FLAGGED,
+            reason: 'Application flagged for security review',
+            notes: `Flagged to ${targetDepartment}: ${flagReason}`,
+            changedBy: reviewerId,
+          },
         },
       },
     });
@@ -730,21 +746,60 @@ export class DashboardVerificationService {
   ): Promise<{ success: boolean; message: string }> {
     const { submissionId, queryMessage, requiredDocuments, notes } = queryDto;
 
+    // Get submission with user details for email notification
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        form: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!submission?.user) {
+      throw new Error('Submission or user not found');
+    }
+
     // Update submission with queried status
     await this.prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
         status: SubmissionStatus.QUERIED,
+        isQueried: true,
+        queryMessage,
+        queriedAt: new Date(),
+        queriedBy: reviewerId,
         reviewedAt: new Date(),
         reviewedBy: reviewerId,
         reviewNotes: notes,
         metadata: {
           action: 'QUERIED',
-          queryMessage,
-          ...(requiredDocuments && { requiredDocuments }),
-          reviewedBy: reviewerId,
+          requiredDocuments: requiredDocuments || [],
           reviewedAt: new Date().toISOString(),
-          ...(notes && { notes }),
+        },
+        statusLogs: {
+          create: {
+            fromStatus: submission.status,
+            toStatus: SubmissionStatus.QUERIED,
+            reason: 'Application queried for additional information',
+            notes: `Query: ${queryMessage}${
+              requiredDocuments && requiredDocuments.length > 0
+                ? ` - Required documents: ${requiredDocuments.join(', ')}`
+                : ''
+            }`,
+            changedBy: reviewerId,
+          },
         },
       },
     });
@@ -759,11 +814,49 @@ export class DashboardVerificationService {
         where: { id: biometricData.id },
         data: {
           verificationStatus: 'NEEDS_REVIEW',
-          verificationNotes: `Query: ${queryMessage}${requiredDocuments ? ` - Required: ${requiredDocuments}` : ''
-            }`,
+          verificationNotes: `Query: ${queryMessage}${
+            requiredDocuments && requiredDocuments.length > 0
+              ? ` - Required: ${requiredDocuments.join(', ')}`
+              : ''
+          }`,
           lastModifiedBy: reviewerId,
         },
       });
+    }
+
+    // Send email notification to applicant
+    try {
+      const userName =
+        submission.user.firstName && submission.user.lastName
+          ? `${submission.user.firstName} ${submission.user.lastName}`
+          : submission.user.firstName || submission.user.email.split('@')[0];
+
+      const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+      const applicationUrl = `${siteUrl}/applications/${submissionId}/edit`;
+
+      const emailData: ApplicationQueryData = {
+        userName,
+        userEmail: submission.user.email,
+        referenceNumber: submission.referenceNumber || 'N/A',
+        queryMessage,
+        requiredDocuments: requiredDocuments || [],
+        queryDate: new Date().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+        applicationUrl,
+      };
+
+      await this.mailService.sendApplicationQueryNotification(emailData);
+      this.logger.log(
+        `Application query email sent to ${submission.user.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send application query email: ${error.message}`,
+      );
+      // Don't fail the entire operation if email fails
     }
 
     this.logger.log(
@@ -800,6 +893,17 @@ export class DashboardVerificationService {
           reviewedAt: new Date().toISOString(),
           sentToEmbassy: true,
           ...(processingNotes && { processingNotes }),
+        },
+        statusLogs: {
+          create: {
+            fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
+            toStatus: SubmissionStatus.PROCESSING,
+            reason: 'Application verified and sent to embassy for processing',
+            notes: `Priority: ${priority}${
+              processingNotes ? ` - ${processingNotes}` : ''
+            }`,
+            changedBy: reviewerId,
+          },
         },
       },
     });
