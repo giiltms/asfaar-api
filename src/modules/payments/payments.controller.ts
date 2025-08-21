@@ -109,8 +109,16 @@ export class PaymentsController {
     @Query(new ValidationPipe({ transform: true }))
     query: ServiceFeeQueryDto,
   ) {
-    const { page, limit, sortBy, sortOrder, isActive, currency, search, feeType } =
-      query;
+    const {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      isActive,
+      currency,
+      search,
+      feeType,
+    } = query;
 
     const filters = { isActive, currency, search, feeType };
     const pagination = { page, limit, sortBy, sortOrder };
@@ -193,6 +201,81 @@ export class PaymentsController {
 
     return {
       message: 'Payments retrieved successfully',
+      data: result.data,
+      meta: result.meta,
+    };
+  }
+
+  /**
+   * Get current user's payments
+   */
+  @Get('my')
+  @ApiOperation({
+    summary: 'Get my payments',
+    description:
+      "Retrieve current user's payments with optional filtering and pagination",
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by payment status',
+    example: 'COMPLETED',
+  })
+  @ApiQuery({
+    name: 'currency',
+    required: false,
+    type: String,
+    description: 'Filter by currency',
+    example: 'USD',
+  })
+  @ApiQuery({
+    name: 'submissionId',
+    required: false,
+    type: String,
+    description: 'Filter by submission ID',
+    example: 'uuid-string',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by processor ID, invoice number, or description',
+    example: 'pi_123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User payments retrieved successfully',
+    type: [PaymentEntity],
+  })
+  async findMyPayments(
+    @Request() req: any,
+    @Query() filters: PaymentFiltersDto,
+    @Query() pagination: PaginationQueryDto,
+  ) {
+    const userId = req.user.id;
+    const result = await this.paymentsService.findUserPayments(
+      userId,
+      filters,
+      pagination,
+    );
+
+    return {
+      message: 'User payments retrieved successfully',
       data: result.data,
       meta: result.meta,
     };

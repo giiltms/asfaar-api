@@ -390,6 +390,111 @@ export class PaymentsService {
   }
 
   /**
+   * Get user's payments with optional filtering and pagination
+   */
+  async findUserPayments(
+    userId: string,
+    filters: PaymentFiltersDto = {},
+    pagination: PaginationQueryDto = {},
+  ) {
+    const { page = 1, limit = 10 } = pagination;
+    const {
+      status,
+      currency,
+      submissionId,
+      methodType,
+      minAmount,
+      maxAmount,
+      search,
+    } = filters;
+
+    // Build where clause - filter by user through submission relationship
+    const where: Prisma.PaymentWhereInput = {
+      submission: {
+        userId: userId, // Only payments for this user's submissions
+      },
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (currency) {
+      where.currency = currency;
+    }
+
+    if (submissionId) {
+      where.submissionId = submissionId;
+    }
+
+    if (methodType) {
+      where.methodType = methodType;
+    }
+
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      where.amount = {};
+      if (minAmount !== undefined) {
+        where.amount.gte = minAmount;
+      }
+      if (maxAmount !== undefined) {
+        where.amount.lte = maxAmount;
+      }
+    }
+
+    if (search) {
+      where.OR = [
+        { processorId: { contains: search, mode: 'insensitive' } },
+        { invoiceNumber: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Execute queries
+    const [payments, totalCount] = await Promise.all([
+      this.prisma.payment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: [{ createdAt: 'desc' }],
+        include: {
+          submission: {
+            select: {
+              id: true,
+              status: true,
+              userId: true,
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.payment.count({ where }),
+    ]);
+
+    const meta = PaginationUtils.createPaginationMeta(
+      page,
+      limit,
+      totalCount,
+      'createdAt',
+      'desc',
+    );
+
+    return {
+      data: payments,
+      meta,
+    };
+  }
+
+  /**
    * Update payment status (usually called by payment webhooks)
    */
   async updatePaymentStatus(
