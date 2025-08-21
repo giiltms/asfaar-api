@@ -6,6 +6,14 @@ The Biometric Data API provides comprehensive functionality for capturing, stori
 
 ## Data Models
 
+### User Model Updates
+
+The User model now includes a `ninVerified` field to track NIN verification status:
+
+- **ninVerified**: Boolean field that indicates whether the user has successfully verified their NIN
+- **Default value**: `false`
+- **Updated automatically**: Set to `true` when NIN verification is completed successfully
+
 ### BiometricData
 
 - **id**: Unique identifier
@@ -28,6 +36,116 @@ The Biometric Data API provides comprehensive functionality for capturing, stori
 - **templateFormat**: Format of the template (ISO_19794_2, ANSI_378, etc.)
 - **qualityScore**: Quality score of the captured template
 - **captureDate**: When the fingerprint was captured
+
+## NIN Verification Workflow
+
+### Overview
+
+The NIN verification process follows this workflow:
+
+1. **Initial Verification**: User submits NIN and date of birth for verification
+2. **Temporary Storage**: Verification data is stored in `TempNINData` table
+3. **Confirmation**: User confirms the verification data
+4. **Permanent Storage**: Data is moved to `NinVerification` table and `ninVerified` is set to `true`
+
+### API Endpoints
+
+#### 1. Verify NIN
+
+**POST** `/api/v1/auth/verify-nin`
+
+Initiates NIN verification process.
+
+**Request Body:**
+
+```json
+{
+  "nin": "12345678901",
+  "dateOfBirth": "1990-01-15"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "tempNinId": "temp-nin-uuid",
+    "data": {
+      "nin": "12345678901",
+      "firstName": "John",
+      "lastName": "Doe",
+      "fullName": "John Doe",
+      "dateOfBirth": "1990-01-15",
+      "gender": "MALE",
+      "phoneNumber": "+2349012345678",
+      "photo": "base64-encoded-photo",
+      "address": {
+        "line1": "123 Main Street",
+        "city": "Lagos",
+        "state": "Lagos",
+        "lga": "Ikeja"
+      }
+    }
+  }
+}
+```
+
+#### 2. Confirm NIN
+
+**POST** `/api/v1/auth/confirm-nin`
+
+Confirms NIN verification and updates user profile.
+
+**Request Body:**
+
+```json
+{
+  "tempNinId": "temp-nin-uuid"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "NIN verified and linked to user successfully"
+}
+```
+
+**What happens:**
+
+- User's `nin` field is updated with the verified NIN
+- User's `ninVerified` field is set to `true`
+- User's profile data (firstName, lastName, dateOfBirth, etc.) is updated
+- Verification data is permanently stored in `NinVerification` table
+- Temporary data is deleted from `TempNINData` table
+
+### User Profile Response
+
+When fetching user data (e.g., `/api/v1/users/me`), the response now includes:
+
+```json
+{
+  "id": "user-uuid",
+  "email": "john.doe@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "nin": "12345678901",
+  "ninVerified": true,
+  "isVerified": true,
+  "currentNinVerification": {
+    "id": "nin-verification-uuid",
+    "nin": "12345678901",
+    "firstName": "John",
+    "lastName": "Doe",
+    "verificationStatus": "VERIFIED",
+    "verificationDate": "2025-01-15T10:30:00Z"
+  }
+}
+```
 
 ## API Endpoints
 
