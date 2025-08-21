@@ -204,6 +204,7 @@ export class NinVerificationService {
         where: { id: userId },
         data: {
           nin: tempNinData.nin,
+          ninVerified: true, // Set NIN verification status to true
           firstName: tempNinData.firstName || existingUser?.firstName,
           middleName: tempNinData.middleName || existingUser?.middleName,
           lastName: tempNinData.lastName || existingUser?.lastName,

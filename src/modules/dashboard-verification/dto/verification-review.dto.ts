@@ -114,6 +114,7 @@ export class ApplicationReviewDto {
     email: string;
     phone: string;
     nin: string;
+    ninVerified: boolean;
     dateOfBirth: string;
     gender: string;
     state: string;

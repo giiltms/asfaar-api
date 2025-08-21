@@ -135,6 +135,7 @@ model User {
   website        String?
   // Removed location - replaced with addresses relation
   nin            String? // National Identity Number
+  ninVerified    Boolean   @default(false) // NIN verification status
   state          String? // User's state
   lga            String? // Local Government Area
   timezone       String?   @default("UTC")

@@ -45,6 +45,13 @@ export default class UserEntity implements User {
   @Expose()
   nin: string; // National Identity Number
 
+  @ApiProperty({
+    description: 'Whether the user has verified their NIN',
+    example: false,
+  })
+  @Expose()
+  ninVerified: boolean;
+
   @Expose()
   state: string; // User's state
 
