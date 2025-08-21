@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { BiometricCentersService } from '@modules/biometric-centers/biometric-centers.service';
+import { ReferenceNumberService } from '@shared/services/reference-number/reference-number.service';
 import {
   Prisma,
   BiometricAppointment,
@@ -37,6 +38,7 @@ export class BiometricAppointmentsService {
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
     private readonly biometricCentersService: BiometricCentersService,
+    private readonly referenceNumberService: ReferenceNumberService,
   ) {}
 
   /**
@@ -98,83 +100,126 @@ export class BiometricAppointmentsService {
       );
       if (!center.isActive) {
         throw new BadRequestException(
-          `Biometric center "${center.name}" is not currently active`,
+          `Biometric center "${center.name}" is not active`,
         );
       }
 
-      // 5. Validate appointment date/time
+      // 5. Generate reference number using the specific center
+      let referenceNumber: string | undefined;
+      if (!submission.referenceNumber) {
+        try {
+          referenceNumber = await this.referenceNumberService.generateReferenceNumberForSubmission(
+            createDto.submissionId,
+            center.centerNumber,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to generate reference number for submission ${createDto.submissionId}: ${error.message}`,
+          );
+          // Continue without reference number - it can be generated later
+        }
+      }
+
+      // 6. Check center availability for the requested date/time
+      const isAvailable = await this.biometricCentersService.checkCenterAvailability(
+        createDto.centerId,
+        new Date(createDto.appointmentDate),
+      );
+
+      if (!isAvailable) {
+        throw new BadRequestException(
+          `Center is not available for the requested date/time`,
+        );
+      }
+
+      // 7. Validate appointment date/time
       await this.validateAppointmentDateTime(
         createDto.centerId,
         new Date(createDto.appointmentDate),
         new Date(createDto.appointmentTime),
       );
 
-      // 6. Validate acknowledgments
+      // 8. Validate acknowledgments
       if (
         !createDto.confirmationAcknowledged ||
         !createDto.consentAcknowledged ||
         !createDto.termsAcknowledged
       ) {
         throw new BadRequestException(
-          'All acknowledgments (confirmation, consent, and terms) must be accepted',
+          'All acknowledgments must be confirmed to book an appointment',
         );
       }
 
-      // 7. Create appointment with ACTIVE status (since payment is completed)
+      // 9. Create appointment with ACTIVE status (since payment is completed)
       const appointmentData: Prisma.BiometricAppointmentCreateInput = {
-        ...createDto,
-        appointmentDate: new Date(createDto.appointmentDate),
-        appointmentTime: new Date(createDto.appointmentTime),
-        status: AppointmentStatus.ACTIVE, // Immediately active since payment is completed
-        createdBy,
         user: { connect: { id: userId } },
         submission: { connect: { id: createDto.submissionId } },
         center: { connect: { id: createDto.centerId } },
+        appointmentClass: createDto.appointmentClass || 'REGULAR',
+        appointmentDate: new Date(createDto.appointmentDate),
+        appointmentTime: new Date(createDto.appointmentTime),
+        specialRequirements: createDto.specialRequirements,
+        confirmationAcknowledged: createDto.confirmationAcknowledged,
+        consentAcknowledged: createDto.consentAcknowledged,
+        termsAcknowledged: createDto.termsAcknowledged,
+        status: AppointmentStatus.ACTIVE, // Active since payment is completed
+        createdBy,
+        lastModifiedBy: createdBy,
       };
 
-      const appointment = await this.prisma.biometricAppointment.create({
-        data: appointmentData,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          submission: {
-            select: {
-              id: true,
-              status: true,
-              payment: {
-                select: {
-                  id: true,
-                  status: true,
-                  amount: true,
+      // Use transaction to create appointment and update form submission with reference number
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create the appointment
+        const appointment = await tx.biometricAppointment.create({
+          data: appointmentData,
+          include: {
+            submission: {
+              include: {
+                form: {
+                  include: {
+                    country: true,
+                  },
+                },
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
                 },
               },
             },
-          },
-          center: {
-            select: {
-              id: true,
-              name: true,
-              address: true,
-              city: true,
-              state: true,
+            center: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                centerNumber: true,
+                address: true,
+                city: true,
+                state: true,
+              },
             },
           },
-        },
+        });
+
+        // Update form submission with reference number if generated
+        if (referenceNumber) {
+          await tx.formSubmission.update({
+            where: { id: createDto.submissionId },
+            data: { referenceNumber },
+          });
+        }
+
+        return appointment;
       });
 
       this.logger.log(
-        `Created biometric appointment: ${appointment.id} for submission: ${createDto.submissionId}`,
+        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId}${referenceNumber ? ` with reference: ${referenceNumber}` : ''}`,
       );
 
-      // TODO: Send appointment confirmation email
-
-      return appointment;
+      return result;
     } catch (error) {
       this.logger.error(
         `Failed to create appointment: ${error.message}`,

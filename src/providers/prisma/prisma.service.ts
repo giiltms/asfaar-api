@@ -10,6 +10,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaServiceOptions } from './interfaces';
 import { PRISMA_SERVICE_OPTIONS } from './prisma.constants';
 import { formSubmissionReferenceMiddleware } from './middlewares/form-submission-reference.middleware';
+import { biometricCenterNumberMiddleware } from './middlewares/biometric-center-number.middleware';
 import { embassySubmissionEmailMiddleware } from './middlewares/embassy-submission-email.middleware';
 import { paymentEmailMiddleware } from './middlewares/payment-email.middleware';
 import { biometricCaptureEmailMiddleware } from './middlewares/biometric-capture-email.middleware';
@@ -35,6 +36,7 @@ export class PrismaService
     }
 
     this.$use(formSubmissionReferenceMiddleware());
+    this.$use(biometricCenterNumberMiddleware());
     this.$use(embassySubmissionEmailMiddleware());
     this.$use(paymentEmailMiddleware());
     this.$use(biometricCaptureEmailMiddleware());

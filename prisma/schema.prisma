@@ -996,9 +996,10 @@ model NinVerification {
 
 // Biometric Center Model
 model BiometricCenter {
-  id   String @id @default(uuid())
-  name String @unique // e.g., "ASFAAR-ABUJA HQ"
-  code String @unique // e.g., "ASFAAR-ABJ-HQ" for internal reference
+  id           String @id @default(uuid())
+  name         String @unique // e.g., "ASFAAR-ABUJA HQ"
+  code         String @unique // e.g., "ASFAAR-ABJ-HQ" for internal reference
+  centerNumber String @unique // e.g., "001" - Unique 3-digit center number for reference generation
 
   // Location Details
   address    String // Full address

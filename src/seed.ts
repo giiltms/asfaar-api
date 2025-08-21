@@ -944,6 +944,7 @@ async function main() {
       data: {
         name: 'ASFAAR-ABUJA HQ',
         code: 'ASFAAR-ABJ-HQ',
+        centerNumber: '001', // Auto-assigned for seeding - normally auto-generated
         address: '14 Yedseram Street, Maitama, Abuja, Nigeria',
         city: 'Abuja',
         state: 'Federal Capital Territory',
@@ -979,6 +980,7 @@ async function main() {
       data: {
         name: 'ASFAAR-LAGOS IKEJA',
         code: 'ASFAAR-LOS-IKJ',
+        centerNumber: '002', // Auto-assigned for seeding - normally auto-generated
         address: '45 Allen Avenue, Ikeja, Lagos State, Nigeria',
         city: 'Lagos',
         state: 'Lagos State',
@@ -1023,6 +1025,7 @@ async function main() {
       data: {
         name: 'ASFAAR-LAGOS ISLAND',
         code: 'ASFAAR-LOS-ISL',
+        centerNumber: '003', // Auto-assigned for seeding - normally auto-generated
         address: '12 Marina Street, Lagos Island, Lagos State, Nigeria',
         city: 'Lagos',
         state: 'Lagos State',
@@ -1055,6 +1058,7 @@ async function main() {
       data: {
         name: 'ASFAAR-KANO CENTRAL',
         code: 'ASFAAR-KNO-CTR',
+        centerNumber: '004', // Auto-assigned for seeding - normally auto-generated
         address: '23 Ibrahim Taiwo Road, Kano, Kano State, Nigeria',
         city: 'Kano',
         state: 'Kano State',
@@ -1087,6 +1091,7 @@ async function main() {
       data: {
         name: 'ASFAAR-PORT HARCOURT',
         code: 'ASFAAR-PHC-GRA',
+        centerNumber: '005', // Auto-assigned for seeding - normally auto-generated
         address:
           '15 Aba Road, GRA Phase 2, Port Harcourt, Rivers State, Nigeria',
         city: 'Port Harcourt',

@@ -4,6 +4,45 @@
 
 The Biometric Data API provides comprehensive functionality for capturing, storing, and managing biometric information for visa applications. This includes fingerprint data (442 format), photo captures, and integration with the verification workflow.
 
+## Reference Number Format
+
+The system uses a structured reference number format: `CC00125000004`
+
+### Format Breakdown:
+
+- **CC** - Country Code (2 letters, e.g., SA for Saudi Arabia, KW for Kuwait)
+- **001** - ASFAAR Center Number (3 digits, automatically assigned)
+- **25** - Year (2 digits, e.g., 25 for 2025)
+- **000004** - Serial Number (6 digits, auto-incremented)
+
+### Reference Number Generation:
+
+- Reference numbers are **generated when biometric appointments are created**
+- This ensures the correct center number is used for each application
+- The center number comes from the specific biometric center where the appointment is booked
+- If no appointment exists, the reference number will be `null` until an appointment is created
+
+### Center Number Assignment:
+
+- Center numbers are **automatically generated** when creating new biometric centers
+- The system assigns the next available 3-digit number (001, 002, 003, etc.)
+- Maximum of 999 centers supported
+- Center numbers are unique across all centers
+
+### Example Reference Numbers:
+
+- `SA00125000001` - Saudi Arabia, Center 001, Year 2025, Application #1
+- `KW00225000015` - Kuwait, Center 002, Year 2025, Application #15
+- `NG00325000042` - Nigeria, Center 003, Year 2025, Application #42
+
+### Benefits:
+
+- **Traceability**: Each application can be traced to its specific center
+- **Scalability**: Supports up to 999 centers per country
+- **Uniqueness**: Guaranteed unique across all centers and years
+- **Readability**: Human-readable format for easy identification
+- **Center-Specific**: Reference numbers reflect the actual center where biometrics will be captured
+
 ## Data Models
 
 ### User Model Updates
@@ -149,6 +188,68 @@ When fetching user data (e.g., `/api/v1/users/me`), the response now includes:
 
 ## API Endpoints
 
+### Create Biometric Center
+
+**Endpoint:** `POST /api/v1/biometric-centers`
+
+**Description:** Create a new biometric center (center number is automatically assigned)
+
+**Request Body:**
+
+```json
+{
+  "name": "ASFAAR-ABUJA HQ",
+  "code": "ASFAAR-ABJ-HQ",
+  "address": "14 Yedseram Street, Maitama, Abuja, Nigeria",
+  "city": "Abuja",
+  "state": "Federal Capital Territory",
+  "country": "Nigeria",
+  "postalCode": "900001",
+  "phone": "+2347007004001",
+  "email": "info@asfaarvisaservices.com",
+  "website": "https://asfaarvisaservices.com",
+  "capacity": 50,
+  "openingTime": "09:00",
+  "closingTime": "17:00",
+  "workingDays": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+  "appointmentDuration": 30,
+  "bufferTime": 15,
+  "servicesOffered": ["BIOMETRIC_CAPTURE", "DOCUMENT_VERIFICATION"],
+  "specialFacilities": ["WHEELCHAIR_ACCESS", "PARKING_AVAILABLE"],
+  "managerId": "optional-manager-uuid"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "name": "ASFAAR-ABUJA HQ",
+  "code": "ASFAAR-ABJ-HQ",
+  "centerNumber": "001",
+  "address": "14 Yedseram Street, Maitama, Abuja, Nigeria",
+  "city": "Abuja",
+  "state": "Federal Capital Territory",
+  "country": "Nigeria",
+  "postalCode": "900001",
+  "phone": "+2347007004001",
+  "email": "info@asfaarvisaservices.com",
+  "website": "https://asfaarvisaservices.com",
+  "isActive": true,
+  "capacity": 50,
+  "openingTime": "09:00",
+  "closingTime": "17:00",
+  "workingDays": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+  "appointmentDuration": 30,
+  "bufferTime": 15,
+  "servicesOffered": ["BIOMETRIC_CAPTURE", "DOCUMENT_VERIFICATION"],
+  "specialFacilities": ["WHEELCHAIR_ACCESS", "PARKING_AVAILABLE"],
+  "createdAt": "2025-01-15T10:30:00Z",
+  "updatedAt": "2025-01-15T10:30:00Z"
+}
+```
+
 ### 1. Create Biometric Data Record
 
 **POST** `/api/v1/biometric-data`
@@ -236,6 +337,11 @@ Submit biometric data using application reference number instead of direct IDs.
 }
 ```
 
+**Example Reference Numbers:**
+
+- `SA00125000001` - Saudi Arabia, Center 001, Year 2025, Application #1
+- `KW00225000015` - Kuwait, Center 002, Year 2025, Application #15
+
 ### 4. Photo Upload
 
 **POST** `/api/v1/biometric-data/by-reference/:referenceNumber/photo`
@@ -246,6 +352,14 @@ Upload a photo for an applicant using multipart form data.
 
 - **Content-Type**: `multipart/form-data`
 - **Body**: Form with `photo` file field
+
+**Example:**
+
+```bash
+curl -X POST "/api/v1/biometric-data/by-reference/SA00125000001/photo" \
+  -H "Authorization: Bearer <token>" \
+  -F "photo=@/path/to/photo.jpg"
+```
 
 **Response:**
 
@@ -368,7 +482,7 @@ Get all applications that need additional information or documents.
   "data": [
     {
       "id": "submission-uuid",
-      "referenceNumber": "SA25000001",
+      "referenceNumber": "SA00125000001",
       "status": "QUERIED",
       "queryMessage": "Please provide additional proof of employment",
       "requiredDocuments": ["Employment letter", "Payslips"],
@@ -437,7 +551,7 @@ Retrieves applications ready for verification officer review.
     "applications": [
       {
         "id": "submission-uuid",
-        "referenceNumber": "SA25000001",
+        "referenceNumber": "SA00125000001",
         "status": "UNDER_REVIEW",
         "applicant": {
           "firstName": "John",
