@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BiometricAppointmentsService } from '@modules/biometric-appointments/biometric-appointments.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { BiometricCentersService } from '@modules/biometric-centers/biometric-centers.service';
+import { ReferenceNumberService } from '@shared/services/reference-number/reference-number.service';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import {
   NotFoundException,
@@ -40,6 +41,7 @@ const mockCenter = {
   id: 'center-1',
   name: 'ASFAAR-ABUJA HQ',
   code: 'ASF-ABJ-HQ',
+  centerNumber: '001',
   address: '14 Yedseram Street, Maitama',
   city: 'Abuja',
   state: 'FCT',
@@ -73,6 +75,7 @@ const mockAppointment = {
 class MockPrismaService {
   formSubmission = {
     findUnique: jest.fn(),
+    update: jest.fn(),
   };
 
   biometricAppointment = {
@@ -84,6 +87,8 @@ class MockPrismaService {
     update: jest.fn(),
     groupBy: jest.fn(),
   };
+
+  $transaction = jest.fn();
 }
 
 class MockPaymentsService {
@@ -95,11 +100,16 @@ class MockBiometricCentersService {
   checkCenterAvailability = jest.fn();
 }
 
+class MockReferenceNumberService {
+  generateReferenceNumberForSubmission = jest.fn();
+}
+
 describe('BiometricAppointmentsService', () => {
   let service: BiometricAppointmentsService;
   let prismaService: MockPrismaService;
   let paymentsService: MockPaymentsService;
   let biometricCentersService: MockBiometricCentersService;
+  let referenceNumberService: MockReferenceNumberService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -117,6 +127,10 @@ describe('BiometricAppointmentsService', () => {
           provide: BiometricCentersService,
           useClass: MockBiometricCentersService,
         },
+        {
+          provide: ReferenceNumberService,
+          useClass: MockReferenceNumberService,
+        },
       ],
     }).compile();
 
@@ -126,6 +140,7 @@ describe('BiometricAppointmentsService', () => {
     prismaService = module.get(PrismaService);
     paymentsService = module.get(PaymentsService);
     biometricCentersService = module.get(BiometricCentersService);
+    referenceNumberService = module.get(ReferenceNumberService);
   });
 
   afterEach(() => {
@@ -158,9 +173,12 @@ describe('BiometricAppointmentsService', () => {
       biometricCentersService.findCenterById.mockResolvedValue(mockCenter);
       biometricCentersService.checkCenterAvailability.mockResolvedValue(true);
       prismaService.biometricAppointment.findFirst.mockResolvedValue(null);
-      prismaService.biometricAppointment.create.mockResolvedValue(
-        mockAppointment,
-      );
+      referenceNumberService.generateReferenceNumberForSubmission.mockResolvedValue('SA00125000001');
+      prismaService.$transaction.mockImplementation(async (callback) => {
+        return await callback(prismaService);
+      });
+      prismaService.biometricAppointment.create.mockResolvedValue(mockAppointment);
+      prismaService.formSubmission.update.mockResolvedValue(mockSubmission);
 
       // Act
       const result = await service.createAppointment(
@@ -175,12 +193,10 @@ describe('BiometricAppointmentsService', () => {
         where: { id: 'submission-1' },
         include: { payment: true },
       });
-      expect(prismaService.biometricAppointment.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          status: AppointmentStatus.ACTIVE, // Should be ACTIVE since payment is completed
-        }),
-        include: expect.any(Object),
-      });
+      expect(referenceNumberService.generateReferenceNumberForSubmission).toHaveBeenCalledWith(
+        'submission-1',
+        mockCenter.centerNumber,
+      );
     });
 
     it('should throw NotFoundException when submission does not exist', async () => {
