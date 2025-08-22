@@ -511,7 +511,7 @@ export class PaymentsService {
       // Prepare update data
       const updateData: Prisma.PaymentUpdateInput = {
         status: updateDto.status,
-        processorId: updateDto.processorId,
+        processorId: updateDto.processorId.toString(),
         receiptUrl: updateDto.receiptUrl,
         processorResponse: updateDto.processorResponse,
         lastModifiedBy,
