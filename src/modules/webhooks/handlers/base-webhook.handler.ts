@@ -106,7 +106,8 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       // Update payment status to completed
       await this.paymentsService.updatePaymentStatus(payment.id, {
         status: PaymentStatus.COMPLETED,
-        processorId: event.data.id || event.data.payment_id,
+        processorId:
+          event.data.id.toString() || event.data.payment_id.toString(),
         processorResponse: event.data,
       });
 
@@ -140,7 +141,8 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
 
       await this.paymentsService.updatePaymentStatus(payment.id, {
         status: PaymentStatus.FAILED,
-        processorId: event.data.id || event.data.payment_id,
+        processorId:
+          event.data.id.toString() || event.data.payment_id.toString(),
         processorResponse: event.data,
       });
 
@@ -174,7 +176,8 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
 
       await this.paymentsService.updatePaymentStatus(payment.id, {
         status: PaymentStatus.PENDING,
-        processorId: event.data.id || event.data.payment_id,
+        processorId:
+          event.data.id.toString() || event.data.payment_id.toString(),
         processorResponse: event.data,
       });
 
