@@ -441,6 +441,20 @@ export class FormSubmissionDto {
     lastName?: string;
     email: string;
   };
+
+  // Progress information
+  @ApiPropertyOptional({
+    description: 'Application progress information',
+    type: 'object',
+    properties: {
+      progressPercentage: { type: 'number', example: 75 },
+      nextAction: { type: 'string', example: 'Complete payment' },
+    },
+  })
+  progress?: {
+    progressPercentage: number;
+    nextAction?: string;
+  };
 }
 
 // Public Form DTOs (DEPRECATED - No longer used)

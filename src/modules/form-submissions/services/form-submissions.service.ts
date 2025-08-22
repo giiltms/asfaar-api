@@ -589,10 +589,39 @@ export class FormSubmissionsService {
       this.prisma.formSubmission.count({ where }),
     ]);
 
+    // Calculate form progress for each submission
+    const submissionsWithProgress = await Promise.all(
+      submissions.map(async (submission) => {
+        const submissionDto = this.mapToSubmissionDto(submission);
+
+        try {
+          // Get form progress for this submission
+          const formProgress = await this.getFormProgress(
+            userId,
+            submission.formId,
+          );
+
+          // Add progress information to the submission
+          submissionDto.progress = {
+            progressPercentage: formProgress.overallProgress,
+            nextAction: formProgress.canSubmit
+              ? 'Ready to submit'
+              : 'Complete required fields',
+          };
+        } catch (error) {
+          // If progress calculation fails, set default values
+          submissionDto.progress = {
+            progressPercentage: 0,
+            nextAction: 'Unable to calculate progress',
+          };
+        }
+
+        return submissionDto;
+      }),
+    );
+
     return {
-      submissions: submissions.map((submission) =>
-        this.mapToSubmissionDto(submission),
-      ),
+      submissions: submissionsWithProgress,
       total,
       page,
       limit,
@@ -1547,6 +1576,37 @@ export class FormSubmissionsService {
           email: true,
         },
       },
+      payment: {
+        select: {
+          id: true,
+          status: true,
+          amount: true,
+          currency: true,
+          paidAt: true,
+        },
+      },
+      appointment: {
+        select: {
+          id: true,
+          status: true,
+          appointmentDate: true,
+          appointmentTime: true,
+          queueEntry: {
+            select: {
+              id: true,
+              status: true,
+              queueNumber: true,
+              booth: {
+                select: {
+                  id: true,
+                  boothNumber: true,
+                  appointmentClass: true,
+                },
+              },
+            },
+          },
+        },
+      },
     };
   }
 
@@ -1623,6 +1683,8 @@ export class FormSubmissionsService {
       },
       user: submission.user,
       referenceNumber: submission.referenceNumber,
+      // Progress information - will be calculated separately for each submission
+      progress: undefined,
     };
   }
 
