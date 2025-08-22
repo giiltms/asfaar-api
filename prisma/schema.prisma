@@ -696,6 +696,7 @@ model FormField {
   metadata            Json? // e.g., { "captureTimestamp": true }
   source              Json? // e.g., { "endpoint": "/api/states", "valueField": "id", "labelField": "name" }
   fileTypes           Json? // e.g., { "accept": [".pdf", ".jpg", ".png"], "maxSize": "5MB", "multiple": false }
+  content             String?    @db.Text // For INFO and AGREEMENT fields to display content
   order               Int
 
   options   FieldOption[] // for SELECT / MULTISELECT
@@ -819,6 +820,10 @@ enum FieldType {
   FILE
   SIGNATURE
   GEOLOCATION
+  EMAIL
+  PHONE
+  INFO
+  AGREEMENT
 }
 
 enum SubmissionStatus {

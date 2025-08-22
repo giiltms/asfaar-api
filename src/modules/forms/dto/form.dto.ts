@@ -187,6 +187,17 @@ export class CreateFormFieldDto {
   @IsObject()
   fileTypes?: any;
 
+  @ApiPropertyOptional({
+    description: 'Content for INFO and AGREEMENT fields (supports HTML)',
+    example:
+      '<p><strong>Important Notice:</strong></p><p>This is important information for the user to read.</p>',
+    maxLength: 10000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10000)
+  content?: string;
+
   @ApiProperty({
     description: 'Field order within group',
     example: 1,
@@ -257,6 +268,12 @@ export class FormFieldDto {
     required: false,
   })
   fileTypes?: any;
+
+  @ApiProperty({
+    description: 'Content for INFO and AGREEMENT fields',
+    required: false,
+  })
+  content?: string;
 
   @ApiProperty({ description: 'Field order' })
   order: number;

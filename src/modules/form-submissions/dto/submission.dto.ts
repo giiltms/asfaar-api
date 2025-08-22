@@ -383,8 +383,12 @@ export class FormSubmissionDto {
   })
   cancellationReason?: string;
 
-  @ApiProperty({ description: 'Field responses', type: [FieldResponseDto] })
-  responses: FieldResponseDto[];
+  @ApiPropertyOptional({
+    description: 'Field responses (only included in detailed views)',
+    type: [FieldResponseDto],
+    required: false,
+  })
+  responses?: FieldResponseDto[];
 
   @ApiProperty({ description: 'Submission metadata', required: false })
   metadata?: any;
@@ -419,6 +423,14 @@ export class FormSubmissionDto {
     id: string;
     name: string;
     description?: string;
+    country?: {
+      id: string;
+      name: string;
+      isoCode2: string;
+      isoCode3: string;
+      flag: string;
+      logoUrl: string;
+    };
   };
 
   // Include user details for admin views

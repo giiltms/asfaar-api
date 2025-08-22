@@ -584,7 +584,7 @@ export class FormSubmissionsService {
         skip,
         take: limit,
         orderBy,
-        include: this.getSubmissionInclude(),
+        include: this.getSubmissionListInclude(),
       }),
       this.prisma.formSubmission.count({ where }),
     ]);
@@ -1389,6 +1389,24 @@ export class FormSubmissionsService {
           );
         }
         break;
+      case FieldType.EMAIL:
+        if (!this.isValidEmail(value)) {
+          throw new BadRequestException(
+            `Field '${field.label}' must be a valid email address`,
+          );
+        }
+        break;
+      case FieldType.PHONE:
+        if (!this.isValidPhone(value)) {
+          throw new BadRequestException(
+            `Field '${field.label}' must be a valid phone number`,
+          );
+        }
+        break;
+      case FieldType.INFO:
+      case FieldType.AGREEMENT:
+        // These are display-only fields, no validation needed
+        break;
     }
 
     // Custom validation rules
@@ -1400,6 +1418,19 @@ export class FormSubmissionsService {
   private isValidDate(value: any): boolean {
     const date = new Date(value);
     return date instanceof Date && !isNaN(date.getTime());
+  }
+
+  private isValidEmail(value: any): boolean {
+    if (typeof value !== 'string') return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(value);
+  }
+
+  private isValidPhone(value: any): boolean {
+    if (typeof value !== 'string') return false;
+    // Basic phone validation - allows international format
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    return phoneRegex.test(value.replace(/[\s\-\(\)]/g, ''));
   }
 
   private isValidOption(field: any, value: any): boolean {
@@ -1466,6 +1497,46 @@ export class FormSubmissionsService {
           id: true,
           name: true,
           description: true,
+          country: {
+            select: {
+              id: true,
+              name: true,
+              isoCode2: true,
+              isoCode3: true,
+              flag: true,
+              logoUrl: true,
+            },
+          },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    };
+  }
+
+  private getSubmissionListInclude() {
+    return {
+      form: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          country: {
+            select: {
+              id: true,
+              name: true,
+              isoCode2: true,
+              isoCode3: true,
+              flag: true,
+              logoUrl: true,
+            },
+          },
         },
       },
       user: {
@@ -1523,16 +1594,20 @@ export class FormSubmissionsService {
       cancelledBy: submission.cancelledBy,
       cancellationReason: submission.cancellationReason,
 
-      responses: submission.responses.map((response: any) => ({
-        id: response.id,
-        fieldId: response.fieldId,
-        fieldName: response.fieldName,
-        value: response.value,
-        fileUrls: response.fileUrls,
-        metadata: response.metadata,
-        createdAt: response.createdAt,
-        updatedAt: response.updatedAt,
-      })),
+      // Include responses if they exist (for detailed views)
+      ...(submission.responses && {
+        responses: submission.responses.map((response: any) => ({
+          id: response.id,
+          fieldId: response.fieldId,
+          fieldName: response.fieldName,
+          value: response.value,
+          fileUrls: response.fileUrls,
+          metadata: response.metadata,
+          createdAt: response.createdAt,
+          updatedAt: response.updatedAt,
+        })),
+      }),
+
       metadata: submission.metadata,
       createdAt: submission.createdAt,
       updatedAt: submission.updatedAt,
@@ -1540,7 +1615,12 @@ export class FormSubmissionsService {
       reviewedAt: submission.reviewedAt,
       reviewedBy: submission.reviewedBy,
       reviewNotes: submission.reviewNotes,
-      form: submission.form,
+      form: {
+        id: submission.form.id,
+        name: submission.form.name,
+        description: submission.form.description,
+        country: submission.form.country,
+      },
       user: submission.user,
       referenceNumber: submission.referenceNumber,
     };
