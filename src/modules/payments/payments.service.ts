@@ -182,8 +182,8 @@ export class PaymentsService {
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
-            connect: { id: initiatePaymentDto.submissionId },
-          }
+              connect: { id: initiatePaymentDto.submissionId },
+            }
           : undefined,
       };
 
@@ -590,9 +590,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ]
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
           : undefined,
       },
       skip,
@@ -607,9 +607,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ]
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
           : undefined,
       },
     });
