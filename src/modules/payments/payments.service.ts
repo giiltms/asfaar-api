@@ -46,7 +46,7 @@ export class PaymentsService {
    */
   async createPayment(
     createDto: any,
-    createdBy?: string,
+    userId: string,
     reference?: string,
   ): Promise<Payment> {
     try {
@@ -83,7 +83,10 @@ export class PaymentsService {
         invoiceNumber,
         reference,
         processor: processor as PaymentProvider,
-        createdBy,
+        createdBy: userId, // Set createdBy to userId for consistency
+        user: {
+          connect: { id: userId },
+        },
         // submission: {
         //   connect: { id: createDto.submissionId },
         // },
@@ -99,8 +102,36 @@ export class PaymentsService {
               userId: true,
             },
           },
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  amount: true,
+                  currency: true,
+                },
+              },
+            },
+          },
         },
       });
+
+      // Create payment-service fee relationships if serviceFees are provided
+      if (createDto.serviceFees && Array.isArray(createDto.serviceFees)) {
+        const serviceFeeRelations = createDto.serviceFees.map(
+          (serviceFeeId: string) => ({
+            paymentId: payment.id,
+            serviceFeeId,
+            amount: createDto.amount || 0, // Use payment amount for now, could be split per fee
+            currency: createDto.currency || 'NGN',
+          }),
+        );
+
+        await this.prisma.paymentServiceFee.createMany({
+          data: serviceFeeRelations,
+        });
+      }
 
       this.logger.log(
         `Created payment: ${payment.id} for submission: ${createDto.submissionId}`,
@@ -121,7 +152,7 @@ export class PaymentsService {
    */
   async initiatePayment(
     initiatePaymentDto: InitiatePaymentDto,
-    createdBy?: string,
+    userId: string,
   ): Promise<Payment> {
     try {
       // Check if submission exists
@@ -178,7 +209,10 @@ export class PaymentsService {
         amount: initiatePaymentDto.amount || totalAmount,
         currency: initiatePaymentDto.currency || Currency.NGN,
         invoiceNumber,
-        createdBy,
+        createdBy: userId, // Set createdBy to userId for consistency
+        user: {
+          connect: { id: userId },
+        },
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
@@ -286,6 +320,21 @@ export class PaymentsService {
               },
             },
           },
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  amount: true,
+                  currency: true,
+                  feeType: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.payment.count({ where }),
@@ -383,6 +432,21 @@ export class PaymentsService {
             id: true,
             status: true,
             userId: true,
+          },
+        },
+        serviceFees: {
+          include: {
+            serviceFee: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                amount: true,
+                currency: true,
+                feeType: true,
+                isActive: true,
+              },
+            },
           },
         },
       },
@@ -532,6 +596,21 @@ export class PaymentsService {
         data: updateData,
         include: {
           submission: true,
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  amount: true,
+                  currency: true,
+                  feeType: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -881,9 +960,212 @@ export class PaymentsService {
    */
   private async handlePaymentCompletion(payment: Payment): Promise<void> {
     try {
+      // Get the payment with service fee information
+      const paymentWithServiceFees = await this.prisma.payment.findUnique({
+        where: { id: payment.id },
+        include: {
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  feeType: true,
+                  amount: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      if (!paymentWithServiceFees) {
+        this.logger.warn(`Payment ${payment.id} not found with service fees`);
+        return;
+      }
+
+      // Process each service fee type
+      for (const paymentServiceFee of paymentWithServiceFees.serviceFees) {
+        const { serviceFee } = paymentServiceFee;
+
+        switch (serviceFee.feeType) {
+          case 'ONBOARDING':
+            await this.handleOnboardingPayment(paymentWithServiceFees.user);
+            break;
+          case 'APPLICATION':
+            await this.handleApplicationPayment(
+              paymentWithServiceFees.user,
+              payment.submissionId,
+            );
+            break;
+          case 'UPGRADE':
+            await this.handleUpgradePayment(
+              paymentWithServiceFees.user,
+              payment.submissionId,
+            );
+            break;
+          case 'RESCHEDULING':
+            await this.handleReschedulingPayment(
+              paymentWithServiceFees.user,
+              payment.submissionId,
+            );
+            break;
+          case 'ADDITIONAL_CHARGE':
+            await this.handleAdditionalChargePayment(
+              paymentWithServiceFees.user,
+              payment.submissionId,
+            );
+            break;
+          default:
+            this.logger.log(
+              `Unknown service fee type: ${serviceFee.feeType} for payment ${payment.id}`,
+            );
+        }
+      }
+
+      // Handle submission-specific side effects if payment has a submission
+      if (payment.submissionId) {
+        await this.handleSubmissionPaymentSideEffects(payment.submissionId);
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle payment completion side effects: ${error.message}`,
+        error.stack,
+      );
+      // Don't throw - payment update should succeed even if side effects fail
+    }
+  }
+
+  /**
+   * Handle onboarding payment completion
+   */
+  private async handleOnboardingPayment(user: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<void> {
+    try {
+      // Set onboardingPaid to true for the user
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { onboardingPaid: true },
+      });
+
+      this.logger.log(
+        `User ${user.id} onboarding payment completed, onboardingPaid set to true`,
+      );
+
+      // TODO: Send onboarding completion email
+      // await this.emailService.sendOnboardingCompletionEmail(user.email, user.firstName);
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle onboarding payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle application payment completion
+   */
+  private async handleApplicationPayment(
+    user: { id: string; email: string; firstName?: string; lastName?: string },
+    submissionId?: string,
+  ): Promise<void> {
+    try {
+      if (submissionId) {
+        // Update submission status or trigger application processing
+        this.logger.log(
+          `Application payment completed for submission ${submissionId}`,
+        );
+
+        // TODO: Implement application-specific logic
+        // e.g., update submission status, send confirmation email, etc.
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle application payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle upgrade payment completion
+   */
+  private async handleUpgradePayment(
+    user: { id: string; email: string; firstName?: string; lastName?: string },
+    submissionId?: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(`Upgrade payment completed for user ${user.id}`);
+
+      // TODO: Implement upgrade-specific logic
+      // e.g., upgrade user plan, unlock premium features, etc.
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle upgrade payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle rescheduling payment completion
+   */
+  private async handleReschedulingPayment(
+    user: { id: string; email: string; firstName?: string; lastName?: string },
+    submissionId?: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(`Rescheduling payment completed for user ${user.id}`);
+
+      // TODO: Implement rescheduling-specific logic
+      // e.g., unlock rescheduling feature, send confirmation, etc.
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle rescheduling payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle additional charge payment completion
+   */
+  private async handleAdditionalChargePayment(
+    user: { id: string; email: string; firstName?: string; lastName?: string },
+    submissionId?: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(
+        `Additional charge payment completed for user ${user.id}`,
+      );
+
+      // TODO: Implement additional charge logic
+      // e.g., unlock additional services, send confirmation, etc.
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle additional charge payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle submission-specific payment side effects
+   */
+  private async handleSubmissionPaymentSideEffects(
+    submissionId: string,
+  ): Promise<void> {
+    try {
       // Update any related biometric appointments to ACTIVE status
       const appointment = await this.prisma.biometricAppointment.findUnique({
-        where: { submissionId: payment.submissionId },
+        where: { submissionId },
       });
 
       if (appointment && appointment.status === 'PENDING') {
@@ -897,13 +1179,11 @@ export class PaymentsService {
         );
       }
 
-      // TODO: Add other side effects like sending confirmation emails, etc.
+      // TODO: Add other submission-specific side effects like sending confirmation emails, etc.
     } catch (error) {
       this.logger.error(
-        `Failed to handle payment completion side effects: ${error.message}`,
-        error.stack,
+        `Failed to handle submission payment side effects for ${submissionId}: ${error.message}`,
       );
-      // Don't throw - payment update should succeed even if side effects fail
     }
   }
 }

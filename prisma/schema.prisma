@@ -85,8 +85,9 @@ model ServiceFee {
 
   feeType FeeType?
 
-  submissions FormSubmission[]
-  forms       DynamicForm[]
+  submissions        FormSubmission[]
+  forms              DynamicForm[]
+  paymentServiceFees PaymentServiceFee[] // NEW: Payments using this service fee
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -167,6 +168,7 @@ model User {
   transactions          Transaction[]
   subscriptions         Subscription[]
   wallets               Wallet[]
+  payments              Payment[] // NEW: User's payments
   FormSubmission        FormSubmission[]
   ninVerifications      NinVerification[]
   biometricCenters      BiometricCenter[]      @relation("CenterManager")
@@ -1280,8 +1282,15 @@ model Payment {
   id String @id @default(uuid())
 
   // Relations
-  submissionId String?         @unique // One payment per form submission
+  submissionId String?         @unique // One payment per form submission (optional for onboarding)
   submission   FormSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // User who made the payment (REQUIRED for onboarding payments)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Many-to-many relationship with service fees
+  serviceFees PaymentServiceFee[]
 
   // Payment Details
   amount      Float
@@ -1318,6 +1327,7 @@ model Payment {
 
   // Indexes for performance
   @@index([submissionId])
+  @@index([userId])
   @@index([status])
   @@index([amount])
   @@index([currency])
@@ -1325,6 +1335,26 @@ model Payment {
   @@index([paidAt])
   @@index([createdAt])
   @@map("payments")
+}
+
+// Junction table for Payment <-> ServiceFee many-to-many relationship
+model PaymentServiceFee {
+  id           String     @id @default(uuid())
+  paymentId    String
+  payment      Payment    @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  serviceFeeId String
+  serviceFee   ServiceFee @relation(fields: [serviceFeeId], references: [id], onDelete: Cascade)
+
+  // Additional fields for the relationship
+  amount   Float // Amount for this specific service fee
+  currency String @default("NGN")
+
+  createdAt DateTime @default(now())
+
+  @@unique([paymentId, serviceFeeId])
+  @@index([paymentId])
+  @@index([serviceFeeId])
+  @@map("payment_service_fees")
 }
 
 model ApplicationType {

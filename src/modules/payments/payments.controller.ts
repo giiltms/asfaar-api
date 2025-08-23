@@ -78,13 +78,15 @@ export class PaymentsController {
     description: 'Payment already exists for this submission',
   })
   async createPayment(
+    @Request() req: any,
     @Body(ValidationPipe) createDto: CreatePaymentDto,
     // TODO: Extract user ID from JWT token when user context is available
     // @CurrentUser() user: User,
   ) {
     const payment = await this.paymentsService.createPayment(
       createDto,
-      // user?.id,
+      req.user?.id, // userId
+      undefined, // reference
     );
 
     return {
@@ -353,8 +355,8 @@ export class PaymentsController {
 
     await this.paymentsService.createPayment(
       paymentData,
-      user.id,
-      payment.reference,
+      user.id, // userId
+      payment.reference, // reference
     );
 
     return {
