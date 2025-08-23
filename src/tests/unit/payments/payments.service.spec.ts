@@ -84,6 +84,20 @@ class MockPrismaService {
     delete: jest.fn(),
     count: jest.fn(),
   };
+
+  paymentServiceFee = {
+    create: jest.fn(),
+    createMany: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  user = {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  };
 }
 
 class MockPaymentService {
@@ -122,6 +136,9 @@ describe('PaymentsService', () => {
     service = module.get<PaymentsService>(PaymentsService);
     prismaService = module.get(PrismaService);
     paymentService = module.get(PaymentService);
+
+    // Reset all mocks before each test
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -161,6 +178,9 @@ describe('PaymentsService', () => {
           currency: Currency.NGN,
           processor: 'PAYSTACK',
           createdBy: 'user-1',
+          user: {
+            connect: { id: 'user-1' },
+          },
         }),
         include: {
           submission: {
@@ -168,6 +188,18 @@ describe('PaymentsService', () => {
               id: true,
               status: true,
               userId: true,
+            },
+          },
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  amount: true,
+                  currency: true,
+                },
+              },
             },
           },
         },
@@ -209,13 +241,27 @@ describe('PaymentsService', () => {
 
     it('should update payment status successfully', async () => {
       // Arrange
+      const freshMockPayment = {
+        id: 'payment-1',
+        submissionId: 'submission-1',
+        amount: 150.0,
+        currency: Currency.NGN,
+        status: PaymentStatus.PENDING,
+        methodType: PaymentMethodType.CARD,
+        description: 'Visa application fee',
+        invoiceNumber: 'INV-20240101-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        submission: mockSubmission,
+      };
+
       const updatedPayment = {
-        ...mockPayment,
+        ...freshMockPayment,
         status: PaymentStatus.COMPLETED,
         paidAt: new Date(),
       };
 
-      prismaService.payment.findUnique.mockResolvedValue(mockPayment);
+      prismaService.payment.findUnique.mockResolvedValue(freshMockPayment);
       prismaService.payment.update.mockResolvedValue(updatedPayment);
       prismaService.biometricAppointment.findUnique.mockResolvedValue(null);
 
@@ -235,20 +281,89 @@ describe('PaymentsService', () => {
           processorId: 'pi_123456',
           paidAt: expect.any(Date),
         }),
-        include: { submission: true },
+        include: {
+          submission: true,
+          serviceFees: {
+            include: {
+              serviceFee: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                  amount: true,
+                  currency: true,
+                  feeType: true,
+                  isActive: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
 
     it('should activate biometric appointment when payment is completed', async () => {
       // Arrange
+      const freshMockPayment = {
+        id: 'payment-1',
+        submissionId: 'submission-1',
+        amount: 150.0,
+        currency: Currency.NGN,
+        status: PaymentStatus.PENDING,
+        methodType: PaymentMethodType.CARD,
+        description: 'Visa application fee',
+        invoiceNumber: 'INV-20240101-001',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        submission: mockSubmission,
+      };
+
       const updatedPayment = {
-        ...mockPayment,
+        ...freshMockPayment,
         status: PaymentStatus.COMPLETED,
         submissionId: 'submission-1',
       };
 
-      prismaService.payment.findUnique.mockResolvedValue(mockPayment);
-      prismaService.payment.update.mockResolvedValue(updatedPayment);
+      // Mock the payment with service fees data for handlePaymentCompletion
+      const paymentWithServiceFees = {
+        ...updatedPayment,
+        serviceFees: [
+          {
+            id: 'psf-1',
+            paymentId: 'payment-1',
+            serviceFeeId: 'sf-1',
+            amount: 150.0,
+            currency: 'NGN',
+            createdAt: new Date(),
+            serviceFee: {
+              id: 'sf-1',
+              name: 'Application Fee',
+              feeType: 'APPLICATION',
+              amount: 150,
+              isActive: true,
+            },
+          },
+        ],
+        user: {
+          id: 'user-1',
+          email: 'user@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+      };
+
+      // Mock the initial payment lookup (should return PENDING status)
+      prismaService.payment.findUnique.mockResolvedValue(freshMockPayment);
+
+      // Mock the payment update
+      prismaService.payment.update.mockResolvedValue(paymentWithServiceFees);
+
+      // Mock the additional payment lookup in handlePaymentCompletion
+      // First call returns the original payment, second call returns payment with service fees
+      prismaService.payment.findUnique
+        .mockResolvedValueOnce(freshMockPayment) // First call in updatePaymentStatus
+        .mockResolvedValueOnce(paymentWithServiceFees); // Second call in handlePaymentCompletion
+
       prismaService.biometricAppointment.findUnique.mockResolvedValue(
         mockBiometricAppointment,
       );
