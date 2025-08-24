@@ -246,7 +246,12 @@ export class PaymentsService {
     filters: PaymentFiltersDto = {},
     pagination: PaginationQueryDto = {},
   ) {
-    const { page = 1, limit = 10 } = pagination;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = pagination;
     const {
       status,
       currency,
@@ -303,7 +308,7 @@ export class PaymentsService {
         where,
         skip,
         take: limit,
-        orderBy: [{ createdAt: 'desc' }],
+        orderBy: [{ [sortBy]: sortOrder }],
         include: {
           submission: {
             select: {
@@ -344,8 +349,8 @@ export class PaymentsService {
       page,
       limit,
       totalCount,
-      'createdAt',
-      'desc',
+      sortBy,
+      sortOrder,
     );
 
     return {
@@ -461,7 +466,12 @@ export class PaymentsService {
     filters: PaymentFiltersDto = {},
     pagination: PaginationQueryDto = {},
   ) {
-    const { page = 1, limit = 10 } = pagination;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = pagination;
     const {
       status,
       currency,
@@ -522,7 +532,7 @@ export class PaymentsService {
         where,
         skip,
         take: limit,
-        orderBy: [{ createdAt: 'desc' }],
+        orderBy: [{ [sortBy]: sortOrder }],
         include: {
           submission: {
             select: {
@@ -548,8 +558,8 @@ export class PaymentsService {
       page,
       limit,
       totalCount,
-      'createdAt',
-      'desc',
+      sortBy,
+      sortOrder,
     );
 
     return {

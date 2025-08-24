@@ -193,8 +193,22 @@ export class PaymentsController {
     type: [PaymentEntity],
   })
   async findAllPayments(
-    @Query() filters: PaymentFiltersDto,
-    @Query() pagination: PaginationQueryDto,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      }),
+    )
+    filters: PaymentFiltersDto,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      }),
+    )
+    pagination: PaginationQueryDto,
   ) {
     const result = await this.paymentsService.findAllPayments(
       filters,
@@ -266,8 +280,22 @@ export class PaymentsController {
   })
   async findMyPayments(
     @Request() req: any,
-    @Query() filters: PaymentFiltersDto,
-    @Query() pagination: PaginationQueryDto,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      }),
+    )
+    filters: PaymentFiltersDto,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: false,
+      }),
+    )
+    pagination: PaginationQueryDto,
   ) {
     const userId = req.user.id;
     const result = await this.paymentsService.findUserPayments(
