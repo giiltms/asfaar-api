@@ -111,6 +111,7 @@ export class PaymentsService {
                   name: true,
                   amount: true,
                   currency: true,
+                  feeType: true,
                 },
               },
             },
