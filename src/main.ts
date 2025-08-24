@@ -10,14 +10,21 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './modules/app/app.module';
 import { VersioningOptions } from '@nestjs/common/interfaces/version-options.interface';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap(): Promise<{ port: number }> {
   /**
    * Create NestJS application
    */
-  const app: INestApplication = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
     bodyParser: true,
+  });
+
+  // Configure static file serving for uploads
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
   });
 
   // Increase body size limits for large biometric payloads
