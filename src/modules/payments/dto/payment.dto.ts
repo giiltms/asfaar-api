@@ -13,7 +13,12 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Currency, PaymentStatus, PaymentMethodType, FeeType } from '@prisma/client';
+import {
+  Currency,
+  PaymentStatus,
+  PaymentMethodType,
+  FeeType,
+} from '@prisma/client';
 import { PaymentProvider } from '@common/configs/payment.config';
 import { PaymentProvider as PrismaPaymentProvider } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
@@ -200,6 +205,72 @@ export class RefundPaymentDto {
 
 // DTO for filtering payments
 export class PaymentFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by payment status',
+    example: 'COMPLETED',
+    enum: PaymentStatus,
+  })
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  status?: PaymentStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filter by currency',
+    example: 'USD',
+    enum: Currency,
+  })
+  @IsOptional()
+  @IsEnum(Currency)
+  currency?: Currency;
+
+  @ApiPropertyOptional({
+    description: 'Filter by submission ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  submissionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by payment method type',
+    example: 'CARD',
+    enum: PaymentMethodType,
+  })
+  @IsOptional()
+  @IsEnum(PaymentMethodType)
+  methodType?: PaymentMethodType;
+
+  @ApiPropertyOptional({
+    description: 'Filter by minimum amount',
+    example: 50,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  minAmount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Filter by maximum amount',
+    example: 500,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  maxAmount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Search by processor ID or invoice number',
+    example: 'pi_123',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+// Combined DTO for payment queries that includes both filters and pagination
+export class PaymentQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description: 'Filter by payment status',
     example: 'COMPLETED',
@@ -502,7 +573,6 @@ export class ServiceFeeFiltersDto {
   })
   @IsOptional()
   @IsBoolean()
-
   @ApiPropertyOptional({
     description: 'Type of service fee',
     enum: FeeType,
@@ -534,7 +604,6 @@ export class ServiceFeeQueryDto extends PaginationQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-
   @ApiPropertyOptional({
     description: 'Type of service fee',
     enum: FeeType,

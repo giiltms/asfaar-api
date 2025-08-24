@@ -216,8 +216,8 @@ export class PaymentsService {
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
-              connect: { id: initiatePaymentDto.submissionId },
-            }
+            connect: { id: initiatePaymentDto.submissionId },
+          }
           : undefined,
       };
 
@@ -246,12 +246,26 @@ export class PaymentsService {
     filters: PaymentFiltersDto = {},
     pagination: PaginationQueryDto = {},
   ) {
+    // Validate and set default sorting
+    const allowedSortFields = [
+      'createdAt',
+      'updatedAt',
+      'amount',
+      'status',
+      'paidAt',
+      'failedAt',
+    ];
     const {
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = pagination;
+
+    // Ensure sortBy is a valid field
+    const validSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
     const {
       status,
       currency,
@@ -308,7 +322,7 @@ export class PaymentsService {
         where,
         skip,
         take: limit,
-        orderBy: [{ [sortBy]: sortOrder }],
+        orderBy: [{ [validSortBy]: sortOrder }],
         include: {
           submission: {
             select: {
@@ -349,7 +363,7 @@ export class PaymentsService {
       page,
       limit,
       totalCount,
-      sortBy,
+      validSortBy,
       sortOrder,
     );
 
@@ -466,12 +480,26 @@ export class PaymentsService {
     filters: PaymentFiltersDto = {},
     pagination: PaginationQueryDto = {},
   ) {
+    // Validate and set default sorting
+    const allowedSortFields = [
+      'createdAt',
+      'updatedAt',
+      'amount',
+      'status',
+      'paidAt',
+      'failedAt',
+    ];
     const {
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = pagination;
+
+    // Ensure sortBy is a valid field
+    const validSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : 'createdAt';
     const {
       status,
       currency,
@@ -679,9 +707,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
       skip,
@@ -696,9 +724,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
     });

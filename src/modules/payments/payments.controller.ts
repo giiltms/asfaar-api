@@ -28,6 +28,7 @@ import {
   UpdatePaymentStatusDto,
   RefundPaymentDto,
   PaymentFiltersDto,
+  PaymentQueryDto,
   UpdatePaymentDto,
   InitiatePaymentDto,
   ServiceFeeFiltersDto,
@@ -193,23 +194,34 @@ export class PaymentsController {
     type: [PaymentEntity],
   })
   async findAllPayments(
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-      }),
-    )
-    filters: PaymentFiltersDto,
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-      }),
-    )
-    pagination: PaginationQueryDto,
+    @Query(new ValidationPipe({ transform: true }))
+    query: PaymentQueryDto,
   ) {
+    const {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      status,
+      currency,
+      submissionId,
+      methodType,
+      minAmount,
+      maxAmount,
+      search,
+    } = query;
+
+    const filters = {
+      status,
+      currency,
+      submissionId,
+      methodType,
+      minAmount,
+      maxAmount,
+      search,
+    };
+    const pagination = { page, limit, sortBy, sortOrder };
+
     const result = await this.paymentsService.findAllPayments(
       filters,
       pagination,
@@ -280,24 +292,35 @@ export class PaymentsController {
   })
   async findMyPayments(
     @Request() req: any,
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-      }),
-    )
-    filters: PaymentFiltersDto,
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: false,
-      }),
-    )
-    pagination: PaginationQueryDto,
+    @Query(new ValidationPipe({ transform: true }))
+    query: PaymentQueryDto,
   ) {
     const userId = req.user.id;
+    const {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      status,
+      currency,
+      submissionId,
+      methodType,
+      minAmount,
+      maxAmount,
+      search,
+    } = query;
+
+    const filters = {
+      status,
+      currency,
+      submissionId,
+      methodType,
+      minAmount,
+      maxAmount,
+      search,
+    };
+    const pagination = { page, limit, sortBy, sortOrder };
+
     const result = await this.paymentsService.findUserPayments(
       userId,
       filters,
