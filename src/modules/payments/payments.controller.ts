@@ -29,6 +29,8 @@ import {
   RefundPaymentDto,
   PaymentFiltersDto,
   PaymentQueryDto,
+  PaymentStatisticsDto,
+  PaymentStatisticsResponseDto,
   UpdatePaymentDto,
   InitiatePaymentDto,
   ServiceFeeFiltersDto,
@@ -331,6 +333,40 @@ export class PaymentsController {
       message: 'User payments retrieved successfully',
       data: result.data,
       meta: result.meta,
+    };
+  }
+
+  /**
+   * Get current user's payment statistics
+   */
+  @Get('my/statistics')
+  @ApiOperation({
+    summary: 'Get my payment statistics',
+    description:
+      "Retrieve current user's payment statistics including counts and amounts",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User payment statistics retrieved successfully',
+    type: PaymentStatisticsResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'User not authenticated',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Internal server error',
+  })
+  async getMyPaymentStatistics(@Request() req: any) {
+    const userId = req.user.id;
+    const statistics = await this.paymentsService.getUserPaymentStatistics(
+      userId,
+    );
+
+    return {
+      message: 'User payment statistics retrieved successfully',
+      data: statistics,
     };
   }
 

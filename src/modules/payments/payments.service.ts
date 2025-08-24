@@ -18,6 +18,7 @@ import {
   UpdatePaymentStatusDto,
   RefundPaymentDto,
   PaymentFiltersDto,
+  PaymentStatisticsDto,
   UpdatePaymentDto,
   InitiatePaymentDto,
   CreateServiceFeeDto,
@@ -216,8 +217,8 @@ export class PaymentsService {
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
-            connect: { id: initiatePaymentDto.submissionId },
-          }
+              connect: { id: initiatePaymentDto.submissionId },
+            }
           : undefined,
       };
 
@@ -473,6 +474,74 @@ export class PaymentsService {
   }
 
   /**
+   * Get user's payment statistics
+   */
+  async getUserPaymentStatistics(
+    userId: string,
+  ): Promise<PaymentStatisticsDto> {
+    // Get all payments for the user
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        submission: {
+          userId: userId,
+        },
+      },
+      select: {
+        amount: true,
+        currency: true,
+        status: true,
+      },
+    });
+
+    if (payments.length === 0) {
+      // Return default statistics for users with no payments
+      return {
+        totalPayments: 0,
+        successfulPayments: 0,
+        pendingPayments: 0,
+        failedPayments: 0,
+        totalAmount: 0,
+        successfulAmount: 0,
+        currency: Currency.NGN,
+        successRate: 0,
+      };
+    }
+
+    // Calculate statistics
+    const totalPayments = payments.length;
+    const successfulPayments = payments.filter(
+      (p) => p.status === PaymentStatus.COMPLETED,
+    ).length;
+    const pendingPayments = payments.filter(
+      (p) => p.status === PaymentStatus.PENDING,
+    ).length;
+    const failedPayments = payments.filter(
+      (p) => p.status === PaymentStatus.FAILED,
+    ).length;
+
+    const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+    const successfulAmount = payments
+      .filter((p) => p.status === PaymentStatus.COMPLETED)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Use the most common currency, fallback to NGN
+    const currency = payments[0]?.currency || Currency.NGN;
+    const successRate =
+      totalPayments > 0 ? (successfulPayments / totalPayments) * 100 : 0;
+
+    return {
+      totalPayments,
+      successfulPayments,
+      pendingPayments,
+      failedPayments,
+      totalAmount,
+      successfulAmount,
+      currency,
+      successRate: Math.round(successRate * 100) / 100, // Round to 2 decimal places
+    };
+  }
+
+  /**
    * Get user's payments with optional filtering and pagination
    */
   async findUserPayments(
@@ -707,9 +776,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ]
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
           : undefined,
       },
       skip,
@@ -724,9 +793,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { description: { contains: search, mode: 'insensitive' } },
-          ]
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ]
           : undefined,
       },
     });

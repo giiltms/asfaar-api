@@ -335,6 +335,87 @@ export class PaymentQueryDto extends PaginationQueryDto {
   search?: string;
 }
 
+// DTO for payment statistics response
+export class PaymentStatisticsDto {
+  @ApiProperty({
+    description: 'Total number of payments made by the user across all time',
+    example: 15,
+    minimum: 0,
+  })
+  totalPayments: number;
+
+  @ApiProperty({
+    description: 'Number of payments that were successfully completed',
+    example: 12,
+    minimum: 0,
+  })
+  successfulPayments: number;
+
+  @ApiProperty({
+    description: 'Number of payments currently pending processing',
+    example: 2,
+    minimum: 0,
+  })
+  pendingPayments: number;
+
+  @ApiProperty({
+    description: 'Number of payments that failed or were declined',
+    example: 1,
+    minimum: 0,
+  })
+  failedPayments: number;
+
+  @ApiProperty({
+    description: 'Sum of all payment amounts (successful, pending, and failed)',
+    example: 1500,
+    minimum: 0,
+  })
+  totalAmount: number;
+
+  @ApiProperty({
+    description: 'Sum of only successful payment amounts',
+    example: 1200,
+    minimum: 0,
+  })
+  successfulAmount: number;
+
+  @ApiProperty({
+    description: 'Currency used for all payment amounts (e.g., NGN, USD, EUR)',
+    example: 'NGN',
+    enum: Currency,
+  })
+  currency: Currency;
+
+  @ApiProperty({
+    description: 'Percentage of successful payments (0-100)',
+    example: 80,
+    minimum: 0,
+    maximum: 100,
+  })
+  successRate: number;
+}
+
+// Example response wrapper for payment statistics
+export class PaymentStatisticsResponseDto {
+  @ApiProperty({
+    description: 'Indicates if the request was successful',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Human-readable message describing the result',
+    example: 'User payment statistics retrieved successfully',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'Payment statistics data',
+    type: PaymentStatisticsDto,
+  })
+  data: PaymentStatisticsDto;
+}
+
 // Response DTO for payment
 export class PaymentResponseDto {
   @ApiProperty({ description: 'Unique identifier' })
