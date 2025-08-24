@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'crypto';
 import { BaseWebhookHandler } from './base-webhook.handler';
 import { WebhookEvent } from '../interfaces/webhook-handler.interface';
 import { PaymentStatus } from '@prisma/client';
@@ -36,16 +35,15 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
         return false;
       }
 
-      // Flutterwave uses HMAC-SHA256 with base64 encoding
-      const hash = createHmac('sha256', this.webhookSecret)
-        .update(payload)
-        .digest('base64');
-
-      const isValid = hash === signature;
+      // Flutterwave uses simple string comparison for verif-hash
+      // The verif-hash header should match your configured secret hash
+      const isValid = signature === this.webhookSecret;
 
       if (!isValid) {
         this.logger.warn('Flutterwave webhook signature verification failed');
-        this.logger.debug(`Expected: ${hash}, Received: ${signature}`);
+        this.logger.debug(
+          `Expected: ${this.webhookSecret}, Received: ${signature}`,
+        );
       }
 
       return isValid;

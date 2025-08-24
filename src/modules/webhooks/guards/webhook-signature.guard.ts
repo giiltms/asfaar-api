@@ -88,7 +88,7 @@ export class WebhookSignatureGuard implements CanActivate {
 
     switch (provider.toUpperCase()) {
       case 'FLUTTERWAVE':
-        return headers['flutterwave-signature'];
+        return headers['verif-hash'];
 
       case 'PAYSTACK':
         return headers['x-paystack-signature'];

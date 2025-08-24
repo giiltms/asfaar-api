@@ -47,8 +47,8 @@ export class WebhooksController {
     description: 'Handle Flutterwave payment webhook events',
   })
   @ApiHeader({
-    name: 'flutterwave-signature',
-    description: 'Flutterwave webhook signature',
+    name: 'verif-hash',
+    description: 'Flutterwave webhook signature hash',
     required: true,
   })
   @ApiResponse({
