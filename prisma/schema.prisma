@@ -1286,8 +1286,8 @@ model Payment {
   submission   FormSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   // User who made the payment (REQUIRED for onboarding payments)
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Many-to-many relationship with service fees
   serviceFees PaymentServiceFee[]

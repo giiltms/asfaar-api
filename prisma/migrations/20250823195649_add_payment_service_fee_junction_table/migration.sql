@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "payments" ADD COLUMN     "userId" TEXT NOT NULL;
+ALTER TABLE "payments" ADD COLUMN     "userId" TEXT;
 
 -- CreateTable
 CREATE TABLE "payment_service_fees" (
