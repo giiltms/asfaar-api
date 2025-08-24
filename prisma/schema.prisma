@@ -1347,7 +1347,8 @@ model PaymentServiceFee {
 
   // Additional fields for the relationship
   amount   Float // Amount for this specific service fee
-  currency String @default("NGN")
+  currency String   @default("NGN")
+  feeType  FeeType? // Fee type for this specific service fee
 
   createdAt DateTime @default(now())
 

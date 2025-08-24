@@ -120,14 +120,20 @@ export class PaymentsService {
 
       // Create payment-service fee relationships if serviceFees are provided
       if (createDto.serviceFees && Array.isArray(createDto.serviceFees)) {
-        const serviceFeeRelations = createDto.serviceFees.map(
-          (serviceFeeId: string) => ({
-            paymentId: payment.id,
-            serviceFeeId,
-            amount: createDto.amount || 0, // Use payment amount for now, could be split per fee
-            currency: createDto.currency || 'NGN',
-          }),
+        // Fetch service fees to get their types and other details
+        const serviceFees = await Promise.all(
+          createDto.serviceFees.map((serviceFeeId) =>
+            this.findServiceFeeById(serviceFeeId),
+          ),
         );
+
+        const serviceFeeRelations = serviceFees.map((serviceFee) => ({
+          paymentId: payment.id,
+          serviceFeeId: serviceFee.id,
+          amount: createDto.amount || 0, // Use payment amount for now, could be split per fee
+          currency: createDto.currency || 'NGN',
+          feeType: serviceFee.feeType, // Copy the fee type from the service fee
+        }));
 
         await this.prisma.paymentServiceFee.createMany({
           data: serviceFeeRelations,
@@ -217,8 +223,8 @@ export class PaymentsService {
         // if submissionId is provided, connect the payment to the submission
         submission: initiatePaymentDto.submissionId
           ? {
-              connect: { id: initiatePaymentDto.submissionId },
-            }
+            connect: { id: initiatePaymentDto.submissionId },
+          }
           : undefined,
       };
 
@@ -776,9 +782,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
       skip,
@@ -793,9 +799,9 @@ export class PaymentsService {
         feeType,
         OR: search
           ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ]
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+          ]
           : undefined,
       },
     });
