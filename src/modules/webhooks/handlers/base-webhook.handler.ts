@@ -109,6 +109,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         processorId:
           event.data.id.toString() || event.data.payment_id.toString(),
         processorResponse: event.data,
+        processor: this.getPaymentProvider(),
       });
 
       this.logger.log(
@@ -144,6 +145,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         processorId:
           event.data.id.toString() || event.data.payment_id.toString(),
         processorResponse: event.data,
+        processor: this.getPaymentProvider(),
       });
 
       this.logger.log(
@@ -281,6 +283,25 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
     }
 
     return 'unknown';
+  }
+
+  /**
+   * Get the payment provider enum value for this handler
+   */
+  protected getPaymentProvider(): PaymentProvider {
+    const providerName = this.getProviderName();
+    switch (providerName) {
+      case 'FLUTTERWAVE':
+        return PaymentProvider.FLUTTERWAVE;
+      case 'PAYSTACK':
+        return PaymentProvider.PAYSTACK;
+      case 'FINCRA':
+        return PaymentProvider.FINCRA;
+      case 'STRIPE':
+        return PaymentProvider.STRIPE;
+      default:
+        throw new Error(`Unknown payment provider: ${providerName}`);
+    }
   }
 
   /**

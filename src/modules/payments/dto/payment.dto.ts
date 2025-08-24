@@ -19,8 +19,7 @@ import {
   PaymentMethodType,
   FeeType,
 } from '@prisma/client';
-import { PaymentProvider } from '@common/configs/payment.config';
-import { PaymentProvider as PrismaPaymentProvider } from '@prisma/client';
+import { PaymentProvider } from '@prisma/client';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 // Base DTO for creating a payment
@@ -163,6 +162,15 @@ export class UpdatePaymentStatusDto {
   @IsOptional()
   @IsString()
   processorName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Payment processor enum value',
+    example: 'PAYSTACK',
+    enum: PaymentProvider,
+  })
+  @IsOptional()
+  @IsEnum(PaymentProvider)
+  processor?: PaymentProvider;
 
   @ApiPropertyOptional({
     description: 'Receipt URL',
@@ -558,11 +566,11 @@ export class CreateServiceFeeDto {
   @ApiPropertyOptional({
     description: 'Allowed payment providers',
     type: [String],
-    enum: PrismaPaymentProvider,
+    enum: PaymentProvider,
   })
   @IsOptional()
   @IsArray()
-  providers?: PrismaPaymentProvider[];
+  providers?: PaymentProvider[];
 
   @ApiPropertyOptional({
     description: 'Additional metadata',
@@ -626,11 +634,11 @@ export class UpdateServiceFeeDto {
   @ApiPropertyOptional({
     description: 'Allowed payment providers',
     type: [String],
-    enum: PrismaPaymentProvider,
+    enum: PaymentProvider,
   })
   @IsOptional()
   @IsArray()
-  providers?: PrismaPaymentProvider[];
+  providers?: PaymentProvider[];
 
   @ApiPropertyOptional({
     description: 'Additional metadata',

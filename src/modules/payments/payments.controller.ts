@@ -476,6 +476,13 @@ export class PaymentsController {
   async verifyPayment(@Param('reference') reference: string) {
     const payment = await this.paymentsService.findPaymentByRef(reference);
 
+    // Validate that the payment has a processor set
+    if (!payment.processor) {
+      throw new BadRequestException(
+        `Payment processor not set for payment ${payment.id}. Cannot verify payment without knowing the provider.`,
+      );
+    }
+
     const result = await this.paymentProviderService.verifyPayment(
       reference,
       payment.processor,

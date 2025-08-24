@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentProvider } from '../../../common/configs/payment.config';
+import { PaymentProvider } from '@prisma/client';
 import { PaystackProvider } from './providers/paystack.provider';
 import { FlutterwaveProvider } from './providers/flutterwave.provider';
 import { FincraProvider } from './providers/fincra.provider';
