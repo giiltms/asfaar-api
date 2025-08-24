@@ -15,7 +15,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
-import { SubmissionStatus, FieldType } from '@prisma/client';
+import { SubmissionStatus, FieldType, AppointmentClass } from '@prisma/client';
 
 // Field Response DTOs
 export class CreateFieldResponseDto {
@@ -184,6 +184,75 @@ export class FieldResponseDto {
   updatedAt: Date;
 }
 
+// Biometric Appointment DTO for form submission integration
+export class BiometricAppointmentDto {
+  @ApiProperty({
+    description: 'Biometric center ID where appointment will take place',
+    example: 'uuid-string',
+  })
+  @IsNotEmpty()
+  @IsUUID()
+  centerId: string;
+
+  @ApiPropertyOptional({
+    description: 'Appointment class/tier',
+    example: 'REGULAR',
+    enum: AppointmentClass,
+    default: AppointmentClass.REGULAR,
+  })
+  @IsOptional()
+  @IsEnum(AppointmentClass)
+  appointmentClass?: AppointmentClass;
+
+  @ApiProperty({
+    description: 'Preferred appointment date (YYYY-MM-DD)',
+    example: '2024-02-15',
+  })
+  @IsNotEmpty()
+  @IsDateString()
+  appointmentDate: string;
+
+  @ApiProperty({
+    description: 'Preferred appointment time (ISO string)',
+    example: '2024-02-15T10:00:00Z',
+  })
+  @IsNotEmpty()
+  @IsDateString()
+  appointmentTime: string;
+
+  @ApiPropertyOptional({
+    description: 'Special requirements or accessibility needs',
+    example: 'Wheelchair access needed',
+  })
+  @IsOptional()
+  @IsString()
+  specialRequirements?: string;
+
+  @ApiProperty({
+    description: 'User confirms the appointment details',
+    example: true,
+  })
+  @IsNotEmpty()
+  @IsBoolean()
+  confirmationAcknowledged: boolean;
+
+  @ApiProperty({
+    description: 'User gives consent for biometric capture',
+    example: true,
+  })
+  @IsNotEmpty()
+  @IsBoolean()
+  consentAcknowledged: boolean;
+
+  @ApiProperty({
+    description: 'User agrees to terms and conditions',
+    example: true,
+  })
+  @IsNotEmpty()
+  @IsBoolean()
+  termsAcknowledged: boolean;
+}
+
 // Form Submission DTOs
 export class CreateFormSubmissionDto {
   @ApiProperty({
@@ -257,6 +326,15 @@ export class SubmitFormDto {
   @IsOptional()
   @IsObject()
   metadata?: any;
+
+  @ApiPropertyOptional({
+    description: 'Biometric appointment details (optional)',
+    type: 'object',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BiometricAppointmentDto)
+  biometricAppointment?: BiometricAppointmentDto;
 }
 
 export class FormSubmissionDto {
@@ -293,6 +371,20 @@ export class FormSubmissionDto {
     description: 'When biometric capture was completed',
   })
   biometricCompletedAt?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Biometric appointment details if created',
+    type: 'object',
+  })
+  biometricAppointment?: {
+    id: string;
+    centerId: string;
+    centerName?: string;
+    appointmentDate: Date;
+    appointmentTime: Date;
+    status: string;
+    appointmentClass: string;
+  };
 
   // Flag management
   @ApiProperty({

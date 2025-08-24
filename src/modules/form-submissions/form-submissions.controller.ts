@@ -181,7 +181,7 @@ export class FormSubmissionsController {
   @ApiOperation({
     summary: 'Submit form for review',
     description:
-      'Submit a completed form for review (validates all required fields)',
+      'Submit a completed form for review (validates all required fields). Optionally create a biometric appointment in the same request.',
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
