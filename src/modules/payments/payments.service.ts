@@ -486,12 +486,17 @@ export class PaymentsService {
   async getUserPaymentStatistics(
     userId: string,
   ): Promise<PaymentStatisticsDto> {
-    // Get all payments for the user
+    // Get all payments for the user (direct or through submission)
     const payments = await this.prisma.payment.findMany({
       where: {
-        submission: {
-          userId: userId,
-        },
+        OR: [
+          { userId: userId }, // Direct user relationship (for onboarding payments)
+          {
+            submission: {
+              userId: userId, // Through submission relationship
+            },
+          },
+        ],
       },
       select: {
         amount: true,
