@@ -432,7 +432,7 @@ export class FormSubmissionsController {
           example: {
             originalName: 'passport.pdf',
             size: 1024000,
-            description: 'Front page of passport'
+            description: 'Front page of passport',
           },
         },
         fileMetadata: {
@@ -463,13 +463,13 @@ export class FormSubmissionsController {
             {
               originalName: 'passport.pdf',
               description: 'Front page of passport',
-              metadata: { category: 'identity', priority: 'high' }
+              metadata: { category: 'identity', priority: 'high' },
             },
             {
               originalName: 'visa.pdf',
               description: 'Visa page',
-              metadata: { category: 'travel', priority: 'medium' }
-            }
+              metadata: { category: 'travel', priority: 'medium' },
+            },
           ],
         },
         file: {

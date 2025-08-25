@@ -899,7 +899,11 @@ export class FileUploadDto {
 
   @ApiProperty({
     description: 'File metadata (for single file upload)',
-    example: { originalName: 'passport.pdf', size: 1024000, description: 'Front page of passport' },
+    example: {
+      originalName: 'passport.pdf',
+      size: 1024000,
+      description: 'Front page of passport',
+    },
     required: false,
   })
   @IsOptional()
@@ -910,7 +914,7 @@ export class FileUploadDto {
     description: 'Individual file metadata (for multiple file upload)',
     example: [
       { originalName: 'passport.pdf', description: 'Front page' },
-      { originalName: 'visa.pdf', description: 'Visa page' }
+      { originalName: 'visa.pdf', description: 'Visa page' },
     ],
     required: false,
   })
@@ -921,7 +925,8 @@ export class FileUploadDto {
   fileMetadata?: FileMetadataDto[];
 
   @ApiProperty({
-    description: 'Upload type: "single" for one file, "multiple" for multiple files',
+    description:
+      'Upload type: "single" for one file, "multiple" for multiple files',
     example: 'single',
     enum: ['single', 'multiple'],
     required: false,

@@ -160,11 +160,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-              id: form.country.id,
-              name: form.country.name,
-              isoCode2: form.country.isoCode2,
-              flag: form.country.flag,
-            }
+                id: form.country.id,
+                name: form.country.name,
+                isoCode2: form.country.isoCode2,
+                flag: form.country.flag,
+              }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -256,12 +256,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-          id: submission.id,
-          status: submission.status,
-          submittedAt: submission.submittedAt,
-          createdAt: submission.createdAt,
-          updatedAt: submission.updatedAt,
-        }
+            id: submission.id,
+            status: submission.status,
+            submittedAt: submission.submittedAt,
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
+          }
         : null,
     };
   }
@@ -328,14 +328,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId instead of formFieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId instead of formFieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -768,15 +768,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -830,15 +830,15 @@ export class FormSubmissionsService {
         submittedAt: new Date(), // Update submission date
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId,
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId,
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
         statusLogs: {
           create: {
@@ -1880,18 +1880,18 @@ export class FormSubmissionsService {
       // Format dates for display
       const appointmentDateFormatted = appointmentDate
         ? appointmentDate.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
         : 'Not set';
 
       const appointmentTimeFormatted = appointmentTime
         ? appointmentTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        })
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
         : 'Not set';
 
       appointmentData = {
@@ -1907,19 +1907,19 @@ export class FormSubmissionsService {
         minutesUntilAppointment,
         center: submission.appointment.center
           ? {
-            name: submission.appointment.center.name,
-            address: submission.appointment.center.address,
-            city: submission.appointment.center.city,
-            state: submission.appointment.center.state,
-            phone: submission.appointment.center.phone,
-          }
+              name: submission.appointment.center.name,
+              address: submission.appointment.center.address,
+              city: submission.appointment.center.city,
+              state: submission.appointment.center.state,
+              phone: submission.appointment.center.phone,
+            }
           : null,
         booth: submission.appointment.queueEntry?.booth
           ? {
-            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
-            appointmentClass:
-              submission.appointment.queueEntry.booth.appointmentClass,
-          }
+              boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+              appointmentClass:
+                submission.appointment.queueEntry.booth.appointmentClass,
+            }
           : null,
       };
     }
@@ -1940,12 +1940,12 @@ export class FormSubmissionsService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-            name: submission.form.country.name,
-            isoCode2: submission.form.country.isoCode2,
-            isoCode3: submission.form.country.isoCode3,
-            flag: submission.form.country.flag,
-            logoUrl: submission.form.country.logoUrl,
-          }
+              name: submission.form.country.name,
+              isoCode2: submission.form.country.isoCode2,
+              isoCode3: submission.form.country.isoCode3,
+              flag: submission.form.country.flag,
+              logoUrl: submission.form.country.logoUrl,
+            }
           : null,
       },
       submission: {
@@ -2251,7 +2251,8 @@ export class FormSubmissionsService {
     const isValidType = this.validateFileType(file, allowedTypes);
     if (!isValidType) {
       throw new BadRequestException(
-        `File type ${file.mimetype
+        `File type ${
+          file.mimetype
         } is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
       );
     }
