@@ -506,6 +506,7 @@ export class FormSubmissionsController {
                 fileSize: { type: 'number' },
                 mimeType: { type: 'string' },
                 fieldId: { type: 'string' },
+                submissionUpdated: { type: 'boolean' },
               },
             },
             {
@@ -527,6 +528,7 @@ export class FormSubmissionsController {
                 fieldId: { type: 'string' },
                 totalFiles: { type: 'number' },
                 totalSize: { type: 'number' },
+                submissionUpdated: { type: 'boolean' },
                 validationSummary: {
                   type: 'object',
                   properties: {

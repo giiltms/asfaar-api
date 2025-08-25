@@ -1913,7 +1913,7 @@ export class FormSubmissionsService {
   }
 
   /**
-   * Upload single file with field validation
+   * Upload single file with field validation and submission update
    */
   async uploadSingleFile(
     userId: string,
@@ -1925,9 +1925,10 @@ export class FormSubmissionsService {
     fileSize: number;
     mimeType: string;
     fieldId: string;
+    submissionUpdated: boolean;
   }> {
     // 1. Get field configuration for validation with submission context
-    const { field } = await this.getFormFieldForUpload(
+    const { field, submission } = await this.getFormFieldForUpload(
       uploadDto.fieldId,
       uploadDto.submissionId,
       userId,
@@ -1943,17 +1944,31 @@ export class FormSubmissionsService {
       uploadDto.fieldId,
     );
 
+    // 4. Update submission with the file URL
+    let submissionUpdated = false;
+    if (submission) {
+      await this.updateSubmissionWithFile(
+        submission.id,
+        uploadDto.fieldId,
+        field.name,
+        [fileUrl],
+        uploadDto.metadata,
+      );
+      submissionUpdated = true;
+    }
+
     return {
       fileUrl,
       fileName: file.originalname,
       fileSize: file.size,
       mimeType: file.mimetype,
       fieldId: uploadDto.fieldId,
+      submissionUpdated,
     };
   }
 
   /**
-   * Upload multiple files with field validation
+   * Upload multiple files with field validation and submission update
    */
   async uploadMultipleFiles(
     userId: string,
@@ -1970,6 +1985,7 @@ export class FormSubmissionsService {
     fieldId: string;
     totalFiles: number;
     totalSize: number;
+    submissionUpdated: boolean;
     validationSummary: {
       totalFiles: number;
       validFiles: number;
@@ -1981,7 +1997,7 @@ export class FormSubmissionsService {
     };
   }> {
     // 1. Get field configuration for validation with submission context
-    const { field } = await this.getFormFieldForUpload(
+    const { field, submission } = await this.getFormFieldForUpload(
       uploadDto.fieldId,
       uploadDto.submissionId,
       userId,
@@ -2057,11 +2073,26 @@ export class FormSubmissionsService {
 
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
+    // 7. Update submission with all file URLs
+    let submissionUpdated = false;
+    if (submission) {
+      const fileUrls = uploadedFiles.map((file) => file.fileUrl);
+      await this.updateSubmissionWithFile(
+        submission.id,
+        uploadDto.fieldId,
+        field.name,
+        fileUrls,
+        uploadDto.metadata,
+      );
+      submissionUpdated = true;
+    }
+
     return {
       files: uploadedFiles,
       fieldId: uploadDto.fieldId,
       totalFiles: files.length,
       totalSize,
+      submissionUpdated,
       validationSummary: {
         totalFiles: files.length,
         validFiles: files.length,
@@ -2234,6 +2265,55 @@ export class FormSubmissionsService {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Update submission with file URLs
+   */
+  private async updateSubmissionWithFile(
+    submissionId: string,
+    fieldId: string,
+    fieldName: string,
+    fileUrls: string[],
+    metadata?: any,
+  ): Promise<void> {
+    // Check if there's already a response for this field
+    const existingResponse = await this.prisma.fieldResponse.findFirst({
+      where: {
+        submissionId,
+        fieldId,
+      },
+    });
+
+    if (existingResponse) {
+      // Update existing response with new file URLs
+      await this.prisma.fieldResponse.update({
+        where: { id: existingResponse.id },
+        data: {
+          fileUrls: fileUrls,
+          metadata: {
+            ...((existingResponse.metadata as object) || {}),
+            ...metadata,
+            lastUpdated: new Date().toISOString(),
+          },
+        },
+      });
+    } else {
+      // Create new response for this field
+      await this.prisma.fieldResponse.create({
+        data: {
+          submissionId,
+          fieldId,
+          fieldName,
+          value: null, // File fields don't have a text value
+          fileUrls: fileUrls,
+          metadata: {
+            ...metadata,
+            uploadedAt: new Date().toISOString(),
+          },
+        },
+      });
+    }
   }
 
   /**
