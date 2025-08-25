@@ -586,11 +586,16 @@ export class PaymentsService {
       search,
     } = filters;
 
-    // Build where clause - filter by user through submission relationship
+    // Build where clause - filter by user directly or through submission relationship
     const where: Prisma.PaymentWhereInput = {
-      submission: {
-        userId: userId, // Only payments for this user's submissions
-      },
+      OR: [
+        { userId: userId }, // Direct user relationship (for onboarding payments)
+        {
+          submission: {
+            userId: userId, // Through submission relationship
+          },
+        },
+      ],
     };
 
     if (status) {
