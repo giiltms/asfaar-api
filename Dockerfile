@@ -48,6 +48,9 @@ RUN yarn build
   # Set environment variables for development
   ENV NODE_ENV=development
   
+  # Create uploads directory and set permissions
+  RUN mkdir -p /app/uploads && chmod 755 /app/uploads
+  
   # Run the app with nodemon for auto-reloading
   CMD ["yarn", "start:dev"]
 
@@ -78,6 +81,9 @@ EXPOSE ${APP_PORT}
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
+
+# Create uploads directory and set permissions
+RUN mkdir -p /app/uploads && chmod 755 /app/uploads
 
 # Use the entry point script to start the container
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -2120,20 +2120,40 @@ export class FormSubmissionsService {
   }
 
   /**
-   * Save file to storage (placeholder - should use actual storage service)
+   * Save file to storage (local filesystem)
    */
   private async saveFileToStorage(
     file: Express.Multer.File,
     userId: string,
     fieldId: string,
   ): Promise<string> {
-    // TODO: Replace with actual storage service implementation
-    // For now, return a mock URL
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Create uploads directory if it doesn't exist
+    // Use /app/uploads for Docker containers, fallback to local uploads
+    const uploadsDir =
+      process.env.NODE_ENV === 'production'
+        ? '/app/uploads'
+        : path.join(process.cwd(), 'uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+
+    // Create user-specific directory
+    const userDir = path.join(uploadsDir, userId);
+    fs.mkdirSync(userDir, { recursive: true });
+
+    // Generate unique filename
     const timestamp = Date.now();
     const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${userId}_${fieldId}_${timestamp}_${sanitizedFileName}`;
+    const fileName = `${fieldId}_${timestamp}_${sanitizedFileName}`;
 
-    // Mock storage URL - replace with actual storage service
-    return `https://storage.example.com/uploads/${fileName}`;
+    // Full path for the file
+    const filePath = path.join(userDir, fileName);
+
+    // Move the file from temp location to permanent location
+    fs.writeFileSync(filePath, file.buffer as unknown as Uint8Array);
+
+    // Return the URL that will be served by static middleware
+    return `/uploads/${userId}/${fileName}`;
   }
 }

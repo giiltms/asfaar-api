@@ -25,6 +25,8 @@ async function bootstrap(): Promise<{ port: number }> {
   // Configure static file serving for uploads
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
+    index: false, // Don't serve index.html
+    fallthrough: false, // Don't fall through to other handlers
   });
 
   // Increase body size limits for large biometric payloads
