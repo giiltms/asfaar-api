@@ -404,7 +404,11 @@ export class FormSubmissionsController {
   @ApiOperation({
     summary: 'Upload files for form field',
     description:
-      'Upload one or multiple files for a specific form field with validation based on field configuration. Use "file" for single file or "files" for multiple files.',
+      'Upload one or multiple files for a specific form field with comprehensive validation. ' +
+      'Files are validated against field configuration (size, type, count limits). ' +
+      'Individual file metadata can be provided for multiple file uploads. ' +
+      'Use "file" for single file or "files" for multiple files. ' +
+      'Both fieldId and submissionId are required for security and validation.',
   })
   @ApiBody({
     description: 'File upload data',
@@ -424,8 +428,49 @@ export class FormSubmissionsController {
         },
         metadata: {
           type: 'object',
-          description: 'File metadata',
-          example: { originalName: 'passport.pdf', size: 1024000 },
+          description: 'File metadata (for single file upload)',
+          example: {
+            originalName: 'passport.pdf',
+            size: 1024000,
+            description: 'Front page of passport'
+          },
+        },
+        fileMetadata: {
+          type: 'array',
+          description: 'Individual file metadata (for multiple file upload)',
+          items: {
+            type: 'object',
+            properties: {
+              originalName: {
+                type: 'string',
+                description: 'Original file name',
+                example: 'passport.pdf',
+              },
+              description: {
+                type: 'string',
+                description: 'File description or notes',
+                example: 'Front page of passport',
+              },
+              metadata: {
+                type: 'object',
+                description: 'Additional metadata for the file',
+                example: { category: 'identity', priority: 'high' },
+              },
+            },
+            required: ['originalName'],
+          },
+          example: [
+            {
+              originalName: 'passport.pdf',
+              description: 'Front page of passport',
+              metadata: { category: 'identity', priority: 'high' }
+            },
+            {
+              originalName: 'visa.pdf',
+              description: 'Visa page',
+              metadata: { category: 'travel', priority: 'medium' }
+            }
+          ],
         },
         file: {
           type: 'string',
@@ -441,7 +486,7 @@ export class FormSubmissionsController {
           description: 'Multiple files upload (use this OR file, not both)',
         },
       },
-      required: ['fieldId'],
+      required: ['fieldId', 'submissionId'],
     },
   })
   @ApiResponse({
