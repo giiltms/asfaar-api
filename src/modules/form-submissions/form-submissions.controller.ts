@@ -28,7 +28,11 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileInterceptor,
+  FilesInterceptor,
+  AnyFilesInterceptor,
+} from '@nestjs/platform-express';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { FormSubmissionsService } from './services/form-submissions.service';
 import {
@@ -265,11 +269,14 @@ export class FormSubmissionsController {
   @Get('queried')
   @ApiOperation({
     summary: 'Get my queried applications',
-    description: 'Get applications that need additional information or documents',
+    description:
+      'Get applications that need additional information or documents',
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto, isArray: true })
   @ApiDefaultResponse({ type: FormSubmissionDto, isArray: true })
-  async getQueriedSubmissions(@Request() req: any): Promise<FormSubmissionDto[]> {
+  async getQueriedSubmissions(
+    @Request() req: any,
+  ): Promise<FormSubmissionDto[]> {
     return this.submissionsService.getQueriedSubmissions(req.user.id);
   }
 
@@ -315,7 +322,8 @@ export class FormSubmissionsController {
   @Put(':id/resubmit')
   @ApiOperation({
     summary: 'Update and resubmit queried application',
-    description: 'Update a queried application and resubmit it for review (only queried applications)',
+    description:
+      'Update a queried application and resubmit it for review (only queried applications)',
   })
   @ApiParam({
     name: 'id',
@@ -329,7 +337,11 @@ export class FormSubmissionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.updateQueriedSubmission(req.user.id, id, updateDto);
+    return this.submissionsService.updateQueriedSubmission(
+      req.user.id,
+      id,
+      updateDto,
+    );
   }
 
   @Delete(':id')
@@ -385,86 +397,52 @@ export class FormSubmissionsController {
     return this.submissionsService.cancelSubmission(req.user.id, id, cancelDto);
   }
 
-  // File Upload Endpoints
-  @Post('upload/single')
-  @UseInterceptors(FileInterceptor('file'))
+  // File Upload Endpoint
+  @Post('upload')
+  @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'Upload single file for form field',
+    summary: 'Upload files for form field',
     description:
-      'Upload a single file for a specific form field with validation based on field configuration',
+      'Upload one or multiple files for a specific form field with validation based on field configuration. Use "file" for single file or "files" for multiple files.',
   })
   @ApiBody({
     description: 'File upload data',
-    type: FileUploadDto,
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'File uploaded successfully',
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean' },
-        data: {
-          type: 'object',
-          properties: {
-            fileUrl: { type: 'string' },
-            fileName: { type: 'string' },
-            fileSize: { type: 'number' },
-            mimeType: { type: 'string' },
-            fieldId: { type: 'string' },
-          },
+        fieldId: {
+          type: 'string',
+          description:
+            'Field ID this file belongs to (required for validation)',
+          example: '123e4567-e89b-12d3-a456-426614174000',
         },
-        timestamp: { type: 'string' },
+        submissionId: {
+          type: 'string',
+          description: 'Submission ID (required for validation and security)',
+          example: '123e4567-e89b-12d3-a456-426614174000',
+        },
+        metadata: {
+          type: 'object',
+          description: 'File metadata',
+          example: { originalName: 'passport.pdf', size: 1024000 },
+        },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Single file upload (use this OR files, not both)',
+        },
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Multiple files upload (use this OR file, not both)',
+        },
       },
+      required: ['fieldId'],
     },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'File validation failed (size, type, or field configuration)',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Form field not found',
-  })
-  @ApiDefaultResponse({})
-  async uploadSingleFile(
-    @Request() req: any,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }), // 50MB global max
-        ],
-        fileIsRequired: true,
-      }),
-    )
-    file: Express.Multer.File,
-    @Body() uploadDto: FileUploadDto,
-  ) {
-    const result = await this.submissionsService.uploadSingleFile(
-      req.user.id,
-      file,
-      uploadDto,
-    );
-
-    return {
-      success: true,
-      data: result,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  @Post('upload/multiple')
-  @UseInterceptors(FilesInterceptor('files', 10))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({
-    summary: 'Upload multiple files for form field',
-    description:
-      'Upload multiple files for a specific form field with validation based on field configuration',
-  })
-  @ApiBody({
-    description: 'Multiple file upload data',
-    type: FileUploadDto,
   })
   @ApiResponse({
     status: 201,
@@ -474,24 +452,57 @@ export class FormSubmissionsController {
       properties: {
         success: { type: 'boolean' },
         data: {
-          type: 'object',
-          properties: {
-            files: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  fileUrl: { type: 'string' },
-                  fileName: { type: 'string' },
-                  fileSize: { type: 'number' },
-                  mimeType: { type: 'string' },
+          oneOf: [
+            {
+              type: 'object',
+              properties: {
+                fileUrl: { type: 'string' },
+                fileName: { type: 'string' },
+                fileSize: { type: 'number' },
+                mimeType: { type: 'string' },
+                fieldId: { type: 'string' },
+              },
+            },
+            {
+              type: 'object',
+              properties: {
+                files: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      fileUrl: { type: 'string' },
+                      fileName: { type: 'string' },
+                      fileSize: { type: 'number' },
+                      mimeType: { type: 'string' },
+                      metadata: { type: 'object' },
+                    },
+                  },
+                },
+                fieldId: { type: 'string' },
+                totalFiles: { type: 'number' },
+                totalSize: { type: 'number' },
+                validationSummary: {
+                  type: 'object',
+                  properties: {
+                    totalFiles: { type: 'number' },
+                    validFiles: { type: 'number' },
+                    invalidFiles: { type: 'number' },
+                    errors: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          fileName: { type: 'string' },
+                          error: { type: 'string' },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
-            fieldId: { type: 'string' },
-            totalFiles: { type: 'number' },
-            totalSize: { type: 'number' },
-          },
+          ],
         },
         timestamp: { type: 'string' },
       },
@@ -507,7 +518,7 @@ export class FormSubmissionsController {
     description: 'Form field not found',
   })
   @ApiDefaultResponse({})
-  async uploadMultipleFiles(
+  async uploadFiles(
     @Request() req: any,
     @UploadedFiles(
       new ParseFilePipe({
@@ -520,16 +531,29 @@ export class FormSubmissionsController {
     files: Express.Multer.File[],
     @Body() uploadDto: FileUploadDto,
   ) {
-    const result = await this.submissionsService.uploadMultipleFiles(
-      req.user.id,
-      files,
-      uploadDto,
-    );
-
-    return {
-      success: true,
-      data: result,
-      timestamp: new Date().toISOString(),
-    };
+    // Determine if this is single or multiple file upload
+    if (files.length === 1) {
+      const result = await this.submissionsService.uploadSingleFile(
+        req.user.id,
+        files[0],
+        uploadDto,
+      );
+      return {
+        success: true,
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    } else {
+      const result = await this.submissionsService.uploadMultipleFiles(
+        req.user.id,
+        files,
+        uploadDto,
+      );
+      return {
+        success: true,
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    }
   }
 }

@@ -14,6 +14,7 @@ import {
   IsDateString,
   Length,
   MaxLength,
+  IsIn,
 } from 'class-validator';
 import { SubmissionStatus, FieldType, AppointmentClass } from '@prisma/client';
 
@@ -851,6 +852,34 @@ export class ReviewSubmissionDto {
 }
 
 // File Upload DTOs
+export class FileMetadataDto {
+  @ApiProperty({
+    description: 'Original file name',
+    example: 'passport.pdf',
+  })
+  @IsString()
+  @IsNotEmpty()
+  originalName: string;
+
+  @ApiProperty({
+    description: 'File description or notes',
+    example: 'Front page of passport',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Additional metadata for the file',
+    example: { category: 'identity', priority: 'high' },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: any;
+}
+
 export class FileUploadDto {
   @ApiProperty({
     description: 'Field ID this file belongs to (required for validation)',
@@ -861,21 +890,45 @@ export class FileUploadDto {
   fieldId: string;
 
   @ApiProperty({
-    description: 'Submission ID (if editing existing submission)',
+    description: 'Submission ID (required for validation and security)',
     example: '123e4567-e89b-12d3-a456-426614174000',
-    required: false,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsUUID()
-  submissionId?: string;
+  submissionId: string;
 
   @ApiProperty({
-    description: 'File metadata',
-    example: { originalName: 'passport.pdf', size: 1024000 },
+    description: 'File metadata (for single file upload)',
+    example: { originalName: 'passport.pdf', size: 1024000, description: 'Front page of passport' },
+    required: false,
   })
   @IsOptional()
   @IsObject()
   metadata?: any;
+
+  @ApiProperty({
+    description: 'Individual file metadata (for multiple file upload)',
+    example: [
+      { originalName: 'passport.pdf', description: 'Front page' },
+      { originalName: 'visa.pdf', description: 'Visa page' }
+    ],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FileMetadataDto)
+  fileMetadata?: FileMetadataDto[];
+
+  @ApiProperty({
+    description: 'Upload type: "single" for one file, "multiple" for multiple files',
+    example: 'single',
+    enum: ['single', 'multiple'],
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(['single', 'multiple'])
+  uploadType?: 'single' | 'multiple';
 }
 
 // Draft Management DTOs
