@@ -907,7 +907,6 @@ export class FileUploadDto {
     required: false,
   })
   @IsOptional()
-  @IsObject()
   metadata?: any;
 
   @ApiProperty({
@@ -919,9 +918,6 @@ export class FileUploadDto {
     required: false,
   })
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => FileMetadataDto)
   fileMetadata?: FileMetadataDto[];
 
   @ApiProperty({

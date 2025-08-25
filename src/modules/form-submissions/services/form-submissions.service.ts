@@ -2250,10 +2250,13 @@ export class FormSubmissionsService {
     const allowedTypes = fileConfig.accept || ['*/*'];
     const isValidType = this.validateFileType(file, allowedTypes);
     if (!isValidType) {
+      const fileExt = file.originalname.split('.').pop()?.toLowerCase();
       throw new BadRequestException(
         `File type ${
           file.mimetype
-        } is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
+        } (extension: .${fileExt}) is not allowed. Allowed types: ${allowedTypes.join(
+          ', ',
+        )}`,
       );
     }
   }
@@ -2277,11 +2280,27 @@ export class FormSubmissionsService {
         if (file.mimetype.startsWith(baseType + '/')) return true;
       }
 
-      // Check file extensions
-      if (allowedType.startsWith('.')) {
-        const fileExt = '.' + file.originalname.split('.').pop()?.toLowerCase();
-        if (fileExt === allowedType.toLowerCase()) return true;
-      }
+      // Check file extensions (with or without dot)
+      const fileExt = file.originalname.split('.').pop()?.toLowerCase();
+      const allowedExt = allowedType.startsWith('.')
+        ? allowedType.substring(1).toLowerCase()
+        : allowedType.toLowerCase();
+
+      if (fileExt === allowedExt) return true;
+
+      // Map common file extensions to MIME types
+      const extensionToMimeType: { [key: string]: string } = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        pdf: 'application/pdf',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        txt: 'text/plain',
+      };
+
+      if (extensionToMimeType[allowedExt] === file.mimetype) return true;
     }
 
     return false;

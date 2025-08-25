@@ -17,6 +17,7 @@ import {
   UseInterceptors,
   ParseFilePipe,
   MaxFileSizeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,6 +28,7 @@ import {
   ApiQuery,
   ApiConsumes,
   ApiBody,
+  ApiHeader,
 } from '@nestjs/swagger';
 import {
   FileInterceptor,
@@ -49,6 +51,110 @@ import {
 } from './dto/submission.dto';
 import { ApiOkBaseResponse } from '@decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsNotEmpty, IsUUID, IsIn } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+// Custom pipe to parse JSON fields from multipart form data
+class ParseMultipartJsonPipe {
+  transform(value: any) {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+}
+
+// Custom DTO for multipart form data
+class MultipartFileUploadDto {
+  @ApiProperty({
+    description: 'Field ID this file belongs to (required for validation)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsNotEmpty()
+  @IsUUID()
+  fieldId: string;
+
+  @ApiProperty({
+    description: 'Submission ID (required for validation and security)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsNotEmpty()
+  @IsUUID()
+  submissionId: string;
+
+  @ApiProperty({
+    description: 'File metadata as JSON string (for single file upload)',
+    example: '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  metadata?: any;
+
+  @ApiProperty({
+    description: 'Individual file metadata as JSON string (for multiple file upload)',
+    example: '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  fileMetadata?: any;
+
+  @ApiProperty({
+    description: 'Upload type: "single" for one file, "multiple" for multiple files',
+    example: 'single',
+    enum: ['single', 'multiple'],
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(['single', 'multiple'])
+  uploadType?: 'single' | 'multiple';
+
+  // These fields are handled by multer, not validation
+  @ApiProperty({
+    description: 'Single file upload',
+    type: 'string',
+    format: 'binary',
+    required: false,
+  })
+  @IsOptional()
+  file?: any;
+
+  @ApiProperty({
+    description: 'Multiple files upload',
+    type: 'array',
+    items: {
+      type: 'string',
+      format: 'binary',
+    },
+    required: false,
+  })
+  @IsOptional()
+  files?: any;
+}
 
 @ApiTags('Form Submissions')
 @ApiBearerAuth()
@@ -427,50 +533,20 @@ export class FormSubmissionsController {
           example: '123e4567-e89b-12d3-a456-426614174000',
         },
         metadata: {
-          type: 'object',
-          description: 'File metadata (for single file upload)',
-          example: {
-            originalName: 'passport.pdf',
-            size: 1024000,
-            description: 'Front page of passport',
-          },
+          type: 'string',
+          description: 'File metadata as JSON string (for single file upload)',
+          example: '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
         },
         fileMetadata: {
-          type: 'array',
-          description: 'Individual file metadata (for multiple file upload)',
-          items: {
-            type: 'object',
-            properties: {
-              originalName: {
-                type: 'string',
-                description: 'Original file name',
-                example: 'passport.pdf',
-              },
-              description: {
-                type: 'string',
-                description: 'File description or notes',
-                example: 'Front page of passport',
-              },
-              metadata: {
-                type: 'object',
-                description: 'Additional metadata for the file',
-                example: { category: 'identity', priority: 'high' },
-              },
-            },
-            required: ['originalName'],
-          },
-          example: [
-            {
-              originalName: 'passport.pdf',
-              description: 'Front page of passport',
-              metadata: { category: 'identity', priority: 'high' },
-            },
-            {
-              originalName: 'visa.pdf',
-              description: 'Visa page',
-              metadata: { category: 'travel', priority: 'medium' },
-            },
-          ],
+          type: 'string',
+          description: 'Individual file metadata as JSON string (for multiple file upload)',
+          example: '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
+        },
+        uploadType: {
+          type: 'string',
+          enum: ['single', 'multiple'],
+          description: 'Upload type (optional, auto-detected from file count)',
+          example: 'single',
         },
         file: {
           type: 'string',
@@ -576,8 +652,16 @@ export class FormSubmissionsController {
       }),
     )
     files: Express.Multer.File[],
-    @Body() uploadDto: FileUploadDto,
+    @Body() multipartDto: MultipartFileUploadDto,
   ) {
+    // Convert multipart DTO to regular DTO
+    const uploadDto: FileUploadDto = {
+      fieldId: multipartDto.fieldId,
+      submissionId: multipartDto.submissionId,
+      metadata: multipartDto.metadata,
+      fileMetadata: multipartDto.fileMetadata,
+      uploadType: multipartDto.uploadType,
+    };
     // Determine if this is single or multiple file upload
     if (files.length === 1) {
       const result = await this.submissionsService.uploadSingleFile(
