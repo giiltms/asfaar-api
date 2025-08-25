@@ -8,7 +8,9 @@ import {
   UseGuards,
   Req,
   Logger,
+  UsePipes,
 } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -42,6 +44,14 @@ export class WebhooksController {
   @Post('flutterwave')
   @FlutterwaveWebhookGuard()
   @UseGuards(WebhookSignatureGuard)
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false, // Allow additional properties for webhooks
+      skipMissingProperties: true,
+    }),
+  )
   @ApiOperation({
     summary: 'Flutterwave webhook endpoint',
     description: 'Handle Flutterwave payment webhook events',
@@ -84,6 +94,14 @@ export class WebhooksController {
   @Post('paystack')
   @PaystackWebhookGuard()
   @UseGuards(WebhookSignatureGuard)
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false, // Allow additional properties for webhooks
+      skipMissingProperties: true,
+    }),
+  )
   @ApiOperation({
     summary: 'Paystack webhook endpoint',
     description: 'Handle Paystack payment webhook events',
