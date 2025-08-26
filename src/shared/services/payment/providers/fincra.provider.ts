@@ -110,30 +110,34 @@ export class FincraProvider implements PaymentProviderInterface {
 
   async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
     try {
+      this.logger.log(`Verifying Fincra payment with reference: ${reference}`);
+
       const response = await this.makeRequest(
         'GET',
-        `/checkout/payments/${reference}`,
+        `/checkout/charges/merchant-reference/${reference}`,
       );
 
-      if (response.success && response.data) {
+      this.logger.log(`Fincra verification response:`, response);
+
+      if (response.status && response.data) {
         const { data } = response;
 
         return {
-          success: data.status === 'successful',
+          success: data.status === 'success',
           reference: data.reference,
           amount: parseFloat(data.amount),
           currency: data.currency,
           status:
-            data.status === 'successful'
+            data.status === 'success'
               ? 'success'
               : data.status === 'failed'
               ? 'failed'
               : data.status === 'cancelled'
               ? 'abandoned'
               : 'pending',
-          gatewayResponse: data.gatewayMessage,
+          gatewayResponse: data.message,
           paidAt: data.dateCreated ? new Date(data.dateCreated) : undefined,
-          channel: data.paymentMethod,
+          channel: data.type,
           fees: data.fee ? parseFloat(data.fee) : undefined,
           providerData: data,
           customer: {
@@ -175,7 +179,7 @@ export class FincraProvider implements PaymentProviderInterface {
 
       const response = await this.makeRequest(
         'POST',
-        `/checkout/payments/${data.transactionReference}/refund`,
+        `/checkout/charges/merchant-reference/${data.transactionReference}/refund`,
         payload,
       );
 
