@@ -579,7 +579,7 @@ export class FormSubmissionsService {
     userId: string,
     draftDto: SaveDraftDto,
   ): Promise<FormSubmissionDto> {
-    const { formId, responses, metadata } = draftDto;
+    const { formId, submissionId, responses, metadata } = draftDto;
 
     // Verify form exists
     const form = await this.prisma.dynamicForm.findUnique({
@@ -590,17 +590,90 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_NOT_FOUND);
     }
 
-    // Find or create draft
-    let submission = await this.prisma.formSubmission.findFirst({
-      where: {
-        userId,
-        formId,
-        status: SubmissionStatus.DRAFT,
-      },
-    });
+    // Find the submission to work with (either by submissionId or existing draft)
+    let submission: any = null;
+
+    if (submissionId) {
+      // User provided a specific submission ID (likely from file uploads)
+      submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          id: submissionId,
+          userId,
+          formId,
+          status: SubmissionStatus.DRAFT,
+        },
+      });
+
+      if (!submission) {
+        throw new NotFoundException(
+          `Draft submission with ID ${submissionId} not found or not accessible`,
+        );
+      }
+    } else {
+      // Look for existing draft submission
+      submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          userId,
+          formId,
+          status: SubmissionStatus.DRAFT,
+        },
+      });
+    }
 
     if (submission) {
-      // Update existing draft
+      // Get existing responses to preserve file uploads
+      const existingResponses = await this.prisma.fieldResponse.findMany({
+        where: { submissionId: submission.id },
+      });
+
+      // Create a map of existing responses by fieldId
+      const existingResponseMap = new Map(
+        existingResponses.map((r) => [r.fieldId, r]),
+      );
+
+      // Merge new responses with existing ones, preserving file uploads
+      const mergedResponses = responses.map((response) => {
+        const existingResponse = existingResponseMap.get(response.fieldId);
+
+        // For file fields, preserve existing fileUrls if no new ones provided
+        if (response.fileUrls && response.fileUrls.length > 0) {
+          // New file URLs provided, use them
+          return {
+            fieldId: response.fieldId,
+            fieldName: response.fieldName,
+            value: response.value,
+            fileUrls: response.fileUrls,
+            metadata: response.metadata,
+          };
+        } else if (
+          existingResponse &&
+          existingResponse.fileUrls &&
+          existingResponse.fileUrls.length > 0
+        ) {
+          // No new file URLs, but existing ones exist - preserve them
+          return {
+            fieldId: response.fieldId,
+            fieldName: response.fieldName,
+            value: response.value,
+            fileUrls: existingResponse.fileUrls,
+            metadata: {
+              ...((existingResponse.metadata as object) || {}),
+              ...response.metadata,
+            },
+          };
+        } else {
+          // No file URLs involved
+          return {
+            fieldId: response.fieldId,
+            fieldName: response.fieldName,
+            value: response.value,
+            fileUrls: response.fileUrls || [],
+            metadata: response.metadata,
+          };
+        }
+      });
+
+      // Update existing draft - preserve file uploads
       submission = await this.prisma.formSubmission.update({
         where: { id: submission.id },
         data: {
@@ -611,13 +684,7 @@ export class FormSubmissionsService {
           },
           responses: {
             deleteMany: {}, // Clear existing responses
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
+            create: mergedResponses, // But mergedResponses now includes preserved files
           },
         },
         include: this.getSubmissionInclude(),
@@ -635,7 +702,7 @@ export class FormSubmissionsService {
           },
           responses: {
             create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
+              fieldId: response.fieldId,
               fieldName: response.fieldName,
               value: response.value,
               fileUrls: response.fileUrls || [],

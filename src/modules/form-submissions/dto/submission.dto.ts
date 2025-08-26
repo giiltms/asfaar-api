@@ -949,6 +949,14 @@ export class SaveDraftDto {
   @IsUUID()
   formId: string;
 
+  @ApiPropertyOptional({
+    description: 'Existing submission ID (if updating a draft)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsUUID()
+  submissionId?: string;
+
   @ApiProperty({
     description: 'Field responses (partial)',
     type: [CreateFieldResponseDto],
