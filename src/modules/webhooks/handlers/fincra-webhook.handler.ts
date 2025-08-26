@@ -23,8 +23,7 @@ import { PaymentStatus } from '@prisma/client';
 @Injectable()
 export class FincraWebhookHandler
   extends BaseWebhookHandler
-  implements WebhookHandlerInterface
-{
+  implements WebhookHandlerInterface {
   protected readonly logger = new Logger(FincraWebhookHandler.name);
   private readonly webhookSecret: string;
 
@@ -71,7 +70,11 @@ export class FincraWebhookHandler
 
   async parseEvent(payload: any): Promise<WebhookEvent> {
     try {
-      const { event, data } = payload;
+      // Fincra webhook payload is the data itself, not wrapped in event/data structure
+      const data = payload;
+
+      // Determine event type based on status and message
+      const event = this.determineEventType(data.status, data.message);
 
       // Extract common fields from Fincra webhook
       const reference =
@@ -80,11 +83,16 @@ export class FincraWebhookHandler
         data.transactionReference ||
         data.id?.toString();
 
-      const amount = data.amountReceived || data.amount || data.amountCharged;
-      const currency = data.destinationCurrency || data.sourceCurrency || 'NGN';
+      // Use amountReceived for the actual amount received (after fees)
+      const amount = data.amountReceived || data.amount;
+      const currency = data.currency || 'NGN';
 
       // Map Fincra status to our PaymentStatus
       const status = this.mapFincraStatus(data.status, event);
+
+      this.logger.log(
+        `Parsed Fincra webhook: event=${event}, status=${status}, reference=${reference}, amount=${amount}`,
+      );
 
       return {
         event,
@@ -96,16 +104,16 @@ export class FincraWebhookHandler
         customerId: data.customer?.id || data.customerId,
         metadata: {
           fee: data.fee,
-          rate: data.rate,
-          paymentScheme: data.paymentScheme,
-          paymentDestination: data.paymentDestination,
-          traceId: data.traceId,
-          reason: data.reason,
-          customer: data.customer,
-          recipient: data.recipient,
+          vat: data.vat,
+          type: data.type,
+          message: data.message,
+          actionRequired: data.actionRequired,
+          amountToSettle: data.amountToSettle,
           virtualAccount: data.virtualAccount,
-          settlementDestination: data.settlementDestination,
-          settlementTime: data.settlementTime,
+          chargeReference: data.chargeReference,
+          customer: data.customer,
+          authorization: data.authorization,
+          description: data.description,
         },
       };
     } catch (error) {
@@ -127,6 +135,7 @@ export class FincraWebhookHandler
       case 'successful':
       case 'completed':
       case 'credited':
+      case 'success':
         if (eventType?.includes('payout') && this.isRefundEvent(event)) {
           return PaymentStatus.REFUNDED;
         }
@@ -151,6 +160,25 @@ export class FincraWebhookHandler
           `Unknown Fincra status: ${status} for event: ${event}`,
         );
         return PaymentStatus.PENDING;
+    }
+  }
+
+  /**
+   * Determine event type based on status
+   */
+  private determineEventType(status: string, message: string): string {
+    const lowerStatus = status?.toLowerCase();
+
+    // Use standard Fincra event types
+    switch (lowerStatus) {
+      case 'success':
+        return 'charge.successful';
+      case 'failed':
+        return 'charge.failed';
+      case 'pending':
+        return 'charge.pending';
+      default:
+        return 'charge.unknown';
     }
   }
 

@@ -432,6 +432,7 @@ export class PaymentsController {
           name: fee.name,
           amount: fee.amount,
         })),
+        feeBearer: 'business', // You absorb the fees (recommended)
       },
       customerName: `${user.firstName} ${user.lastName}`,
     };

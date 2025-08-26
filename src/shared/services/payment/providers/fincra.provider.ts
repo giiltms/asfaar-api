@@ -46,6 +46,9 @@ export class FincraProvider implements PaymentProviderInterface {
     data: PaymentInitializationData,
   ): Promise<PaymentInitializationResponse> {
     try {
+      // Set fee bearer - default to business (you absorb the fees)
+      const feeBearer = data.metadata?.feeBearer || 'business';
+
       const payload = {
         amount: data.amount,
         currency: data.currency.toUpperCase(),
@@ -58,7 +61,7 @@ export class FincraProvider implements PaymentProviderInterface {
         redirectUrl: data.callbackUrl,
         paymentMethods: data.paymentMethods || ['card', 'bank_transfer'],
         metadata: data.metadata,
-        feeBearer: 'customer',
+        feeBearer: feeBearer,
       };
 
       const response = await this.makeRequest(
