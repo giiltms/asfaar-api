@@ -348,7 +348,8 @@ export class FormSubmissionsService {
     userId: string,
     submitDto: SubmitFormDto,
   ): Promise<FormSubmissionDto> {
-    const { formId, responses, metadata, biometricAppointment } = submitDto;
+    const { formId, submissionId, responses, metadata, biometricAppointment } =
+      submitDto;
 
     // Get form with all fields for validation
     const form = await this.prisma.dynamicForm.findUnique({
@@ -383,49 +384,61 @@ export class FormSubmissionsService {
       );
     }
 
-    // Get existing responses for validation (to check FILE fields)
-    const existingResponses = await this.prisma.fieldResponse.findMany({
-      where: {
-        submission: {
+    // Find the submission to work with (either by submissionId or existing draft)
+    let submission: any = null;
+
+    if (submissionId) {
+      // User provided a specific submission ID (likely from file uploads)
+      submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          id: submissionId,
           userId,
           formId,
           status: SubmissionStatus.DRAFT,
         },
-      },
-    });
+      });
+
+      if (!submission) {
+        throw new NotFoundException(
+          `Draft submission with ID ${submissionId} not found or not accessible`,
+        );
+      }
+    } else {
+      // Look for existing draft submission
+      submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          userId,
+          formId,
+          status: SubmissionStatus.DRAFT,
+        },
+      });
+    }
+
+    // Get existing responses for validation (to check FILE fields)
+    const existingResponses = submission
+      ? await this.prisma.fieldResponse.findMany({
+          where: { submissionId: submission.id },
+        })
+      : [];
 
     // Validate submission against form template
     await this.validateSubmission(form, responses, existingResponses);
 
-    // Check if user already has a submission for this form
-    const existingSubmission = await this.prisma.formSubmission.findFirst({
+    // Check if user already has a submitted version for this form
+    const existingSubmitted = await this.prisma.formSubmission.findFirst({
       where: {
         userId,
         formId,
-        status: { in: [SubmissionStatus.SUBMITTED, 'APPROVED' as any] }, // Use string literal
+        status: { in: [SubmissionStatus.SUBMITTED, 'APPROVED' as any] },
       },
     });
 
-    if (existingSubmission) {
+    if (existingSubmitted) {
       throw new ConflictException('Form has already been submitted');
     }
 
-    // Create or update submission
-    let submission = await this.prisma.formSubmission.findFirst({
-      where: {
-        userId,
-        formId,
-        status: SubmissionStatus.DRAFT,
-      },
-    });
-
     if (submission) {
-      // Get existing responses to preserve file uploads
-      const existingResponses = await this.prisma.fieldResponse.findMany({
-        where: { submissionId: submission.id },
-      });
-
-      // Create a map of existing responses by fieldId
+      // Update existing draft submission
       const existingResponseMap = new Map(
         existingResponses.map((r) => [r.fieldId, r]),
       );
@@ -504,7 +517,7 @@ export class FormSubmissionsService {
           },
           responses: {
             create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
+              fieldId: response.fieldId,
               fieldName: response.fieldName,
               value: response.value,
               fileUrls: response.fileUrls || [],
