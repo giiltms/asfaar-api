@@ -89,7 +89,8 @@ class MultipartFileUploadDto {
 
   @ApiProperty({
     description: 'File metadata as JSON string (for single file upload)',
-    example: '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
+    example:
+      '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
     required: false,
   })
   @IsOptional()
@@ -106,8 +107,10 @@ class MultipartFileUploadDto {
   metadata?: any;
 
   @ApiProperty({
-    description: 'Individual file metadata as JSON string (for multiple file upload)',
-    example: '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
+    description:
+      'Individual file metadata as JSON string (for multiple file upload)',
+    example:
+      '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
     required: false,
   })
   @IsOptional()
@@ -124,7 +127,8 @@ class MultipartFileUploadDto {
   fileMetadata?: any;
 
   @ApiProperty({
-    description: 'Upload type: "single" for one file, "multiple" for multiple files',
+    description:
+      'Upload type: "single" for one file, "multiple" for multiple files',
     example: 'single',
     enum: ['single', 'multiple'],
     required: false,
@@ -535,12 +539,15 @@ export class FormSubmissionsController {
         metadata: {
           type: 'string',
           description: 'File metadata as JSON string (for single file upload)',
-          example: '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
+          example:
+            '{"originalName":"passport.pdf","size":1024000,"description":"Front page of passport"}',
         },
         fileMetadata: {
           type: 'string',
-          description: 'Individual file metadata as JSON string (for multiple file upload)',
-          example: '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
+          description:
+            'Individual file metadata as JSON string (for multiple file upload)',
+          example:
+            '[{"originalName":"passport.pdf","description":"Front page"},{"originalName":"visa.pdf","description":"Visa page"}]',
         },
         uploadType: {
           type: 'string',
