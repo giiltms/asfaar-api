@@ -383,8 +383,19 @@ export class FormSubmissionsService {
       );
     }
 
+    // Get existing responses for validation (to check FILE fields)
+    const existingResponses = await this.prisma.fieldResponse.findMany({
+      where: {
+        submission: {
+          userId,
+          formId,
+          status: SubmissionStatus.DRAFT,
+        },
+      },
+    });
+
     // Validate submission against form template
-    await this.validateSubmission(form, responses);
+    await this.validateSubmission(form, responses, existingResponses);
 
     // Check if user already has a submission for this form
     const existingSubmission = await this.prisma.formSubmission.findFirst({
@@ -1444,14 +1455,34 @@ export class FormSubmissionsService {
   private async validateSubmission(
     form: any,
     responses: CreateFieldResponseDto[],
+    existingResponses?: any[],
   ): Promise<void> {
     const allFields = this.getAllFormFields(form);
     const responseMap = new Map(responses.map((r) => [r.fieldId, r]));
+    const existingResponseMap = existingResponses
+      ? new Map(existingResponses.map((r) => [r.fieldId, r]))
+      : new Map();
 
     for (const field of allFields) {
       const response = responseMap.get(field.id);
+      const existingResponse = existingResponseMap.get(field.id);
 
-      // Check required fields
+      // For FILE fields, check if files were uploaded (either in current submission or existing)
+      if (field.type === FieldType.FILE) {
+        const hasCurrentFiles =
+          response?.fileUrls && response.fileUrls.length > 0;
+        const hasExistingFiles =
+          existingResponse?.fileUrls && existingResponse.fileUrls.length > 0;
+
+        if (field.required && !hasCurrentFiles && !hasExistingFiles) {
+          throw new BadRequestException(
+            `Field '${field.label}' is required. Please upload the required file(s).`,
+          );
+        }
+        continue; // Skip other validation for FILE fields
+      }
+
+      // Check required fields for non-FILE fields
       if (field.required && (!response || this.isEmpty(response.value))) {
         throw new BadRequestException(`Field '${field.label}' is required`);
       }
