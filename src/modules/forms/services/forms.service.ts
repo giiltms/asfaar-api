@@ -933,8 +933,13 @@ export class FormsService {
           description: fee.description,
           amount: fee.amount,
           currency: fee.currency,
+          feeType: fee.feeType,
+          providers: fee.providers,
+          metadata: fee.metadata,
           isOptional: fee.isOptional,
           isActive: fee.isActive,
+          createdAt: fee.createdAt,
+          updatedAt: fee.updatedAt,
         })) || [],
       country: form.country
         ? {

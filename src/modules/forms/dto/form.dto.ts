@@ -16,7 +16,7 @@ import {
   IsNotEmpty,
   IsObject,
 } from 'class-validator';
-import { FieldType, FeeType } from '@prisma/client';
+import { FieldType, FeeType, PaymentProvider } from '@prisma/client';
 
 // Field Option DTOs (base level - no dependencies)
 export class CreateFieldOptionDto {
@@ -521,11 +521,30 @@ export class FormServiceFeeDto {
   })
   feeType?: FeeType;
 
+  @ApiPropertyOptional({
+    description: 'Allowed payment providers',
+    type: [String],
+    enum: PaymentProvider,
+  })
+  providers?: PaymentProvider[];
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata',
+    example: { customField: 'value' },
+  })
+  metadata?: any;
+
   @ApiProperty({ description: 'Whether fee is optional' })
   isOptional: boolean;
 
   @ApiProperty({ description: 'Whether fee is active' })
   isActive: boolean;
+
+  @ApiProperty({ description: 'Creation timestamp' })
+  createdAt: Date;
+
+  @ApiProperty({ description: 'Last update timestamp' })
+  updatedAt: Date;
 }
 
 export class FormDto {
