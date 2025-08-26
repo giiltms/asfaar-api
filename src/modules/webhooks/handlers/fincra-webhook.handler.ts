@@ -70,11 +70,12 @@ export class FincraWebhookHandler
 
   async parseEvent(payload: any): Promise<WebhookEvent> {
     try {
-      // Fincra webhook payload is the data itself, not wrapped in event/data structure
-      const data = payload;
+      // Fincra webhook payload has event and data structure
+      const { event: webhookEvent, data } = payload;
 
-      // Determine event type based on status and message
-      const event = this.determineEventType(data.status, data.message);
+      // Use the event from webhook or determine from data if not available
+      const event =
+        webhookEvent || this.determineEventType(data.status, data.message);
 
       // Extract common fields from Fincra webhook
       const reference =
