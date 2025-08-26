@@ -658,11 +658,6 @@ export class UpdateServiceFeeDto {
 
 export class ServiceFeeFiltersDto {
   @ApiPropertyOptional({
-    description: 'Filter by active status',
-  })
-  @IsOptional()
-  @IsBoolean()
-  @ApiPropertyOptional({
     description: 'Type of service fee',
     enum: FeeType,
     example: FeeType.APPLICATION,
@@ -670,7 +665,6 @@ export class ServiceFeeFiltersDto {
   @IsOptional()
   @IsEnum(FeeType)
   feeType?: FeeType;
-  isActive?: boolean;
 
   @ApiPropertyOptional({
     description: 'Filter by currency',
@@ -689,11 +683,6 @@ export class ServiceFeeFiltersDto {
 
 export class ServiceFeeQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
-    description: 'Filter by active status',
-  })
-  @IsOptional()
-  @IsBoolean()
-  @ApiPropertyOptional({
     description: 'Type of service fee',
     enum: FeeType,
     example: FeeType.APPLICATION,
@@ -701,7 +690,6 @@ export class ServiceFeeQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(FeeType)
   feeType?: FeeType;
-  isActive?: boolean;
 
   @ApiPropertyOptional({
     description: 'Filter by currency',

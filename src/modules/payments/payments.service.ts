@@ -782,13 +782,13 @@ export class PaymentsService {
     pagination: PaginationQueryDto = {},
   ) {
     const { page = 1, limit = 10 } = pagination;
-    const { isActive, currency, search, feeType } = filters;
+    const { currency, search, feeType } = filters;
 
     const skip = (page - 1) * limit;
 
     const result = await this.prisma.serviceFee.findMany({
       where: {
-        isActive,
+        isActive: true, // Always show only active service fees
         currency,
         feeType,
         OR: search
@@ -805,7 +805,7 @@ export class PaymentsService {
 
     const total = await this.prisma.serviceFee.count({
       where: {
-        isActive,
+        isActive: true, // Always count only active service fees
         currency,
         feeType,
         OR: search
