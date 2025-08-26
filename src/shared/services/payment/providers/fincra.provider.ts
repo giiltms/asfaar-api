@@ -411,6 +411,7 @@ export class FincraProvider implements PaymentProviderInterface {
       'Content-Type': 'application/json',
       'api-key': this.secretKey,
       'x-pub-key': this.publicKey,
+      'x-business-id': this.merchantId,
     };
 
     const config: RequestInit = {
