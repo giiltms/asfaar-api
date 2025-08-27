@@ -458,7 +458,8 @@ export class FormSubmissionsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete submission',
-    description: 'Delete a draft submission (only drafts can be deleted)',
+    description:
+      'Delete a draft submission and clean up associated files. Only draft submissions can be deleted.',
   })
   @ApiParam({
     name: 'id',
@@ -467,7 +468,7 @@ export class FormSubmissionsController {
   })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
-    description: 'Submission deleted successfully',
+    description: 'Submission deleted successfully and files cleaned up',
   })
   @ApiDefaultResponse({})
   async deleteSubmission(

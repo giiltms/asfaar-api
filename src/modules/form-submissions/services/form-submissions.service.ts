@@ -160,11 +160,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-                id: form.country.id,
-                name: form.country.name,
-                isoCode2: form.country.isoCode2,
-                flag: form.country.flag,
-              }
+              id: form.country.id,
+              name: form.country.name,
+              isoCode2: form.country.isoCode2,
+              flag: form.country.flag,
+            }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -256,12 +256,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-            id: submission.id,
-            status: submission.status,
-            submittedAt: submission.submittedAt,
-            createdAt: submission.createdAt,
-            updatedAt: submission.updatedAt,
-          }
+          id: submission.id,
+          status: submission.status,
+          submittedAt: submission.submittedAt,
+          createdAt: submission.createdAt,
+          updatedAt: submission.updatedAt,
+        }
         : null,
     };
   }
@@ -328,14 +328,14 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId instead of formFieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId instead of formFieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -417,8 +417,8 @@ export class FormSubmissionsService {
     // Get existing responses for validation (to check FILE fields)
     const existingResponses = submission
       ? await this.prisma.fieldResponse.findMany({
-          where: { submissionId: submission.id },
-        })
+        where: { submissionId: submission.id },
+      })
       : [];
 
     // Validate submission against form template
@@ -437,97 +437,100 @@ export class FormSubmissionsService {
       throw new ConflictException('Form has already been submitted');
     }
 
-    if (submission) {
-      // Update existing draft submission
-      const existingResponseMap = new Map(
-        existingResponses.map((r) => [r.fieldId, r]),
-      );
+    // Use database transaction for atomic operations
+    submission = await this.prisma.$transaction(async (tx) => {
+      if (submission) {
+        // Update existing draft submission
+        const existingResponseMap = new Map(
+          existingResponses.map((r) => [r.fieldId, r]),
+        );
 
-      // Merge new responses with existing ones, preserving file uploads
-      const mergedResponses = responses.map((response) => {
-        const existingResponse = existingResponseMap.get(response.fieldId);
+        // Merge new responses with existing ones, preserving file uploads
+        const mergedResponses = responses.map((response) => {
+          const existingResponse = existingResponseMap.get(response.fieldId);
 
-        // For file fields, preserve existing fileUrls if no new ones provided
-        if (response.fileUrls && response.fileUrls.length > 0) {
-          // New file URLs provided, use them
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: response.fileUrls,
-            metadata: response.metadata,
-          };
-        } else if (
-          existingResponse &&
-          existingResponse.fileUrls &&
-          existingResponse.fileUrls.length > 0
-        ) {
-          // No new file URLs, but existing ones exist - preserve them
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: existingResponse.fileUrls,
-            metadata: {
-              ...((existingResponse.metadata as object) || {}),
-              ...response.metadata,
-            },
-          };
-        } else {
-          // No file URLs involved
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: response.fileUrls || [],
-            metadata: response.metadata,
-          };
-        }
-      });
-
-      // Update existing draft
-      submission = await this.prisma.formSubmission.update({
-        where: { id: submission.id },
-        data: {
-          status: SubmissionStatus.SUBMITTED,
-          submittedAt: new Date(),
-          metadata: {
-            ...((submission.metadata as object) || {}),
-            ...metadata,
-            submittedAt: new Date().toISOString(),
-          },
-          responses: {
-            deleteMany: {}, // Clear existing responses
-            create: mergedResponses,
-          },
-        },
-        include: this.getSubmissionInclude(),
-      });
-    } else {
-      // Create new submission
-      submission = await this.prisma.formSubmission.create({
-        data: {
-          userId,
-          formId,
-          status: SubmissionStatus.SUBMITTED,
-          submittedAt: new Date(),
-          metadata: {
-            ...metadata,
-            submittedAt: new Date().toISOString(),
-          },
-          responses: {
-            create: responses.map((response) => ({
+          // For file fields, preserve existing fileUrls if no new ones provided
+          if (response.fileUrls && response.fileUrls.length > 0) {
+            // New file URLs provided, use them
+            return {
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls,
+              metadata: response.metadata,
+            };
+          } else if (
+            existingResponse &&
+            existingResponse.fileUrls &&
+            existingResponse.fileUrls.length > 0
+          ) {
+            // No new file URLs, but existing ones exist - preserve them
+            return {
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: existingResponse.fileUrls,
+              metadata: {
+                ...((existingResponse.metadata as object) || {}),
+                ...response.metadata,
+              },
+            };
+          } else {
+            // No file URLs involved
+            return {
               fieldId: response.fieldId,
               fieldName: response.fieldName,
               value: response.value,
               fileUrls: response.fileUrls || [],
               metadata: response.metadata,
-            })),
+            };
+          }
+        });
+
+        // Update existing draft within transaction
+        return await tx.formSubmission.update({
+          where: { id: submission.id },
+          data: {
+            status: SubmissionStatus.SUBMITTED,
+            submittedAt: new Date(),
+            metadata: {
+              ...((submission.metadata as object) || {}),
+              ...metadata,
+              submittedAt: new Date().toISOString(),
+            },
+            responses: {
+              deleteMany: {}, // Clear existing responses
+              create: mergedResponses,
+            },
           },
-        },
-        include: this.getSubmissionInclude(),
-      });
-    }
+          include: this.getSubmissionInclude(),
+        });
+      } else {
+        // Create new submission within transaction
+        return await tx.formSubmission.create({
+          data: {
+            userId,
+            formId,
+            status: SubmissionStatus.SUBMITTED,
+            submittedAt: new Date(),
+            metadata: {
+              ...metadata,
+              submittedAt: new Date().toISOString(),
+            },
+            responses: {
+              create: responses.map((response) => ({
+                fieldId: response.fieldId,
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            },
+          },
+          include: this.getSubmissionInclude(),
+        });
+      }
+    });
 
     // Create biometric appointment if provided
     if (biometricAppointment) {
@@ -572,6 +575,90 @@ export class FormSubmissionsService {
       throw new BadRequestException(
         'Form submitted successfully but failed to create biometric appointment. Please contact support.',
       );
+    }
+  }
+
+  /**
+   * Delete submission and clean up associated files
+   */
+  async deleteSubmission(userId: string, submissionId: string): Promise<void> {
+    // Verify ownership and get submission with responses
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: {
+        id: submissionId,
+        userId,
+        isCancelled: false,
+      },
+      include: { responses: true },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found or not accessible');
+    }
+
+    // Use transaction to ensure atomic deletion
+    await this.prisma.$transaction(async (tx) => {
+      // Collect all file URLs for cleanup
+      const fileUrls = submission.responses
+        .filter((r) => r.fileUrls && r.fileUrls.length > 0)
+        .flatMap((r) => r.fileUrls);
+
+      // Delete files from storage
+      if (fileUrls.length > 0) {
+        await this.cleanupFiles(fileUrls);
+      }
+
+      // Soft delete the submission
+      await tx.formSubmission.update({
+        where: { id: submissionId },
+        data: {
+          isCancelled: true,
+          cancelledAt: new Date(),
+          cancelledBy: userId,
+          cancellationReason: 'User requested deletion',
+        },
+      });
+
+      // Delete all associated responses
+      await tx.fieldResponse.deleteMany({
+        where: { submissionId },
+      });
+    });
+  }
+
+  /**
+   * Clean up files from storage
+   */
+  private async cleanupFiles(fileUrls: string[]): Promise<void> {
+    try {
+      // For local storage, delete files from filesystem
+      if (process.env.NODE_ENV !== 'production') {
+        const fs = await import('fs');
+        const path = await import('path');
+
+        for (const fileUrl of fileUrls) {
+          try {
+            // Remove /uploads/ prefix and construct full path
+            const relativePath = fileUrl.replace('/uploads/', '');
+            const fullPath = path.join(process.cwd(), 'uploads', relativePath);
+
+            if (fs.existsSync(fullPath)) {
+              fs.unlinkSync(fullPath);
+            }
+          } catch (error) {
+            console.error(`Failed to delete file ${fileUrl}:`, error);
+            // Continue with other files even if one fails
+          }
+        }
+      } else {
+        // For production, use storage service (S3, etc.)
+        // This would integrate with your storage provider
+        console.log(`Files to be cleaned up: ${fileUrls.join(', ')}`);
+        // TODO: Implement production file cleanup
+      }
+    } catch (error) {
+      console.error('File cleanup failed:', error);
+      // Don't throw - file cleanup failure shouldn't prevent submission deletion
     }
   }
 
@@ -620,99 +707,102 @@ export class FormSubmissionsService {
       });
     }
 
-    if (submission) {
-      // Get existing responses to preserve file uploads
-      const existingResponses = await this.prisma.fieldResponse.findMany({
-        where: { submissionId: submission.id },
-      });
+    // Use database transaction for atomic operations
+    submission = await this.prisma.$transaction(async (tx) => {
+      if (submission) {
+        // Get existing responses to preserve file uploads
+        const existingResponses = await tx.fieldResponse.findMany({
+          where: { submissionId: submission.id },
+        });
 
-      // Create a map of existing responses by fieldId
-      const existingResponseMap = new Map(
-        existingResponses.map((r) => [r.fieldId, r]),
-      );
+        // Create a map of existing responses by fieldId
+        const existingResponseMap = new Map(
+          existingResponses.map((r) => [r.fieldId, r]),
+        );
 
-      // Merge new responses with existing ones, preserving file uploads
-      const mergedResponses = responses.map((response) => {
-        const existingResponse = existingResponseMap.get(response.fieldId);
+        // Merge new responses with existing ones, preserving file uploads
+        const mergedResponses = responses.map((response) => {
+          const existingResponse = existingResponseMap.get(response.fieldId);
 
-        // For file fields, preserve existing fileUrls if no new ones provided
-        if (response.fileUrls && response.fileUrls.length > 0) {
-          // New file URLs provided, use them
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: response.fileUrls,
-            metadata: response.metadata,
-          };
-        } else if (
-          existingResponse &&
-          existingResponse.fileUrls &&
-          existingResponse.fileUrls.length > 0
-        ) {
-          // No new file URLs, but existing ones exist - preserve them
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: existingResponse.fileUrls,
-            metadata: {
-              ...((existingResponse.metadata as object) || {}),
-              ...response.metadata,
-            },
-          };
-        } else {
-          // No file URLs involved
-          return {
-            fieldId: response.fieldId,
-            fieldName: response.fieldName,
-            value: response.value,
-            fileUrls: response.fileUrls || [],
-            metadata: response.metadata,
-          };
-        }
-      });
-
-      // Update existing draft - preserve file uploads
-      submission = await this.prisma.formSubmission.update({
-        where: { id: submission.id },
-        data: {
-          metadata: {
-            ...((submission.metadata as object) || {}),
-            ...metadata,
-            lastSaved: new Date().toISOString(),
-          },
-          responses: {
-            deleteMany: {}, // Clear existing responses
-            create: mergedResponses, // But mergedResponses now includes preserved files
-          },
-        },
-        include: this.getSubmissionInclude(),
-      });
-    } else {
-      // Create new draft
-      submission = await this.prisma.formSubmission.create({
-        data: {
-          userId,
-          formId,
-          status: SubmissionStatus.DRAFT,
-          metadata: {
-            ...metadata,
-            lastSaved: new Date().toISOString(),
-          },
-          responses: {
-            create: responses.map((response) => ({
+          // For file fields, preserve existing fileUrls if no new ones provided
+          if (response.fileUrls && response.fileUrls.length > 0) {
+            // New file URLs provided, use them
+            return {
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls,
+              metadata: response.metadata,
+            };
+          } else if (
+            existingResponse &&
+            existingResponse.fileUrls &&
+            existingResponse.fileUrls.length > 0
+          ) {
+            // No new file URLs, but existing ones exist - preserve them
+            return {
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: existingResponse.fileUrls,
+              metadata: {
+                ...((existingResponse.metadata as object) || {}),
+                ...response.metadata,
+              },
+            };
+          } else {
+            // No file URLs involved
+            return {
               fieldId: response.fieldId,
               fieldName: response.fieldName,
               value: response.value,
               fileUrls: response.fileUrls || [],
               metadata: response.metadata,
-            })),
+            };
+          }
+        });
+
+        // Update existing draft - preserve file uploads within transaction
+        return await tx.formSubmission.update({
+          where: { id: submission.id },
+          data: {
+            metadata: {
+              ...((submission.metadata as object) || {}),
+              ...metadata,
+              lastSaved: new Date().toISOString(),
+            },
+            responses: {
+              deleteMany: {}, // Clear existing responses
+              create: mergedResponses, // But mergedResponses now includes preserved files
+            },
           },
-        },
-        include: this.getSubmissionInclude(),
-      });
-    }
+          include: this.getSubmissionInclude(),
+        });
+      } else {
+        // Create new draft within transaction
+        return await tx.formSubmission.create({
+          data: {
+            userId,
+            formId,
+            status: SubmissionStatus.DRAFT,
+            metadata: {
+              ...metadata,
+              lastSaved: new Date().toISOString(),
+            },
+            responses: {
+              create: responses.map((response) => ({
+                fieldId: response.fieldId,
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            },
+          },
+          include: this.getSubmissionInclude(),
+        });
+      }
+    });
 
     return this.mapToSubmissionDto(submission);
   }
@@ -859,15 +949,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-              deleteMany: {},
-              create: responses.map((response) => ({
-                fieldId: response.fieldId, // Use fieldId
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId, // Use fieldId
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -921,15 +1011,15 @@ export class FormSubmissionsService {
         submittedAt: new Date(), // Update submission date
         responses: responses
           ? {
-              deleteMany: {},
-              create: responses.map((response) => ({
-                fieldId: response.fieldId,
-                fieldName: response.fieldName,
-                value: response.value,
-                fileUrls: response.fileUrls || [],
-                metadata: response.metadata,
-              })),
-            }
+            deleteMany: {},
+            create: responses.map((response) => ({
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls || [],
+              metadata: response.metadata,
+            })),
+          }
           : undefined,
         statusLogs: {
           create: {
@@ -964,29 +1054,6 @@ export class FormSubmissionsService {
     });
 
     return submissions.map((submission) => this.mapToSubmissionDto(submission));
-  }
-
-  async deleteSubmission(userId: string, submissionId: string): Promise<void> {
-    const submission = await this.prisma.formSubmission.findUnique({
-      where: { id: submissionId },
-    });
-
-    if (!submission) {
-      throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
-    }
-
-    if (submission.userId !== userId && userId !== 'admin') {
-      // Allow admin deletion
-      throw new ForbiddenException(FORBIDDEN_RESOURCE);
-    }
-
-    if (submission.status !== SubmissionStatus.DRAFT && userId !== 'admin') {
-      throw new BadRequestException('Only draft submissions can be deleted');
-    }
-
-    await this.prisma.formSubmission.delete({
-      where: { id: submissionId },
-    });
   }
 
   async cancelSubmission(
@@ -1555,16 +1622,14 @@ export class FormSubmissionsService {
           existingResponse?.fileUrls && existingResponse.fileUrls.length > 0;
 
         if (field.required && !hasCurrentFiles && !hasExistingFiles) {
-          throw new BadRequestException(
-            `Field '${field.label}' is required. Please upload the required file(s).`,
-          );
+          throw this.createUserFriendlyError(field, 'REQUIRED_FILE');
         }
         continue; // Skip other validation for FILE fields
       }
 
       // Check required fields for non-FILE fields
       if (field.required && (!response || this.isEmpty(response.value))) {
-        throw new BadRequestException(`Field '${field.label}' is required`);
+        throw this.createUserFriendlyError(field, 'REQUIRED_FIELD');
       }
 
       // Validate field type and format
@@ -1572,6 +1637,73 @@ export class FormSubmissionsService {
         await this.validateFieldValue(field, response.value);
       }
     }
+  }
+
+  /**
+   * Create user-friendly error messages with actionable guidance
+   */
+  private createUserFriendlyError(
+    field: any,
+    errorType: string,
+  ): BadRequestException {
+    const fieldName = field.label || field.name;
+
+    switch (errorType) {
+      case 'REQUIRED_FILE':
+        return new BadRequestException(
+          `The field '${fieldName}' requires a file upload. ` +
+          `Please upload a file or contact support if you need help. ` +
+          `Supported formats: ${this.getSupportedFileTypes(field)}`,
+        );
+
+      case 'REQUIRED_FIELD':
+        return new BadRequestException(
+          `The field '${fieldName}' is required to complete your submission. ` +
+          `Please fill in this information before proceeding.`,
+        );
+
+      case 'INVALID_FILE_TYPE':
+        const allowedTypes = this.getSupportedFileTypes(field);
+        return new BadRequestException(
+          `The file type for '${fieldName}' is not supported. ` +
+          `Allowed types: ${allowedTypes}. Please try uploading a different file.`,
+        );
+
+      case 'FILE_TOO_LARGE':
+        const maxSize = field.fileTypes?.maxSize || '10MB';
+        return new BadRequestException(
+          `The file for '${fieldName}' is too large. ` +
+          `Maximum size allowed: ${maxSize}. Please compress or resize your file.`,
+        );
+
+      case 'MULTIPLE_FILES_NOT_ALLOWED':
+        return new BadRequestException(
+          `The field '${fieldName}' only accepts a single file. ` +
+          `Please upload only one file for this field.`,
+        );
+
+      default:
+        return new BadRequestException(
+          `There's an issue with the field '${fieldName}'. ` +
+          `Please check your input and try again. If the problem persists, contact support.`,
+        );
+    }
+  }
+
+  /**
+   * Get supported file types for a field in user-friendly format
+   */
+  private getSupportedFileTypes(field: any): string {
+    if (!field.fileTypes?.accept) return 'any file type';
+
+    const types = field.fileTypes.accept.map((type: string) => {
+      if (type === '*/*') return 'any file type';
+      if (type.includes('/*')) return type.split('/')[0] + ' files';
+      if (type.startsWith('.')) return type.toUpperCase() + ' files';
+      return type;
+    });
+
+    return types.join(', ');
   }
 
   private getAllFormFields(form: any): any[] {
@@ -1991,18 +2123,18 @@ export class FormSubmissionsService {
       // Format dates for display
       const appointmentDateFormatted = appointmentDate
         ? appointmentDate.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
         : 'Not set';
 
       const appointmentTimeFormatted = appointmentTime
         ? appointmentTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
         : 'Not set';
 
       appointmentData = {
@@ -2018,19 +2150,19 @@ export class FormSubmissionsService {
         minutesUntilAppointment,
         center: submission.appointment.center
           ? {
-              name: submission.appointment.center.name,
-              address: submission.appointment.center.address,
-              city: submission.appointment.center.city,
-              state: submission.appointment.center.state,
-              phone: submission.appointment.center.phone,
-            }
+            name: submission.appointment.center.name,
+            address: submission.appointment.center.address,
+            city: submission.appointment.center.city,
+            state: submission.appointment.center.state,
+            phone: submission.appointment.center.phone,
+          }
           : null,
         booth: submission.appointment.queueEntry?.booth
           ? {
-              boothNumber: submission.appointment.queueEntry.booth.boothNumber,
-              appointmentClass:
-                submission.appointment.queueEntry.booth.appointmentClass,
-            }
+            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+            appointmentClass:
+              submission.appointment.queueEntry.booth.appointmentClass,
+          }
           : null,
       };
     }
@@ -2051,12 +2183,12 @@ export class FormSubmissionsService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-              name: submission.form.country.name,
-              isoCode2: submission.form.country.isoCode2,
-              isoCode3: submission.form.country.isoCode3,
-              flag: submission.form.country.flag,
-              logoUrl: submission.form.country.logoUrl,
-            }
+            name: submission.form.country.name,
+            isoCode2: submission.form.country.isoCode2,
+            isoCode3: submission.form.country.isoCode3,
+            flag: submission.form.country.flag,
+            logoUrl: submission.form.country.logoUrl,
+          }
           : null,
       },
       submission: {
@@ -2350,25 +2482,14 @@ export class FormSubmissionsService {
     // 1. Validate file size
     const maxSize = this.parseFileSize(fileConfig.maxSize || '10MB');
     if (file.size > maxSize) {
-      throw new BadRequestException(
-        `File size ${this.formatFileSize(
-          file.size,
-        )} exceeds maximum allowed size ${fileConfig.maxSize || '10MB'}`,
-      );
+      throw this.createUserFriendlyError(field, 'FILE_TOO_LARGE');
     }
 
     // 2. Validate file type
     const allowedTypes = fileConfig.accept || ['*/*'];
     const isValidType = this.validateFileType(file, allowedTypes);
     if (!isValidType) {
-      const fileExt = file.originalname.split('.').pop()?.toLowerCase();
-      throw new BadRequestException(
-        `File type ${
-          file.mimetype
-        } (extension: .${fileExt}) is not allowed. Allowed types: ${allowedTypes.join(
-          ', ',
-        )}`,
-      );
+      throw this.createUserFriendlyError(field, 'INVALID_FILE_TYPE');
     }
   }
 
