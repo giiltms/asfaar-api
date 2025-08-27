@@ -763,6 +763,42 @@ export class FormSubmissionsService {
         });
 
         // Update existing draft - preserve file uploads within transaction
+        // First, update existing responses
+        for (const response of mergedResponses) {
+          await tx.fieldResponse.updateMany({
+            where: {
+              submissionId: submission.id,
+              fieldId: response.fieldId,
+            },
+            data: {
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls,
+              metadata: response.metadata,
+            },
+          });
+        }
+
+        // Then, create any new responses that don't exist
+        const existingFieldIds = existingResponses.map((r) => r.fieldId);
+        const newResponses = mergedResponses.filter(
+          (r) => !existingFieldIds.includes(r.fieldId),
+        );
+
+        if (newResponses.length > 0) {
+          await tx.fieldResponse.createMany({
+            data: newResponses.map((response) => ({
+              submissionId: submission.id,
+              fieldId: response.fieldId,
+              fieldName: response.fieldName,
+              value: response.value,
+              fileUrls: response.fileUrls,
+              metadata: response.metadata,
+            })),
+          });
+        }
+
+        // Update submission metadata
         return await tx.formSubmission.update({
           where: { id: submission.id },
           data: {
@@ -770,10 +806,6 @@ export class FormSubmissionsService {
               ...((submission.metadata as object) || {}),
               ...metadata,
               lastSaved: new Date().toISOString(),
-            },
-            responses: {
-              deleteMany: {}, // Clear existing responses
-              create: mergedResponses, // But mergedResponses now includes preserved files
             },
           },
           include: this.getSubmissionInclude(),
