@@ -43,6 +43,7 @@ import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
 import { UserService } from '@modules/user/user.service';
 import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * Controller for managing payments
@@ -57,6 +58,7 @@ export class PaymentsController {
     private readonly paymentsService: PaymentsService,
     private readonly paymentProviderService: PaymentProviderService,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -410,6 +412,21 @@ export class PaymentsController {
     // Calculate total amount
     const totalAmount = serviceFees.reduce((sum, fee) => sum + fee.amount, 0);
 
+    // Determine payment type from service fees
+    const paymentTypes = [
+      ...new Set(serviceFees.map((fee) => fee.feeType).filter(Boolean)),
+    ];
+    const primaryPaymentType =
+      paymentTypes.length > 0 ? paymentTypes[0] : 'UNKNOWN';
+
+    // Create enhanced callback URL with payment type information
+    const baseCallbackUrl = this.configService.get(
+      'payment.PAYMENT_CALLBACK_URL',
+    );
+    const enhancedCallbackUrl = `${baseCallbackUrl}?paymentType=${primaryPaymentType.toLowerCase()}&feeTypes=${paymentTypes
+      .map((t) => t?.toLowerCase())
+      .join(',')}`;
+
     // Prepare payment data
     const paymentData = {
       ...initiatePaymentDto,
@@ -417,12 +434,16 @@ export class PaymentsController {
       email: user.email,
       user: user?.id,
       serviceFees: initiatePaymentDto.serviceFees,
+      callbackUrl: enhancedCallbackUrl, // Use enhanced callback URL
       metadata: {
         feeDetails: serviceFees.map((fee) => ({
           id: fee.id,
           name: fee.name,
           amount: fee.amount,
+          feeType: fee.feeType,
         })),
+        paymentType: primaryPaymentType,
+        feeTypes: paymentTypes,
         feeBearer: 'business', // You absorb the fees (recommended)
       },
       customerName: `${user.firstName} ${user.lastName}`,
