@@ -1776,10 +1776,13 @@ export class FormSubmissionsService {
         break;
       case FieldType.SELECT:
       case FieldType.MULTISELECT:
-        if (!this.isValidOption(field, value)) {
-          throw new BadRequestException(
-            `Invalid option for field '${field.label}'`,
-          );
+        // Skip validation for select fields with empty options (frontend handles them)
+        if (field.options && field.options.length > 0) {
+          if (!this.isValidOption(field, value)) {
+            throw new BadRequestException(
+              `Invalid option for field '${field.label}'`,
+            );
+          }
         }
         break;
       case FieldType.EMAIL:
@@ -1827,6 +1830,11 @@ export class FormSubmissionsService {
   }
 
   private isValidOption(field: any, value: any): boolean {
+    // Safety check: if no options, validation should be skipped
+    if (!field.options || field.options.length === 0) {
+      return true; // Skip validation for fields with no options
+    }
+
     const validValues = field.options.map((opt: any) => opt.value);
 
     if (field.type === FieldType.MULTISELECT) {
