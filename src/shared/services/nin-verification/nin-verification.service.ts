@@ -74,6 +74,31 @@ export class NinVerificationService {
         );
       }
 
+      // Check if NIN has already been used by any user
+      const existingUser = await this.prisma.user.findFirst({
+        where: { nin: normalizedNin },
+      });
+
+      if (existingUser) {
+        throw new ConflictException(
+          'This NIN has already been used by another user and cannot be verified again.',
+        );
+      }
+
+      // Check if NIN exists in verified NIN verifications
+      const existingVerification = await this.prisma.ninVerification.findFirst({
+        where: {
+          nin: normalizedNin,
+          verificationStatus: 'VERIFIED',
+        },
+      });
+
+      if (existingVerification) {
+        throw new ConflictException(
+          'This NIN has already been verified and cannot be used again.',
+        );
+      }
+
       // Verify with YouVerify
       const verificationResponse = await this.youVerifyProvider.verifyNin({
         nin: normalizedNin,
@@ -267,6 +292,89 @@ export class NinVerificationService {
       }
 
       throw new BadRequestException('Failed to confirm NIN verification');
+    }
+  }
+
+  /**
+   * Check if a NIN is available for verification
+   * This method can be used by the frontend to check NIN availability before initiating verification
+   */
+  async checkNinAvailability(nin: string): Promise<{
+    available: boolean;
+    reason?: string;
+    existingUser?: {
+      id: string;
+      email: string;
+      firstName?: string;
+      lastName?: string;
+    };
+  }> {
+    try {
+      // Normalize NIN
+      const normalizedNin = nin.replace(/\D/g, '');
+
+      if (normalizedNin.length !== 11) {
+        return {
+          available: false,
+          reason: 'NIN must be 11 digits',
+        };
+      }
+
+      // Check if NIN already exists in temp data
+      const existingTemp = await this.prisma.tempNINData.findUnique({
+        where: { nin: normalizedNin },
+      });
+
+      if (existingTemp) {
+        return {
+          available: false,
+          reason: 'NIN verification already in progress',
+        };
+      }
+
+      // Check if NIN has already been used by any user
+      const existingUser = await this.prisma.user.findFirst({
+        where: { nin: normalizedNin },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
+
+      if (existingUser) {
+        return {
+          available: false,
+          reason: 'This NIN has already been used by another user',
+          existingUser,
+        };
+      }
+
+      // Check if NIN exists in verified NIN verifications
+      const existingVerification = await this.prisma.ninVerification.findFirst({
+        where: {
+          nin: normalizedNin,
+          verificationStatus: 'VERIFIED',
+        },
+      });
+
+      if (existingVerification) {
+        return {
+          available: false,
+          reason: 'This NIN has already been verified and cannot be used again',
+        };
+      }
+
+      return {
+        available: true,
+      };
+    } catch (error) {
+      this.logger.error(`Error checking NIN availability: ${error.message}`);
+      return {
+        available: false,
+        reason: 'Error checking NIN availability',
+      };
     }
   }
 }

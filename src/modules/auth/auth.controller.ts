@@ -9,12 +9,14 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  Param,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import Serialize from '@common/decorators/serialize.decorator';
 import UserEntity from '@modules/user/entities/user.entity';
@@ -145,6 +147,50 @@ export class AuthController {
   @ApiOperation({ summary: 'Confirm NIN verification and link to user' })
   async confirmNin(@Body() confirmNinDto: ConfirmNinDto, @Request() req: any) {
     return this.ninVerificationService.confirmNin(confirmNinDto, req.user.id);
+  }
+
+  @Get('check-nin-availability/:nin')
+  @ApiOperation({
+    summary: 'Check if NIN is available for verification',
+    description:
+      'Check if a NIN can be used for verification without hitting the YouVerify API',
+  })
+  @ApiParam({
+    name: 'nin',
+    description: 'National Identity Number to check',
+    example: '12345678901',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'NIN availability check result',
+    schema: {
+      type: 'object',
+      properties: {
+        available: {
+          type: 'boolean',
+          description: 'Whether the NIN is available for verification',
+          example: true,
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason why NIN is not available (if applicable)',
+          example: 'This NIN has already been used by another user',
+        },
+        existingUser: {
+          type: 'object',
+          description: 'Details of existing user if NIN is already in use',
+          properties: {
+            id: { type: 'string' },
+            email: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  async checkNinAvailability(@Param('nin') nin: string) {
+    return this.ninVerificationService.checkNinAvailability(nin);
   }
 
   @Get('verify-email')
