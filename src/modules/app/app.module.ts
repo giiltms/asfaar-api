@@ -21,6 +21,7 @@ import { ApplicationTypesModule } from '../application-types/application-types.m
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { BiometricDataModule } from '../biometric-data/biometric-data.module';
 import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
+import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -49,6 +50,7 @@ import { DashboardVerificationModule } from '../dashboard-verification/dashboard
     WebhooksModule,
     BiometricDataModule,
     DashboardVerificationModule,
+    DashboardFrontdeskModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
