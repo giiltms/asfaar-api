@@ -20,15 +20,22 @@ export class ReferenceNumberService {
   async generateReferenceNumber(
     options: ReferenceNumberOptions,
   ): Promise<string> {
-    const { countryCode, centerNumber, year = new Date().getFullYear() } = options;
+    const {
+      countryCode,
+      centerNumber,
+      year = new Date().getFullYear(),
+    } = options;
 
     try {
       // Validate center number format (3 digits)
       if (!/^\d{3}$/.test(centerNumber)) {
-        throw new Error(`Invalid center number format. Expected 3 digits, got: ${centerNumber}`);
+        throw new Error(
+          `Invalid center number format. Expected 3 digits, got: ${centerNumber}`,
+        );
       }
 
-      // Find the country by ISO code
+      // For reference numbers, we always use 'CC' as the country code
+      // Find the country by ISO code (but we'll use the original country for the counter)
       const country = await this.prisma.country.findUnique({
         where: { isoCode2: countryCode.toUpperCase() },
       });
@@ -43,7 +50,9 @@ export class ReferenceNumberService {
       });
 
       if (!center) {
-        throw new Error(`Biometric center with number "${centerNumber}" not found`);
+        throw new Error(
+          `Biometric center with number "${centerNumber}" not found`,
+        );
       }
 
       // Get or create application counter for this country/year
@@ -90,10 +99,10 @@ export class ReferenceNumberService {
       // Format the reference number: CC00125000004
       const yearSuffix = year.toString().slice(-2); // Last 2 digits of year
       const sequenceNumber = counter.counter.toString().padStart(6, '0');
-      const referenceNumber = `${countryCode.toUpperCase()}${centerNumber}${yearSuffix}${sequenceNumber}`;
+      const referenceNumber = `CC${centerNumber}${yearSuffix}${sequenceNumber}`; // Always use CC as country code
 
       this.logger.log(
-        `Generated reference number: ${referenceNumber} for country: ${countryCode}, center: ${centerNumber}, year: ${year}, sequence: ${counter.counter}`,
+        `Generated reference number: ${referenceNumber} for country: CC, center: ${centerNumber}, year: ${year}, sequence: ${counter.counter}`,
       );
 
       return referenceNumber;
@@ -139,7 +148,7 @@ export class ReferenceNumberService {
     }
 
     const countryId = submission.form.country.id;
-    const countryCode = submission.form.country.isoCode2.toUpperCase();
+    const countryCode = 'CC'; // Use CC as the country code for reference numbers
     const year = new Date().getFullYear();
 
     // Validate center number format
