@@ -419,13 +419,24 @@ export class PaymentsController {
     const primaryPaymentType =
       paymentTypes.length > 0 ? paymentTypes[0] : 'UNKNOWN';
 
-    // Create enhanced callback URL with payment type information
+    // Create route-based callback URL with payment type information
     const baseCallbackUrl = this.configService.get(
       'payment.PAYMENT_CALLBACK_URL',
     );
-    const enhancedCallbackUrl = `${baseCallbackUrl}?paymentType=${primaryPaymentType.toLowerCase()}&feeTypes=${paymentTypes
-      .map((t) => t?.toLowerCase())
-      .join(',')}`;
+
+    // Determine the route based on payment type
+    let paymentRoute = 'application'; // default route
+    if (primaryPaymentType === 'ONBOARDING') {
+      paymentRoute = 'onboarding';
+    } else if (primaryPaymentType === 'UPGRADE') {
+      paymentRoute = 'upgrade';
+    } else if (primaryPaymentType === 'RESCHEDULING') {
+      paymentRoute = 'rescheduling';
+    } else if (primaryPaymentType === 'ADDITIONAL_CHARGE') {
+      paymentRoute = 'additional-charge';
+    }
+
+    const enhancedCallbackUrl = `${baseCallbackUrl}/${paymentRoute}`;
 
     // Prepare payment data
     const paymentData = {
@@ -444,6 +455,7 @@ export class PaymentsController {
         })),
         paymentType: primaryPaymentType,
         feeTypes: paymentTypes,
+        paymentRoute: paymentRoute, // Include the route for frontend routing
         feeBearer: 'business', // You absorb the fees (recommended)
       },
       customerName: `${user.firstName} ${user.lastName}`,
