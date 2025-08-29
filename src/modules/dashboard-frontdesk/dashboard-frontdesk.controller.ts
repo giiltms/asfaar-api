@@ -20,6 +20,9 @@ import { DashboardFrontdeskService } from './dashboard-frontdesk.service';
 import {
   DashboardStatsResponseDto,
   FrontDeskDashboardStatsDto,
+  ApplicantListResponseDto,
+  ApplicantListFiltersDto,
+  ApplicantDetailDto,
 } from './dto/dashboard-stats.dto';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { ApiDefaultResponse } from '@common/decorators/api-default-response.decorator';
@@ -331,6 +334,156 @@ export class DashboardFrontdeskController {
       message: 'Front Desk Dashboard service is running',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
+    };
+  }
+
+  /**
+   * Get list of applicants for the front desk
+   */
+  @Get(':stationId/applicants')
+  @ApiOperation({
+    summary: 'Get list of applicants',
+    description:
+      'Retrieve a paginated list of applicants for the front desk with filtering and search capabilities.',
+  })
+  @ApiParam({
+    name: 'stationId',
+    description: 'Biometric center/station ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by application status',
+    example: 'PENDING',
+  })
+  @ApiQuery({
+    name: 'applicationType',
+    required: false,
+    description: 'Filter by application type',
+    example: 'VISA_APPLICATION',
+  })
+  @ApiQuery({
+    name: 'paymentStatus',
+    required: false,
+    description: 'Filter by payment status',
+    example: 'PAID',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by applicant name or email',
+    example: 'john',
+  })
+  @ApiQuery({
+    name: 'dateFrom',
+    required: false,
+    description: 'Filter by submission date (from)',
+    example: '2025-08-01',
+  })
+  @ApiQuery({
+    name: 'dateTo',
+    required: false,
+    description: 'Filter by submission date (to)',
+    example: '2025-08-29',
+  })
+  @ApiQuery({
+    name: 'inQueue',
+    required: false,
+    description: 'Filter by queue status',
+    example: true,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of items per page',
+    example: 20,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Applicants retrieved successfully',
+    type: ApplicantListResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Station not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized access',
+  })
+  @ApiDefaultResponse({})
+  async getApplicants(
+    @Request() req: any,
+    @Param('stationId', ParseUUIDPipe) stationId: string,
+    @Query() filters: ApplicantListFiltersDto,
+  ): Promise<ApplicantListResponseDto> {
+    const result = await this.dashboardFrontdeskService.getApplicants(
+      stationId,
+      filters,
+    );
+
+    return {
+      success: true,
+      data: result.applicants,
+      pagination: result.pagination,
+      message: 'Applicants retrieved successfully',
+    };
+  }
+
+  /**
+   * Get detailed information about a specific applicant
+   */
+  @Get(':stationId/applicants/:applicantId')
+  @ApiOperation({
+    summary: 'Get applicant details',
+    description:
+      'Retrieve detailed information about a specific applicant including form data, payment details, and timeline.',
+  })
+  @ApiParam({
+    name: 'stationId',
+    description: 'Biometric center/station ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiParam({
+    name: 'applicantId',
+    description: 'Applicant ID',
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Applicant details retrieved successfully',
+    type: ApplicantDetailDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Applicant not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized access',
+  })
+  @ApiDefaultResponse({})
+  async getApplicantDetail(
+    @Request() req: any,
+    @Param('stationId', ParseUUIDPipe) stationId: string,
+    @Param('applicantId', ParseUUIDPipe) applicantId: string,
+  ): Promise<{ success: boolean; data: ApplicantDetailDto; message: string }> {
+    const applicant = await this.dashboardFrontdeskService.getApplicantDetail(
+      stationId,
+      applicantId,
+    );
+
+    return {
+      success: true,
+      data: applicant,
+      message: 'Applicant details retrieved successfully',
     };
   }
 }

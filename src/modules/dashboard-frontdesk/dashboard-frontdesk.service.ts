@@ -7,6 +7,9 @@ import {
   ApplicationStatsDto,
   ProcessingStatsDto,
   AgentStatsDto,
+  ApplicantListItemDto,
+  ApplicantListFiltersDto,
+  ApplicantDetailDto,
 } from './dto/dashboard-stats.dto';
 import { SubmissionStatus } from '@prisma/client';
 
@@ -353,4 +356,216 @@ export class DashboardFrontdeskService {
 
     return Math.round((utilizationScore + queueScore) / 2);
   }
+
+  /**
+   * Get list of applicants for the front desk
+   */
+  async getApplicants(
+    stationId: string,
+    filters: ApplicantListFiltersDto,
+  ): Promise<{
+    applicants: ApplicantListItemDto[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }> {
+    try {
+      const page = filters.page || 1;
+      const limit = Math.min(filters.limit || 20, 100);
+      const skip = (page - 1) * limit;
+
+      // Simplified where clause for now
+      const where: any = {};
+
+      // Apply basic filters
+      if (filters.status) {
+        where.status = filters.status;
+      }
+
+      if (filters.search) {
+        where.OR = [
+          { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
+        ];
+      }
+
+      if (filters.dateFrom || filters.dateTo) {
+        where.submittedAt = {};
+        if (filters.dateFrom) {
+          where.submittedAt.gte = new Date(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+          where.submittedAt.lte = new Date(filters.dateTo);
+        }
+      }
+
+      // Get total count
+      const total = await this.prisma.formSubmission.count({ where });
+
+      // Get applicants with pagination
+      const submissions = await this.prisma.formSubmission.findMany({
+        where,
+        select: {
+          id: true,
+          referenceNumber: true,
+          status: true,
+          submittedAt: true,
+          createdAt: true,
+          userId: true,
+        },
+        orderBy: {
+          submittedAt: 'desc',
+        },
+        skip,
+        take: limit,
+      });
+
+      // Get user details for the submissions
+      const userIds = submissions.map(s => s.userId);
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      });
+
+      // Create a map for quick user lookup
+      const userMap = new Map(users.map(user => [user.id, user]));
+
+      // Transform to DTO
+      const applicants: ApplicantListItemDto[] = submissions.map((submission) => {
+        const user = userMap.get(submission.userId);
+        return {
+          id: submission.id,
+          fullName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
+          email: user?.email || 'No email',
+          phone: user?.phone || 'No phone',
+          status: submission.status,
+          applicationType: 'VISA_APPLICATION', // Default for now
+          submittedAt: submission.submittedAt,
+          queuePosition: undefined, // Will be implemented later
+          estimatedWaitTime: undefined, // Will be implemented later
+          currentStation: undefined, // Will be implemented later
+          paymentStatus: 'PENDING', // Default for now
+        };
+      });
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        applicants,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get applicants for station ${stationId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+ * Get detailed information about a specific applicant
+ */
+  async getApplicantDetail(
+    stationId: string,
+    applicantId: string,
+  ): Promise<ApplicantDetailDto> {
+    try {
+      const submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          id: applicantId,
+        },
+        select: {
+          id: true,
+          referenceNumber: true,
+          status: true,
+          submittedAt: true,
+          createdAt: true,
+          userId: true,
+        },
+      });
+
+      if (!submission) {
+        throw new NotFoundException(
+          `Applicant with ID ${applicantId} not found`,
+        );
+      }
+
+      // Get user details
+      const user = await this.prisma.user.findUnique({
+        where: { id: submission.userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User not found for applicant ${applicantId}`);
+      }
+
+      // Build basic timeline
+      const timeline = [
+        {
+          step: 'SUBMITTED',
+          timestamp: submission.submittedAt || submission.createdAt,
+          description: 'Application submitted',
+        },
+      ];
+
+      return {
+        id: submission.id,
+        fullName: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.phone,
+        status: submission.status,
+        applicationType: 'VISA_APPLICATION', // Default for now
+        submittedAt: submission.submittedAt,
+        queuePosition: undefined, // Will be implemented later
+        estimatedWaitTime: undefined, // Will be implemented later
+        currentStation: undefined, // Will be implemented later
+        paymentStatus: 'PENDING', // Default for now
+        nin: undefined, // Will be implemented later
+        dateOfBirth: new Date('1990-01-01'), // Default for now
+        nationality: 'Nigerian', // Default for now
+        address: 'Address not available', // Default for now
+        formData: {}, // Will be implemented later
+        biometricAppointment: undefined, // Will be implemented later
+        paymentDetails: {
+          amount: 0,
+          currency: 'NGN',
+          paymentMethod: 'N/A',
+          transactionId: 'N/A',
+        },
+        timeline,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get applicant detail for ${applicantId} at station ${stationId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
 }

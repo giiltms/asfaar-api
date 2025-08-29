@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class QueueStatsDto {
   @ApiProperty({
@@ -212,4 +212,251 @@ export class DashboardStatsResponseDto {
     example: 'Dashboard statistics retrieved successfully',
   })
   message: string;
+}
+
+// Applicant listing DTOs
+export class ApplicantListItemDto {
+  @ApiProperty({
+    description: 'Applicant ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Applicant full name',
+    example: 'John Doe',
+  })
+  fullName: string;
+
+  @ApiProperty({
+    description: 'Applicant email',
+    example: 'john.doe@example.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'Applicant phone number',
+    example: '+2348012345678',
+  })
+  phone: string;
+
+  @ApiProperty({
+    description: 'Application status',
+    example: 'PENDING',
+    enum: ['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+  })
+  status: string;
+
+  @ApiProperty({
+    description: 'Application type',
+    example: 'VISA_APPLICATION',
+  })
+  applicationType: string;
+
+  @ApiProperty({
+    description: 'Submission date',
+    example: '2025-08-29T10:30:00Z',
+  })
+  submittedAt: Date;
+
+  @ApiProperty({
+    description: 'Queue position (if in queue)',
+    example: 5,
+    required: false,
+  })
+  queuePosition?: number;
+
+  @ApiProperty({
+    description: 'Estimated wait time in minutes',
+    example: 15,
+    required: false,
+  })
+  estimatedWaitTime?: number;
+
+  @ApiProperty({
+    description: 'Current station/booth assignment',
+    example: 'Booth A1',
+    required: false,
+  })
+  currentStation?: string;
+
+  @ApiProperty({
+    description: 'Payment status',
+    example: 'PAID',
+    enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+  })
+  paymentStatus: string;
+}
+
+export class ApplicantListFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Filter by application status',
+    example: 'PENDING',
+    enum: ['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+  })
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by application type',
+    example: 'VISA_APPLICATION',
+  })
+  applicationType?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by payment status',
+    example: 'PAID',
+    enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+  })
+  paymentStatus?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search by applicant name or email',
+    example: 'john',
+  })
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by submission date (from)',
+    example: '2025-08-01',
+  })
+  dateFrom?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by submission date (to)',
+    example: '2025-08-29',
+  })
+  dateTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by queue status',
+    example: true,
+  })
+  inQueue?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Page number for pagination',
+    example: 1,
+    minimum: 1,
+  })
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Number of items per page',
+    example: 20,
+    minimum: 1,
+    maximum: 100,
+  })
+  limit?: number;
+}
+
+export class ApplicantListResponseDto {
+  @ApiProperty({
+    description: 'Success status',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'List of applicants',
+    type: [ApplicantListItemDto],
+  })
+  data: ApplicantListItemDto[];
+
+  @ApiProperty({
+    description: 'Pagination information',
+    example: {
+      page: 1,
+      limit: 20,
+      total: 150,
+      totalPages: 8,
+      hasNext: true,
+      hasPrev: false,
+    },
+  })
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+
+  @ApiProperty({
+    description: 'Response message',
+    example: 'Applicants retrieved successfully',
+  })
+  message: string;
+}
+
+export class ApplicantDetailDto extends ApplicantListItemDto {
+  @ApiProperty({
+    description: 'Applicant NIN (National Identity Number)',
+    example: '12345678901',
+    required: false,
+  })
+  nin?: string;
+
+  @ApiProperty({
+    description: 'Applicant date of birth',
+    example: '1990-01-01',
+  })
+  dateOfBirth: Date;
+
+  @ApiProperty({
+    description: 'Applicant nationality',
+    example: 'Nigerian',
+  })
+  nationality: string;
+
+  @ApiProperty({
+    description: 'Applicant address',
+    example: '123 Main Street, Lagos, Nigeria',
+  })
+  address: string;
+
+  @ApiProperty({
+    description: 'Application form data',
+    example: {
+      personalInfo: { firstName: 'John', lastName: 'Doe' },
+      travelInfo: { destination: 'UK', purpose: 'Tourism' },
+    },
+  })
+  formData: any;
+
+  @ApiProperty({
+    description: 'Biometric appointment details',
+    example: {
+      appointmentDate: '2025-08-30T10:00:00Z',
+      status: 'SCHEDULED',
+      centerName: 'Main Biometric Center',
+    },
+    required: false,
+  })
+  biometricAppointment?: any;
+
+  @ApiProperty({
+    description: 'Payment details',
+    example: {
+      amount: 50000,
+      currency: 'NGN',
+      paymentMethod: 'CARD',
+      transactionId: 'TXN123456',
+    },
+  })
+  paymentDetails: any;
+
+  @ApiProperty({
+    description: 'Processing timeline',
+    example: [
+      { step: 'SUBMITTED', timestamp: '2025-08-29T10:30:00Z' },
+      { step: 'PAYMENT_CONFIRMED', timestamp: '2025-08-29T10:35:00Z' },
+      { step: 'IN_QUEUE', timestamp: '2025-08-29T10:40:00Z' },
+    ],
+  })
+  timeline: Array<{
+    step: string;
+    timestamp: Date;
+    description?: string;
+  }>;
 }
