@@ -152,9 +152,7 @@ export class DashboardFrontdeskService {
   /**
    * Get application statistics
    */
-  async getApplicationStats(
-    stationId: string,
-  ): Promise<ApplicationStatsDto> {
+  async getApplicationStats(stationId: string): Promise<ApplicationStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -211,9 +209,7 @@ export class DashboardFrontdeskService {
   /**
    * Get processing time statistics
    */
-  async getProcessingStats(
-    stationId: string,
-  ): Promise<ProcessingStatsDto> {
+  async getProcessingStats(stationId: string): Promise<ProcessingStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -254,7 +250,10 @@ export class DashboardFrontdeskService {
       return diffMs / (1000 * 60); // Convert to minutes
     });
 
-    const totalProcessingTime = processingTimes.reduce((sum, time) => sum + time, 0);
+    const totalProcessingTime = processingTimes.reduce(
+      (sum, time) => sum + time,
+      0,
+    );
     const avgProcessingTime = totalProcessingTime / processingTimes.length;
     const fastestProcessing = Math.min(...processingTimes);
     const slowestProcessing = Math.max(...processingTimes);
@@ -352,7 +351,7 @@ export class DashboardFrontdeskService {
     }
 
     const utilizationScore = stationStats.utilizationPercentage;
-    const queueScore = Math.max(0, 100 - (queueStats.totalInQueue * 2)); // Reduce score for long queues
+    const queueScore = Math.max(0, 100 - queueStats.totalInQueue * 2); // Reduce score for long queues
 
     return Math.round((utilizationScore + queueScore) / 2);
   }
@@ -379,17 +378,23 @@ export class DashboardFrontdeskService {
       const limit = Math.min(filters.limit || 20, 100);
       const skip = (page - 1) * limit;
 
-      // Simplified where clause for now
-      const where: any = {};
+      // Build where clause - filter by submissions that have appointments at this station
+      const where: any = {
+        appointment: {
+          centerId: stationId,
+        },
+      };
 
-      // Apply basic filters
+      // Apply filters
       if (filters.status) {
         where.status = filters.status;
       }
 
       if (filters.search) {
         where.OR = [
-          { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
+          {
+            referenceNumber: { contains: filters.search, mode: 'insensitive' },
+          },
         ];
       }
 
@@ -403,19 +408,67 @@ export class DashboardFrontdeskService {
         }
       }
 
+      if (filters.inQueue !== undefined) {
+        if (filters.inQueue) {
+          where.appointment = {
+            ...where.appointment,
+            queueEntry: { isNot: null },
+          };
+        } else {
+          where.appointment = {
+            ...where.appointment,
+            queueEntry: null,
+          };
+        }
+      }
+
       // Get total count
       const total = await this.prisma.formSubmission.count({ where });
 
       // Get applicants with pagination
       const submissions = await this.prisma.formSubmission.findMany({
         where,
-        select: {
-          id: true,
-          referenceNumber: true,
-          status: true,
-          submittedAt: true,
-          createdAt: true,
-          userId: true,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          form: {
+            select: {
+              applicationType: {
+                select: {
+                  code: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          payment: {
+            select: {
+              status: true,
+              amount: true,
+            },
+          },
+          appointment: {
+            select: {
+              queueEntry: {
+                select: {
+                  queueNumber: true,
+                  estimatedWaitTime: true,
+                  booth: {
+                    select: {
+                      boothNumber: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         orderBy: {
           submittedAt: 'desc',
@@ -424,39 +477,24 @@ export class DashboardFrontdeskService {
         take: limit,
       });
 
-      // Get user details for the submissions
-      const userIds = submissions.map(s => s.userId);
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-        },
-      });
-
-      // Create a map for quick user lookup
-      const userMap = new Map(users.map(user => [user.id, user]));
-
       // Transform to DTO
-      const applicants: ApplicantListItemDto[] = submissions.map((submission) => {
-        const user = userMap.get(submission.userId);
-        return {
+      const applicants: ApplicantListItemDto[] = submissions.map(
+        (submission) => ({
           id: submission.id,
-          fullName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
-          email: user?.email || 'No email',
-          phone: user?.phone || 'No phone',
+          fullName: `${submission.user.firstName} ${submission.user.lastName}`,
+          email: submission.user.email,
+          phone: submission.user.phone,
           status: submission.status,
-          applicationType: 'VISA_APPLICATION', // Default for now
+          applicationType: submission.form.applicationType?.code || 'UNKNOWN',
           submittedAt: submission.submittedAt,
-          queuePosition: undefined, // Will be implemented later
-          estimatedWaitTime: undefined, // Will be implemented later
-          currentStation: undefined, // Will be implemented later
-          paymentStatus: 'PENDING', // Default for now
-        };
-      });
+          queuePosition: submission.appointment?.queueEntry?.queueNumber,
+          estimatedWaitTime:
+            submission.appointment?.queueEntry?.estimatedWaitTime,
+          currentStation:
+            submission.appointment?.queueEntry?.booth?.boothNumber,
+          paymentStatus: submission.payment?.status || 'PENDING',
+        }),
+      );
 
       const totalPages = Math.ceil(total / limit);
 
@@ -481,8 +519,8 @@ export class DashboardFrontdeskService {
   }
 
   /**
- * Get detailed information about a specific applicant
- */
+   * Get detailed information about a specific applicant
+   */
   async getApplicantDetail(
     stationId: string,
     applicantId: string,
@@ -491,72 +529,120 @@ export class DashboardFrontdeskService {
       const submission = await this.prisma.formSubmission.findFirst({
         where: {
           id: applicantId,
+          appointment: {
+            centerId: stationId,
+          },
         },
-        select: {
-          id: true,
-          referenceNumber: true,
-          status: true,
-          submittedAt: true,
-          createdAt: true,
-          userId: true,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          form: {
+            select: {
+              applicationType: {
+                select: {
+                  code: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          responses: {
+            select: {
+              fieldName: true,
+              value: true,
+              fileUrls: true,
+            },
+          },
+          payment: {
+            select: {
+              id: true,
+              status: true,
+              amount: true,
+              currency: true,
+              processor: true,
+              processorId: true,
+              createdAt: true,
+            },
+          },
+          appointment: {
+            select: {
+              id: true,
+              appointmentDate: true,
+              status: true,
+              queueEntry: {
+                select: {
+                  queueNumber: true,
+                  estimatedWaitTime: true,
+                  joinedAt: true,
+                  booth: {
+                    select: {
+                      boothNumber: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
       if (!submission) {
         throw new NotFoundException(
-          `Applicant with ID ${applicantId} not found`,
+          `Applicant with ID ${applicantId} not found at station ${stationId}`,
         );
       }
 
-      // Get user details
-      const user = await this.prisma.user.findUnique({
-        where: { id: submission.userId },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-        },
-      });
+      // Transform form responses to structured data
+      const formData = this.transformFormResponses(submission.responses);
 
-      if (!user) {
-        throw new NotFoundException(`User not found for applicant ${applicantId}`);
-      }
-
-      // Build basic timeline
-      const timeline = [
-        {
-          step: 'SUBMITTED',
-          timestamp: submission.submittedAt || submission.createdAt,
-          description: 'Application submitted',
-        },
-      ];
+      // Build timeline
+      const timeline = this.buildApplicantTimeline(submission);
 
       return {
         id: submission.id,
-        fullName: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        phone: user.phone,
+        fullName: `${submission.user.firstName} ${submission.user.lastName}`,
+        email: submission.user.email,
+        phone: submission.user.phone,
         status: submission.status,
-        applicationType: 'VISA_APPLICATION', // Default for now
+        applicationType: submission.form.applicationType?.code || 'UNKNOWN',
         submittedAt: submission.submittedAt,
-        queuePosition: undefined, // Will be implemented later
-        estimatedWaitTime: undefined, // Will be implemented later
-        currentStation: undefined, // Will be implemented later
-        paymentStatus: 'PENDING', // Default for now
-        nin: undefined, // Will be implemented later
-        dateOfBirth: new Date('1990-01-01'), // Default for now
-        nationality: 'Nigerian', // Default for now
-        address: 'Address not available', // Default for now
-        formData: {}, // Will be implemented later
-        biometricAppointment: undefined, // Will be implemented later
-        paymentDetails: {
-          amount: 0,
-          currency: 'NGN',
-          paymentMethod: 'N/A',
-          transactionId: 'N/A',
-        },
+        queuePosition: submission.appointment?.queueEntry?.queueNumber,
+        estimatedWaitTime:
+          submission.appointment?.queueEntry?.estimatedWaitTime,
+        currentStation: submission.appointment?.queueEntry?.booth?.boothNumber,
+        paymentStatus: submission.payment?.status || 'PENDING',
+        nin: undefined, // Will be implemented when user model has NIN field
+        dateOfBirth: new Date('1990-01-01'), // Will be implemented when user model has DOB field
+        nationality: 'Nigerian', // Will be implemented when user model has nationality field
+        address: 'Address not available', // Will be implemented when user model has address field
+        formData,
+        biometricAppointment: submission.appointment
+          ? {
+              appointmentDate: submission.appointment.appointmentDate,
+              status: submission.appointment.status,
+              centerName: 'Main Biometric Center', // This could be dynamic
+            }
+          : undefined,
+        paymentDetails: submission.payment
+          ? {
+              amount: submission.payment.amount,
+              currency: submission.payment.currency,
+              paymentMethod: submission.payment.processor,
+              transactionId: submission.payment.processorId,
+            }
+          : {
+              amount: 0,
+              currency: 'NGN',
+              paymentMethod: 'N/A',
+              transactionId: 'N/A',
+            },
         timeline,
       };
     } catch (error) {
@@ -568,4 +654,78 @@ export class DashboardFrontdeskService {
     }
   }
 
+  /**
+   * Transform form responses to structured data
+   */
+  private transformFormResponses(responses: any[]): any {
+    const formData: any = {};
+
+    responses.forEach((response) => {
+      const fieldName = response.fieldName;
+      const value = response.value;
+
+      // Parse JSON value if it's a string
+      let parsedValue = value;
+      if (typeof value === 'string') {
+        try {
+          parsedValue = JSON.parse(value);
+        } catch {
+          // Keep as string if not valid JSON
+        }
+      }
+
+      formData[fieldName] = parsedValue;
+    });
+
+    return formData;
+  }
+
+  /**
+   * Build applicant timeline based on submission events
+   */
+  private buildApplicantTimeline(submission: any): Array<{
+    step: string;
+    timestamp: Date;
+    description?: string;
+  }> {
+    const timeline = [];
+
+    // Submission
+    timeline.push({
+      step: 'SUBMITTED',
+      timestamp: submission.submittedAt,
+      description: 'Application submitted',
+    });
+
+    // Payment
+    if (submission.payment) {
+      timeline.push({
+        step: 'PAYMENT_CONFIRMED',
+        timestamp: submission.payment.createdAt,
+        description: `Payment of ${submission.payment.amount} ${submission.payment.currency} confirmed`,
+      });
+    }
+
+    // Queue entry
+    if (submission.appointment?.queueEntry) {
+      timeline.push({
+        step: 'IN_QUEUE',
+        timestamp: submission.appointment.queueEntry.joinedAt,
+        description: `Added to queue at position ${submission.appointment.queueEntry.queueNumber}`,
+      });
+    }
+
+    // Appointment
+    if (submission.appointment?.appointmentDate) {
+      timeline.push({
+        step: 'APPOINTMENT_SCHEDULED',
+        timestamp: submission.appointment.appointmentDate,
+        description: 'Biometric appointment scheduled',
+      });
+    }
+
+    return timeline.sort(
+      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+    );
+  }
 }
