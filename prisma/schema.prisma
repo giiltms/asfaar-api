@@ -635,6 +635,17 @@ model ApplicationCounter {
   @@map("application_counters")
 }
 
+// Payment invoice counter for generating unique invoice numbers per month
+model PaymentInvoiceCounter {
+  id        String   @id @default(uuid())
+  monthKey  String   @unique // Format: "202508" for August 2025
+  counter   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_invoice_counters")
+}
+
 model DynamicForm {
   id          String   @id @default(uuid())
   name        String

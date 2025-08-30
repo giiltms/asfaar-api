@@ -1025,22 +1025,61 @@ export class PaymentsService {
   private async generateInvoiceNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const month = new Date().getMonth() + 1;
+    const monthKey = `${year}${month.toString().padStart(2, '0')}`;
 
-    // Count payments this month
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0);
+    try {
+      // Use a transaction to atomically increment the counter
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Try to find existing counter for this month
+        let counter = await tx.paymentInvoiceCounter.findUnique({
+          where: { monthKey },
+        });
 
-    const count = await this.prisma.payment.count({
-      where: {
-        createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
-        },
-      },
-    });
+        if (!counter) {
+          // Create new counter for this month
+          counter = await tx.paymentInvoiceCounter.create({
+            data: {
+              monthKey,
+              counter: 1,
+            },
+          });
+        } else {
+          // Increment existing counter
+          counter = await tx.paymentInvoiceCounter.update({
+            where: { monthKey },
+            data: {
+              counter: {
+                increment: 1,
+              },
+            },
+          });
+        }
 
-    const sequence = (count + 1).toString().padStart(4, '0');
-    return `ASF-${year}${month.toString().padStart(2, '0')}-${sequence}`;
+        return counter;
+      });
+
+      const sequence = result.counter.toString().padStart(6, '0');
+      const invoiceNumber = `ASF-${monthKey}-${sequence}`;
+
+      this.logger.log(
+        `Generated invoice number: ${invoiceNumber} for month: ${monthKey}`,
+      );
+      return invoiceNumber;
+    } catch (error) {
+      this.logger.error(
+        'Failed to generate invoice number using counter:',
+        error,
+      );
+
+      // Fallback: use timestamp-based approach if counter fails
+      const timestamp = Date.now().toString().slice(-8);
+      const fallbackInvoiceNumber = `ASF-${monthKey}-${timestamp}`;
+
+      this.logger.log(
+        `Using fallback invoice number: ${fallbackInvoiceNumber}`,
+      );
+      return fallbackInvoiceNumber;
+    }
   }
 
   /**
