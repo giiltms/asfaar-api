@@ -55,30 +55,32 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
   async parseEvent(payload: any): Promise<WebhookEvent> {
     try {
-      const { event, data } = payload;
+      const { type, data, timestamp } = payload;
 
       // Extract common fields from Flutterwave webhook
-      const reference = data.tx_ref || data.reference || data.flw_ref;
+      // New format: data.reference is the transaction reference
+      const reference = data.reference || data.id;
       const amount = data.amount ? parseFloat(data.amount) : undefined;
       const currency = data.currency || 'NGN';
 
       // Map Flutterwave status to our PaymentStatus
-      const status = this.mapFlutterwaveStatus(data.status, event);
+      const status = this.mapFlutterwaveStatus(data.status, type);
 
       return {
-        event,
+        event: type, // Flutterwave uses 'type' instead of 'event'
         data,
         reference,
         status,
         amount: amount ? this.normalizeAmount(amount, currency) : undefined,
         currency,
-        customerId: data.customer?.id || data.customer_id,
+        customerId: data.customer?.id,
         metadata: {
-          flw_ref: data.flw_ref,
+          charge_id: data.id,
           processor_response: data.processor_response,
-          gateway_response: data.gateway_response,
-          card: data.card,
+          payment_method: data.payment_method,
           customer: data.customer,
+          created_datetime: data.created_datetime,
+          redirect_url: data.redirect_url,
         },
       };
     } catch (error) {
@@ -92,22 +94,27 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
    */
   private mapFlutterwaveStatus(
     flutterwaveStatus: string,
-    event: string,
+    eventType: string,
   ): PaymentStatus {
     const status = flutterwaveStatus?.toLowerCase();
-    const eventType = event?.toLowerCase();
+    const type = eventType?.toLowerCase();
 
-    // Check event type first
-    if (eventType?.includes('completed') || eventType?.includes('success')) {
+    // Check event type first (new Flutterwave format)
+    if (type === 'charge.completed') {
       return PaymentStatus.COMPLETED;
     }
 
-    if (eventType?.includes('failed') || eventType?.includes('cancelled')) {
+    if (type === 'charge.failed') {
       return PaymentStatus.FAILED;
     }
 
-    // Check status field
+    if (type === 'charge.pending') {
+      return PaymentStatus.PENDING;
+    }
+
+    // Check status field as fallback
     switch (status) {
+      case 'succeeded':
       case 'successful':
       case 'success':
       case 'completed':
@@ -124,7 +131,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
       default:
         this.logger.warn(
-          `Unknown Flutterwave status: ${flutterwaveStatus}, event: ${event}`,
+          `Unknown Flutterwave status: ${flutterwaveStatus}, event type: ${eventType}`,
         );
         return PaymentStatus.PENDING;
     }
@@ -136,13 +143,16 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
   async processEvent(event: WebhookEvent): Promise<void> {
     this.logger.log(`Processing Flutterwave event: ${event.event}`);
 
-    // Handle Flutterwave-specific events
+    // Handle Flutterwave-specific events (new format)
     switch (event.event) {
       case 'charge.completed':
         await this.handleChargeCompleted(event);
         break;
       case 'charge.failed':
         await this.handleChargeFailed(event);
+        break;
+      case 'charge.pending':
+        await this.handleChargePending(event);
         break;
       case 'transfer.completed':
         await this.handleTransferCompleted(event);
@@ -209,7 +219,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       const expectedCurrency = payment.currency || 'NGN';
       const receivedCurrency = event.data.currency;
       const expectedReference = payment.reference || payment.processorId;
-      const receivedReference = event.data.reference || event.data.tx_ref;
+      const receivedReference = event.data.reference;
 
       // Verify critical transaction data matches our records
       if (receivedAmount !== expectedAmount) {
@@ -262,6 +272,16 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       `Handling Flutterwave charge failed for reference: ${event.reference}`,
     );
     await this.handlePaymentFailed(event);
+  }
+
+  /**
+   * Handle charge pending event
+   */
+  private async handleChargePending(event: WebhookEvent): Promise<void> {
+    this.logger.log(
+      `Handling Flutterwave charge pending for reference: ${event.reference}`,
+    );
+    await this.handlePaymentPending(event);
   }
 
   /**
