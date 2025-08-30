@@ -55,35 +55,93 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
   async parseEvent(payload: any): Promise<WebhookEvent> {
     try {
-      this.logger.log('Parsing Flutterwave webhook payload', payload);
-      const { type, data, timestamp } = payload;
+      // Log the entire payload for debugging
+      this.logger.log('=== FLUTTERWAVE WEBHOOK PAYLOAD RECEIVED ===');
+      this.logger.log(`Raw payload: ${JSON.stringify(payload, null, 2)}`);
+      this.logger.log(`Payload type: ${typeof payload}`);
+      this.logger.log(`Payload keys: ${Object.keys(payload || {}).join(', ')}`);
+
+      // Check for both old and new format
+      const hasEvent = 'event' in payload;
+      const hasType = 'type' in payload;
+      const hasData = 'data' in payload;
+
+      this.logger.log(`Has 'event' field: ${hasEvent}`);
+      this.logger.log(`Has 'type' field: ${hasType}`);
+      this.logger.log(`Has 'data' field: ${hasData}`);
+
+      if (hasEvent) {
+        this.logger.log(`Event field value: ${payload.event}`);
+      }
+      if (hasType) {
+        this.logger.log(`Type field value: ${payload.type}`);
+      }
+      if (hasData) {
+        this.logger.log(
+          `Data field keys: ${Object.keys(payload.data || {}).join(', ')}`,
+        );
+        this.logger.log(`Data field: ${JSON.stringify(payload.data, null, 2)}`);
+      }
+
+      // Try to extract fields from both formats
+      const eventType = payload.type || payload.event;
+      const webhookData = payload.data || payload;
+
+      this.logger.log(`Using event type: ${eventType}`);
+      this.logger.log(
+        `Using webhook data: ${JSON.stringify(webhookData, null, 2)}`,
+      );
 
       // Extract common fields from Flutterwave webhook
-      // New format: data.reference is the transaction reference
-      const reference = data.reference || data.id;
-      const amount = data.amount ? parseFloat(data.amount) : undefined;
-      const currency = data.currency || 'NGN';
+      // Try multiple possible field names for reference
+      const reference =
+        webhookData.reference ||
+        webhookData.tx_ref ||
+        webhookData.flw_ref ||
+        webhookData.id;
+      const amount = webhookData.amount
+        ? parseFloat(webhookData.amount)
+        : undefined;
+      const currency = webhookData.currency || 'NGN';
+
+      this.logger.log(`Extracted reference: ${reference}`);
+      this.logger.log(`Extracted amount: ${amount}`);
+      this.logger.log(`Extracted currency: ${currency}`);
 
       // Map Flutterwave status to our PaymentStatus
-      const status = this.mapFlutterwaveStatus(data.status, type);
+      const status = this.mapFlutterwaveStatus(webhookData.status, eventType);
+      this.logger.log(`Mapped status: ${status}`);
 
-      return {
-        event: type, // Flutterwave uses 'type' instead of 'event'
-        data,
+      const result = {
+        event: eventType,
+        data: webhookData,
         reference,
         status,
         amount: amount ? this.normalizeAmount(amount, currency) : undefined,
         currency,
-        customerId: data.customer?.id,
+        customerId: webhookData.customer?.id || webhookData.customer_id,
         metadata: {
-          charge_id: data.id,
-          processor_response: data.processor_response,
-          payment_method: data.payment_method,
-          customer: data.customer,
-          created_datetime: data.created_datetime,
-          redirect_url: data.redirect_url,
+          charge_id: webhookData.id,
+          processor_response: webhookData.processor_response,
+          gateway_response: webhookData.gateway_response,
+          payment_method: webhookData.payment_method,
+          customer: webhookData.customer,
+          created_datetime: webhookData.created_datetime,
+          redirect_url: webhookData.redirect_url,
+          // Include old format fields for backward compatibility
+          flw_ref: webhookData.flw_ref,
+          tx_ref: webhookData.tx_ref,
         },
       };
+
+      this.logger.log('=== PARSED WEBHOOK EVENT ===');
+      this.logger.log(`Final event: ${result.event}`);
+      this.logger.log(`Final reference: ${result.reference}`);
+      this.logger.log(`Final status: ${result.status}`);
+      this.logger.log(`Final amount: ${result.amount}`);
+      this.logger.log(`Final currency: ${result.currency}`);
+
+      return result;
     } catch (error) {
       this.logger.error('Failed to parse Flutterwave webhook payload', error);
       throw new Error('Invalid Flutterwave webhook payload');
