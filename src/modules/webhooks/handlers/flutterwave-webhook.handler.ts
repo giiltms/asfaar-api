@@ -55,6 +55,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
   async parseEvent(payload: any): Promise<WebhookEvent> {
     try {
+      this.logger.log('Parsing Flutterwave webhook payload', payload);
       const { type, data, timestamp } = payload;
 
       // Extract common fields from Flutterwave webhook
