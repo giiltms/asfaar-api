@@ -46,7 +46,7 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
         tx_ref: data.reference,
         amount: data.amount,
         currency: data.currency.toUpperCase(),
-        redirect_url: data.callbackUrl,
+        callback_url: data.callbackUrl,
         customer: {
           email: data.email,
         },

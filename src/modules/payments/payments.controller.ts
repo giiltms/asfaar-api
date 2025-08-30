@@ -425,18 +425,18 @@ export class PaymentsController {
     );
 
     // Determine the route based on payment type
-    let paymentRoute = 'application'; // default route
+    let paymentType = 'application'; // default route
     if (primaryPaymentType === 'ONBOARDING') {
-      paymentRoute = 'onboarding';
+      paymentType = 'onboarding';
     } else if (primaryPaymentType === 'UPGRADE') {
-      paymentRoute = 'upgrade';
+      paymentType = 'upgrade';
     } else if (primaryPaymentType === 'RESCHEDULING') {
-      paymentRoute = 'rescheduling';
+      paymentType = 'rescheduling';
     } else if (primaryPaymentType === 'ADDITIONAL_CHARGE') {
-      paymentRoute = 'additional-charge';
+      paymentType = 'additional-charge';
     }
 
-    const enhancedCallbackUrl = `${baseCallbackUrl}/${paymentRoute}`;
+    const enhancedCallbackUrl = `${baseCallbackUrl}?paymentType=${paymentType}`;
 
     // Prepare payment data
     const paymentData = {
@@ -455,7 +455,7 @@ export class PaymentsController {
         })),
         paymentType: primaryPaymentType,
         feeTypes: paymentTypes,
-        paymentRoute: paymentRoute, // Include the route for frontend routing
+        paymentRoute: paymentType, // Include the route for frontend routing
         feeBearer: 'business', // You absorb the fees (recommended)
       },
       customerName: `${user.firstName} ${user.lastName}`,

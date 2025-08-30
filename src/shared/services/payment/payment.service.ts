@@ -30,6 +30,7 @@ export interface InitiatePaymentDto {
   customFields?: Record<string, string>;
   paymentProvider?: PaymentProvider;
   customerName?: string;
+  callbackUrl?: string; // Allow passing custom callback URL
 }
 
 export interface PaymentSummary {
@@ -100,7 +101,7 @@ export class PaymentService {
         email: data.email,
         currency: data.currency || 'NGN',
         reference,
-        callbackUrl: this.callbackUrl,
+        callbackUrl: data.callbackUrl || this.callbackUrl, // Use passed callback URL or fallback to default
         cancelUrl: this.cancelUrl,
         customerName: data.customerName,
       };
