@@ -45,21 +45,41 @@ export class WebhookPayloadDto {
 export class FlutterwaveWebhookDto {
   @ApiProperty({ example: 'charge.completed' })
   @IsString()
-  event: string;
+  type: string;
 
   @ApiProperty({
     description: 'Flutterwave transaction data',
     example: {
-      id: 1234567,
-      tx_ref: 'ref_123456789',
-      flw_ref: 'FLW123456789',
-      status: 'successful',
-      amount: 5000,
-      currency: 'NGN',
+      amount: 2500,
+      created_datetime: 1735116842.116,
+      currency: 'KES',
+      customer: {
+        id: 'cus_csm0pcQim4',
+        email: 'olaobajua@gmail.com',
+      },
+      id: 'chg_Hq4oBRTJ4r',
+      reference: '49c3c6f5-aedd-4443-9eb4-92c51758f04a',
+      status: 'succeeded',
     },
   })
   @IsObject()
   data: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Webhook ID',
+    example: 'wbk_W5p6ktwU0jQ8RO4By860',
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Webhook timestamp',
+    example: 1735116884019,
+  })
+  @IsOptional()
+  @IsNumber()
+  timestamp?: number;
 }
 
 export class PaystackWebhookDto {

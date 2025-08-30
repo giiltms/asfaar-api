@@ -83,9 +83,9 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
         this.logger.log(`Data field: ${JSON.stringify(payload.data, null, 2)}`);
       }
 
-      // Try to extract fields from both formats
-      const eventType = payload.type || payload.event;
-      const webhookData = payload.data || payload;
+      // Extract fields from the new Flutterwave webhook format
+      const eventType = payload.type;
+      const webhookData = payload.data;
 
       this.logger.log(`Using event type: ${eventType}`);
       this.logger.log(
@@ -93,12 +93,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       );
 
       // Extract common fields from Flutterwave webhook
-      // Try multiple possible field names for reference
-      const reference =
-        webhookData.reference ||
-        webhookData.tx_ref ||
-        webhookData.flw_ref ||
-        webhookData.id;
+      const reference = webhookData.reference;
       const amount = webhookData.amount
         ? parseFloat(webhookData.amount)
         : undefined;
@@ -119,18 +114,16 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
         status,
         amount: amount ? this.normalizeAmount(amount, currency) : undefined,
         currency,
-        customerId: webhookData.customer?.id || webhookData.customer_id,
+        customerId: webhookData.customer?.id,
         metadata: {
           charge_id: webhookData.id,
           processor_response: webhookData.processor_response,
-          gateway_response: webhookData.gateway_response,
           payment_method: webhookData.payment_method,
           customer: webhookData.customer,
           created_datetime: webhookData.created_datetime,
           redirect_url: webhookData.redirect_url,
-          // Include old format fields for backward compatibility
-          flw_ref: webhookData.flw_ref,
-          tx_ref: webhookData.tx_ref,
+          webhook_id: payload.id,
+          webhook_timestamp: payload.timestamp,
         },
       };
 
