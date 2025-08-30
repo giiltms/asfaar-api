@@ -63,12 +63,12 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
     // Format payment date
     const paymentDate = payment.paidAt
       ? payment.paidAt.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
       : new Date().toLocaleDateString();
 
     // Prepare email data
@@ -86,10 +86,14 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
 
     await mailService.sendPaymentConfirmation(emailData);
 
-    logger.log(`Payment confirmation email sent for payment ${paymentId} to ${user.email}`);
+    logger.log(
+      `Payment confirmation email sent for payment ${paymentId} to ${user.email}`,
+    );
   } catch (error) {
     logger.error(
-      `Failed to send payment confirmation email for payment ${paymentId}: ${(error as Error).message}`,
+      `Failed to send payment confirmation email for payment ${paymentId}: ${
+        (error as Error).message
+      }`,
     );
     // Don't throw - this is a non-critical side effect
   }
@@ -115,7 +119,10 @@ export function paymentEmailMiddleware(): Prisma.Middleware {
             select: { id: true, status: true },
           });
 
-          if (currentPayment && currentPayment.status !== PaymentStatus.COMPLETED) {
+          if (
+            currentPayment &&
+            currentPayment.status !== PaymentStatus.COMPLETED
+          ) {
             // Status is changing to COMPLETED, proceed with update first
             const result = await next(params);
 
@@ -141,4 +148,4 @@ export function paymentEmailMiddleware(): Prisma.Middleware {
 
     return next(params);
   };
-} 
+}

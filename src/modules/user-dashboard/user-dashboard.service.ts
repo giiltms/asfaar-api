@@ -211,13 +211,13 @@ export class UserDashboardService {
       // Calculate days since submission
       const daysSinceSubmission = submission.submittedAt
         ? Math.floor(
-          (Date.now() - submission.submittedAt.getTime()) /
-          (1000 * 60 * 60 * 24),
-        )
+            (Date.now() - submission.submittedAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
         : Math.floor(
-          (Date.now() - submission.createdAt.getTime()) /
-          (1000 * 60 * 60 * 24),
-        );
+            (Date.now() - submission.createdAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+          );
 
       // Estimate completion date
       const estimatedCompletion = this.estimateCompletionDate(submission);
@@ -511,8 +511,9 @@ export class UserDashboardService {
             ? 'COMPLETED'
             : 'IN_PROGRESS',
         timestamp: submission.appointment.createdAt,
-        notes: `Appointment scheduled at ${submission.appointment.center?.name
-          } on ${submission.appointment.appointmentDate.toDateString()}`,
+        notes: `Appointment scheduled at ${
+          submission.appointment.center?.name
+        } on ${submission.appointment.appointmentDate.toDateString()}`,
       });
 
       // Stage 7: Queue Status

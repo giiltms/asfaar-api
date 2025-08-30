@@ -306,7 +306,8 @@ export class ApplicantDashboardController {
   @Get('application-logs')
   @ApiOperation({
     summary: 'Get application logs for applicant',
-    description: 'Get comprehensive application logs with timeline for all user applications',
+    description:
+      'Get comprehensive application logs with timeline for all user applications',
   })
   @ApiResponse({
     status: HttpStatus.OK,

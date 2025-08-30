@@ -223,16 +223,16 @@ export class CountriesService {
     try {
       const include = includeRelations
         ? {
-          forms: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              createdAt: true,
+            forms: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                createdAt: true,
+              },
             },
-          },
-          applicationCounters: true,
-        }
+            applicationCounters: true,
+          }
         : undefined;
 
       const country = await this.prisma.country.findUnique({
@@ -638,7 +638,7 @@ export class CountriesService {
       // Upload file
       const logoPath = await this.localStorageService.upload(
         { ...file, originalname: filename },
-        'countries/logos'
+        'countries/logos',
       );
 
       // Update country with logo URL
@@ -652,7 +652,6 @@ export class CountriesService {
 
       this.logger.log(`Logo uploaded for country: ${country.name}`);
       return updatedCountry;
-
     } catch (error) {
       this.logger.error(
         `Failed to upload logo for country ${countryId}:`,
@@ -699,7 +698,6 @@ export class CountriesService {
 
       this.logger.log(`Logo deleted for country: ${country.name}`);
       return updatedCountry;
-
     } catch (error) {
       this.logger.error(
         `Failed to delete logo for country ${countryId}:`,

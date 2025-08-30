@@ -1,4 +1,14 @@
-import { IsOptional, IsString, IsNumber, IsBoolean, IsObject, IsUUID, IsUrl, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsObject,
+  IsUUID,
+  IsUrl,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBiometricDataDto {
@@ -16,12 +26,16 @@ export class CreateBiometricDataDto {
   @IsUrl()
   photoUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Hash of the photo for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of the photo for integrity verification',
+  })
   @IsOptional()
   @IsString()
   photoHash?: string;
 
-  @ApiPropertyOptional({ description: 'Photo metadata (dimensions, format, etc.)' })
+  @ApiPropertyOptional({
+    description: 'Photo metadata (dimensions, format, etc.)',
+  })
   @IsOptional()
   @IsObject()
   photoMetadata?: Record<string, any>;
@@ -31,12 +45,16 @@ export class CreateBiometricDataDto {
   @IsObject()
   fingerprintData?: Record<string, any>;
 
-  @ApiPropertyOptional({ description: 'Hash of fingerprint data for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of fingerprint data for integrity verification',
+  })
   @IsOptional()
   @IsString()
   fingerprintHash?: string;
 
-  @ApiPropertyOptional({ description: 'Fingerprint metadata (quality scores, etc.)' })
+  @ApiPropertyOptional({
+    description: 'Fingerprint metadata (quality scores, etc.)',
+  })
   @IsOptional()
   @IsObject()
   fingerprintMetadata?: Record<string, any>;
@@ -46,7 +64,9 @@ export class CreateBiometricDataDto {
   @IsUrl()
   signatureUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Hash of the signature for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of the signature for integrity verification',
+  })
   @IsOptional()
   @IsString()
   signatureHash?: string;
@@ -56,28 +76,42 @@ export class CreateBiometricDataDto {
   @IsObject()
   signatureMetadata?: Record<string, any>;
 
-  @ApiPropertyOptional({ description: 'Photo quality score (0-100)', minimum: 0, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Photo quality score (0-100)',
+    minimum: 0,
+    maximum: 100,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
   photoQualityScore?: number;
 
-  @ApiPropertyOptional({ description: 'Fingerprint quality score (0-100)', minimum: 0, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Fingerprint quality score (0-100)',
+    minimum: 0,
+    maximum: 100,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
   fingerprintQualityScore?: number;
 
-  @ApiPropertyOptional({ description: 'Overall quality score (0-100)', minimum: 0, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Overall quality score (0-100)',
+    minimum: 0,
+    maximum: 100,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
   overallQualityScore?: number;
 
-  @ApiPropertyOptional({ description: 'ID of the biometric agent who captured the data' })
+  @ApiPropertyOptional({
+    description: 'ID of the biometric agent who captured the data',
+  })
   @IsOptional()
   @IsString()
   capturedBy?: string;
@@ -92,7 +126,10 @@ export class CreateBiometricDataDto {
   @IsString()
   captureLocation?: string;
 
-  @ApiPropertyOptional({ description: 'Whether data is encrypted', default: true })
+  @ApiPropertyOptional({
+    description: 'Whether data is encrypted',
+    default: true,
+  })
   @IsOptional()
   @IsBoolean()
   isEncrypted?: boolean;

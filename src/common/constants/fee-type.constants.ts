@@ -7,9 +7,11 @@ import { FeeType } from '@prisma/client';
 export const FEE_TYPE_DESCRIPTIONS = {
   [FeeType.ONBOARDING]: 'Initial registration and setup fees',
   [FeeType.APPLICATION]: 'Visa or permit application processing fees',
-  [FeeType.UPGRADE]: 'Premium service upgrades (express processing, priority handling)',
+  [FeeType.UPGRADE]:
+    'Premium service upgrades (express processing, priority handling)',
   [FeeType.RESCHEDULING]: 'Appointment rescheduling and modification fees',
-  [FeeType.ADDITIONAL_CHARGE]: 'Additional charges (document corrections, extra services)',
+  [FeeType.ADDITIONAL_CHARGE]:
+    'Additional charges (document corrections, extra services)',
 } as const;
 
 /**
@@ -40,4 +42,4 @@ export const DEFAULT_FEE_TYPE = FeeType.APPLICATION;
 /**
  * All available fee types as an array
  */
-export const ALL_FEE_TYPES = Object.values(FeeType); 
+export const ALL_FEE_TYPES = Object.values(FeeType);

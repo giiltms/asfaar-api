@@ -21,7 +21,8 @@ export class PrismaService
     Prisma.PrismaClientOptions,
     'query' | 'info' | 'warn' | 'error' | 'beforeExit'
   >
-  implements OnModuleInit {
+  implements OnModuleInit
+{
   constructor(
     @Optional()
     @Inject(PRISMA_SERVICE_OPTIONS)

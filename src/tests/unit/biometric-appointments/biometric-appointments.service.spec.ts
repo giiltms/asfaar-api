@@ -173,11 +173,15 @@ describe('BiometricAppointmentsService', () => {
       biometricCentersService.findCenterById.mockResolvedValue(mockCenter);
       biometricCentersService.checkCenterAvailability.mockResolvedValue(true);
       prismaService.biometricAppointment.findFirst.mockResolvedValue(null);
-      referenceNumberService.generateReferenceNumberForSubmission.mockResolvedValue('SA00125000001');
+      referenceNumberService.generateReferenceNumberForSubmission.mockResolvedValue(
+        'SA00125000001',
+      );
       prismaService.$transaction.mockImplementation(async (callback) => {
         return await callback(prismaService);
       });
-      prismaService.biometricAppointment.create.mockResolvedValue(mockAppointment);
+      prismaService.biometricAppointment.create.mockResolvedValue(
+        mockAppointment,
+      );
       prismaService.formSubmission.update.mockResolvedValue(mockSubmission);
 
       // Act
@@ -193,10 +197,9 @@ describe('BiometricAppointmentsService', () => {
         where: { id: 'submission-1' },
         include: { payment: true },
       });
-      expect(referenceNumberService.generateReferenceNumberForSubmission).toHaveBeenCalledWith(
-        'submission-1',
-        mockCenter.centerNumber,
-      );
+      expect(
+        referenceNumberService.generateReferenceNumberForSubmission,
+      ).toHaveBeenCalledWith('submission-1', mockCenter.centerNumber);
     });
 
     it('should throw NotFoundException when submission does not exist', async () => {

@@ -108,10 +108,11 @@ export class BiometricAppointmentsService {
       let referenceNumber: string | undefined;
       if (!submission.referenceNumber) {
         try {
-          referenceNumber = await this.referenceNumberService.generateReferenceNumberForSubmission(
-            createDto.submissionId,
-            center.centerNumber,
-          );
+          referenceNumber =
+            await this.referenceNumberService.generateReferenceNumberForSubmission(
+              createDto.submissionId,
+              center.centerNumber,
+            );
         } catch (error) {
           this.logger.warn(
             `Failed to generate reference number for submission ${createDto.submissionId}: ${error.message}`,
@@ -121,10 +122,11 @@ export class BiometricAppointmentsService {
       }
 
       // 6. Check center availability for the requested date/time
-      const isAvailable = await this.biometricCentersService.checkCenterAvailability(
-        createDto.centerId,
-        new Date(createDto.appointmentDate),
-      );
+      const isAvailable =
+        await this.biometricCentersService.checkCenterAvailability(
+          createDto.centerId,
+          new Date(createDto.appointmentDate),
+        );
 
       if (!isAvailable) {
         throw new BadRequestException(
@@ -216,7 +218,9 @@ export class BiometricAppointmentsService {
       });
 
       this.logger.log(
-        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId}${referenceNumber ? ` with reference: ${referenceNumber}` : ''}`,
+        `Created biometric appointment: ${result.id} for submission: ${
+          createDto.submissionId
+        }${referenceNumber ? ` with reference: ${referenceNumber}` : ''}`,
       );
 
       return result;

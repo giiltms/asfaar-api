@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FingerPositionDto, FingerTemplateFormatDto } from './fingerprint-finger.dto';
+import {
+  FingerPositionDto,
+  FingerTemplateFormatDto,
+} from './fingerprint-finger.dto';
 
 export class BiometricDataResponseDto {
   @ApiProperty({ description: 'Unique identifier' })
@@ -14,7 +17,9 @@ export class BiometricDataResponseDto {
   @ApiPropertyOptional({ description: 'URL to the captured photo' })
   photoUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Hash of the photo for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of the photo for integrity verification',
+  })
   photoHash?: string;
 
   @ApiPropertyOptional({ description: 'Photo metadata' })
@@ -23,7 +28,9 @@ export class BiometricDataResponseDto {
   @ApiPropertyOptional({ description: 'Encrypted fingerprint template data' })
   fingerprintData?: Record<string, any>;
 
-  @ApiPropertyOptional({ description: 'Hash of fingerprint data for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of fingerprint data for integrity verification',
+  })
   fingerprintHash?: string;
 
   @ApiPropertyOptional({ description: 'Fingerprint metadata' })
@@ -49,7 +56,9 @@ export class BiometricDataResponseDto {
   @ApiPropertyOptional({ description: 'URL to the captured signature' })
   signatureUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Hash of the signature for integrity verification' })
+  @ApiPropertyOptional({
+    description: 'Hash of the signature for integrity verification',
+  })
   signatureHash?: string;
 
   @ApiPropertyOptional({ description: 'Signature metadata' })
@@ -64,7 +73,10 @@ export class BiometricDataResponseDto {
   @ApiPropertyOptional({ description: 'Overall quality score (0-100)' })
   overallQualityScore?: number;
 
-  @ApiProperty({ description: 'Whether data has been verified', default: false })
+  @ApiProperty({
+    description: 'Whether data has been verified',
+    default: false,
+  })
   isVerified: boolean;
 
   @ApiPropertyOptional({ description: 'Verification status' })
@@ -73,7 +85,9 @@ export class BiometricDataResponseDto {
   @ApiPropertyOptional({ description: 'Notes from verification process' })
   verificationNotes?: string;
 
-  @ApiPropertyOptional({ description: 'ID of the biometric agent who captured the data' })
+  @ApiPropertyOptional({
+    description: 'ID of the biometric agent who captured the data',
+  })
   capturedBy?: string;
 
   @ApiPropertyOptional({ description: 'When the data was captured' })

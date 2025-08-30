@@ -35,6 +35,7 @@ export class WebhookSignatureGuard implements CanActivate {
     }
 
     try {
+      this.logger.log('Webhook request', request);
       // Get the raw body and signature from request
       const rawBody = this.getRawBody(request);
       const signature = this.getSignature(request, provider);

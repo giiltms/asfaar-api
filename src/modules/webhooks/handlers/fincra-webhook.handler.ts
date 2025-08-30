@@ -23,7 +23,8 @@ import { PaymentStatus } from '@prisma/client';
 @Injectable()
 export class FincraWebhookHandler
   extends BaseWebhookHandler
-  implements WebhookHandlerInterface {
+  implements WebhookHandlerInterface
+{
   protected readonly logger = new Logger(FincraWebhookHandler.name);
   private readonly webhookSecret: string;
 
