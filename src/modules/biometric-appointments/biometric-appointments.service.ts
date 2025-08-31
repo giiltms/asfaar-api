@@ -247,6 +247,7 @@ export class BiometricAppointmentsService {
       appointmentClass,
       centerId,
       submissionId,
+      referenceNumber,
       fromDate,
       toDate,
       biometricsCaptured,
@@ -277,6 +278,12 @@ export class BiometricAppointmentsService {
 
     if (submissionId) {
       where.submissionId = submissionId;
+    }
+
+    if (referenceNumber) {
+      where.submission = {
+        referenceNumber: referenceNumber,
+      };
     }
 
     if (fromDate || toDate) {

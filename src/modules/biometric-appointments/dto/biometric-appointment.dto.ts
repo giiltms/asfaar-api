@@ -209,6 +209,14 @@ export class AppointmentFiltersDto {
   submissionId?: string;
 
   @ApiPropertyOptional({
+    description: 'Filter by reference number',
+    example: 'CC01225000001',
+  })
+  @IsOptional()
+  @IsString()
+  referenceNumber?: string;
+
+  @ApiPropertyOptional({
     description: 'Filter appointments from this date (YYYY-MM-DD)',
     example: '2024-02-01',
   })
@@ -281,6 +289,14 @@ export class AppointmentQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   submissionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by reference number',
+    example: 'CC01225000001',
+  })
+  @IsOptional()
+  @IsString()
+  referenceNumber?: string;
 
   @ApiPropertyOptional({
     description: 'Filter appointments from this date (YYYY-MM-DD)',

@@ -161,6 +161,13 @@ export class BiometricAppointmentsController {
     example: 'uuid-string',
   })
   @ApiQuery({
+    name: 'referenceNumber',
+    required: false,
+    type: String,
+    description: 'Filter by reference number',
+    example: 'CC01225000001',
+  })
+  @ApiQuery({
     name: 'fromDate',
     required: false,
     type: String,
@@ -246,6 +253,13 @@ export class BiometricAppointmentsController {
   @ApiOperation({
     summary: 'Get current user appointments',
     description: 'Retrieve appointments for the authenticated user',
+  })
+  @ApiQuery({
+    name: 'referenceNumber',
+    required: false,
+    type: String,
+    description: 'Filter by reference number',
+    example: 'CC01225000001',
   })
   @ApiResponse({
     status: HttpStatus.OK,
