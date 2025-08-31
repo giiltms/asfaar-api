@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from '@modules/user/user.service';
 import { UserRepository } from '@modules/user/user.repository';
+import { PrismaService } from '@providers/prisma/prisma.service';
 
 describe('UserService', () => {
   let service: UserService;
@@ -15,6 +16,20 @@ describe('UserService', () => {
     count: jest.fn(),
   };
 
+  const mockPrismaService = {
+    user: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
+    biometricCenter: {
+      findMany: jest.fn(),
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -22,6 +37,10 @@ describe('UserService', () => {
         {
           provide: UserRepository,
           useValue: mockUserRepository,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

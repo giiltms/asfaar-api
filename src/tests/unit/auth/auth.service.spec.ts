@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserRepository } from '@modules/user/user.repository';
+import { UserService } from '@modules/user/user.service';
 import { AuthTokenService } from '@modules/auth/auth-token.service';
 import { PasswordResetService } from '@modules/auth/password-reset.service';
 import { MailService } from '@modules/mail/services/mail.service';
@@ -42,6 +43,15 @@ class MockConfigService {
   get = jest.fn((key: string, defaultValue?: any) => defaultValue);
 }
 
+class MockUserService {
+  createUserWithCenters = jest.fn();
+  findById = jest.fn();
+  findOne = jest.fn();
+  findByEmail = jest.fn();
+  updateUser = jest.fn();
+  deleteUser = jest.fn();
+}
+
 class MockPrismaService {
   token = {
     findFirst: jest.fn(),
@@ -61,6 +71,7 @@ class MockPrismaService {
 describe('AuthService', () => {
   let service: AuthService;
   let userRepository: MockUserRepository;
+  let userService: MockUserService;
   let authTokenService: MockAuthTokenService;
   let passwordResetService: MockPasswordResetService;
   let mailService: MockMailService;
@@ -74,6 +85,10 @@ describe('AuthService', () => {
         {
           provide: UserRepository,
           useClass: MockUserRepository,
+        },
+        {
+          provide: UserService,
+          useClass: MockUserService,
         },
         {
           provide: TokenService,
@@ -104,6 +119,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     userRepository = module.get(UserRepository);
+    userService = module.get(UserService);
     authTokenService = module.get(AuthTokenService);
     passwordResetService = module.get(PasswordResetService);
     mailService = module.get(MailService);
