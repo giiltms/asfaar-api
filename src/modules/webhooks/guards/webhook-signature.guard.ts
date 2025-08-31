@@ -34,8 +34,9 @@ export class WebhookSignatureGuard implements CanActivate {
       return true; // Let it pass if no provider is specified
     }
 
+    console.log(JSON.stringify(request.body, null, 2));
+
     try {
-      this.logger.log(JSON.stringify(request, null, 2));
       // Get the raw body and signature from request
       const rawBody = this.getRawBody(request);
       const signature = this.getSignature(request, provider);
