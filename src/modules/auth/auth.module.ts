@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UserRepository } from '@modules/user/user.repository';
+import { UserModule } from '@modules/user/user.module';
 import { AuthController } from './auth.controller';
 import { TokenService } from './token.service';
 import { AuthTokenService } from './auth-token.service';
@@ -18,6 +19,7 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
   imports: [
     SharedModule,
     PrismaModule,
+    UserModule,
     ConfigModule,
     JwtModule.registerAsync({
       global: true, // Make JWT module global

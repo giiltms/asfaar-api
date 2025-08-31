@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
+import { UserService } from '@modules/user/user.service';
 import { User, TokenUseCase, TokenType } from '@prisma/client';
 import { SignUpDTO } from './dto/sign-up.dto';
 import { ApplicantSignUpDto } from './dto/sign-up-applicant.dto';
@@ -25,6 +26,7 @@ import {
 export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly userService: UserService,
     private readonly tokenService: TokenService,
     private readonly authTokenService: AuthTokenService,
     private readonly passwordResetService: PasswordResetService,
@@ -61,7 +63,10 @@ export class AuthService {
       isActive: true,
     };
 
-    const user = await this.userRepository.create(userData);
+    const user = await this.userService.createUserWithCenters(
+      userData,
+      signUpDTO.centerIds,
+    );
 
     // Send verification email (optional - comment out if mail service not ready)
     // try {
@@ -93,7 +98,10 @@ export class AuthService {
       isActive: true,
     };
 
-    const user = await this.userRepository.create(userData);
+    const user = await this.userService.createUserWithCenters(
+      userData,
+      signUpDto.centerIds,
+    );
 
     // Generate email verification token
     try {

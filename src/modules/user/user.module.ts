@@ -6,12 +6,14 @@ import { CaslModule } from '@modules/casl';
 import { permissions } from '@modules/user/user.permissions';
 import { AuditModule } from '@modules/audit/audit.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { PrismaModule } from '@providers/prisma/prisma.module';
 
 @Module({
   imports: [
     CaslModule.forFeature({ permissions }),
     forwardRef(() => AuditModule),
     forwardRef(() => AuthModule),
+    PrismaModule,
   ],
   controllers: [UserController],
   providers: [UserService, UserRepository],

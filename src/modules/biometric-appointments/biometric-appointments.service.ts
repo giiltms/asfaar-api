@@ -218,7 +218,8 @@ export class BiometricAppointmentsService {
       });
 
       this.logger.log(
-        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId
+        `Created biometric appointment: ${result.id} for submission: ${
+          createDto.submissionId
         }${referenceNumber ? ` with reference: ${referenceNumber}` : ''}`,
       );
 

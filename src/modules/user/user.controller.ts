@@ -23,6 +23,8 @@ import { UserService } from './user.service';
 import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
 import { SetUserRoleDto } from './dto/set-user-role.dto';
 import { ListUsersDTO, UpdateUserDto } from './dto/users.dto';
+import { UpdateUserCentersDto } from './dto/update-user-centers.dto';
+import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import UserEntity from './entities/user.entity';
 
 @ApiTags('Users')
@@ -198,5 +200,39 @@ export class UserController {
     @Body() setUserRoleDto: SetUserRoleDto,
   ): Promise<UserEntity> {
     return this.userService.setUserRole(id, setUserRoleDto.role);
+  }
+
+  @Patch(':id/centers')
+  @ApiOperation({
+    summary: 'Update user centers',
+    description: 'Assign or update the centers that a user can work at',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User centers updated successfully',
+    type: UserEntity,
+  })
+  @UseInterceptors(ClassSerializerInterceptor)
+  async updateUserCenters(
+    @Param('id') id: string,
+    @Body() updateCentersDto: UpdateUserCentersDto,
+  ): Promise<UserEntity> {
+    return this.userService.updateUserCenters(id, updateCentersDto.centerIds);
+  }
+
+  @Get(':id/centers')
+  @ApiOperation({
+    summary: 'Get user centers',
+    description: 'Retrieve all centers assigned to a specific user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User centers retrieved successfully',
+    type: UserCentersResponseDto,
+  })
+  async getUserCenters(
+    @Param('id') id: string,
+  ): Promise<UserCentersResponseDto> {
+    return this.userService.getUserCenters(id);
   }
 }

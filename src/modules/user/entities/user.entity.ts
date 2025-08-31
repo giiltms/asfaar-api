@@ -136,6 +136,26 @@ export default class UserEntity implements User {
     return this.ninVerifications?.[0] || null;
   }
 
+  @ApiPropertyOptional({
+    description: 'Centers assigned to the user',
+    type: 'object',
+    isArray: true,
+    example: [
+      {
+        id: 'center-uuid-1',
+        name: 'ASFAAR-ABUJA HQ',
+        code: 'ASFAAR-ABJ-HQ',
+        address: '123 Main Street, Abuja',
+        city: 'Abuja',
+        state: 'FCT',
+        isActive: true,
+      },
+    ],
+  })
+  @Expose()
+  @Type(() => Object)
+  biometricCenters?: any[]; // Using any[] to avoid circular dependency issues
+
   @Expose()
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`.trim();

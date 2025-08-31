@@ -5,6 +5,9 @@ import {
   MinLength,
   MaxLength,
   Matches,
+  IsOptional,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 import { IsSame } from '../validators/is-same.validator';
 
@@ -57,4 +60,15 @@ export class ApplicantSignUpDto {
     message: 'Confirm password must match password',
   })
   readonly confirmPassword!: string;
+
+  @ApiProperty({
+    description: 'List of center IDs to assign to the user',
+    example: ['center-uuid-1', 'center-uuid-2'],
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  readonly centerIds?: string[];
 }

@@ -5,14 +5,35 @@ import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { ListUsersDTO } from './dto/users.dto';
 import { UserFiltersDTO } from './dto/user-filters.dto';
 import { USER_NOT_FOUND } from '@common/constants';
+import { UserCentersResponseDto } from './dto/user-centers-response.dto';
+import { PrismaService } from '@providers/prisma/prisma.service';
 import UserEntity from './entities/user.entity';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async findById(id: string): Promise<UserEntity> {
-    const user = await this.userRepository.findById(id);
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
     if (!user) {
       throw new NotFoundException(USER_NOT_FOUND);
     }
@@ -20,7 +41,7 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<UserEntity> {
-    const user = await this.userRepository.findOne({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -34,6 +55,17 @@ export class UserService {
         onboardingPaid: true,
         createdAt: true,
         updatedAt: true,
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
       },
     });
     return new UserEntity(user);
@@ -101,6 +133,60 @@ export class UserService {
   }
 
   /**
+   * Create a new user with center assignment.
+   * @param data The data to create the user with.
+   * @param centerIds Optional array of center IDs to assign to the user.
+   * @returns The created user with centers included.
+   */
+  async createUserWithCenters(
+    data: Prisma.UserCreateInput,
+    centerIds?: string[],
+  ): Promise<UserEntity> {
+    // If centerIds are provided, validate they exist
+    if (centerIds && centerIds.length > 0) {
+      const centers = await this.prisma.biometricCenter.findMany({
+        where: { id: { in: centerIds } },
+        select: { id: true },
+      });
+
+      if (centers.length !== centerIds.length) {
+        const foundIds = centers.map((c) => c.id);
+        const missingIds = centerIds.filter((id) => !foundIds.includes(id));
+        throw new NotFoundException(
+          `Centers not found: ${missingIds.join(', ')}`,
+        );
+      }
+    }
+
+    // Create user with centers if provided
+    const userData: Prisma.UserCreateInput = { ...data };
+    if (centerIds && centerIds.length > 0) {
+      userData.biometricCenters = {
+        connect: centerIds.map((id) => ({ id })),
+      };
+    }
+
+    const createdUser = await this.prisma.user.create({
+      data: userData,
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    return new UserEntity(createdUser);
+  }
+
+  /**
    * Update a user by ID.
    * @param id The ID of the user to update.
    * @param data The data to update the user with.
@@ -111,7 +197,23 @@ export class UserService {
     data: Prisma.UserUpdateInput,
   ): Promise<UserEntity> {
     const user = await this.findById(id);
-    const updatedUser = await this.userRepository.updateUser(id, data);
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data,
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -122,7 +224,22 @@ export class UserService {
    */
   async deleteUser(id: string): Promise<UserEntity> {
     const user = await this.findById(id);
-    const deletedUser = await this.userRepository.deleteUser(id);
+    const deletedUser = await this.prisma.user.delete({
+      where: { id },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
     return new UserEntity(deletedUser);
   }
 
@@ -134,7 +251,23 @@ export class UserService {
    */
   async updateUserRoles(userId: string, roles: Roles[]): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, { roles });
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { roles },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
     return new UserEntity(updatedUser);
   }
 
@@ -146,8 +279,22 @@ export class UserService {
    */
   async setUserRole(userId: string, role: Roles): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, {
-      roles: [role],
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { roles: [role] },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
     });
     return new UserEntity(updatedUser);
   }
@@ -159,8 +306,22 @@ export class UserService {
    */
   async activateUser(userId: string): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, {
-      isActive: true,
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: true },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
     });
     return new UserEntity(updatedUser);
   }
@@ -172,8 +333,22 @@ export class UserService {
    */
   async deactivateUser(userId: string): Promise<UserEntity> {
     const user = await this.findById(userId);
-    const updatedUser = await this.userRepository.updateUser(userId, {
-      isActive: false,
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
     });
     return new UserEntity(updatedUser);
   }
@@ -184,8 +359,22 @@ export class UserService {
    * @returns The verified user.
    */
   async verifyUser(userId: string): Promise<UserEntity> {
-    const updatedUser = await this.userRepository.updateUser(userId, {
-      isVerified: true,
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isVerified: true },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
     });
     return new UserEntity(updatedUser);
   }
@@ -234,7 +423,19 @@ export class UserService {
 
     const result = await this.userRepository.findAll(
       where,
-      {}, // include
+      {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      }, // include
       orderBy,
       paginationOptions,
     );
@@ -262,8 +463,22 @@ export class UserService {
    * @returns Updated user entity
    */
   async completeOnboarding(userId: string): Promise<UserEntity> {
-    const updatedUser = await this.userRepository.updateUser(userId, {
-      onboardingPaid: true,
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { onboardingPaid: true },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
     });
     return new UserEntity(updatedUser);
   }
@@ -279,5 +494,111 @@ export class UserService {
       throw new NotFoundException(USER_NOT_FOUND);
     }
     return user.onboardingPaid;
+  }
+
+  /**
+   * Update user centers
+   * @param userId The user ID
+   * @param centerIds Array of center IDs to assign to the user
+   * @returns Updated user entity
+   */
+  async updateUserCenters(
+    userId: string,
+    centerIds: string[],
+  ): Promise<UserEntity> {
+    // First verify the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+
+    // Verify all centers exist
+    const centers = await this.prisma.biometricCenter.findMany({
+      where: { id: { in: centerIds } },
+      select: { id: true },
+    });
+
+    if (centers.length !== centerIds.length) {
+      const foundIds = centers.map((c) => c.id);
+      const missingIds = centerIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Centers not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // Update user centers by updating the biometricCenters relation
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        biometricCenters: {
+          set: centerIds.map((id) => ({ id })),
+        },
+      },
+      include: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    return new UserEntity(updatedUser);
+  }
+
+  /**
+   * Get user centers
+   * @param userId The user ID
+   * @returns User centers response
+   */
+  async getUserCenters(userId: string): Promise<UserCentersResponseDto> {
+    // First verify the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+
+    // Get user with centers
+    const userWithCenters = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!userWithCenters) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+
+    return {
+      userId: userWithCenters.id,
+      userEmail: userWithCenters.email,
+      userName:
+        `${userWithCenters.firstName || ''} ${
+          userWithCenters.lastName || ''
+        }`.trim() || 'Unknown User',
+      centers: userWithCenters.biometricCenters,
+      totalCenters: userWithCenters.biometricCenters.length,
+    };
   }
 }

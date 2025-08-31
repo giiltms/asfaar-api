@@ -216,6 +216,17 @@ export class CreateUserDto {
   @IsArray()
   @IsEnum(Roles, { each: true })
   roles?: Roles[];
+
+  @ApiProperty({
+    description: 'List of center IDs to assign to the user',
+    example: ['center-uuid-1', 'center-uuid-2'],
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  centerIds?: string[];
 }
 
 // Update User DTO
