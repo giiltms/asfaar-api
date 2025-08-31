@@ -20,23 +20,63 @@ export class DashboardFrontdeskService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Get comprehensive front desk dashboard statistics
+   * Get user's assigned centers
+   */
+  async getUserCenters(userId: string) {
+    const userCenters = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!userCenters) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return userCenters.biometricCenters;
+  }
+
+  /**
+   * Get comprehensive front desk dashboard statistics for all user's assigned centers
    */
   async getFrontDeskDashboardStats(
-    stationId: string,
+    userId: string,
   ): Promise<FrontDeskDashboardStatsDto> {
     try {
-      // Verify station exists
-      const station = await this.prisma.biometricCenter.findUnique({
-        where: { id: stationId },
-        select: { id: true, name: true },
+      // Get user's assigned centers
+      const userCenters = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          biometricCenters: {
+            select: { id: true, name: true },
+          },
+        },
       });
 
-      if (!station) {
-        throw new NotFoundException(`Station with ID ${stationId} not found`);
+      if (!userCenters) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
       }
 
-      // Get all stats in parallel for better performance
+      const userCenterIds = userCenters.biometricCenters.map(
+        (center) => center.id,
+      );
+
+      if (userCenterIds.length === 0) {
+        throw new NotFoundException(`User has no assigned centers`);
+      }
+
+      // Get all stats in parallel for better performance across all user's centers
       const [
         queueStats,
         stationStats,
@@ -44,11 +84,11 @@ export class DashboardFrontdeskService {
         processingStats,
         agentStats,
       ] = await Promise.all([
-        this.getQueueStats(stationId),
-        this.getStationStats(stationId),
-        this.getApplicationStats(stationId),
-        this.getProcessingStats(stationId),
-        this.getAgentStats(stationId),
+        this.getQueueStats(userCenterIds),
+        this.getStationStats(userCenterIds),
+        this.getApplicationStats(userCenterIds),
+        this.getProcessingStats(userCenterIds),
+        this.getAgentStats(userCenterIds),
       ]);
 
       return {
@@ -58,12 +98,14 @@ export class DashboardFrontdeskService {
         processingStats,
         agentStats,
         lastUpdated: new Date().toISOString(),
-        stationId: station.id,
-        stationName: station.name,
+        stationId: null, // No single station
+        stationName: `${userCenterIds.length} Center${userCenterIds.length > 1 ? 's' : ''
+          }`,
+        userCenters: userCenters.biometricCenters,
       };
     } catch (error) {
       this.logger.error(
-        `Failed to get front desk dashboard stats for station ${stationId}: ${error.message}`,
+        `Failed to get front desk dashboard stats for user ${userId}: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -71,9 +113,9 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get queue statistics
+   * Get queue statistics for multiple centers
    */
-  async getQueueStats(stationId: string): Promise<QueueStatsDto> {
+  async getQueueStats(centerIds: string[]): Promise<QueueStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -83,7 +125,7 @@ export class DashboardFrontdeskService {
         where: {
           status: SubmissionStatus.SUBMITTED,
           appointment: {
-            centerId: stationId,
+            centerId: { in: centerIds },
             appointmentDate: {
               gte: today,
             },
@@ -97,7 +139,7 @@ export class DashboardFrontdeskService {
         where: {
           status: SubmissionStatus.SUBMITTED,
           appointment: {
-            centerId: stationId,
+            centerId: { in: centerIds },
             appointmentDate: {
               gte: today,
             },
@@ -115,14 +157,14 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get station statistics
+   * Get station statistics for multiple centers
    */
-  async getStationStats(stationId: string): Promise<StationStatsDto> {
+  async getStationStats(centerIds: string[]): Promise<StationStatsDto> {
     const [totalStations, busyStations] = await Promise.all([
       // Count total stations at this center
       this.prisma.booth.count({
         where: {
-          centerId: stationId,
+          centerId: { in: centerIds },
           isActive: true,
         },
       }),
@@ -130,7 +172,7 @@ export class DashboardFrontdeskService {
       // Count busy stations (currently processing)
       this.prisma.booth.count({
         where: {
-          centerId: stationId,
+          centerId: { in: centerIds },
           isActive: true,
           isOccupied: true,
         },
@@ -150,9 +192,9 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get application statistics
+   * Get application statistics for multiple centers
    */
-  async getApplicationStats(stationId: string): Promise<ApplicationStatsDto> {
+  async getApplicationStats(centerIds: string[]): Promise<ApplicationStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -166,7 +208,7 @@ export class DashboardFrontdeskService {
               gte: today,
             },
             appointment: {
-              centerId: stationId,
+              centerId: { in: centerIds },
             },
           },
         }),
@@ -179,7 +221,7 @@ export class DashboardFrontdeskService {
               gte: today,
             },
             appointment: {
-              centerId: stationId,
+              centerId: { in: centerIds },
             },
           },
         }),
@@ -192,7 +234,7 @@ export class DashboardFrontdeskService {
               lt: today,
             },
             appointment: {
-              centerId: stationId,
+              centerId: { in: centerIds },
             },
           },
         }),
@@ -207,9 +249,9 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get processing time statistics
+   * Get processing time statistics for multiple centers
    */
-  async getProcessingStats(stationId: string): Promise<ProcessingStatsDto> {
+  async getProcessingStats(centerIds: string[]): Promise<ProcessingStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -221,7 +263,7 @@ export class DashboardFrontdeskService {
           gte: today,
         },
         appointment: {
-          centerId: stationId,
+          centerId: { in: centerIds },
         },
         submittedAt: {
           not: null,
@@ -267,9 +309,9 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get agent statistics
+   * Get agent statistics for multiple centers
    */
-  async getAgentStats(stationId: string): Promise<AgentStatsDto> {
+  async getAgentStats(centerIds: string[]): Promise<AgentStatsDto> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -311,9 +353,9 @@ export class DashboardFrontdeskService {
   /**
    * Get real-time queue updates (for WebSocket/SSE)
    */
-  async getQueueUpdates(stationId: string) {
-    const queueStats = await this.getQueueStats(stationId);
-    const stationStats = await this.getStationStats(stationId);
+  async getQueueUpdates(centerIds: string[]) {
+    const queueStats = await this.getQueueStats(centerIds);
+    const stationStats = await this.getStationStats(centerIds);
 
     return {
       queueStats,
@@ -323,12 +365,12 @@ export class DashboardFrontdeskService {
   }
 
   /**
-   * Get station-specific metrics
+   * Get station-specific metrics for multiple centers
    */
-  async getStationMetrics(stationId: string) {
+  async getStationMetrics(centerIds: string[]) {
     const [stationStats, queueStats] = await Promise.all([
-      this.getStationStats(stationId),
-      this.getQueueStats(stationId),
+      this.getStationStats(centerIds),
+      this.getQueueStats(centerIds),
     ]);
 
     return {
@@ -360,7 +402,7 @@ export class DashboardFrontdeskService {
    * Get list of applicants for the front desk
    */
   async getApplicants(
-    stationId: string,
+    centerIds: string[],
     filters: ApplicantListFiltersDto,
   ): Promise<{
     applicants: ApplicantListItemDto[];
@@ -378,10 +420,10 @@ export class DashboardFrontdeskService {
       const limit = Math.min(filters.limit || 20, 100);
       const skip = (page - 1) * limit;
 
-      // Build where clause - filter by submissions that have appointments at this station
+      // Build where clause - filter by submissions that have appointments at user's assigned centers
       const where: any = {
         appointment: {
-          centerId: stationId,
+          centerId: { in: centerIds },
         },
       };
 
@@ -511,7 +553,7 @@ export class DashboardFrontdeskService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to get applicants for station ${stationId}: ${error.message}`,
+        `Failed to get applicants for centers: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -522,7 +564,7 @@ export class DashboardFrontdeskService {
    * Get detailed information about a specific applicant
    */
   async getApplicantDetail(
-    stationId: string,
+    centerIds: string[],
     applicantId: string,
   ): Promise<ApplicantDetailDto> {
     try {
@@ -530,7 +572,7 @@ export class DashboardFrontdeskService {
         where: {
           id: applicantId,
           appointment: {
-            centerId: stationId,
+            centerId: { in: centerIds },
           },
         },
         include: {
@@ -595,7 +637,7 @@ export class DashboardFrontdeskService {
 
       if (!submission) {
         throw new NotFoundException(
-          `Applicant with ID ${applicantId} not found at station ${stationId}`,
+          `Applicant with ID ${applicantId} not found at any of your assigned centers`,
         );
       }
 
@@ -625,29 +667,29 @@ export class DashboardFrontdeskService {
         formData,
         biometricAppointment: submission.appointment
           ? {
-              appointmentDate: submission.appointment.appointmentDate,
-              status: submission.appointment.status,
-              centerName: 'Main Biometric Center', // This could be dynamic
-            }
+            appointmentDate: submission.appointment.appointmentDate,
+            status: submission.appointment.status,
+            centerName: 'Main Biometric Center', // This could be dynamic
+          }
           : undefined,
         paymentDetails: submission.payment
           ? {
-              amount: submission.payment.amount,
-              currency: submission.payment.currency,
-              paymentMethod: submission.payment.processor,
-              transactionId: submission.payment.processorId,
-            }
+            amount: submission.payment.amount,
+            currency: submission.payment.currency,
+            paymentMethod: submission.payment.processor,
+            transactionId: submission.payment.processorId,
+          }
           : {
-              amount: 0,
-              currency: 'NGN',
-              paymentMethod: 'N/A',
-              transactionId: 'N/A',
-            },
+            amount: 0,
+            currency: 'NGN',
+            paymentMethod: 'N/A',
+            transactionId: 'N/A',
+          },
         timeline,
       };
     } catch (error) {
       this.logger.error(
-        `Failed to get applicant detail for ${applicantId} at station ${stationId}: ${error.message}`,
+        `Failed to get applicant detail for ${applicantId}: ${error.message}`,
         error.stack,
       );
       throw error;

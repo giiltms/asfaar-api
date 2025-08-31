@@ -182,16 +182,24 @@ export class FrontDeskDashboardStatsDto {
   lastUpdated: string;
 
   @ApiProperty({
-    description: 'Station ID for this dashboard',
+    description: 'Station ID for this dashboard (null for multi-center view)',
     example: 'station-uuid-123',
+    required: false,
   })
-  stationId: string;
+  stationId?: string | null;
 
   @ApiProperty({
-    description: 'Station name',
+    description: 'Station name or center summary',
     example: 'Main Reception',
   })
   stationName: string;
+
+  @ApiProperty({
+    description: 'User assigned centers',
+    type: [Object],
+    required: false,
+  })
+  userCenters?: any[];
 }
 
 export class DashboardStatsResponseDto {

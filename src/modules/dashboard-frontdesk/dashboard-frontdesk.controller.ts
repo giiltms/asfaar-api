@@ -41,27 +41,44 @@ export class DashboardFrontdeskController {
   ) {}
 
   /**
+   * Get user's assigned centers
+   */
+  @Get('my-centers')
+  @ApiOperation({
+    summary: 'Get user assigned centers',
+    description:
+      'Retrieve all centers that the authenticated user has access to',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User centers retrieved successfully',
+    type: [Object],
+  })
+  @ApiDefaultResponse({})
+  async getUserCenters(@Request() req: any) {
+    const userId = req.user.id;
+    const centers = await this.dashboardFrontdeskService.getUserCenters(userId);
+
+    return {
+      success: true,
+      data: centers,
+      message: 'User centers retrieved successfully',
+    };
+  }
+
+  /**
    * Get comprehensive front desk dashboard statistics
    */
-  @Get(':stationId/stats')
+  @Get('stats')
   @ApiOperation({
     summary: 'Get front desk dashboard statistics',
     description:
-      'Retrieve comprehensive statistics for the front desk dashboard including queue, station, application, processing, and agent metrics.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+      'Retrieve comprehensive statistics for the front desk dashboard including queue, station, application, processing, and agent metrics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Dashboard statistics retrieved successfully',
     type: DashboardStatsResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Station not found',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -70,12 +87,10 @@ export class DashboardFrontdeskController {
   @ApiDefaultResponse({})
   async getFrontDeskDashboardStats(
     @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
   ): Promise<DashboardStatsResponseDto> {
+    const userId = req.user.id;
     const stats =
-      await this.dashboardFrontdeskService.getFrontDeskDashboardStats(
-        stationId,
-      );
+      await this.dashboardFrontdeskService.getFrontDeskDashboardStats(userId);
 
     return {
       success: true,
@@ -87,28 +102,25 @@ export class DashboardFrontdeskController {
   /**
    * Get real-time queue updates
    */
-  @Get(':stationId/queue-updates')
+  @Get('queue-updates')
   @ApiOperation({
     summary: 'Get real-time queue updates',
     description:
-      'Retrieve real-time updates for queue statistics and station status. Useful for WebSocket or Server-Sent Events.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+      'Retrieve real-time updates for queue statistics and station status for all user assigned centers. Useful for WebSocket or Server-Sent Events.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Queue updates retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getQueueUpdates(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getQueueUpdates(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const updates = await this.dashboardFrontdeskService.getQueueUpdates(
-      stationId,
+      centerIds,
     );
 
     return {
@@ -121,28 +133,25 @@ export class DashboardFrontdeskController {
   /**
    * Get station-specific metrics
    */
-  @Get(':stationId/metrics')
+  @Get('metrics')
   @ApiOperation({
     summary: 'Get station-specific metrics',
     description:
-      'Retrieve station-specific metrics including efficiency score and performance indicators.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+      'Retrieve station-specific metrics including efficiency score and performance indicators for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Station metrics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getStationMetrics(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getStationMetrics(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const metrics = await this.dashboardFrontdeskService.getStationMetrics(
-      stationId,
+      centerIds,
     );
 
     return {
@@ -155,27 +164,25 @@ export class DashboardFrontdeskController {
   /**
    * Get queue statistics only
    */
-  @Get(':stationId/queue-stats')
+  @Get('queue-stats')
   @ApiOperation({
     summary: 'Get queue statistics',
-    description: 'Retrieve only queue-related statistics for the station.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description:
+      'Retrieve only queue-related statistics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Queue statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getQueueStats(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getQueueStats(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const queueStats = await this.dashboardFrontdeskService.getQueueStats(
-      stationId,
+      centerIds,
     );
 
     return {
@@ -188,27 +195,25 @@ export class DashboardFrontdeskController {
   /**
    * Get station statistics only
    */
-  @Get(':stationId/station-stats')
+  @Get('station-stats')
   @ApiOperation({
     summary: 'Get station statistics',
-    description: 'Retrieve only station-related statistics.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description:
+      'Retrieve only station-related statistics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Station statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getStationStats(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getStationStats(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const stationStats = await this.dashboardFrontdeskService.getStationStats(
-      stationId,
+      centerIds,
     );
 
     return {
@@ -221,28 +226,25 @@ export class DashboardFrontdeskController {
   /**
    * Get application statistics only
    */
-  @Get(':stationId/application-stats')
+  @Get('application-stats')
   @ApiOperation({
     summary: 'Get application statistics',
-    description: 'Retrieve only application-related statistics.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description:
+      'Retrieve only application-related statistics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Application statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getApplicationStats(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
-    // We'll need to make this method public in the service
+  async getApplicationStats(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const applicationStats =
-      await this.dashboardFrontdeskService.getApplicationStats(stationId);
+      await this.dashboardFrontdeskService.getApplicationStats(centerIds);
 
     return {
       success: true,
@@ -254,27 +256,25 @@ export class DashboardFrontdeskController {
   /**
    * Get processing statistics only
    */
-  @Get(':stationId/processing-stats')
+  @Get('processing-stats')
   @ApiOperation({
     summary: 'Get processing statistics',
-    description: 'Retrieve only processing time-related statistics.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description:
+      'Retrieve only processing time-related statistics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Processing statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getProcessingStats(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getProcessingStats(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const processingStats =
-      await this.dashboardFrontdeskService.getProcessingStats(stationId);
+      await this.dashboardFrontdeskService.getProcessingStats(centerIds);
 
     return {
       success: true,
@@ -286,27 +286,25 @@ export class DashboardFrontdeskController {
   /**
    * Get agent statistics only
    */
-  @Get(':stationId/agent-stats')
+  @Get('agent-stats')
   @ApiOperation({
     summary: 'Get agent statistics',
-    description: 'Retrieve only agent-related statistics.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description:
+      'Retrieve only agent-related statistics for all user assigned centers.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Agent statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getAgentStats(
-    @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
-  ) {
+  async getAgentStats(@Request() req: any) {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const agentStats = await this.dashboardFrontdeskService.getAgentStats(
-      stationId,
+      centerIds,
     );
 
     return {
@@ -340,16 +338,11 @@ export class DashboardFrontdeskController {
   /**
    * Get list of applicants for the front desk
    */
-  @Get(':stationId/applicants')
+  @Get('applicants')
   @ApiOperation({
     summary: 'Get list of applicants',
     description:
-      'Retrieve a paginated list of applicants for the front desk with filtering and search capabilities.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+      'Retrieve a paginated list of applicants for the front desk with filtering and search capabilities for all user assigned centers.',
   })
   @ApiQuery({
     name: 'status',
@@ -411,21 +404,21 @@ export class DashboardFrontdeskController {
     type: ApplicantListResponseDto,
   })
   @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Station not found',
-  })
-  @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized access',
   })
   @ApiDefaultResponse({})
   async getApplicants(
     @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
     @Query() filters: ApplicantListFiltersDto,
   ): Promise<ApplicantListResponseDto> {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const result = await this.dashboardFrontdeskService.getApplicants(
-      stationId,
+      centerIds,
       filters,
     );
 
@@ -440,16 +433,11 @@ export class DashboardFrontdeskController {
   /**
    * Get detailed information about a specific applicant
    */
-  @Get(':stationId/applicants/:applicantId')
+  @Get('applicants/:applicantId')
   @ApiOperation({
     summary: 'Get applicant details',
     description:
       'Retrieve detailed information about a specific applicant including form data, payment details, and timeline.',
-  })
-  @ApiParam({
-    name: 'stationId',
-    description: 'Biometric center/station ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiParam({
     name: 'applicantId',
@@ -472,11 +460,15 @@ export class DashboardFrontdeskController {
   @ApiDefaultResponse({})
   async getApplicantDetail(
     @Request() req: any,
-    @Param('stationId', ParseUUIDPipe) stationId: string,
     @Param('applicantId', ParseUUIDPipe) applicantId: string,
   ): Promise<{ success: boolean; data: ApplicantDetailDto; message: string }> {
+    const userId = req.user.id;
+    const userCenters = await this.dashboardFrontdeskService.getUserCenters(
+      userId,
+    );
+    const centerIds = userCenters.map((center) => center.id);
     const applicant = await this.dashboardFrontdeskService.getApplicantDetail(
-      stationId,
+      centerIds,
       applicantId,
     );
 
