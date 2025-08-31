@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { inspect } from 'util';
 
 export const WEBHOOK_PROVIDER_KEY = 'webhook_provider';
 export const WebhookProvider = (provider: string) =>
@@ -34,7 +35,7 @@ export class WebhookSignatureGuard implements CanActivate {
       return true; // Let it pass if no provider is specified
     }
 
-    console.log(JSON.stringify(request.body, null, 2));
+    console.log(inspect(request.body, { depth: null, colors: true }));
 
     try {
       // Get the raw body and signature from request
