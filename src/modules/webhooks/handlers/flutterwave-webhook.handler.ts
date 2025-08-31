@@ -5,6 +5,8 @@ import { WebhookEvent } from '../interfaces/webhook-handler.interface';
 import { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
@@ -26,6 +28,49 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
   getProviderName(): string {
     return 'FLUTTERWAVE';
+  }
+
+  /**
+   * Log webhook data to file for debugging - save exact payload structure
+   */
+  private logWebhookToFile(payload: any, source: string): void {
+    try {
+      const timestamp = new Date().toISOString();
+      const logDir = path.join(process.cwd(), 'logs');
+      const logFile = path.join(logDir, 'flutterwave-webhooks.log');
+
+      // Create logs directory if it doesn't exist
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+
+      // Simple log entry with exact payload
+      const logEntry = {
+        timestamp,
+        source,
+        // The exact payload as received from Flutterwave
+        exactPayload: payload,
+        // Raw JSON string for easy copying
+        rawJson: JSON.stringify(payload, null, 2),
+      };
+
+      const logLine = `\n=== FLUTTERWAVE WEBHOOK EXACT PAYLOAD ===\n${JSON.stringify(
+        logEntry,
+        null,
+        2,
+      )}\n`;
+
+      fs.appendFileSync(logFile, logLine);
+      this.logger.log(`Exact webhook payload saved to: ${logFile}`);
+
+      // Quick console summary
+      this.logger.log(
+        `📝 Webhook logged - ${Object.keys(payload || {}).length
+        } top-level keys`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to log webhook payload to file:', error);
+    }
   }
 
   async verifySignature(payload: string, signature: string): Promise<boolean> {
@@ -60,6 +105,9 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       this.logger.log(`Raw payload: ${JSON.stringify(payload, null, 2)}`);
       this.logger.log(`Payload type: ${typeof payload}`);
       this.logger.log(`Payload keys: ${Object.keys(payload || {}).join(', ')}`);
+
+      // Log to file for persistent debugging
+      this.logWebhookToFile(payload, 'parseEvent');
 
       // Check for both old and new format
       const hasEvent = 'event' in payload;
