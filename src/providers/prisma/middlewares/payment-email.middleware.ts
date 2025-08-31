@@ -71,13 +71,13 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
     const emailData = {
       userName,
       userEmail: user.email,
-      referenceNumber: submission.referenceNumber || 'N/A',
+      referenceNumber: submission?.referenceNumber || 'N/A',
       paymentReference: payment.reference || payment.id,
       transactionId: payment.processorId || payment.id,
       amount: payment.amount,
       currency: payment.currency,
       paymentDate,
-      applicationId: submission.id,
+      applicationId: submission?.id || payment.id,
     };
 
     await mailService.sendPaymentConfirmation(emailData);
