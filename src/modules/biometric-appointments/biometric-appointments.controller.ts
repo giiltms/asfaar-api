@@ -328,6 +328,46 @@ export class BiometricAppointmentsController {
   }
 
   /**
+   * Get appointment by reference number
+   */
+  @Get('by-reference/:referenceNumber')
+  @ApiOperation({
+    summary: 'Get appointment by reference number',
+    description: 'Retrieve a specific appointment by its reference number',
+  })
+  @ApiParam({
+    name: 'referenceNumber',
+    description: 'Reference number (e.g., CC01225000001)',
+    example: 'CC01225000001',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Appointment retrieved successfully',
+    type: BiometricAppointmentEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Appointment not found',
+  })
+  async findAppointmentByReferenceNumber(
+    @Param('referenceNumber') referenceNumber: string,
+    // TODO: Extract user ID from JWT token for authorization
+    // @CurrentUser() user: User,
+  ) {
+    // For now, not filtering by user (admin can see all)
+    const appointment =
+      await this.appointmentsService.findAppointmentByReferenceNumber(
+        referenceNumber,
+        // user?.roles?.includes('ADMIN') ? undefined : user?.id,
+      );
+
+    return {
+      message: 'Appointment retrieved successfully',
+      data: appointment,
+    };
+  }
+
+  /**
    * Update appointment status (admin use)
    */
   @Put(':id/status')

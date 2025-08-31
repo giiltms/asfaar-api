@@ -218,8 +218,7 @@ export class BiometricAppointmentsService {
       });
 
       this.logger.log(
-        `Created biometric appointment: ${result.id} for submission: ${
-          createDto.submissionId
+        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId
         }${referenceNumber ? ` with reference: ${referenceNumber}` : ''}`,
       );
 
@@ -317,6 +316,7 @@ export class BiometricAppointmentsService {
               firstName: true,
               lastName: true,
               email: true,
+              nin: true,
             },
           },
           submission: {
@@ -328,6 +328,19 @@ export class BiometricAppointmentsService {
                   id: true,
                   status: true,
                   amount: true,
+                },
+              },
+              responses: {
+                where: {
+                  fieldName: {
+                    in: ['passport-photo', 'passport-number'],
+                  },
+                },
+                select: {
+                  id: true,
+                  fieldName: true,
+                  fileUrls: true,
+                  value: true,
                 },
               },
             },
@@ -382,17 +395,32 @@ export class BiometricAppointmentsService {
             firstName: true,
             lastName: true,
             email: true,
+            nin: true,
           },
         },
         submission: {
           select: {
             id: true,
             status: true,
+            referenceNumber: true,
             payment: {
               select: {
                 id: true,
                 status: true,
                 amount: true,
+              },
+            },
+            responses: {
+              where: {
+                fieldName: {
+                  in: ['passport-photo', 'passport-number'],
+                },
+              },
+              select: {
+                id: true,
+                fieldName: true,
+                fileUrls: true,
+                value: true,
               },
             },
           },
@@ -403,6 +431,83 @@ export class BiometricAppointmentsService {
 
     if (!appointment) {
       throw new NotFoundException(`Appointment with ID "${id}" not found`);
+    }
+
+    return appointment;
+  }
+
+  /**
+   * Get a single appointment by reference number
+   */
+  async findAppointmentByReferenceNumber(
+    referenceNumber: string,
+    userId?: string,
+  ): Promise<BiometricAppointment> {
+    const where: Prisma.BiometricAppointmentWhereInput = {
+      submission: {
+        referenceNumber: referenceNumber,
+      },
+    };
+
+    if (userId) {
+      where.userId = userId;
+    }
+
+    const appointment = await this.prisma.biometricAppointment.findFirst({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            nin: true,
+          },
+        },
+        submission: {
+          select: {
+            id: true,
+            status: true,
+            referenceNumber: true,
+            payment: {
+              select: {
+                id: true,
+                status: true,
+                amount: true,
+              },
+            },
+            responses: {
+              where: {
+                fieldName: {
+                  in: ['passport-photo', 'passport-number'],
+                },
+              },
+              select: {
+                id: true,
+                fieldName: true,
+                fileUrls: true,
+                value: true,
+              },
+            },
+          },
+        },
+        center: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            city: true,
+            state: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException(
+        `Appointment with reference number "${referenceNumber}" not found`,
+      );
     }
 
     return appointment;

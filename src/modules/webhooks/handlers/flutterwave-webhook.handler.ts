@@ -65,7 +65,8 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
       // Quick console summary
       this.logger.log(
-        `📝 Webhook logged - ${Object.keys(payload || {}).length
+        `📝 Webhook logged - ${
+          Object.keys(payload || {}).length
         } top-level keys`,
       );
     } catch (error) {
