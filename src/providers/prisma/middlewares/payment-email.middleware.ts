@@ -23,35 +23,31 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
     const payment = await prismaInternal.payment.findUnique({
       where: { id: paymentId },
       include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
         submission: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-            form: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+          select: {
+            id: true,
+            referenceNumber: true,
           },
         },
       },
     });
 
-    if (!payment?.submission?.user) {
+    if (!payment?.user) {
       logger.warn(
         `Cannot send payment confirmation email: missing user data for payment ${paymentId}`,
       );
       return;
     }
 
-    const user = payment.submission.user;
+    const user = payment.user;
     const submission = payment.submission;
 
     // Format user name
