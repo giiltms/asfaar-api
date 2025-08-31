@@ -1,4 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsDateString,
+  Min,
+  Max,
+} from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class QueueStatsDto {
   @ApiProperty({
@@ -302,12 +312,16 @@ export class ApplicantListFiltersDto {
     example: 'PENDING',
     enum: ['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
   })
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by application type',
     example: 'VISA_APPLICATION',
   })
+  @IsOptional()
+  @IsString()
   applicationType?: string;
 
   @ApiPropertyOptional({
@@ -315,29 +329,44 @@ export class ApplicantListFiltersDto {
     example: 'PAID',
     enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
   })
+  @IsOptional()
+  @IsString()
   paymentStatus?: string;
 
   @ApiPropertyOptional({
     description: 'Search by applicant name or email',
     example: 'john',
   })
+  @IsOptional()
+  @IsString()
   search?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by submission date (from)',
     example: '2025-08-01',
   })
+  @IsOptional()
+  @IsDateString()
   dateFrom?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by submission date (to)',
     example: '2025-08-29',
   })
+  @IsOptional()
+  @IsDateString()
   dateTo?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by queue status',
     example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
   })
   inQueue?: boolean;
 
@@ -346,7 +375,11 @@ export class ApplicantListFiltersDto {
     example: 1,
     minimum: 1,
   })
-  page?: number;
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  page?: number = 1;
 
   @ApiPropertyOptional({
     description: 'Number of items per page',
@@ -354,7 +387,12 @@ export class ApplicantListFiltersDto {
     minimum: 1,
     maximum: 100,
   })
-  limit?: number;
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
 }
 
 export class ApplicantListResponseDto {
