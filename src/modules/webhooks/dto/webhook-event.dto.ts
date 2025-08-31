@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsObject, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsObject,
+  IsNumber,
+  IsNotEmpty,
+  IsEmail,
+} from 'class-validator';
+import { ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentStatus } from '@prisma/client';
 
 export class WebhookPayloadDto {
@@ -42,44 +51,175 @@ export class WebhookPayloadDto {
   signature?: string;
 }
 
+/**
+ * Flutterwave Webhook DTO based on official documentation
+ *
+ * Flutterwave webhook payloads follow this structure:
+ * - data: Object containing transaction details (id, status, payment details, customer details)
+ * - type: Event type (e.g., charge.completed, charge.failed)
+ * - id: Webhook ID (e.g., wbk_W5p6ktwU0jQ8RO4By860)
+ * - timestamp: Unix timestamp (e.g., 1735116884019)
+ */
 export class FlutterwaveWebhookDto {
-  @ApiProperty({ example: 'charge.completed' })
+  @ApiProperty({
+    description: 'Event type describing the webhook event',
+    example: 'charge.completed',
+    required: true,
+  })
   @IsString()
+  @IsNotEmpty()
   type: string;
 
   @ApiProperty({
-    description: 'Flutterwave transaction data',
+    description: 'Transaction data containing event details',
     example: {
-      amount: 2500,
-      created_datetime: 1735116842.116,
-      currency: 'KES',
-      customer: {
-        id: 'cus_csm0pcQim4',
-        email: 'olaobajua@gmail.com',
-      },
       id: 'chg_Hq4oBRTJ4r',
-      reference: '49c3c6f5-aedd-4443-9eb4-92c51758f04a',
       status: 'succeeded',
+      amount: 2500,
+      currency: 'NGN',
+      reference: 'ref_123456',
+      customer: {
+        id: 'cus_123',
+        email: 'user@example.com',
+      },
     },
+    required: true,
   })
   @IsObject()
-  data: Record<string, any>;
+  @ValidateNested()
+  @Type(() => FlutterwaveTransactionData)
+  data: FlutterwaveTransactionData;
+
+  @ApiProperty({
+    description: 'Webhook ID for tracking',
+    example: 'wbk_W5p6ktwU0jQ8RO4By860',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({
+    description: 'Unix timestamp when the webhook was sent',
+    example: 1735116884019,
+    required: true,
+  })
+  @IsNumber()
+  timestamp: number;
+}
+
+/**
+ * Flutterwave transaction data structure
+ */
+export class FlutterwaveTransactionData {
+  @ApiProperty({
+    description: 'Transaction ID from Flutterwave',
+    example: 'chg_Hq4oBRTJ4r',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+
+  @ApiProperty({
+    description: 'Transaction status',
+    example: 'succeeded',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  status: string;
 
   @ApiPropertyOptional({
-    description: 'Webhook ID',
-    example: 'wbk_W5p6ktwU0jQ8RO4By860',
+    description: 'Transaction amount',
+    example: 2500,
+  })
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Transaction currency',
+    example: 'NGN',
+  })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiPropertyOptional({
+    description: 'Transaction reference',
+    example: 'ref_123456',
+  })
+  @IsOptional()
+  @IsString()
+  reference?: string;
+
+  @ApiPropertyOptional({
+    description: 'Customer information',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FlutterwaveCustomer)
+  customer?: FlutterwaveCustomer;
+
+  @ApiPropertyOptional({
+    description: 'Payment method details',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => Object)
+  payment_method?: any;
+
+  @ApiPropertyOptional({
+    description: 'Additional transaction metadata',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, any>;
+
+  // Allow additional properties as Flutterwave may add new fields
+  [key: string]: any;
+}
+
+/**
+ * Flutterwave customer information
+ */
+export class FlutterwaveCustomer {
+  @ApiPropertyOptional({
+    description: 'Customer ID',
+    example: 'cus_123',
   })
   @IsOptional()
   @IsString()
   id?: string;
 
   @ApiPropertyOptional({
-    description: 'Webhook timestamp',
-    example: 1735116884019,
+    description: 'Customer email',
+    example: 'user@example.com',
   })
   @IsOptional()
-  @IsNumber()
-  timestamp?: number;
+  @IsString()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({
+    description: 'Customer name',
+    example: 'John Doe',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Customer phone number',
+    example: '+2348012345678',
+  })
+  @IsOptional()
+  @IsString()
+  phone_number?: string;
+
+  // Allow additional customer properties
+  [key: string]: any;
 }
 
 export class PaystackWebhookDto {
