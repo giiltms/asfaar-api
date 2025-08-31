@@ -309,7 +309,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
     // Verify the charge was actually successful
     if (
       event.data.status === 'succeeded' ||
-      event.data.data.status === 'successful'
+      event.data.status === 'successful'
     ) {
       await this.handlePaymentSuccess(event);
     } else {
