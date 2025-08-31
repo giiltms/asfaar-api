@@ -122,7 +122,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       const customer = payload.customer;
       const createdAt = payload.createdAt;
 
-      // Determine event type from status since it's not provided
+      // Determine event type from status since Flutterwave sends status: 'successful'
       const eventType = this.determineEventType(transactionStatus);
 
       this.logger.log(`Event type: ${eventType}`);
@@ -233,7 +233,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
   }
 
   /**
-   * Determine event type from transaction status since it's not provided in the webhook
+   * Determine event type from transaction status since Flutterwave sends status: 'successful'
    */
   private determineEventType(status: string): string {
     const normalizedStatus = status?.toLowerCase();

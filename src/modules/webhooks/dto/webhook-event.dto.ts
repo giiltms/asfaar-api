@@ -188,6 +188,13 @@ export class FlutterwaveWebhookDto {
   })
   @IsObject()
   entity: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Event type (Flutterwave specific field)',
+    example: 'USSD_TRANSACTION',
+  })
+  @IsString()
+  'event.type': string;
 }
 
 export class PaystackWebhookDto {
