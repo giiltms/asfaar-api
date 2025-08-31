@@ -73,22 +73,22 @@ export class FlutterwaveWebhookDto {
   @ApiProperty({
     description: 'Transaction data containing event details',
     example: {
-      id: 'chg_Hq4oBRTJ4r',
-      status: 'succeeded',
-      amount: 2500,
+      id: 285959875,
+      tx_ref: 'Links-616626414629',
+      flw_ref: 'PeterEkene/FLW270177170',
+      amount: 100,
       currency: 'NGN',
-      reference: 'ref_123456',
+      status: 'successful',
       customer: {
-        id: 'cus_123',
-        email: 'user@example.com',
+        id: 215604089,
+        name: 'Yemi Desola',
+        email: 'user@gmail.com',
       },
     },
     required: true,
   })
   @IsObject()
-  @ValidateNested()
-  @Type(() => FlutterwaveTransactionData)
-  data: FlutterwaveTransactionData;
+  data: Record<string, any>;
 
   @ApiProperty({
     description: 'Webhook ID for tracking',
@@ -106,120 +106,6 @@ export class FlutterwaveWebhookDto {
   })
   @IsNumber()
   timestamp: number;
-}
-
-/**
- * Flutterwave transaction data structure
- */
-export class FlutterwaveTransactionData {
-  @ApiProperty({
-    description: 'Transaction ID from Flutterwave',
-    example: 'chg_Hq4oBRTJ4r',
-    required: true,
-  })
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @ApiProperty({
-    description: 'Transaction status',
-    example: 'succeeded',
-    required: true,
-  })
-  @IsString()
-  @IsNotEmpty()
-  status: string;
-
-  @ApiPropertyOptional({
-    description: 'Transaction amount',
-    example: 2500,
-  })
-  @IsOptional()
-  @IsNumber()
-  amount?: number;
-
-  @ApiPropertyOptional({
-    description: 'Transaction currency',
-    example: 'NGN',
-  })
-  @IsOptional()
-  @IsString()
-  currency?: string;
-
-  @ApiPropertyOptional({
-    description: 'Transaction reference',
-    example: 'ref_123456',
-  })
-  @IsOptional()
-  @IsString()
-  reference?: string;
-
-  @ApiPropertyOptional({
-    description: 'Customer information',
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => FlutterwaveCustomer)
-  customer?: FlutterwaveCustomer;
-
-  @ApiPropertyOptional({
-    description: 'Payment method details',
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => Object)
-  payment_method?: any;
-
-  @ApiPropertyOptional({
-    description: 'Additional transaction metadata',
-  })
-  @IsOptional()
-  @IsObject()
-  metadata?: Record<string, any>;
-
-  // Allow additional properties as Flutterwave may add new fields
-  [key: string]: any;
-}
-
-/**
- * Flutterwave customer information
- */
-export class FlutterwaveCustomer {
-  @ApiPropertyOptional({
-    description: 'Customer ID',
-    example: 'cus_123',
-  })
-  @IsOptional()
-  @IsString()
-  id?: string;
-
-  @ApiPropertyOptional({
-    description: 'Customer email',
-    example: 'user@example.com',
-  })
-  @IsOptional()
-  @IsString()
-  @IsEmail()
-  email?: string;
-
-  @ApiPropertyOptional({
-    description: 'Customer name',
-    example: 'John Doe',
-  })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @ApiPropertyOptional({
-    description: 'Customer phone number',
-    example: '+2348012345678',
-  })
-  @IsOptional()
-  @IsString()
-  phone_number?: string;
-
-  // Allow additional customer properties
-  [key: string]: any;
 }
 
 export class PaystackWebhookDto {
