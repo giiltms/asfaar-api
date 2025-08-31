@@ -117,7 +117,7 @@ export class FincraProvider implements PaymentProviderInterface {
 
       const response = await this.makeRequest(
         'GET',
-        `/checkout/charges/merchant-reference/${reference}`,
+        `/checkout/payments/merchant-reference/${reference}`,
       );
 
       this.logger.log(`Fincra verification response:`, response);
