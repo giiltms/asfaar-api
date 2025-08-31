@@ -12,6 +12,7 @@ export interface PaymentConfirmationData {
   currency: string;
   paymentDate: string;
   applicationId: string;
+  paymentType?: string; // 'ONBOARDING', 'APPLICATION', 'UPGRADE', etc.
 }
 
 export interface EmbassySubmissionData {
@@ -140,13 +141,22 @@ export class MailService {
         'http://localhost:3000',
       );
 
+      // Choose template based on payment type
+      const isOnboarding = data.paymentType === 'ONBOARDING';
+      const template = isOnboarding
+        ? 'onboarding-payment-confirmation'
+        : 'application-payment-confirmation';
+      const subject = isOnboarding
+        ? 'Onboarding Payment Confirmation - Asfaar Visa Services'
+        : 'Application Payment Confirmation - Asfaar Visa Services';
+
       await this.mailerService.sendMail({
         to: data.userEmail,
-        subject: 'Payment Confirmation - Asfaar Visa Services',
-        template: 'paymentconfirmation',
+        subject,
+        template,
         context: {
           userName: data.userName,
-          referenceNumber: data.referenceNumber,
+          referenceNumber: data.referenceNumber || 'N/A',
           paymentReference: data.paymentReference,
           transactionId: data.transactionId,
           amount: data.amount,
@@ -158,7 +168,7 @@ export class MailService {
       });
 
       this.logger.log(
-        `Payment confirmation email sent successfully to: ${data.userEmail}`,
+        `Payment confirmation email sent successfully to: ${data.userEmail} using template: ${template}`,
       );
     } catch (error) {
       this.logger.error(

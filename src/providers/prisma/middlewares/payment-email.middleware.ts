@@ -37,6 +37,15 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
             referenceNumber: true,
           },
         },
+        serviceFees: {
+          select: {
+            serviceFee: {
+              select: {
+                feeType: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -67,6 +76,13 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
         })
       : new Date().toLocaleDateString();
 
+    // Determine payment type from service fees
+    const paymentTypes = payment.serviceFees
+      .map((sf) => sf.serviceFee.feeType)
+      .filter(Boolean);
+    const primaryPaymentType =
+      paymentTypes.length > 0 ? paymentTypes[0] : 'UNKNOWN';
+
     // Prepare email data
     const emailData = {
       userName,
@@ -78,6 +94,7 @@ async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
       currency: payment.currency,
       paymentDate,
       applicationId: submission?.id || payment.id,
+      paymentType: primaryPaymentType,
     };
 
     await mailService.sendPaymentConfirmation(emailData);
