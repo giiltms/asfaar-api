@@ -438,7 +438,7 @@ export class PaymentsController {
 
     const enhancedCallbackUrl = `${baseCallbackUrl}?paymentType=${paymentType}`;
 
-    // Prepare payment data
+    // Prepare payment data with complete customer details
     const paymentData = {
       ...initiatePaymentDto,
       amount: totalAmount,
@@ -457,8 +457,16 @@ export class PaymentsController {
         feeTypes: paymentTypes,
         paymentRoute: paymentType, // Include the route for frontend routing
         feeBearer: 'business', // You absorb the fees (recommended)
+        // Include customer details in metadata for all providers
+        customerName:
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+          user.email.split('@')[0],
+        customerPhone: user.phone || null,
+        customerEmail: user.email,
       },
-      customerName: `${user.firstName} ${user.lastName}`,
+      customerName:
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+        user.email.split('@')[0],
     };
 
     const payment = await this.paymentProviderService.initiatePayment(

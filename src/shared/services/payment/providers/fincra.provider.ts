@@ -55,6 +55,7 @@ export class FincraProvider implements PaymentProviderInterface {
         customer: {
           name: data.customerName,
           email: data.email,
+          phoneNumber: data.customerPhone,
         },
         reference: data.reference,
         merchant: this.merchantId,

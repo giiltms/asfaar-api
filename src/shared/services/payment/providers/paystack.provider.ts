@@ -49,7 +49,11 @@ export class PaystackProvider implements PaymentProviderInterface {
         reference: data.reference,
         callback_url: data.callbackUrl,
         cancel_url: data.cancelUrl,
-        metadata: data.metadata,
+        metadata: {
+          ...data.metadata,
+          customer_name: data.customerName || data.email.split('@')[0],
+          customer_phone: data.customerPhone,
+        },
         channels: data.paymentMethods,
         custom_fields: data.customFields
           ? Object.entries(data.customFields).map(([key, value]) => ({

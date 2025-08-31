@@ -49,6 +49,8 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
         redirect_url: data.callbackUrl,
         customer: {
           email: data.email,
+          name: data.customerName || data.email.split('@')[0],
+          phone: data.customerPhone,
         },
         customizations: {
           title: 'Payment',

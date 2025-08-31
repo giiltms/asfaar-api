@@ -9,6 +9,7 @@ export interface PaymentInitializationData {
   paymentMethods?: string[];
   customFields?: Record<string, string>;
   customerName?: string;
+  customerPhone?: string;
 }
 
 export interface PaymentInitializationResponse {
