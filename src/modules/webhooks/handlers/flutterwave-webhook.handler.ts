@@ -110,8 +110,8 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       // Log to file for persistent debugging
       this.logWebhookToFile(payload, 'parseEvent');
 
-      // Extract fields from the new Flutterwave webhook format
-      const eventType = payload['event.type'];
+      // Extract fields from the actual Flutterwave webhook format
+      // Since there's no event.type field, we'll determine it from status
       const webhookId = payload.id;
       const txRef = payload.txRef;
       const flwRef = payload.flwRef;
@@ -121,6 +121,9 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       const currency = payload.currency || 'NGN';
       const customer = payload.customer;
       const createdAt = payload.createdAt;
+
+      // Determine event type from status since it's not provided
+      const eventType = this.determineEventType(transactionStatus);
 
       this.logger.log(`Event type: ${eventType}`);
       this.logger.log(`Webhook ID: ${webhookId}`);
@@ -226,6 +229,33 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
           `Unknown Flutterwave status: ${flutterwaveStatus}, event type: ${eventType}`,
         );
         return PaymentStatus.PENDING;
+    }
+  }
+
+  /**
+   * Determine event type from transaction status since it's not provided in the webhook
+   */
+  private determineEventType(status: string): string {
+    const normalizedStatus = status?.toLowerCase();
+
+    switch (normalizedStatus) {
+      case 'successful':
+      case 'succeeded':
+      case 'success':
+      case 'completed':
+        return 'charge.completed';
+      case 'failed':
+      case 'cancelled':
+      case 'declined':
+        return 'charge.failed';
+      case 'pending':
+      case 'processing':
+        return 'charge.pending';
+      default:
+        this.logger.warn(
+          `Unknown status: ${status}, defaulting to charge.pending`,
+        );
+        return 'charge.pending';
     }
   }
 

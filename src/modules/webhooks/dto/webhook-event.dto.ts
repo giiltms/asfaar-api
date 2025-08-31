@@ -7,8 +7,6 @@ import {
   IsNotEmpty,
   IsEmail,
 } from 'class-validator';
-import { ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
 import { PaymentStatus } from '@prisma/client';
 
 export class WebhookPayloadDto {
@@ -62,7 +60,7 @@ export class WebhookPayloadDto {
  * - amount: Transaction amount in kobo
  * - customer: Customer information object
  * - entity: Entity information object
- * - event.type: Event type (e.g., USSD_TRANSACTION)
+ * - eventType: Event type (e.g., USSD_TRANSACTION)
  */
 export class FlutterwaveWebhookDto {
   @ApiProperty({
@@ -182,25 +180,14 @@ export class FlutterwaveWebhookDto {
     type: Object,
   })
   @IsObject()
-  @ValidateNested()
-  @Type(() => Object)
-  customer: any;
+  customer: Record<string, any>;
 
   @ApiProperty({
     description: 'Entity information',
     type: Object,
   })
   @IsObject()
-  @ValidateNested()
-  @Type(() => Object)
-  entity: any;
-
-  @ApiProperty({
-    description: 'Event type',
-    example: 'USSD_TRANSACTION',
-  })
-  @IsString()
-  'event.type': string;
+  entity: Record<string, any>;
 }
 
 export class PaystackWebhookDto {
