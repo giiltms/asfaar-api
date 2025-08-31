@@ -589,12 +589,25 @@ export class FormSubmissionsService {
         userId,
         isCancelled: false,
       },
-      include: { responses: true },
+      include: {
+        responses: true,
+        appointment: true,
+        payment: true,
+        biometricData: true,
+        statusLogs: true,
+      },
     });
 
     if (!submission) {
       throw new NotFoundException('Submission not found or not accessible');
     }
+
+    // Check if submission can be permanently deleted
+    // if (submission.status !== 'DRAFT') {
+    //   throw new BadRequestException(
+    //     'Only DRAFT submissions can be permanently deleted. Use the cancel endpoint for submitted applications.',
+    //   );
+    // }
 
     // Use transaction to ensure atomic deletion
     await this.prisma.$transaction(async (tx) => {
@@ -608,20 +621,46 @@ export class FormSubmissionsService {
         await this.cleanupFiles(fileUrls);
       }
 
-      // Soft delete the submission
-      await tx.formSubmission.update({
-        where: { id: submissionId },
-        data: {
-          isCancelled: true,
-          cancelledAt: new Date(),
-          cancelledBy: userId,
-          cancellationReason: 'User requested deletion',
-        },
-      });
+      // Delete all associated data in the correct order (due to foreign key constraints)
 
-      // Delete all associated responses
-      await tx.fieldResponse.deleteMany({
-        where: { submissionId },
+      // 1. Delete status logs first
+      if (submission.statusLogs && submission.statusLogs.length > 0) {
+        await tx.submissionStatusLog.deleteMany({
+          where: { submissionId },
+        });
+      }
+
+      // 2. Delete field responses
+      if (submission.responses && submission.responses.length > 0) {
+        await tx.fieldResponse.deleteMany({
+          where: { submissionId },
+        });
+      }
+
+      // 3. Delete biometric data if exists
+      if (submission.biometricData) {
+        await tx.biometricData.delete({
+          where: { submissionId },
+        });
+      }
+
+      // 4. Delete payment if exists
+      if (submission.payment) {
+        await tx.payment.delete({
+          where: { submissionId },
+        });
+      }
+
+      // 5. Delete appointment if exists
+      if (submission.appointment) {
+        await tx.biometricAppointment.delete({
+          where: { submissionId },
+        });
+      }
+
+      // 6. Finally, delete the submission itself
+      await tx.formSubmission.delete({
+        where: { id: submissionId },
       });
     });
   }

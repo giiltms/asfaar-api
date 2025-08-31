@@ -457,9 +457,9 @@ export class FormSubmissionsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete submission',
+    summary: 'Permanently delete submission',
     description:
-      'Delete a draft submission and clean up associated files. Only draft submissions can be deleted.',
+      'Permanently delete a DRAFT submission and clean up all associated files and data. This action cannot be undone. Only DRAFT submissions can be permanently deleted. For submitted applications, use the cancel endpoint instead.',
   })
   @ApiParam({
     name: 'id',
@@ -468,7 +468,13 @@ export class FormSubmissionsController {
   })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
-    description: 'Submission deleted successfully and files cleaned up',
+    description:
+      'Submission permanently deleted successfully and all associated data cleaned up',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description:
+      'Cannot delete non-draft submissions. Use cancel endpoint instead.',
   })
   @ApiDefaultResponse({})
   async deleteSubmission(
