@@ -323,6 +323,7 @@ export class BiometricAppointmentsService {
             select: {
               id: true,
               status: true,
+              referenceNumber: true,
               payment: {
                 select: {
                   id: true,
