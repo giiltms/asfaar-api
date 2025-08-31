@@ -110,34 +110,27 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       // Log to file for persistent debugging
       this.logWebhookToFile(payload, 'parseEvent');
 
-      // Extract fields from the Flutterwave webhook format
-      const eventType = payload.type;
-      const webhookData = payload.data;
+      // Extract fields from the new Flutterwave webhook format
+      const eventType = payload['event.type'];
       const webhookId = payload.id;
-      const webhookTimestamp = payload.timestamp;
+      const txRef = payload.txRef;
+      const flwRef = payload.flwRef;
+      const orderRef = payload.orderRef;
+      const transactionStatus = payload.status;
+      const amount = payload.amount;
+      const currency = payload.currency || 'NGN';
+      const customer = payload.customer;
+      const createdAt = payload.createdAt;
 
       this.logger.log(`Event type: ${eventType}`);
       this.logger.log(`Webhook ID: ${webhookId}`);
-      this.logger.log(`Webhook timestamp: ${webhookTimestamp}`);
-      this.logger.log(
-        `Data field keys: ${Object.keys(webhookData || {}).join(', ')}`,
-      );
-
-      // Extract transaction details from the data object
-      const transactionId = webhookData?.id;
-      const transactionStatus = webhookData?.status;
-      const reference = webhookData?.reference;
-      const amount = webhookData?.amount
-        ? parseFloat(webhookData.amount)
-        : undefined;
-      const currency = webhookData?.currency || 'NGN';
-      const customer = webhookData?.customer;
-
-      this.logger.log(`Transaction ID: ${transactionId}`);
+      this.logger.log(`Transaction Reference: ${txRef}`);
+      this.logger.log(`Flutterwave Reference: ${flwRef}`);
+      this.logger.log(`Order Reference: ${orderRef}`);
       this.logger.log(`Transaction status: ${transactionStatus}`);
-      this.logger.log(`Reference: ${reference}`);
       this.logger.log(`Amount: ${amount}`);
       this.logger.log(`Currency: ${currency}`);
+      this.logger.log(`Created at: ${createdAt}`);
 
       // Map Flutterwave status to our PaymentStatus
       const status = this.mapFlutterwaveStatus(transactionStatus, eventType);
@@ -145,24 +138,28 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
 
       const result = {
         event: eventType,
-        data: webhookData,
-        reference,
+        data: payload,
+        reference: txRef, // Use txRef as the main reference
         status,
         amount: amount ? this.normalizeAmount(amount, currency) : undefined,
         currency,
         customerId: customer?.id,
         metadata: {
-          charge_id: transactionId,
+          flutterwave_id: webhookId,
+          flw_ref: flwRef,
+          order_ref: orderRef,
           transaction_status: transactionStatus,
-          payment_method: webhookData?.payment_method,
           customer: customer,
-          created_datetime: webhookData?.created_datetime,
-          redirect_url: webhookData?.redirect_url,
-          webhook_id: webhookId,
-          webhook_timestamp: webhookTimestamp,
+          created_at: createdAt,
+          ip_address: payload.IP,
+          app_fee: payload.appfee,
+          merchant_fee: payload.merchantfee,
+          merchant_bears_fee: payload.merchantbearsfee,
+          charge_type: payload.charge_type,
+          entity: payload.entity,
           // Include additional fields that might be useful
-          processor_response: webhookData?.processor_response,
-          metadata: webhookData?.metadata,
+          payment_plan: payload.paymentPlan,
+          payment_page: payload.paymentPage,
         },
       };
 
@@ -195,7 +192,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
     const type = eventType?.toLowerCase();
 
     // Check event type first (new Flutterwave format)
-    if (type === 'charge.completed') {
+    if (type === 'charge.completed' || type === 'ussd_transaction') {
       return PaymentStatus.COMPLETED;
     }
 
@@ -207,7 +204,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       return PaymentStatus.PENDING;
     }
 
-    // Check status field as fallback
+    // Check status field as fallback (new format uses 'successful' instead of 'succeeded')
     switch (status) {
       case 'succeeded':
       case 'successful':
@@ -241,6 +238,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
     // Handle Flutterwave-specific events (new format)
     switch (event.event) {
       case 'charge.completed':
+      case 'USSD_TRANSACTION':
         await this.handleChargeCompleted(event);
         break;
       case 'charge.failed':
@@ -281,7 +279,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
     // Verify the charge was actually successful
     if (
       event.data.status === 'succeeded' ||
-      event.data.status === 'successful'
+      event.data.data.status === 'successful'
     ) {
       await this.handlePaymentSuccess(event);
     } else {
@@ -314,7 +312,7 @@ export class FlutterwaveWebhookHandler extends BaseWebhookHandler {
       const expectedCurrency = payment.currency || 'NGN';
       const receivedCurrency = event.data.currency;
       const expectedReference = payment.reference || payment.processorId;
-      const receivedReference = event.data.reference;
+      const receivedReference = event.data.txRef; // New structure uses txRef
 
       // Verify critical transaction data matches our records
       if (receivedAmount !== expectedAmount) {

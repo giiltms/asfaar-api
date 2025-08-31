@@ -47,9 +47,11 @@ export class WebhooksController {
   @UsePipes(
     new ValidationPipe({
       transform: true,
-      whitelist: true,
+      whitelist: false, // Allow all properties for Flutterwave
       forbidNonWhitelisted: false, // Allow additional properties for webhooks
       skipMissingProperties: true,
+      skipNullProperties: true,
+      skipUndefinedProperties: true,
     }),
   )
   @ApiOperation({

@@ -52,85 +52,155 @@ export class WebhookPayloadDto {
 }
 
 /**
- * Flutterwave Webhook DTO based on official documentation
+ * Flutterwave Webhook DTO based on actual webhook structure
  *
  * Flutterwave webhook payloads follow this structure:
- * - data: Object containing transaction details (id, status, payment details, customer details)
- * - type: Event type (e.g., charge.completed, charge.failed)
- * - id: Webhook ID (e.g., wbk_W5p6ktwU0jQ8RO4By860)
- * - timestamp: Unix timestamp (e.g., 1735116884019)
+ * - id: Webhook ID (e.g., 9603080)
+ * - txRef: Transaction reference (e.g., PAY_MEZZKS0V_SCZ89C)
+ * - flwRef: Flutterwave reference (e.g., flwm3s4m0c1756662648279)
+ * - status: Transaction status (e.g., successful)
+ * - amount: Transaction amount in kobo
+ * - customer: Customer information object
+ * - entity: Entity information object
+ * - event.type: Event type (e.g., USSD_TRANSACTION)
  */
 export class FlutterwaveWebhookDto {
   @ApiProperty({
-    description: 'Event type describing the webhook event',
-    example: 'charge.completed',
-    required: true,
-  })
-  @IsString()
-  @IsNotEmpty()
-  type: string;
-
-  @ApiProperty({
-    description: 'Transaction data containing event details',
-    example: {
-      amount: 2500,
-      created_datetime: 1735116842.116,
-      currency: 'NGN',
-      customer: {
-        address: null,
-        created_datetime: 1732977179.938,
-        email: 'olaobajua@gmail.com',
-        id: 'cus_csm0pcQim4',
-        meta: {},
-        name: null,
-        phone: null,
-      },
-      description: null,
-      id: 'chg_Hq4oBRTJ4r',
-      meta: {},
-      payment_method: {
-        client_ip: null,
-        created_datetime: 1735116842.107,
-        customer_id: 'cus_csm0pcQim4',
-        device_fingerprint: null,
-        id: 'pmd_sG5zwZBN4L',
-        meta: {},
-        mobile_money: {
-          country_code: '234',
-          network: 'MTN',
-          phone_number: '9067985861',
-        },
-        type: 'mobile_money',
-      },
-      processor_response: {
-        code: '00',
-        type: 'approved',
-      },
-      redirect_url: 'https://google.com',
-      reference: '49c3c6f5-aedd-4443-9eb4-92c51758f04a',
-      status: 'succeeded',
-    },
-    required: true,
-  })
-  @IsObject()
-  data: Record<string, any>;
-
-  @ApiProperty({
-    description: 'Webhook ID for tracking',
-    example: 'wbk_W5p6ktwU0jQ8RO4By860',
-    required: true,
-  })
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
-  @ApiProperty({
-    description: 'Unix timestamp when the webhook was sent',
-    example: 1735116884019,
-    required: true,
+    description: 'Flutterwave webhook ID',
+    example: 9603080,
   })
   @IsNumber()
-  timestamp: number;
+  id: number;
+
+  @ApiProperty({
+    description: 'Transaction reference',
+    example: 'PAY_MEZZKS0V_SCZ89C',
+  })
+  @IsString()
+  txRef: string;
+
+  @ApiProperty({
+    description: 'Flutterwave reference',
+    example: 'flwm3s4m0c1756662648279',
+  })
+  @IsString()
+  flwRef: string;
+
+  @ApiProperty({
+    description: 'Order reference',
+    example: 'URF_1756662647884_6593835',
+  })
+  @IsString()
+  orderRef: string;
+
+  @ApiPropertyOptional({
+    description: 'Payment plan',
+    example: null,
+  })
+  @IsOptional()
+  paymentPlan?: any;
+
+  @ApiPropertyOptional({
+    description: 'Payment page',
+    example: null,
+  })
+  @IsOptional()
+  paymentPage?: any;
+
+  @ApiProperty({
+    description: 'Created at timestamp',
+    example: '2025-08-31T17:50:47.000Z',
+  })
+  @IsString()
+  createdAt: string;
+
+  @ApiProperty({
+    description: 'Transaction amount',
+    example: 2000,
+  })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({
+    description: 'Charged amount',
+    example: 2000,
+  })
+  @IsNumber()
+  charged_amount: number;
+
+  @ApiProperty({
+    description: 'Transaction status',
+    example: 'successful',
+  })
+  @IsString()
+  status: string;
+
+  @ApiProperty({
+    description: 'IP address',
+    example: '52.209.154.143',
+  })
+  @IsString()
+  IP: string;
+
+  @ApiProperty({
+    description: 'Currency',
+    example: 'NGN',
+  })
+  @IsString()
+  currency: string;
+
+  @ApiProperty({
+    description: 'Application fee',
+    example: 28,
+  })
+  @IsNumber()
+  appfee: number;
+
+  @ApiProperty({
+    description: 'Merchant fee',
+    example: 0,
+  })
+  @IsNumber()
+  merchantfee: number;
+
+  @ApiProperty({
+    description: 'Merchant bears fee',
+    example: 1,
+  })
+  @IsNumber()
+  merchantbearsfee: number;
+
+  @ApiProperty({
+    description: 'Charge type',
+    example: 'normal',
+  })
+  @IsString()
+  charge_type: string;
+
+  @ApiProperty({
+    description: 'Customer information',
+    type: Object,
+  })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => Object)
+  customer: any;
+
+  @ApiProperty({
+    description: 'Entity information',
+    type: Object,
+  })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => Object)
+  entity: any;
+
+  @ApiProperty({
+    description: 'Event type',
+    example: 'USSD_TRANSACTION',
+  })
+  @IsString()
+  'event.type': string;
 }
 
 export class PaystackWebhookDto {
