@@ -45,6 +45,17 @@ export class UserRepository {
           orderBy: { createdAt: 'desc' },
           take: 1, // Get the most recent NIN verification
         },
+        biometricCenters: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+            city: true,
+            state: true,
+            isActive: true,
+          },
+        },
       },
     });
   }

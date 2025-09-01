@@ -17,22 +17,7 @@ export class UserService {
   ) {}
 
   async findById(id: string): Promise<UserEntity> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        biometricCenters: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            address: true,
-            city: true,
-            state: true,
-            isActive: true,
-          },
-        },
-      },
-    });
+    const user = await this.userRepository.findById(id);
 
     if (!user) {
       throw new NotFoundException(USER_NOT_FOUND);
