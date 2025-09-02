@@ -5,7 +5,7 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { BiometricCentersModule } from '@modules/biometric-centers/biometric-centers.module';
-import { ReferenceNumberModule } from '@shared/services/reference-number/reference-number.module';
+
 
 /**
  * BiometricAppointmentsModule
@@ -20,7 +20,7 @@ import { ReferenceNumberModule } from '@shared/services/reference-number/referen
     AuthModule, // For authentication guards
     PaymentsModule, // For payment validation before booking
     BiometricCentersModule, // For center availability and validation
-    ReferenceNumberModule, // For generating reference numbers with specific centers
+
   ],
   controllers: [BiometricAppointmentsController],
   providers: [BiometricAppointmentsService],

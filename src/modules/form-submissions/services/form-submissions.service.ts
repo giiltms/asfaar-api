@@ -2772,29 +2772,11 @@ export class FormSubmissionsService {
         );
       }
 
-      // Import the reference number service
-      const { ReferenceNumberService } = await import(
-        '../../../shared/services/reference-number/reference-number.service'
+      // Reference number generation is now handled by middleware
+      // This method is kept for backward compatibility but no longer generates numbers
+      throw new Error(
+        'Reference number generation is now handled automatically by middleware when form status changes to SUBMITTED',
       );
-
-      const referenceNumberService = new ReferenceNumberService(this.prisma);
-
-      const referenceNumber =
-        await referenceNumberService.generateReferenceNumberForFormSubmission(
-          submissionId,
-        );
-
-      // Update the submission with the generated reference number
-      await this.prisma.formSubmission.update({
-        where: { id: submissionId },
-        data: { referenceNumber },
-      });
-
-      console.log(
-        `Generated reference number ${referenceNumber} for submission: ${submissionId}`,
-      );
-
-      return referenceNumber;
     } catch (error) {
       console.error(
         `Failed to generate reference number for submission ${submissionId}: ${error.message}`,
