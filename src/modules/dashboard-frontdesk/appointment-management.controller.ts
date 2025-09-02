@@ -15,7 +15,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
+import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { DashboardFrontdeskService } from './dashboard-frontdesk.service';
 import {
   CheckInAppointmentDto,
@@ -25,7 +25,7 @@ import {
 
 @ApiTags('Appointment Management')
 @Controller('appointment-management')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard)
 @ApiBearerAuth()
 export class AppointmentManagementController {
   constructor(
