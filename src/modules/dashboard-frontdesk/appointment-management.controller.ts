@@ -24,7 +24,7 @@ import {
 } from './dto/appointment-management.dto';
 
 @ApiTags('Appointment Management')
-@Controller('api/v1/appointment-management')
+@Controller('appointment-management')
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class AppointmentManagementController {
@@ -32,11 +32,11 @@ export class AppointmentManagementController {
     private readonly dashboardFrontdeskService: DashboardFrontdeskService,
   ) {}
 
-  @Post('check-in/:appointmentId')
+  @Post('check-in/:referenceNumber')
   @ApiOperation({
     summary: 'Gatehouse check-in for applicant',
     description:
-      'Mark an applicant as checked in when they arrive at the gatehouse',
+      'Mark an applicant as checked in when they arrive at the gatehouse using their reference number',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -44,30 +44,30 @@ export class AppointmentManagementController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid appointment or already checked in',
+    description: 'Invalid reference number or already checked in',
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
     description: 'Access denied - not assigned to this center',
   })
   async checkInApplicant(
-    @Param('appointmentId') appointmentId: string,
+    @Param('referenceNumber') referenceNumber: string,
     @Body() checkInData: CheckInAppointmentDto,
     @Req() req: any,
   ) {
     const userId = req.user.id;
     return this.dashboardFrontdeskService.checkInApplicant(
-      appointmentId,
+      referenceNumber,
       userId,
       checkInData,
     );
   }
 
-  @Post('queue/add/:appointmentId')
+  @Post('queue/add/:referenceNumber')
   @ApiOperation({
     summary: 'Add applicant to queue',
     description:
-      'Receptionist adds a checked-in applicant to the processing queue',
+      'Receptionist adds a checked-in applicant to the processing queue using their reference number',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -75,20 +75,20 @@ export class AppointmentManagementController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid appointment or not checked in',
+    description: 'Invalid reference number or not checked in',
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
     description: 'Access denied - not assigned to this center',
   })
   async addToQueue(
-    @Param('appointmentId') appointmentId: string,
+    @Param('referenceNumber') referenceNumber: string,
     @Body() queueData: AddToQueueDto,
     @Req() req: any,
   ) {
     const userId = req.user.id;
     return this.dashboardFrontdeskService.addToQueue(
-      appointmentId,
+      referenceNumber,
       userId,
       queueData,
     );

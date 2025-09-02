@@ -824,22 +824,30 @@ export class DashboardFrontdeskService {
    * Check in an applicant (Gatehouse operation)
    */
   async checkInApplicant(
-    appointmentId: string,
+    referenceNumber: string,
     staffId: string,
     checkInData: { notes?: string },
   ) {
     try {
-      // Get appointment with center info
-      const appointment = await this.prisma.biometricAppointment.findFirst({
-        where: { id: appointmentId },
+      // Get appointment by reference number through form submission
+      const submission = await this.prisma.formSubmission.findFirst({
+        where: { referenceNumber },
         include: {
-          center: true,
+          appointment: {
+            include: {
+              center: true,
+            },
+          },
         },
       });
 
-      if (!appointment) {
-        throw new BadRequestException('Appointment not found');
+      if (!submission?.appointment) {
+        throw new BadRequestException(
+          'Applicant with this reference number not found or has no appointment',
+        );
       }
+
+      const appointment = submission.appointment;
 
       if (appointment.checkedIn) {
         throw new BadRequestException('Applicant already checked in');
@@ -847,7 +855,7 @@ export class DashboardFrontdeskService {
 
       // Update appointment status
       const updatedAppointment = await this.prisma.biometricAppointment.update({
-        where: { id: appointmentId },
+        where: { id: appointment.id },
         data: {
           checkedIn: true,
           checkedInAt: new Date(),
@@ -858,13 +866,14 @@ export class DashboardFrontdeskService {
       });
 
       this.logger.log(
-        `Applicant checked in: ${appointmentId} by staff: ${staffId}`,
+        `Applicant checked in: ${referenceNumber} (appointment: ${appointment.id}) by staff: ${staffId}`,
       );
 
       return {
         success: true,
         message: 'Applicant successfully checked in',
         data: {
+          referenceNumber,
           appointmentId: updatedAppointment.id,
           status: updatedAppointment.status,
           checkedIn: updatedAppointment.checkedIn,
@@ -874,7 +883,7 @@ export class DashboardFrontdeskService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to check in applicant ${appointmentId}: ${error.message}`,
+        `Failed to check in applicant ${referenceNumber}: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -885,7 +894,7 @@ export class DashboardFrontdeskService {
    * Add applicant to queue (Receptionist operation)
    */
   async addToQueue(
-    appointmentId: string,
+    referenceNumber: string,
     staffId: string,
     queueData: {
       priority?: number;
@@ -895,18 +904,26 @@ export class DashboardFrontdeskService {
     },
   ) {
     try {
-      // Get appointment with center info
-      const appointment = await this.prisma.biometricAppointment.findFirst({
-        where: { id: appointmentId },
+      // Get appointment by reference number through form submission
+      const submission = await this.prisma.formSubmission.findFirst({
+        where: { referenceNumber },
         include: {
-          center: true,
-          queueEntry: true,
+          appointment: {
+            include: {
+              center: true,
+              queueEntry: true,
+            },
+          },
         },
       });
 
-      if (!appointment) {
-        throw new BadRequestException('Appointment not found');
+      if (!submission?.appointment) {
+        throw new BadRequestException(
+          'Applicant with this reference number not found or has no appointment',
+        );
       }
+
+      const appointment = submission.appointment;
 
       if (!appointment.checkedIn) {
         throw new BadRequestException(
@@ -921,7 +938,7 @@ export class DashboardFrontdeskService {
       // Create queue entry
       const queueEntry = await this.prisma.queueEntry.create({
         data: {
-          appointmentId: appointmentId,
+          appointmentId: appointment.id,
           centerId: appointment.centerId,
           appointmentClass: appointment.appointmentClass,
           priority: queueData.priority || 0,
@@ -932,7 +949,7 @@ export class DashboardFrontdeskService {
 
       // Update appointment status
       await this.prisma.biometricAppointment.update({
-        where: { id: appointmentId },
+        where: { id: appointment.id },
         data: {
           status: 'IN_QUEUE',
           adminNotes: queueData.notes,
@@ -940,13 +957,14 @@ export class DashboardFrontdeskService {
       });
 
       this.logger.log(
-        `Applicant added to queue: ${appointmentId} by staff: ${staffId}`,
+        `Applicant added to queue: ${referenceNumber} (appointment: ${appointment.id}) by staff: ${staffId}`,
       );
 
       return {
         success: true,
         message: 'Applicant successfully added to queue',
         data: {
+          referenceNumber,
           queueEntryId: queueEntry.id,
           queueNumber: queueEntry.queueNumber,
           status: queueEntry.status,
@@ -956,7 +974,7 @@ export class DashboardFrontdeskService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to add applicant to queue ${appointmentId}: ${appointmentId}: ${error.message}`,
+        `Failed to add applicant to queue ${referenceNumber}: ${error.message}`,
         error.stack,
       );
       throw error;
