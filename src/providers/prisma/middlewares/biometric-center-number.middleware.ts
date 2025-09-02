@@ -4,24 +4,27 @@ import { Prisma } from '@prisma/client';
 const logger = new Logger('BiometricCenterNumberMiddleware');
 
 async function generateNextCenterNumber(prismaClient: any): Promise<string> {
-  // Get the highest existing center number
-  const lastCenter = await prismaClient.biometricCenter.findFirst({
-    orderBy: {
-      centerNumber: 'desc',
-    },
+  // Get all centers and find the highest valid 3-digit number
+  const allCenters = await prismaClient.biometricCenter.findMany({
     select: {
       centerNumber: true,
     },
   });
 
-  if (!lastCenter) {
-    // If no centers exist, start with 001
+  // Filter for valid 3-digit numbers and find the highest
+  const validCenterNumbers = allCenters
+    .map((center) => center.centerNumber)
+    .filter((centerNumber) => /^\d{3}$/.test(centerNumber)) // Only 3-digit numbers
+    .map((centerNumber) => parseInt(centerNumber, 10))
+    .sort((a, b) => b - a); // Sort descending
+
+  if (validCenterNumbers.length === 0) {
+    // If no valid 3-digit numbers exist, start with 001
     return '001';
   }
 
-  // Parse the last center number and increment
-  const lastNumber = parseInt(lastCenter.centerNumber, 10);
-  const nextNumber = lastNumber + 1;
+  // Get the next number after the highest valid one
+  const nextNumber = validCenterNumbers[0] + 1;
 
   // Ensure it's a 3-digit number
   if (nextNumber > 999) {
@@ -49,8 +52,11 @@ export function biometricCenterNumberMiddleware(): Prisma.Middleware {
 
       if (!hasCenterNumber) {
         try {
+          // Get the Prisma client from the middleware context
+          const prismaClient = (globalThis as any).prisma || this;
+
           // Generate the next available center number
-          const nextCenterNumber = await generateNextCenterNumber(this);
+          const nextCenterNumber = await generateNextCenterNumber(prismaClient);
           params.args.data.centerNumber = nextCenterNumber;
 
           logger.log(

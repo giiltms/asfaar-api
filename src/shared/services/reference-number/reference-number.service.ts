@@ -15,7 +15,7 @@ export class ReferenceNumberService {
 
   /**
    * Generate a unique reference number for an application
-   * Format: CC00125000004 (CountryCode + CenterNumber + Year + 6-digit sequence)
+   * Format: SA00125000004 (CountryCode + CenterNumber + Year + 6-digit sequence)
    */
   async generateReferenceNumber(
     options: ReferenceNumberOptions,
@@ -34,8 +34,7 @@ export class ReferenceNumberService {
         );
       }
 
-      // For reference numbers, we always use 'CC' as the country code
-      // Find the country by ISO code (but we'll use the original country for the counter)
+      // Find the country by ISO code
       const country = await this.prisma.country.findUnique({
         where: { isoCode2: countryCode.toUpperCase() },
       });
@@ -96,13 +95,15 @@ export class ReferenceNumberService {
         return applicationCounter;
       });
 
-      // Format the reference number: CC00125000004
+      // Format the reference number: SA00125000004
       const yearSuffix = year.toString().slice(-2); // Last 2 digits of year
       const sequenceNumber = counter.counter.toString().padStart(6, '0');
-      const referenceNumber = `CC${centerNumber}${yearSuffix}${sequenceNumber}`; // Always use CC as country code
+      const referenceNumber = `${countryCode.toUpperCase()}${centerNumber}${yearSuffix}${sequenceNumber}`;
 
       this.logger.log(
-        `Generated reference number: ${referenceNumber} for country: CC, center: ${centerNumber}, year: ${year}, sequence: ${counter.counter}`,
+        `Generated reference number: ${referenceNumber} for country: ${countryCode.toUpperCase()}, center: ${centerNumber}, year: ${year}, sequence: ${
+          counter.counter
+        }`,
       );
 
       return referenceNumber;
@@ -148,7 +149,7 @@ export class ReferenceNumberService {
     }
 
     const countryId = submission.form.country.id;
-    const countryCode = 'CC'; // Use CC as the country code for reference numbers
+    const countryCode = submission.form.country.isoCode2; // Use actual country code
     const year = new Date().getFullYear();
 
     // Validate center number format
@@ -175,6 +176,79 @@ export class ReferenceNumberService {
   }
 
   /**
+   * Generate reference number for a form submission using the actual appointment center
+   * This matches the original middleware behavior - using the center from the biometric appointment
+   */
+  async generateReferenceNumberForFormSubmission(
+    submissionId: string,
+  ): Promise<string> {
+    // Get the form submission to find the form and country
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        form: {
+          include: {
+            country: {
+              select: { id: true, isoCode2: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      throw new Error(`Form submission with ID ${submissionId} not found`);
+    }
+
+    if (!submission.form.country || !submission.form.country.isoCode2) {
+      throw new Error(
+        `Form submission ${submissionId} has no associated country`,
+      );
+    }
+
+    const countryCode = submission.form.country.isoCode2;
+    const year = new Date().getFullYear();
+
+    // Find the ACTUAL biometric appointment for this submission to get the correct center
+    // This matches the original middleware behavior
+    const appointment = await this.prisma.biometricAppointment.findFirst({
+      where: { submissionId: submission.id },
+      include: {
+        center: {
+          select: { centerNumber: true, name: true },
+        },
+      },
+    });
+
+    if (!appointment || !appointment.center) {
+      throw new Error(
+        `No biometric appointment found for submission ${submissionId}. Reference number will be generated when appointment is created.`,
+      );
+    }
+
+    const centerNumber = appointment.center.centerNumber;
+    const centerName = appointment.center.name;
+
+    // Validate center number format (3 digits)
+    if (!/^\d{3}$/.test(centerNumber)) {
+      throw new Error(
+        `Invalid center number format for center ${centerName}. Expected 3 digits, got: ${centerNumber}`,
+      );
+    }
+
+    this.logger.log(
+      `Found biometric appointment with center: ${centerName} (${centerNumber}) for submission: ${submissionId}`,
+    );
+
+    // Generate the reference number using the ACTUAL appointment center
+    return this.generateReferenceNumber({
+      countryCode,
+      centerNumber,
+      year,
+    });
+  }
+
+  /**
    * Validate reference number format
    */
   validateReferenceNumber(referenceNumber: string): {
@@ -184,7 +258,7 @@ export class ReferenceNumberService {
     year?: number;
     sequence?: number;
   } {
-    // Format: CC00125000004 (2 chars + 3 digits + 2 digits + 6 digits)
+    // Format: SA00125000004 (2 chars + 3 digits + 2 digits + 6 digits)
     const pattern = /^([A-Z]{2})(\d{3})(\d{2})(\d{6})$/;
     const match = referenceNumber.match(pattern);
 

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import {
@@ -34,9 +35,12 @@ import {
   UNAUTHORIZED_RESOURCE,
   FORBIDDEN_RESOURCE,
 } from '@common/constants/errors.constants';
+import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 @Injectable()
 export class FormSubmissionsService {
+  private readonly logger = new Logger(FormSubmissionsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // Authenticated Form Access
@@ -2728,5 +2732,126 @@ export class FormSubmissionsService {
 
     // Return the URL that will be served by static middleware
     return `/uploads/${userId}/${fileName}`;
+  }
+
+  /**
+   * Generate reference number for a submission that doesn't have one
+   * This is useful for fixing existing submissions or manual generation
+   */
+  async generateReferenceNumberForSubmission(
+    submissionId: string,
+  ): Promise<string> {
+    try {
+      // Get the submission with form and country info
+      const submission = await this.prisma.formSubmission.findUnique({
+        where: { id: submissionId },
+        include: {
+          form: {
+            include: {
+              country: {
+                select: { id: true, isoCode2: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!submission) {
+        throw new NotFoundException('Form submission not found');
+      }
+
+      if (submission.referenceNumber) {
+        throw new BadRequestException(
+          'Submission already has a reference number',
+        );
+      }
+
+      if (!submission.form.country || !submission.form.country.isoCode2) {
+        throw new BadRequestException(
+          'Form submission has no associated country',
+        );
+      }
+
+      // Import the reference number service
+      const { ReferenceNumberService } = await import(
+        '../../../shared/services/reference-number/reference-number.service'
+      );
+
+      const referenceNumberService = new ReferenceNumberService(this.prisma);
+
+      const referenceNumber =
+        await referenceNumberService.generateReferenceNumberForFormSubmission(
+          submissionId,
+        );
+
+      // Update the submission with the generated reference number
+      await this.prisma.formSubmission.update({
+        where: { id: submissionId },
+        data: { referenceNumber },
+      });
+
+      console.log(
+        `Generated reference number ${referenceNumber} for submission: ${submissionId}`,
+      );
+
+      return referenceNumber;
+    } catch (error) {
+      console.error(
+        `Failed to generate reference number for submission ${submissionId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get all submissions that don't have reference numbers
+   * Useful for identifying and fixing submissions
+   */
+  async getSubmissionsWithoutReferenceNumbers(
+    pagination: PaginationQueryDto = {},
+  ): Promise<{ submissions: any[]; total: number }> {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [submissions, total] = await Promise.all([
+      this.prisma.formSubmission.findMany({
+        where: {
+          referenceNumber: null,
+          status: SubmissionStatus.SUBMITTED,
+        },
+        include: {
+          form: {
+            include: {
+              country: {
+                select: { id: true, name: true, isoCode2: true },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.formSubmission.count({
+        where: {
+          referenceNumber: null,
+          status: SubmissionStatus.SUBMITTED,
+        },
+      }),
+    ]);
+
+    return {
+      submissions,
+      total,
+    };
   }
 }
