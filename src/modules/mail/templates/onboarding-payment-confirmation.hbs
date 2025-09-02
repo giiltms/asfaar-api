@@ -45,7 +45,7 @@
       </div>
 
       <div class='section'>
-        <h2 class='greeting'>Hello {userName},</h2>
+        <h2 class='greeting'>Hello {{userName}},</h2>
 
         <p class='paragraph'>
           Thank you for your onboarding payment! We've successfully received
@@ -63,23 +63,22 @@
 
           <div class='detail-row'>
             <div class='detail-label'>Payment Reference:</div>
-            <div class='detail-value'>{paymentReference}</div>
+            <div class='detail-value'>{{paymentReference}}</div>
           </div>
 
           <div class='detail-row'>
             <div class='detail-label'>Transaction ID:</div>
-            <div class='detail-value'>{transactionId}</div>
+            <div class='detail-value'>{{transactionId}}</div>
           </div>
 
           <div class='detail-row'>
             <div class='detail-label'>Amount Paid:</div>
-            <div class='detail-value amount-value'>{currency}
-              {amount.toLocaleString()}</div>
+            <div class='detail-value amount-value'>{{amountFormatted}}</div>
           </div>
 
           <div class='detail-row'>
             <div class='detail-label'>Payment Date:</div>
-            <div class='detail-value'>{paymentDate}</div>
+            <div class='detail-value'>{{paymentDate}}</div>
           </div>
         </div>
 
@@ -92,7 +91,7 @@
         </ul>
 
         <div style='text-align: center;'>
-          <a href='{dashboardUrl}/dashboard' class='button'>
+          <a href='{{dashboardUrl}}/dashboard' class='button'>
             Access Your Dashboard
           </a>
         </div>

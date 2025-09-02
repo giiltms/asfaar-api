@@ -140,6 +140,9 @@ export class MailService {
         'SITE_URL',
         'http://localhost:3000',
       );
+      const amountFormatted = `${data.currency} ${Number(
+        data.amount,
+      ).toLocaleString()}`;
 
       // Choose template based on payment type
       const isOnboarding = data.paymentType === 'ONBOARDING';
@@ -159,8 +162,7 @@ export class MailService {
           referenceNumber: data.referenceNumber || 'N/A',
           paymentReference: data.paymentReference,
           transactionId: data.transactionId,
-          amount: data.amount,
-          currency: data.currency,
+          amountFormatted,
           paymentDate: data.paymentDate,
           applicationId: data.applicationId,
           dashboardUrl,
