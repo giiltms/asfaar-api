@@ -835,10 +835,25 @@ export class BiometricAppointmentsService {
         AppointmentStatus.CANCELLED,
       ],
       [AppointmentStatus.ACTIVE]: [
+        AppointmentStatus.CHECKED_IN,
         AppointmentStatus.COMPLETED,
         AppointmentStatus.RESCHEDULED,
         AppointmentStatus.CANCELLED,
         AppointmentStatus.NO_SHOW,
+      ],
+      [AppointmentStatus.CHECKED_IN]: [
+        AppointmentStatus.IN_QUEUE,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ],
+      [AppointmentStatus.IN_QUEUE]: [
+        AppointmentStatus.AT_BOOTH,
+        AppointmentStatus.CANCELLED,
+        AppointmentStatus.NO_SHOW,
+      ],
+      [AppointmentStatus.AT_BOOTH]: [
+        AppointmentStatus.COMPLETED,
+        AppointmentStatus.CANCELLED,
       ],
       [AppointmentStatus.COMPLETED]: [], // Final state
       [AppointmentStatus.CANCELLED]: [AppointmentStatus.PENDING], // Can restart

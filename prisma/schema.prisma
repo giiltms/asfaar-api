@@ -1204,6 +1204,9 @@ enum AppointmentStatus {
   PENDING // Initial status when appointment is created
   SCHEDULED // When date/time is set but payment not completed
   ACTIVE // When application is completed AND payment is made
+  CHECKED_IN // ✅ NEW: Applicant checked in by gatehouse
+  IN_QUEUE // ✅ NEW: Added to queue by receptionist
+  AT_BOOTH // ✅ NEW: Currently being processed
   COMPLETED // When biometric capture is done
   CANCELLED // When appointment is cancelled
   RESCHEDULED // When appointment is rescheduled
@@ -1244,6 +1247,11 @@ model BiometricAppointment {
   // Reminder System
   reminderSent   Boolean   @default(false) // Whether reminder was sent
   reminderSentAt DateTime? // When reminder was sent
+
+  // Check-in Status (Handled by Gatehouse)
+  checkedIn   Boolean   @default(false)
+  checkedInAt DateTime?
+  checkedInBy String? // Staff member who checked them in
 
   // Rescheduling History
   originalAppointmentDate DateTime? // Original date if rescheduled

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '@providers/prisma';
 import {
   FrontDeskDashboardStatsDto,
@@ -425,6 +430,7 @@ export class DashboardFrontdeskService {
       const where: any = {
         appointment: {
           centerId: { in: centerIds },
+          checkedIn: true,
         },
       };
 
@@ -449,6 +455,13 @@ export class DashboardFrontdeskService {
         if (filters.dateTo) {
           where.submittedAt.lte = new Date(filters.dateTo);
         }
+      }
+
+      if (filters.checkInStatus) {
+        where.appointment = {
+          ...where.appointment,
+          status: filters.checkInStatus,
+        };
       }
 
       if (filters.inQueue !== undefined) {
@@ -499,10 +512,16 @@ export class DashboardFrontdeskService {
           },
           appointment: {
             select: {
+              checkedIn: true,
+              checkedInAt: true,
+              checkedInBy: true,
+              status: true,
               queueEntry: {
                 select: {
                   queueNumber: true,
+                  status: true,
                   estimatedWaitTime: true,
+                  joinedAt: true,
                   booth: {
                     select: {
                       boothNumber: true,
@@ -522,21 +541,34 @@ export class DashboardFrontdeskService {
 
       // Transform to DTO
       const applicants: ApplicantListItemDto[] = submissions.map(
-        (submission) => ({
-          id: submission.id,
-          fullName: `${submission.user.firstName} ${submission.user.lastName}`,
-          email: submission.user.email,
-          phone: submission.user.phone,
-          status: submission.status,
-          applicationType: submission.form.applicationType?.code || 'UNKNOWN',
-          submittedAt: submission.submittedAt,
-          queuePosition: submission.appointment?.queueEntry?.queueNumber,
-          estimatedWaitTime:
-            submission.appointment?.queueEntry?.estimatedWaitTime,
-          currentStation:
-            submission.appointment?.queueEntry?.booth?.boothNumber,
-          paymentStatus: submission.payment?.status || 'PENDING',
-        }),
+        (submission) => {
+          const appointment = submission.appointment;
+          const queueEntry = appointment?.queueEntry;
+
+          // Determine check-in status
+          let checkInStatus = 'NOT_ARRIVED';
+          if (appointment?.checkedIn) {
+            checkInStatus = appointment.status;
+          }
+
+          return {
+            id: submission.id,
+            fullName: `${submission.user.firstName} ${submission.user.lastName}`,
+            email: submission.user.email,
+            phone: submission.user.phone,
+            status: submission.status,
+            applicationType: submission.form.applicationType?.code || 'UNKNOWN',
+            submittedAt: submission.submittedAt,
+            queuePosition: queueEntry?.queueNumber,
+            estimatedWaitTime: queueEntry?.estimatedWaitTime,
+            currentStation: queueEntry?.booth?.boothNumber,
+            checkInStatus,
+            checkedInAt: appointment?.checkedInAt,
+            queueStatus: queueEntry?.status,
+            isInQueue: !!queueEntry,
+            paymentStatus: submission.payment?.status || 'PENDING',
+          };
+        },
       );
 
       const totalPages = Math.ceil(total / limit);
@@ -574,6 +606,7 @@ export class DashboardFrontdeskService {
           id: applicantId,
           appointment: {
             centerId: { in: centerIds },
+            checkedIn: true,
           },
         },
         include: {
@@ -619,9 +652,13 @@ export class DashboardFrontdeskService {
               id: true,
               appointmentDate: true,
               status: true,
+              checkedIn: true,
+              checkedInAt: true,
+              checkedInBy: true,
               queueEntry: {
                 select: {
                   queueNumber: true,
+                  status: true,
                   estimatedWaitTime: true,
                   joinedAt: true,
                   booth: {
@@ -648,6 +685,14 @@ export class DashboardFrontdeskService {
       // Build timeline
       const timeline = this.buildApplicantTimeline(submission);
 
+      // Determine check-in status
+      const appointment = submission.appointment;
+      const queueEntry = appointment?.queueEntry;
+      let checkInStatus = 'NOT_ARRIVED';
+      if (appointment?.checkedIn) {
+        checkInStatus = appointment.status;
+      }
+
       return {
         id: submission.id,
         fullName: `${submission.user.firstName} ${submission.user.lastName}`,
@@ -656,10 +701,13 @@ export class DashboardFrontdeskService {
         status: submission.status,
         applicationType: submission.form.applicationType?.code || 'UNKNOWN',
         submittedAt: submission.submittedAt,
-        queuePosition: submission.appointment?.queueEntry?.queueNumber,
-        estimatedWaitTime:
-          submission.appointment?.queueEntry?.estimatedWaitTime,
-        currentStation: submission.appointment?.queueEntry?.booth?.boothNumber,
+        queuePosition: queueEntry?.queueNumber,
+        estimatedWaitTime: queueEntry?.estimatedWaitTime,
+        currentStation: queueEntry?.booth?.boothNumber,
+        checkInStatus,
+        checkedInAt: appointment?.checkedInAt,
+        queueStatus: queueEntry?.status,
+        isInQueue: !!queueEntry,
         paymentStatus: submission.payment?.status || 'PENDING',
         nin: undefined, // Will be implemented when user model has NIN field
         dateOfBirth: new Date('1990-01-01'), // Will be implemented when user model has DOB field
@@ -770,5 +818,338 @@ export class DashboardFrontdeskService {
     return timeline.sort(
       (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
     );
+  }
+
+  /**
+   * Check in an applicant (Gatehouse operation)
+   */
+  async checkInApplicant(
+    appointmentId: string,
+    staffId: string,
+    checkInData: { notes?: string },
+  ) {
+    try {
+      // Get appointment with center info
+      const appointment = await this.prisma.biometricAppointment.findFirst({
+        where: { id: appointmentId },
+        include: {
+          center: true,
+        },
+      });
+
+      if (!appointment) {
+        throw new BadRequestException('Appointment not found');
+      }
+
+      if (appointment.checkedIn) {
+        throw new BadRequestException('Applicant already checked in');
+      }
+
+      // Update appointment status
+      const updatedAppointment = await this.prisma.biometricAppointment.update({
+        where: { id: appointmentId },
+        data: {
+          checkedIn: true,
+          checkedInAt: new Date(),
+          checkedInBy: staffId,
+          status: 'CHECKED_IN',
+          adminNotes: checkInData.notes,
+        },
+      });
+
+      this.logger.log(
+        `Applicant checked in: ${appointmentId} by staff: ${staffId}`,
+      );
+
+      return {
+        success: true,
+        message: 'Applicant successfully checked in',
+        data: {
+          appointmentId: updatedAppointment.id,
+          status: updatedAppointment.status,
+          checkedIn: updatedAppointment.checkedIn,
+          checkedInAt: updatedAppointment.checkedInAt,
+          checkedInBy: updatedAppointment.checkedInBy,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to check in applicant ${appointmentId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Add applicant to queue (Receptionist operation)
+   */
+  async addToQueue(
+    appointmentId: string,
+    staffId: string,
+    queueData: {
+      priority?: number;
+      estimatedWaitTime?: number;
+      estimatedServiceTime?: number;
+      notes?: string;
+    },
+  ) {
+    try {
+      // Get appointment with center info
+      const appointment = await this.prisma.biometricAppointment.findFirst({
+        where: { id: appointmentId },
+        include: {
+          center: true,
+          queueEntry: true,
+        },
+      });
+
+      if (!appointment) {
+        throw new BadRequestException('Appointment not found');
+      }
+
+      if (!appointment.checkedIn) {
+        throw new BadRequestException(
+          'Applicant must be checked in before adding to queue',
+        );
+      }
+
+      if (appointment.queueEntry) {
+        throw new BadRequestException('Applicant already in queue');
+      }
+
+      // Create queue entry
+      const queueEntry = await this.prisma.queueEntry.create({
+        data: {
+          appointmentId: appointmentId,
+          centerId: appointment.centerId,
+          appointmentClass: appointment.appointmentClass,
+          priority: queueData.priority || 0,
+          estimatedWaitTime: queueData.estimatedWaitTime,
+          estimatedServiceTime: queueData.estimatedServiceTime,
+        },
+      });
+
+      // Update appointment status
+      await this.prisma.biometricAppointment.update({
+        where: { id: appointmentId },
+        data: {
+          status: 'IN_QUEUE',
+          adminNotes: queueData.notes,
+        },
+      });
+
+      this.logger.log(
+        `Applicant added to queue: ${appointmentId} by staff: ${staffId}`,
+      );
+
+      return {
+        success: true,
+        message: 'Applicant successfully added to queue',
+        data: {
+          queueEntryId: queueEntry.id,
+          queueNumber: queueEntry.queueNumber,
+          status: queueEntry.status,
+          estimatedWaitTime: queueEntry.estimatedWaitTime,
+          estimatedServiceTime: queueEntry.estimatedServiceTime,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to add applicant to queue ${appointmentId}: ${appointmentId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Update queue status
+   */
+  async updateQueueStatus(
+    queueEntryId: string,
+    staffId: string,
+    statusData: {
+      status: string;
+      boothId?: string;
+      notes?: string;
+    },
+  ) {
+    try {
+      // Get queue entry with appointment info
+      const queueEntry = await this.prisma.queueEntry.findFirst({
+        where: { id: queueEntryId },
+        include: {
+          appointment: {
+            include: {
+              center: true,
+            },
+          },
+        },
+      });
+
+      if (!queueEntry) {
+        throw new BadRequestException('Queue entry not found');
+      }
+
+      // Validate status transition
+      const validTransitions = {
+        WAITING: ['CALLED', 'CANCELLED'],
+        CALLED: ['IN_PROGRESS', 'CANCELLED'],
+        IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+        COMPLETED: [],
+        CANCELLED: [],
+        NO_SHOW: [],
+      };
+
+      const currentStatus = queueEntry.status;
+      const newStatus = statusData.status as any;
+
+      if (!validTransitions[currentStatus]?.includes(newStatus)) {
+        throw new BadRequestException(
+          `Invalid status transition from ${currentStatus} to ${newStatus}`,
+        );
+      }
+
+      // Update queue entry
+      const updateData: any = {
+        status: newStatus,
+      };
+
+      if (newStatus === 'CALLED') {
+        if (!statusData.boothId) {
+          throw new BadRequestException(
+            'Booth ID is required when calling applicant',
+          );
+        }
+        updateData.calledAt = new Date();
+        updateData.boothId = statusData.boothId;
+      } else if (newStatus === 'IN_PROGRESS') {
+        updateData.startedAt = new Date();
+      } else if (newStatus === 'IN_PROGRESS') {
+        updateData.completedAt = new Date();
+      }
+
+      const updatedQueueEntry = await this.prisma.queueEntry.update({
+        where: { id: queueEntryId },
+        data: updateData,
+      });
+
+      // Update appointment status if needed
+      if (newStatus === 'CALLED') {
+        await this.prisma.biometricAppointment.update({
+          where: { id: queueEntry.appointmentId },
+          data: {
+            status: 'AT_BOOTH',
+          },
+        });
+      } else if (newStatus === 'COMPLETED') {
+        await this.prisma.biometricAppointment.update({
+          where: { id: queueEntry.appointmentId },
+          data: {
+            status: 'COMPLETED',
+          },
+        });
+      }
+
+      this.logger.log(
+        `Queue status updated: ${queueEntryId} to ${newStatus} by staff: ${staffId}`,
+      );
+
+      return {
+        success: true,
+        message: 'Queue status updated successfully',
+        data: {
+          queueEntryId: updatedQueueEntry.id,
+          status: updatedQueueEntry.status,
+          boothId: updatedQueueEntry.boothId,
+          updatedAt: new Date(),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to update queue status ${queueEntryId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Assign booth to applicant
+   */
+  async assignBooth(queueEntryId: string, boothId: string, staffId: string) {
+    try {
+      // Get queue entry
+      const queueEntry = await this.prisma.queueEntry.findFirst({
+        where: { id: queueEntryId },
+        include: {
+          appointment: {
+            include: {
+              center: true,
+            },
+          },
+        },
+      });
+
+      if (!queueEntry) {
+        throw new BadRequestException(
+          'Booth not found or not assigned to this center',
+        );
+      }
+
+      // Verify booth exists and is available
+      const booth = await this.prisma.booth.findFirst({
+        where: {
+          id: boothId,
+          centerId: queueEntry.centerId,
+        },
+      });
+
+      if (!booth) {
+        throw new BadRequestException(
+          'Booth not found or not assigned to this center',
+        );
+      }
+
+      // Update queue entry
+      const updatedQueueEntry = await this.prisma.queueEntry.update({
+        where: { id: queueEntryId },
+        data: {
+          boothId: boothId,
+          status: 'CALLED',
+          calledAt: new Date(),
+        },
+      });
+
+      // Update appointment status
+      await this.prisma.biometricAppointment.update({
+        where: { id: queueEntry.appointmentId },
+        data: {
+          status: 'AT_BOOTH',
+        },
+      });
+
+      this.logger.log(
+        `Booth assigned: ${boothId} to queue entry: ${queueEntryId} by staff: ${staffId}`,
+      );
+
+      return {
+        success: true,
+        message: 'Booth assigned successfully',
+        data: {
+          queueEntryId: updatedQueueEntry.id,
+          boothId: updatedQueueEntry.boothId,
+          status: updatedQueueEntry.status,
+          updatedAt: new Date(),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to assign booth ${boothId} to queue entry ${queueEntryId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

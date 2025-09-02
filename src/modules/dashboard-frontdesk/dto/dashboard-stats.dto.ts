@@ -299,6 +299,34 @@ export class ApplicantListItemDto {
   currentStation?: string;
 
   @ApiProperty({
+    description: 'Check-in status by gatehouse',
+    example: 'CHECKED_IN',
+    enum: ['NOT_ARRIVED', 'CHECKED_IN', 'IN_QUEUE', 'AT_BOOTH', 'COMPLETED'],
+  })
+  checkInStatus: string;
+
+  @ApiProperty({
+    description: 'Time when applicant was checked in',
+    example: '2025-08-29T10:30:00Z',
+    required: false,
+  })
+  checkedInAt?: Date;
+
+  @ApiProperty({
+    description: 'Queue status (if added to queue)',
+    example: 'WAITING',
+    enum: ['WAITING', 'CALLED', 'IN_PROGRESS', 'COMPLETED'],
+    required: false,
+  })
+  queueStatus?: string;
+
+  @ApiProperty({
+    description: 'Whether applicant is in queue',
+    example: true,
+  })
+  isInQueue: boolean;
+
+  @ApiProperty({
     description: 'Payment status',
     example: 'PAID',
     enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
@@ -356,6 +384,15 @@ export class ApplicantListFiltersDto {
   @IsOptional()
   @IsDateString()
   dateTo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by check-in status',
+    example: 'CHECKED_IN',
+    enum: ['NOT_ARRIVED', 'CHECKED_IN', 'IN_QUEUE', 'AT_BOOTH', 'COMPLETED'],
+  })
+  @IsOptional()
+  @IsString()
+  checkInStatus?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by queue status',
