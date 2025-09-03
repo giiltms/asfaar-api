@@ -844,6 +844,7 @@ enum FieldType {
 enum SubmissionStatus {
   // Initial States
   DRAFT
+  PENDING_PAYMENT // application submitted but payment not yet confirmed
   SUBMITTED // applicant submits an application
 
   // Review States

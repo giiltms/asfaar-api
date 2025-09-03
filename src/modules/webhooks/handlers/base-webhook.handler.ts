@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
-import { PaymentStatus, PaymentProvider } from '@prisma/client';
+import {
+  PaymentStatus,
+  PaymentProvider,
+  SubmissionStatus,
+} from '@prisma/client';
 import {
   WebhookEvent,
   WebhookHandlerInterface,
@@ -107,7 +111,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       await this.paymentsService.updatePaymentStatus(payment.id, {
         status: PaymentStatus.COMPLETED,
         processorId:
-          event.data.id.toString() || event.data.payment_id.toString(),
+          event.data.id?.toString?.() || event.data.payment_id?.toString?.(),
         processorResponse: event.data,
         processor: this.getPaymentProvider(),
       });
@@ -115,6 +119,29 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       this.logger.log(
         `Payment ${payment.id} marked as completed for reference: ${event.reference}`,
       );
+
+      // If payment is linked to a submission currently pending payment,
+      // flip it to SUBMITTED so reference number middleware can run
+      if (payment.submissionId) {
+        try {
+          const updated = await this.prisma.formSubmission.update({
+            where: { id: payment.submissionId },
+            data: {
+              status: SubmissionStatus.SUBMITTED,
+              submittedAt: new Date(),
+            },
+          });
+          this.logger.log(
+            `Submission ${updated.id} moved to SUBMITTED after successful payment ${payment.id}`,
+          );
+        } catch (e) {
+          this.logger.error(
+            `Failed to update submission to SUBMITTED for payment ${payment.id}: ${e.message}`,
+            e.stack,
+          );
+          // do not throw; payment status already updated
+        }
+      }
     } catch (error) {
       this.logger.error(
         `Failed to handle payment success for reference: ${event.reference}`,

@@ -493,7 +493,7 @@ export class FormSubmissionsService {
         return await tx.formSubmission.update({
           where: { id: submission.id },
           data: {
-            status: SubmissionStatus.SUBMITTED,
+            status: SubmissionStatus.PENDING_PAYMENT,
             submittedAt: new Date(),
             metadata: {
               ...((submission.metadata as object) || {}),
@@ -513,7 +513,7 @@ export class FormSubmissionsService {
           data: {
             userId,
             formId,
-            status: SubmissionStatus.SUBMITTED,
+            status: SubmissionStatus.PENDING_PAYMENT,
             submittedAt: new Date(),
             metadata: {
               ...metadata,
