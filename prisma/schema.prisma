@@ -807,18 +807,20 @@ model SubmissionStatusLog {
 }
 
 model FieldResponse {
-  id           String         @id @default(uuid())
-  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  submissionId String
-  field        FormField      @relation(fields: [fieldId], references: [id])
-  fieldId      String // Changed from formFieldId to fieldId
-  fieldName    String // Added for easier reference
-  value        Json? // JSON value (text, select value, boolean, array, etc.)
-  fileUrls     String[] // for file inputs
-  metadata     Json? // Additional metadata for the response
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            String         @id @default(uuid())
+  submission    FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId  String
+  field         FormField      @relation(fields: [fieldId], references: [id])
+  fieldId       String // Changed from formFieldId to fieldId
+  fieldName     String // Added for easier reference
+  instanceIndex Int            @default(0)
+  value         Json? // JSON value (text, select value, boolean, array, etc.)
+  fileUrls      String[] // for file inputs
+  metadata      Json? // Additional metadata for the response
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
+  @@unique([submissionId, fieldId, instanceIndex])
   @@map("field_responses")
 }
 

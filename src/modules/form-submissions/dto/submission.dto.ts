@@ -59,6 +59,15 @@ export class CreateFieldResponseDto {
   @IsOptional()
   @IsObject()
   metadata?: any;
+
+  @ApiPropertyOptional({
+    description:
+      'Instance index for repeatable groups (0-based, local to a submission). Defaults to 0 for non-repeatable fields.',
+    example: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  instanceIndex?: number;
 }
 
 export class UpdateFieldResponseDto extends PartialType(

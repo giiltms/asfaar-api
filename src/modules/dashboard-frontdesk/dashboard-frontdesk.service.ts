@@ -634,6 +634,7 @@ export class DashboardFrontdeskService {
               fieldName: true,
               value: true,
               fileUrls: true,
+              instanceIndex: true,
             },
           },
           payment: {

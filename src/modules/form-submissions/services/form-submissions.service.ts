@@ -338,6 +338,7 @@ export class FormSubmissionsService {
                 value: response.value,
                 fileUrls: response.fileUrls || [],
                 metadata: response.metadata,
+                instanceIndex: response.instanceIndex ?? 0,
               })),
             }
           : undefined,
@@ -436,12 +437,16 @@ export class FormSubmissionsService {
       if (submission) {
         // Update existing draft submission
         const existingResponseMap = new Map(
-          existingResponses.map((r) => [r.fieldId, r]),
+          existingResponses.map((r) => [
+            `${r.fieldId}:${(r as any).instanceIndex ?? 0}`,
+            r,
+          ]),
         );
 
         // Merge new responses with existing ones, preserving file uploads
         const mergedResponses = responses.map((response) => {
-          const existingResponse = existingResponseMap.get(response.fieldId);
+          const key = `${response.fieldId}:${response.instanceIndex ?? 0}`;
+          const existingResponse = existingResponseMap.get(key);
 
           // For file fields, preserve existing fileUrls if no new ones provided
           if (response.fileUrls && response.fileUrls.length > 0) {
@@ -452,6 +457,7 @@ export class FormSubmissionsService {
               value: response.value,
               fileUrls: response.fileUrls,
               metadata: response.metadata,
+              instanceIndex: response.instanceIndex ?? 0,
             };
           } else if (
             existingResponse &&
@@ -468,6 +474,7 @@ export class FormSubmissionsService {
                 ...((existingResponse.metadata as object) || {}),
                 ...response.metadata,
               },
+              instanceIndex: response.instanceIndex ?? 0,
             };
           } else {
             // No file URLs involved
@@ -477,6 +484,7 @@ export class FormSubmissionsService {
               value: response.value,
               fileUrls: response.fileUrls || [],
               metadata: response.metadata,
+              instanceIndex: response.instanceIndex ?? 0,
             };
           }
         });
@@ -518,6 +526,7 @@ export class FormSubmissionsService {
                 value: response.value,
                 fileUrls: response.fileUrls || [],
                 metadata: response.metadata,
+                instanceIndex: response.instanceIndex ?? 0,
               })),
             },
           },
@@ -750,12 +759,16 @@ export class FormSubmissionsService {
 
         // Create a map of existing responses by fieldId
         const existingResponseMap = new Map(
-          existingResponses.map((r) => [r.fieldId, r]),
+          existingResponses.map((r) => [
+            `${r.fieldId}:${(r as any).instanceIndex ?? 0}`,
+            r,
+          ]),
         );
 
         // Merge new responses with existing ones, preserving file uploads
         const mergedResponses = responses.map((response) => {
-          const existingResponse = existingResponseMap.get(response.fieldId);
+          const key = `${response.fieldId}:${response.instanceIndex ?? 0}`;
+          const existingResponse = existingResponseMap.get(key);
 
           // For file fields, preserve existing fileUrls if no new ones provided
           if (response.fileUrls && response.fileUrls.length > 0) {
@@ -766,6 +779,7 @@ export class FormSubmissionsService {
               value: response.value,
               fileUrls: response.fileUrls,
               metadata: response.metadata,
+              instanceIndex: response.instanceIndex ?? 0,
             };
           } else if (
             existingResponse &&
@@ -782,6 +796,7 @@ export class FormSubmissionsService {
                 ...((existingResponse.metadata as object) || {}),
                 ...response.metadata,
               },
+              instanceIndex: response.instanceIndex ?? 0,
             };
           } else {
             // No file URLs involved
@@ -791,6 +806,7 @@ export class FormSubmissionsService {
               value: response.value,
               fileUrls: response.fileUrls || [],
               metadata: response.metadata,
+              instanceIndex: response.instanceIndex ?? 0,
             };
           }
         });
@@ -861,6 +877,7 @@ export class FormSubmissionsService {
                 value: response.value,
                 fileUrls: response.fileUrls || [],
                 metadata: response.metadata,
+                instanceIndex: response.instanceIndex ?? 0,
               })),
             },
           },
@@ -2070,6 +2087,7 @@ export class FormSubmissionsService {
           metadata: response.metadata,
           createdAt: response.createdAt,
           updatedAt: response.updatedAt,
+          instanceIndex: response.instanceIndex ?? 0,
         })),
       }),
 

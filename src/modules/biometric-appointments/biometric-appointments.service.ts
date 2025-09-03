@@ -38,7 +38,6 @@ export class BiometricAppointmentsService {
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
     private readonly biometricCentersService: BiometricCentersService,
-
   ) {}
 
   /**
@@ -333,6 +332,7 @@ export class BiometricAppointmentsService {
                   fieldName: true,
                   fileUrls: true,
                   value: true,
+                  instanceIndex: true,
                 },
               },
             },
@@ -413,6 +413,7 @@ export class BiometricAppointmentsService {
                 fieldName: true,
                 fileUrls: true,
                 value: true,
+                instanceIndex: true,
               },
             },
           },
@@ -480,6 +481,7 @@ export class BiometricAppointmentsService {
                 fieldName: true,
                 fileUrls: true,
                 value: true,
+                instanceIndex: true,
               },
             },
           },
