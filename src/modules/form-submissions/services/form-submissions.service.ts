@@ -428,18 +428,8 @@ export class FormSubmissionsService {
     // Validate submission against form template
     await this.validateSubmission(form, responses, existingResponses);
 
-    // Check if user already has a submitted version for this form
-    const existingSubmitted = await this.prisma.formSubmission.findFirst({
-      where: {
-        userId,
-        formId,
-        status: { in: [SubmissionStatus.SUBMITTED, 'APPROVED' as any] },
-      },
-    });
-
-    if (existingSubmitted) {
-      throw new ConflictException('Form has already been submitted');
-    }
+    // Users are allowed to have multiple submissions for the same form template
+    // No need to check for existing submitted versions
 
     // Use database transaction for atomic operations
     submission = await this.prisma.$transaction(async (tx) => {

@@ -309,7 +309,8 @@ export class SubmitFormDto {
   formId: string;
 
   @ApiPropertyOptional({
-    description: 'Existing submission ID (if updating a draft)',
+    description:
+      'Existing submission ID (if updating a draft or previous submission)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsOptional()
