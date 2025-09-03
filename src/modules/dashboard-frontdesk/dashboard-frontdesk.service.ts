@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma';
 import {
@@ -854,6 +855,16 @@ export class DashboardFrontdeskService {
         throw new BadRequestException('Applicant already checked in');
       }
 
+      // Verify staff is assigned to this center
+      const userCenters = await this.getUserCenters(staffId);
+      const userCenterIds = userCenters.map((center) => center.id);
+
+      if (!userCenterIds.includes(appointment.centerId)) {
+        throw new ForbiddenException(
+          `Access denied - you are not assigned to center ${appointment.center.name}`,
+        );
+      }
+
       // Update appointment status
       const updatedAppointment = await this.prisma.biometricAppointment.update({
         where: { id: appointment.id },
@@ -936,6 +947,16 @@ export class DashboardFrontdeskService {
         throw new BadRequestException('Applicant already in queue');
       }
 
+      // Verify staff is assigned to this center
+      const userCenters = await this.getUserCenters(staffId);
+      const userCenterIds = userCenters.map((center) => center.id);
+
+      if (!userCenterIds.includes(appointment.centerId)) {
+        throw new ForbiddenException(
+          `Access denied - you are not assigned to center ${appointment.center.name}`,
+        );
+      }
+
       // Create queue entry
       const queueEntry = await this.prisma.queueEntry.create({
         data: {
@@ -1009,6 +1030,16 @@ export class DashboardFrontdeskService {
 
       if (!queueEntry) {
         throw new BadRequestException('Queue entry not found');
+      }
+
+      // Verify staff is assigned to this center
+      const userCenters = await this.getUserCenters(staffId);
+      const userCenterIds = userCenters.map((center) => center.id);
+
+      if (!userCenterIds.includes(queueEntry.appointment.centerId)) {
+        throw new ForbiddenException(
+          `Access denied - you are not assigned to center ${queueEntry.appointment.center.name}`,
+        );
       }
 
       // Validate status transition
@@ -1117,11 +1148,21 @@ export class DashboardFrontdeskService {
         );
       }
 
+      // Verify staff is assigned to this center
+      const userCenters = await this.getUserCenters(staffId);
+      const userCenterIds = userCenters.map((center) => center.id);
+
+      if (!userCenterIds.includes(queueEntry.appointment.centerId)) {
+        throw new ForbiddenException(
+          `Access denied - you are not assigned to center ${queueEntry.appointment.center.name}`,
+        );
+      }
+
       // Verify booth exists and is available
       const booth = await this.prisma.booth.findFirst({
         where: {
           id: boothId,
-          centerId: queueEntry.centerId,
+          centerId: queueEntry.appointment.centerId,
         },
       });
 
