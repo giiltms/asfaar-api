@@ -380,13 +380,19 @@ export class PaymentsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid input data',
   })
-  //@UseGuards(AuthGuard)  // or JwtAuthGuard, or whatever your auth guard is
+  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async initiatePayment(
     @Request() req: any,
     @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto,
   ) {
     const user = req.user;
+
+    // Fetch complete user details from database for payment
+    const userDetails = await this.userService.getUserById(user.id);
+    if (!userDetails) {
+      throw new BadRequestException('User not found');
+    }
 
     // Validate we have service fees to process
     if (!initiatePaymentDto?.serviceFees?.length) {
@@ -442,8 +448,8 @@ export class PaymentsController {
     const paymentData = {
       ...initiatePaymentDto,
       amount: totalAmount,
-      email: user.email,
-      user: user?.id,
+      email: userDetails.email,
+      user: userDetails.id,
       serviceFees: initiatePaymentDto.serviceFees,
       callbackUrl: enhancedCallbackUrl, // Use enhanced callback URL
       metadata: {
@@ -459,14 +465,15 @@ export class PaymentsController {
         feeBearer: 'business', // You absorb the fees (recommended)
         // Include customer details in metadata for all providers
         customerName:
-          `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-          user.email.split('@')[0],
-        customerPhone: user.phone || null,
-        customerEmail: user.email,
+          `${userDetails.firstName || ''} ${
+            userDetails.lastName || ''
+          }`.trim() || userDetails.email.split('@')[0],
+        customerPhone: userDetails.phone || null,
+        customerEmail: userDetails.email,
       },
       customerName:
-        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-        user.email.split('@')[0],
+        `${userDetails.firstName || ''} ${userDetails.lastName || ''}`.trim() ||
+        userDetails.email.split('@')[0],
     };
 
     const payment = await this.paymentProviderService.initiatePayment(
@@ -475,7 +482,7 @@ export class PaymentsController {
 
     await this.paymentsService.createPayment(
       paymentData,
-      user.id, // userId
+      userDetails.id, // userId
       payment.reference, // reference
     );
 
