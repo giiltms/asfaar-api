@@ -657,6 +657,25 @@ export class BiometricAppointmentsService {
         },
       });
 
+      // Also update the associated queue entry to COMPLETED status
+      const queueEntry = await this.prisma.queueEntry.findFirst({
+        where: { appointmentId: id },
+      });
+
+      if (queueEntry) {
+        await this.prisma.queueEntry.update({
+          where: { id: queueEntry.id },
+          data: {
+            status: 'COMPLETED',
+            completedAt: new Date(),
+          },
+        });
+
+        this.logger.log(
+          `Queue entry ${queueEntry.id} marked as COMPLETED for appointment ${id}`,
+        );
+      }
+
       this.logger.log(
         `Completed biometric capture for appointment ${id} by ${capturedBy}`,
       );
