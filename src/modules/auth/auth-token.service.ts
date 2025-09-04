@@ -67,6 +67,9 @@ export class AuthTokenService {
       id: payload.id,
       email: payload.email,
       roles: payload.roles,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      phone: payload.phone,
     };
 
     const _accessToken = this.createJwtAccessToken(_payload);

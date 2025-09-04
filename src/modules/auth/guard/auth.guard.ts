@@ -9,6 +9,7 @@ import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { AuthTokenService } from '../auth-token.service';
+// Use JWT payload directly for performance. No DB lookups here.
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -46,11 +47,13 @@ export class AuthGuard implements CanActivate {
     try {
       await this.authTokenService.getAccessTokenFromWhitelist(token);
 
-      // 💡 We're assigning the payload to the request object here
-      // so that we can access it in our route handlers
-      request['user'] = await this.jwtService.verifyAsync(token, {
+      // Verify JWT and get payload
+      const payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
+
+      // Assign JWT payload (already includes essential user fields)
+      request['user'] = payload;
       request['user']._meta = {
         token,
       };

@@ -41,9 +41,13 @@ import {
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
-import { UserService } from '@modules/user/user.service';
+
 import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
 import { ConfigService } from '@nestjs/config';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 
 /**
  * Controller for managing payments
@@ -57,7 +61,6 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly paymentProviderService: PaymentProviderService,
-    private readonly userService: UserService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -383,17 +386,9 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async initiatePayment(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body(ValidationPipe) initiatePaymentDto: InitiatePaymentDto,
   ) {
-    const user = req.user;
-
-    // Fetch complete user details from database for payment
-    const userDetails = await this.userService.getUserById(user.id);
-    if (!userDetails) {
-      throw new BadRequestException('User not found');
-    }
-
     // Validate we have service fees to process
     if (!initiatePaymentDto?.serviceFees?.length) {
       throw new BadRequestException('At least one service fee is required');
@@ -448,8 +443,8 @@ export class PaymentsController {
     const paymentData = {
       ...initiatePaymentDto,
       amount: totalAmount,
-      email: userDetails.email,
-      user: userDetails.id,
+      email: user.email,
+      user: user?.id,
       serviceFees: initiatePaymentDto.serviceFees,
       callbackUrl: enhancedCallbackUrl, // Use enhanced callback URL
       metadata: {
@@ -465,15 +460,14 @@ export class PaymentsController {
         feeBearer: 'business', // You absorb the fees (recommended)
         // Include customer details in metadata for all providers
         customerName:
-          `${userDetails.firstName || ''} ${
-            userDetails.lastName || ''
-          }`.trim() || userDetails.email.split('@')[0],
-        customerPhone: userDetails.phone || null,
-        customerEmail: userDetails.email,
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+          user.email.split('@')[0],
+        customerPhone: user.phone || null,
+        customerEmail: user.email,
       },
       customerName:
-        `${userDetails.firstName || ''} ${userDetails.lastName || ''}`.trim() ||
-        userDetails.email.split('@')[0],
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+        user.email.split('@')[0],
     };
 
     const payment = await this.paymentProviderService.initiatePayment(
@@ -482,7 +476,7 @@ export class PaymentsController {
 
     await this.paymentsService.createPayment(
       paymentData,
-      userDetails.id, // userId
+      user.id, // userId
       payment.reference, // reference
     );
 
