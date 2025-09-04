@@ -203,7 +203,9 @@ export class BiometricAppointmentsController {
     const result = await this.appointmentsService.findAllAppointments(
       filters,
       pagination,
-      user.roles?.includes('ADMIN') ? undefined : user.id,
+      user.roles?.includes('ADMIN') || user.roles?.includes('SUPER_ADMIN')
+        ? undefined
+        : user.id,
     );
 
     return {
