@@ -241,6 +241,12 @@ export class ApplicantListItemDto {
   id: string;
 
   @ApiProperty({
+    description: 'Application reference number',
+    example: 'CC01225000001',
+  })
+  referenceNumber: string;
+
+  @ApiProperty({
     description: 'Applicant full name',
     example: 'John Doe',
   })

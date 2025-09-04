@@ -554,6 +554,7 @@ export class DashboardFrontdeskService {
 
           return {
             id: submission.id,
+            referenceNumber: submission.referenceNumber,
             fullName: `${submission.user.firstName} ${submission.user.lastName}`,
             email: submission.user.email,
             phone: submission.user.phone,
@@ -657,6 +658,12 @@ export class DashboardFrontdeskService {
               checkedIn: true,
               checkedInAt: true,
               checkedInBy: true,
+              center: {
+                select: {
+                  name: true,
+                  code: true,
+                },
+              },
               queueEntry: {
                 select: {
                   queueNumber: true,
@@ -697,6 +704,7 @@ export class DashboardFrontdeskService {
 
       return {
         id: submission.id,
+        referenceNumber: submission.referenceNumber,
         fullName: `${submission.user.firstName} ${submission.user.lastName}`,
         email: submission.user.email,
         phone: submission.user.phone,
@@ -720,7 +728,7 @@ export class DashboardFrontdeskService {
           ? {
               appointmentDate: submission.appointment.appointmentDate,
               status: submission.appointment.status,
-              centerName: 'Main Biometric Center', // This could be dynamic
+              centerName: submission.appointment.center?.name,
             }
           : undefined,
         paymentDetails: submission.payment
