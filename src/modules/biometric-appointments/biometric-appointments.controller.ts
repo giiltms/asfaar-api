@@ -349,7 +349,9 @@ export class BiometricAppointmentsController {
     const appointment =
       await this.appointmentsService.findAppointmentByReferenceNumber(
         referenceNumber,
-        user.roles?.includes('ADMIN') ? undefined : user.id,
+        user.roles?.includes('ADMIN') || user.roles?.includes('SUPER_ADMIN')
+          ? undefined
+          : user.id,
       );
 
     return {
