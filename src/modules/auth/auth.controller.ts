@@ -7,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  Request,
   BadRequestException,
   Param,
 } from '@nestjs/common';
@@ -29,6 +28,10 @@ import { VerifyNinDto, ConfirmNinDto } from './dto/verify-nin.dto';
 import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
 import { AuthGuard } from './guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 
@@ -120,10 +123,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   async changePassword(
     @Body() changePasswordDTO: ChangePasswordDTO,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
     await this.passwordResetService.changePassword(
-      req.user?.id || 'user-id',
+      user.id,
       changePasswordDTO.oldPassword,
       changePasswordDTO.newPassword,
     );
@@ -145,8 +148,11 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm NIN verification and link to user' })
-  async confirmNin(@Body() confirmNinDto: ConfirmNinDto, @Request() req: any) {
-    return this.ninVerificationService.confirmNin(confirmNinDto, req.user.id);
+  async confirmNin(
+    @Body() confirmNinDto: ConfirmNinDto,
+    @CurrentUser() user: JwtUserPayload,
+  ) {
+    return this.ninVerificationService.confirmNin(confirmNinDto, user.id);
   }
 
   @Get('check-nin-availability/:nin')

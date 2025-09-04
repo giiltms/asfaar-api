@@ -8,7 +8,6 @@ import {
   Post,
   Query,
   UseGuards,
-  Request,
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
@@ -19,8 +18,11 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { UserService } from './user.service';
-import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
 import { SetUserRoleDto } from './dto/set-user-role.dto';
 import { ListUsersDTO, UpdateUserDto } from './dto/users.dto';
 import { UpdateUserCentersDto } from './dto/update-user-centers.dto';
@@ -119,9 +121,9 @@ export class UserController {
   })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize single user entity
   async getProfile(
-    @Request() req: any,
+    @CurrentUser() currentUser: JwtUserPayload,
   ): Promise<{ success: boolean; data: UserEntity }> {
-    const userId = req.user.id;
+    const userId = currentUser.id;
     const user = await this.userService.findById(userId);
 
     return {
@@ -144,10 +146,10 @@ export class UserController {
   })
   @UseInterceptors(ClassSerializerInterceptor) // Serialize updated user entity
   async updateProfile(
-    @Request() req: any,
+    @CurrentUser() currentUser: JwtUserPayload,
     @Body() updateData: UpdateUserDto,
   ): Promise<{ success: boolean; data: UserEntity; message: string }> {
-    const userId = req.user.id;
+    const userId = currentUser.id;
     const updatedUser = await this.userService.updateUser(userId, updateData);
 
     return {

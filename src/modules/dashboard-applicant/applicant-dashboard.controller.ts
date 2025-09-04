@@ -8,7 +8,6 @@ import {
   HttpStatus,
   ValidationPipe,
   NotFoundException,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +18,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { ApplicantDashboardService } from './applicant-dashboard.service';
 import {
   ApplicationStatsDto,
@@ -50,9 +53,9 @@ export class ApplicantDashboardController {
     type: ApplicantDashboardDto,
   })
   async getApplicantDashboard(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<ApplicantDashboardDto>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const dashboard = await this.dashboardService.getApplicantDashboard(userId);
 
@@ -80,10 +83,10 @@ export class ApplicantDashboardController {
     type: ApplicationStatsDto,
   })
   async getApplicationStats(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query(ValidationPipe) filters: DashboardFiltersDto,
   ): Promise<BaseResponseDto<ApplicationStatsDto>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const stats = await this.dashboardService.getApplicationStats(
       userId,
@@ -115,10 +118,10 @@ export class ApplicantDashboardController {
     description: 'Application not found or not accessible to user',
   })
   async getApplicationTimeline(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
   ): Promise<BaseResponseDto<ApplicationTimelineDto>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const timeline = await this.dashboardService.getApplicationTimeline(
       userId,
@@ -150,10 +153,10 @@ export class ApplicantDashboardController {
     type: [QuickApplicationDto],
   })
   async getRecentApplications(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query('limit') limit?: number,
   ): Promise<BaseResponseDto<QuickApplicationDto[]>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const applications = await this.dashboardService.getRecentApplications(
       userId,
@@ -180,9 +183,9 @@ export class ApplicantDashboardController {
     type: [QuickApplicationDto],
   })
   async getApplicationsRequiringAction(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<QuickApplicationDto[]>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const applications =
       await this.dashboardService.getApplicationsRequiringAction(userId);
@@ -206,9 +209,9 @@ export class ApplicantDashboardController {
     type: [QuickApplicationDto],
   })
   async getUpcomingAppointments(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<QuickApplicationDto[]>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const appointments = await this.dashboardService.getUpcomingAppointments(
       userId,
@@ -238,10 +241,10 @@ export class ApplicantDashboardController {
     description: 'Application not found or not accessible to user',
   })
   async getQuickApplicationStatus(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
   ): Promise<BaseResponseDto<QuickApplicationDto>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     // Get the application
     const applications = await this.dashboardService.getRecentApplications(
@@ -271,7 +274,7 @@ export class ApplicantDashboardController {
     status: HttpStatus.OK,
     description: 'Dashboard summary retrieved successfully',
   })
-  async getDashboardSummary(@Request() req: any): Promise<
+  async getDashboardSummary(@CurrentUser() user: JwtUserPayload): Promise<
     BaseResponseDto<{
       totalApplications: number;
       pendingActions: number;
@@ -279,7 +282,7 @@ export class ApplicantDashboardController {
       inProgress: number;
     }>
   > {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const [stats, actionRequired, upcomingAppointments] = await Promise.all([
       this.dashboardService.getApplicationStats(userId),
@@ -315,9 +318,9 @@ export class ApplicantDashboardController {
     type: ApplicationLogListDto,
   })
   async getApplicationLogs(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<ApplicationLogListDto>> {
-    const userId = req.user.id;
+    const userId = user.id;
 
     const logs = await this.dashboardService.getApplicationLogs(userId);
 

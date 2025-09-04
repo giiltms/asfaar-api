@@ -8,16 +8,13 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
-  UploadedFile,
   UploadedFiles,
   UseInterceptors,
   ParseFilePipe,
   MaxFileSizeValidator,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,14 +25,13 @@ import {
   ApiQuery,
   ApiConsumes,
   ApiBody,
-  ApiHeader,
 } from '@nestjs/swagger';
-import {
-  FileInterceptor,
-  FilesInterceptor,
-  AnyFilesInterceptor,
-} from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { FormSubmissionsService } from './services/form-submissions.service';
 import {
   CreateFormSubmissionDto,
@@ -54,20 +50,6 @@ import { ApiDefaultResponse } from '@decorators/api-default-response.decorator';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsNotEmpty, IsUUID, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-
-// Custom pipe to parse JSON fields from multipart form data
-class ParseMultipartJsonPipe {
-  transform(value: any) {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
-    }
-    return value;
-  }
-}
 
 // Custom DTO for multipart form data
 class MultipartFileUploadDto {
@@ -231,11 +213,11 @@ export class FormSubmissionsController {
     },
   })
   async getAvailableForms(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query() query: AvailableFormsQueryDto,
   ) {
     const forms = await this.submissionsService.getAvailableFormsForUser(
-      req.user.id,
+      user.id,
       query,
     );
     return {
@@ -259,11 +241,11 @@ export class FormSubmissionsController {
     type: AuthenticatedFormDto,
   })
   async getFormWithProgress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('formId', ParseUUIDPipe) formId: string,
   ) {
     const formData = await this.submissionsService.getFormForUser(
-      req.user.id,
+      user.id,
       formId,
     );
     return {
@@ -282,11 +264,11 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async createSubmission(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body() createSubmissionDto: CreateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
     return this.submissionsService.createSubmission(
-      req.user.id,
+      user.id,
       createSubmissionDto,
     );
   }
@@ -300,10 +282,10 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async submitForm(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body() submitDto: SubmitFormDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.submitForm(req.user.id, submitDto);
+    return this.submissionsService.submitForm(user.id, submitDto);
   }
 
   @Post('draft')
@@ -315,10 +297,10 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async saveDraft(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body() draftDto: SaveDraftDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.saveDraft(req.user.id, draftDto);
+    return this.submissionsService.saveDraft(user.id, draftDto);
   }
 
   @Get('my')
@@ -370,10 +352,10 @@ export class FormSubmissionsController {
   })
   @ApiDefaultResponse({})
   async getMySubmissions(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query() queryDto: SubmissionQueryDto,
   ) {
-    return this.submissionsService.getUserSubmissions(req.user.id, queryDto);
+    return this.submissionsService.getUserSubmissions(user.id, queryDto);
   }
 
   @Get('queried')
@@ -385,9 +367,9 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto, isArray: true })
   @ApiDefaultResponse({ type: FormSubmissionDto, isArray: true })
   async getQueriedSubmissions(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<FormSubmissionDto[]> {
-    return this.submissionsService.getQueriedSubmissions(req.user.id);
+    return this.submissionsService.getQueriedSubmissions(user.id);
   }
 
   @Get(':id')
@@ -403,10 +385,10 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async getSubmissionById(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.getSubmissionById(req.user.id, id);
+    return this.submissionsService.getSubmissionById(user.id, id);
   }
 
   @Put(':id')
@@ -422,11 +404,11 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async updateSubmission(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.updateSubmission(req.user.id, id, updateDto);
+    return this.submissionsService.updateSubmission(user.id, id, updateDto);
   }
 
   @Put(':id/resubmit')
@@ -443,12 +425,12 @@ export class FormSubmissionsController {
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })
   async updateQueriedSubmission(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
     return this.submissionsService.updateQueriedSubmission(
-      req.user.id,
+      user.id,
       id,
       updateDto,
     );
@@ -478,10 +460,10 @@ export class FormSubmissionsController {
   })
   @ApiDefaultResponse({})
   async deleteSubmission(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
-    return this.submissionsService.deleteSubmission(req.user.id, id);
+    return this.submissionsService.deleteSubmission(user.id, id);
   }
 
   @Post(':id/cancel')
@@ -507,11 +489,11 @@ export class FormSubmissionsController {
   })
   @ApiDefaultResponse({})
   async cancelSubmission(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() cancelDto: CancelSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    return this.submissionsService.cancelSubmission(req.user.id, id, cancelDto);
+    return this.submissionsService.cancelSubmission(user.id, id, cancelDto);
   }
 
   // File Upload Endpoint
@@ -656,7 +638,7 @@ export class FormSubmissionsController {
   })
   @ApiDefaultResponse({})
   async uploadFiles(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @UploadedFiles(
       new ParseFilePipe({
         validators: [
@@ -679,7 +661,7 @@ export class FormSubmissionsController {
     // Determine if this is single or multiple file upload
     if (files.length === 1) {
       const result = await this.submissionsService.uploadSingleFile(
-        req.user.id,
+        user.id,
         files[0],
         uploadDto,
       );
@@ -690,7 +672,7 @@ export class FormSubmissionsController {
       };
     } else {
       const result = await this.submissionsService.uploadMultipleFiles(
-        req.user.id,
+        user.id,
         files,
         uploadDto,
       );

@@ -27,10 +27,13 @@ import {
   CompleteBiometricCaptureDto,
   AppointmentFiltersDto,
   AppointmentQueryDto,
-  UpdateAppointmentDto,
 } from './dto/biometric-appointment.dto';
 import { BiometricAppointmentEntity } from './entities/biometric-appointment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '@common/dtos';
 
 /**
@@ -70,16 +73,11 @@ export class BiometricAppointmentsController {
   })
   async createAppointment(
     @Body(ValidationPipe) createDto: CreateBiometricAppointmentDto,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, using a placeholder user ID
-    const userId = 'placeholder-user-id';
-
     const appointment = await this.appointmentsService.createAppointment(
       createDto,
-      userId,
-      // user?.id,
+      user.id,
     );
 
     return {
@@ -195,18 +193,17 @@ export class BiometricAppointmentsController {
   })
   async findAllAppointments(
     @Query() query: AppointmentQueryDto,
-    // TODO: Extract user ID from JWT token for user-specific filtering
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
     // Extract pagination and filters from the combined query
     const { page, limit, sortBy, sortOrder, ...filters } = query;
     const pagination = { page, limit, sortBy, sortOrder };
 
-    // For now, not filtering by user (admin view)
+    // Filter by user unless they have admin role
     const result = await this.appointmentsService.findAllAppointments(
       filters,
       pagination,
-      // user?.roles?.includes('ADMIN') ? undefined : user?.id,
+      user.roles?.includes('ADMIN') ? undefined : user.id,
     );
 
     return {
@@ -269,16 +266,12 @@ export class BiometricAppointmentsController {
   async getMyAppointments(
     @Query() filters: AppointmentFiltersDto,
     @Query() pagination: PaginationQueryDto,
-    // TODO: Extract user ID from JWT token
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, using a placeholder user ID
-    const userId = 'placeholder-user-id';
-
     const result = await this.appointmentsService.findAllAppointments(
       filters,
       pagination,
-      userId, // user?.id,
+      user.id,
     );
 
     return {
@@ -312,13 +305,11 @@ export class BiometricAppointmentsController {
   })
   async findAppointmentById(
     @Param('id', ParseUUIDPipe) id: string,
-    // TODO: Extract user ID from JWT token for authorization
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, not filtering by user (admin can see all)
     const appointment = await this.appointmentsService.findAppointmentById(
       id,
-      // user?.roles?.includes('ADMIN') ? undefined : user?.id,
+      user.roles?.includes('ADMIN') ? undefined : user.id,
     );
 
     return {
@@ -351,14 +342,12 @@ export class BiometricAppointmentsController {
   })
   async findAppointmentByReferenceNumber(
     @Param('referenceNumber') referenceNumber: string,
-    // TODO: Extract user ID from JWT token for authorization
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, not filtering by user (admin can see all)
     const appointment =
       await this.appointmentsService.findAppointmentByReferenceNumber(
         referenceNumber,
-        // user?.roles?.includes('ADMIN') ? undefined : user?.id,
+        user.roles?.includes('ADMIN') ? undefined : user.id,
       );
 
     return {
@@ -396,13 +385,12 @@ export class BiometricAppointmentsController {
   async updateAppointmentStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updateDto: UpdateAppointmentStatusDto,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
     const appointment = await this.appointmentsService.updateAppointmentStatus(
       id,
       updateDto,
-      // user?.id,
+      user.id,
     );
 
     return {
@@ -440,17 +428,13 @@ export class BiometricAppointmentsController {
   async rescheduleAppointment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) rescheduleDto: RescheduleAppointmentDto,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, using placeholder user ID for user authorization
-    const userId = 'placeholder-user-id';
-
     const appointment = await this.appointmentsService.rescheduleAppointment(
       id,
       rescheduleDto,
-      userId, // user?.id,
-      // user?.id,
+      user.id,
+      user.id,
     );
 
     return {
@@ -489,16 +473,12 @@ export class BiometricAppointmentsController {
   async completeBiometricCapture(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) captureDto: CompleteBiometricCaptureDto,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, using placeholder user ID as the staff member
-    const capturedBy = 'placeholder-staff-id';
-
     const appointment = await this.appointmentsService.completeBiometricCapture(
       id,
       captureDto,
-      capturedBy, // user?.id,
+      user.id,
     );
 
     return {
@@ -536,17 +516,13 @@ export class BiometricAppointmentsController {
   async cancelAppointment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('reason', ValidationPipe) reason: string,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    // For now, using placeholder user ID for user authorization
-    const userId = 'placeholder-user-id';
-
     const appointment = await this.appointmentsService.cancelAppointment(
       id,
       reason,
-      userId, // user?.id,
-      // user?.id,
+      user.id,
+      user.id,
     );
 
     return {

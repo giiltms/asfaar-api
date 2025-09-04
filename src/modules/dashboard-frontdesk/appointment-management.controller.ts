@@ -5,9 +5,7 @@ import {
   Body,
   Param,
   UseGuards,
-  Req,
   HttpStatus,
-  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +14,10 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { DashboardFrontdeskService } from './dashboard-frontdesk.service';
 import {
   CheckInAppointmentDto,
@@ -53,9 +55,9 @@ export class AppointmentManagementController {
   async checkInApplicant(
     @Param('referenceNumber') referenceNumber: string,
     @Body() checkInData: CheckInAppointmentDto,
-    @Req() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    const userId = req.user.id;
+    const userId = user.id;
     return this.dashboardFrontdeskService.checkInApplicant(
       referenceNumber,
       userId,
@@ -84,9 +86,9 @@ export class AppointmentManagementController {
   async addToQueue(
     @Param('referenceNumber') referenceNumber: string,
     @Body() queueData: AddToQueueDto,
-    @Req() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    const userId = req.user.id;
+    const userId = user.id;
     return this.dashboardFrontdeskService.addToQueue(
       referenceNumber,
       userId,
@@ -115,9 +117,9 @@ export class AppointmentManagementController {
   async updateQueueStatus(
     @Param('queueEntryId') queueEntryId: string,
     @Body() statusData: UpdateQueueStatusDto,
-    @Req() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    const userId = req.user.id;
+    const userId = user.id;
     return this.dashboardFrontdeskService.updateQueueStatus(
       queueEntryId,
       userId,
@@ -145,9 +147,9 @@ export class AppointmentManagementController {
   async assignBooth(
     @Param('queueEntryId') queueEntryId: string,
     @Body() boothData: { boothId: string },
-    @Req() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
-    const userId = req.user.id;
+    const userId = user.id;
     return this.dashboardFrontdeskService.assignBooth(
       queueEntryId,
       boothData.boothId,

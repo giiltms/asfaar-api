@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   ParseUUIDPipe,
   ParseEnumPipe,
   HttpCode,
@@ -23,6 +22,10 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { AddressService } from './address.service';
 import {
   CreateAddressDto,
@@ -50,10 +53,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
   async createAddress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<AddressDto> {
-    return this.addressService.createAddress(req.user.id, createAddressDto);
+    return this.addressService.createAddress(user.id, createAddressDto);
   }
 
   @Get()
@@ -63,8 +66,10 @@ export class AddressController {
   })
   @ApiOkBaseResponse({ dto: AddressSummaryDto, isArray: true })
   @ApiDefaultResponse({ type: AddressSummaryDto, isArray: true })
-  async getUserAddresses(@Request() req: any): Promise<AddressSummaryDto[]> {
-    return this.addressService.getUserAddresses(req.user.id);
+  async getUserAddresses(
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<AddressSummaryDto[]> {
+    return this.addressService.getUserAddresses(user.id);
   }
 
   @Get('default')
@@ -74,8 +79,10 @@ export class AddressController {
   })
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
-  async getDefaultAddress(@Request() req: any): Promise<AddressDto | null> {
-    return this.addressService.getDefaultAddress(req.user.id);
+  async getDefaultAddress(
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<AddressDto | null> {
+    return this.addressService.getDefaultAddress(user.id);
   }
 
   @Get('search')
@@ -91,10 +98,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressSummaryDto, isArray: true })
   @ApiDefaultResponse({ type: AddressSummaryDto, isArray: true })
   async searchAddresses(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query('q') searchTerm: string,
   ): Promise<AddressSummaryDto[]> {
-    return this.addressService.searchAddresses(req.user.id, searchTerm);
+    return this.addressService.searchAddresses(user.id, searchTerm);
   }
 
   @Get('statistics')
@@ -117,8 +124,8 @@ export class AddressController {
     },
   })
   @ApiDefaultResponse({})
-  async getAddressStatistics(@Request() req: any) {
-    return this.addressService.getAddressStatistics(req.user.id);
+  async getAddressStatistics(@CurrentUser() user: JwtUserPayload) {
+    return this.addressService.getAddressStatistics(user.id);
   }
 
   @Get('type/:type')
@@ -134,10 +141,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressSummaryDto, isArray: true })
   @ApiDefaultResponse({ type: AddressSummaryDto, isArray: true })
   async getAddressesByType(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('type', new ParseEnumPipe(AddressType)) type: AddressType,
   ): Promise<AddressSummaryDto[]> {
-    return this.addressService.getAddressesByType(req.user.id, type);
+    return this.addressService.getAddressesByType(user.id, type);
   }
 
   @Get(':id')
@@ -153,10 +160,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
   async getAddressById(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) addressId: string,
   ): Promise<AddressDto> {
-    return this.addressService.getAddressById(addressId, req.user.id);
+    return this.addressService.getAddressById(addressId, user.id);
   }
 
   @Put(':id')
@@ -172,13 +179,13 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
   async updateAddress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) addressId: string,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressDto> {
     return this.addressService.updateAddress(
       addressId,
-      req.user.id,
+      user.id,
       updateAddressDto,
     );
   }
@@ -200,10 +207,10 @@ export class AddressController {
   })
   @ApiDefaultResponse({})
   async deleteAddress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) addressId: string,
   ): Promise<void> {
-    return this.addressService.deleteAddress(addressId, req.user.id);
+    return this.addressService.deleteAddress(addressId, user.id);
   }
 
   @Post(':id/set-default')
@@ -219,10 +226,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
   async setDefaultAddress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) addressId: string,
   ): Promise<AddressDto> {
-    return this.addressService.setDefaultAddress(addressId, req.user.id);
+    return this.addressService.setDefaultAddress(addressId, user.id);
   }
 
   @Post(':id/verify')
@@ -238,10 +245,10 @@ export class AddressController {
   @ApiOkBaseResponse({ dto: AddressDto })
   @ApiDefaultResponse({ type: AddressDto })
   async verifyAddress(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('id', ParseUUIDPipe) addressId: string,
   ): Promise<AddressDto> {
-    return this.addressService.verifyAddress(addressId, req.user.id);
+    return this.addressService.verifyAddress(addressId, user.id);
   }
 
   // Admin endpoints (could be protected with role-based guards)

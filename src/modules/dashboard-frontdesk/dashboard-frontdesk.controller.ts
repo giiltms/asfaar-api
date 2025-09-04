@@ -3,7 +3,6 @@ import {
   Get,
   Param,
   Query,
-  Request,
   HttpStatus,
   UseGuards,
   ParseUUIDPipe,
@@ -19,12 +18,15 @@ import {
 import { DashboardFrontdeskService } from './dashboard-frontdesk.service';
 import {
   DashboardStatsResponseDto,
-  FrontDeskDashboardStatsDto,
   ApplicantListResponseDto,
   ApplicantListFiltersDto,
   ApplicantDetailDto,
 } from './dto/dashboard-stats.dto';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { ApiDefaultResponse } from '@common/decorators/api-default-response.decorator';
 
 /**
@@ -55,8 +57,8 @@ export class DashboardFrontdeskController {
     type: [Object],
   })
   @ApiDefaultResponse({})
-  async getUserCenters(@Request() req: any) {
-    const userId = req.user.id;
+  async getUserCenters(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const centers = await this.dashboardFrontdeskService.getUserCenters(userId);
 
     return {
@@ -86,9 +88,9 @@ export class DashboardFrontdeskController {
   })
   @ApiDefaultResponse({})
   async getFrontDeskDashboardStats(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<DashboardStatsResponseDto> {
-    const userId = req.user.id;
+    const userId = user.id;
     const stats =
       await this.dashboardFrontdeskService.getFrontDeskDashboardStats(userId);
 
@@ -113,8 +115,8 @@ export class DashboardFrontdeskController {
     description: 'Queue updates retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getQueueUpdates(@Request() req: any) {
-    const userId = req.user.id;
+  async getQueueUpdates(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -144,8 +146,8 @@ export class DashboardFrontdeskController {
     description: 'Station metrics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getStationMetrics(@Request() req: any) {
-    const userId = req.user.id;
+  async getStationMetrics(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -175,8 +177,8 @@ export class DashboardFrontdeskController {
     description: 'Queue statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getQueueStats(@Request() req: any) {
-    const userId = req.user.id;
+  async getQueueStats(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -206,8 +208,8 @@ export class DashboardFrontdeskController {
     description: 'Station statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getStationStats(@Request() req: any) {
-    const userId = req.user.id;
+  async getStationStats(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -237,8 +239,8 @@ export class DashboardFrontdeskController {
     description: 'Application statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getApplicationStats(@Request() req: any) {
-    const userId = req.user.id;
+  async getApplicationStats(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -267,8 +269,8 @@ export class DashboardFrontdeskController {
     description: 'Processing statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getProcessingStats(@Request() req: any) {
-    const userId = req.user.id;
+  async getProcessingStats(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -297,8 +299,8 @@ export class DashboardFrontdeskController {
     description: 'Agent statistics retrieved successfully',
   })
   @ApiDefaultResponse({})
-  async getAgentStats(@Request() req: any) {
-    const userId = req.user.id;
+  async getAgentStats(@CurrentUser() user: JwtUserPayload) {
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -409,10 +411,10 @@ export class DashboardFrontdeskController {
   })
   @ApiDefaultResponse({})
   async getApplicants(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query() filters: ApplicantListFiltersDto,
   ): Promise<ApplicantListResponseDto> {
-    const userId = req.user.id;
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );
@@ -459,10 +461,10 @@ export class DashboardFrontdeskController {
   })
   @ApiDefaultResponse({})
   async getApplicantDetail(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('applicantId', ParseUUIDPipe) applicantId: string,
   ): Promise<{ success: boolean; data: ApplicantDetailDto; message: string }> {
-    const userId = req.user.id;
+    const userId = user.id;
     const userCenters = await this.dashboardFrontdeskService.getUserCenters(
       userId,
     );

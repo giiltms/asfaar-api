@@ -7,8 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
-  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,7 +15,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { BiometricDataService } from './biometric-data.service';
 import {
@@ -26,6 +23,10 @@ import {
   BiometricDataResponseDto,
 } from './dto';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { LocalStorageService } from '@providers/localstorage/localstorage.service';
 
@@ -50,11 +51,11 @@ export class BiometricDataController {
   @ApiResponse({ status: 404, description: 'User or submission not found' })
   async createBiometricData(
     @Body() createBiometricDataDto: CreateBiometricDataDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BiometricDataResponseDto> {
     return this.biometricDataService.createBiometricData(
       createBiometricDataDto,
-      req.user.id,
+      user.id,
     );
   }
 
@@ -112,12 +113,12 @@ export class BiometricDataController {
   async updateBiometricData(
     @Param('id') id: string,
     @Body() updateBiometricDataDto: UpdateBiometricDataDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BiometricDataResponseDto> {
     return this.biometricDataService.updateBiometricData(
       id,
       updateBiometricDataDto,
-      req.user.id,
+      user.id,
     );
   }
 
@@ -146,13 +147,13 @@ export class BiometricDataController {
   async verifyBiometricData(
     @Param('id') id: string,
     @Body() body: { verificationStatus: string; verificationNotes?: string },
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BiometricDataResponseDto> {
     return this.biometricDataService.verifyBiometricData(
       id,
       body.verificationStatus,
       body.verificationNotes,
-      req.user.id,
+      user.id,
     );
   }
 
@@ -236,12 +237,12 @@ export class BiometricDataController {
   async upsertByReference(
     @Param('referenceNumber') referenceNumber: string,
     @Body() dto: Partial<CreateBiometricDataDto>,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BiometricDataResponseDto> {
     return this.biometricDataService.createOrUpdateByReferenceNumber(
       referenceNumber,
       dto,
-      req.user?.id,
+      user.id,
     );
   }
 
@@ -288,14 +289,14 @@ export class BiometricDataController {
   async uploadPhotoByReference(
     @Param('referenceNumber') referenceNumber: string,
     @UploadedFile() file: Express.Multer.File,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ) {
     const url = await this.localStorage.upload(file, 'biometrics/photos');
     const updated =
       await this.biometricDataService.createOrUpdateByReferenceNumber(
         referenceNumber,
-        { photoUrl: url, capturedBy: req.user?.id },
-        req.user?.id,
+        { photoUrl: url, capturedBy: user.id },
+        user.id,
       );
     return { success: true, photoUrl: url, biometricData: updated };
   }
