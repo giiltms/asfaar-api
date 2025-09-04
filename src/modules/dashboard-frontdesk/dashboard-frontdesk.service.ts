@@ -619,6 +619,8 @@ export class DashboardFrontdeskService {
               lastName: true,
               email: true,
               phone: true,
+              nin: true,
+              dateOfBirth: true,
             },
           },
           form: {
@@ -702,6 +704,31 @@ export class DashboardFrontdeskService {
         checkInStatus = appointment.status;
       }
 
+      // Extract fields from form responses
+      const getFieldValue = (fieldName: string): string | undefined => {
+        const response = submission.responses.find(
+          (r) => r.fieldName === fieldName,
+        );
+        return response?.value ? String(response.value) : undefined;
+      };
+
+      // Use user's dateOfBirth first, fallback to form responses
+      const userDateOfBirth = submission.user.dateOfBirth;
+      const formDateOfBirth =
+        getFieldValue('dateOfBirth') ||
+        getFieldValue('date-of-birth') ||
+        getFieldValue('dob');
+
+      const dateOfBirth =
+        userDateOfBirth ||
+        (formDateOfBirth ? new Date(formDateOfBirth) : undefined);
+      const nationality =
+        getFieldValue('nationality') || getFieldValue('country');
+      const address =
+        getFieldValue('address') ||
+        getFieldValue('residentialAddress') ||
+        getFieldValue('residential-address');
+
       return {
         id: submission.id,
         referenceNumber: submission.referenceNumber,
@@ -719,10 +746,10 @@ export class DashboardFrontdeskService {
         queueStatus: queueEntry?.status,
         isInQueue: !!queueEntry,
         paymentStatus: submission.payment?.status || 'PENDING',
-        nin: undefined, // Will be implemented when user model has NIN field
-        dateOfBirth: new Date('1990-01-01'), // Will be implemented when user model has DOB field
-        nationality: 'Nigerian', // Will be implemented when user model has nationality field
-        address: 'Address not available', // Will be implemented when user model has address field
+        nin: submission.user.nin,
+        dateOfBirth: dateOfBirth,
+        nationality: nationality || 'Not specified',
+        address: address || 'Not specified',
         formData,
         biometricAppointment: submission.appointment
           ? {
