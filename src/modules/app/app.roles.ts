@@ -3,13 +3,14 @@ export enum Roles {
   ADMIN = 'ADMIN',
   APPLICANT = 'APPLICANT',
   AGENCY = 'AGENCY',
-  ASFAAR_ADMIN = 'ASFAAR_ADMIN',
+  FINANCE = 'FINANCE',
   EMBASSY_OFFICER = 'EMBASSY_OFFICER',
-  SECURITY_OFFICER = 'SECURITY_OFFICER',
+  LAISON_OFFICER = 'LAISON_OFFICER',
   VERIFICATION_OFFICER = 'VERIFICATION_OFFICER',
   BIOMETRIC_AGENT = 'BIOMETRIC_AGENT',
-  BIOMETRIC_SUPERVISOR = 'BIOMETRIC_SUPERVISOR',
+  CENTER_MANAGER = 'CENTER_MANAGER',
   RECEPTIONIST = 'RECEPTIONIST',
+  GATEHOUSE = 'GATEHOUSE',
 }
 
 export enum Gender {
@@ -20,30 +21,31 @@ export enum Gender {
 }
 
 export const roleHierarchy: Record<Roles, number> = {
-  [Roles.SUPER_ADMIN]: 11,
-  [Roles.ASFAAR_ADMIN]: 10,
-  [Roles.ADMIN]: 9,
+  [Roles.SUPER_ADMIN]: 12,
+  [Roles.ADMIN]: 11,
+  [Roles.FINANCE]: 10,
+  [Roles.LAISON_OFFICER]: 9, // Higher authority due to security agency management
   [Roles.EMBASSY_OFFICER]: 8,
-  [Roles.SECURITY_OFFICER]: 7,
-  [Roles.VERIFICATION_OFFICER]: 6,
-  [Roles.BIOMETRIC_SUPERVISOR]: 5,
-  [Roles.BIOMETRIC_AGENT]: 4,
-  [Roles.RECEPTIONIST]: 3,
+  [Roles.VERIFICATION_OFFICER]: 7,
+  [Roles.CENTER_MANAGER]: 6,
+  [Roles.BIOMETRIC_AGENT]: 5,
+  [Roles.RECEPTIONIST]: 4,
+  [Roles.GATEHOUSE]: 3,
   [Roles.AGENCY]: 2,
   [Roles.APPLICANT]: 1,
 };
 
 export const defaultRoles = [Roles.APPLICANT];
 
-export const systemRoles = [Roles.SUPER_ADMIN, Roles.ASFAAR_ADMIN];
-export const adminRoles = [Roles.SUPER_ADMIN, Roles.ASFAAR_ADMIN, Roles.ADMIN];
-export const embassyRoles = [Roles.EMBASSY_OFFICER, Roles.SECURITY_OFFICER];
+export const systemRoles = [Roles.SUPER_ADMIN, Roles.ADMIN];
+export const adminRoles = [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCE];
+export const embassyRoles = [Roles.EMBASSY_OFFICER, Roles.LAISON_OFFICER];
 export const verificationRoles = [
   Roles.VERIFICATION_OFFICER,
-  Roles.BIOMETRIC_SUPERVISOR,
+  Roles.CENTER_MANAGER,
   Roles.BIOMETRIC_AGENT,
 ];
-export const supportRoles = [Roles.RECEPTIONIST];
+export const supportRoles = [Roles.RECEPTIONIST, Roles.GATEHOUSE];
 export const partnerRoles = [Roles.AGENCY];
 export const publicRoles = [Roles.APPLICANT];
 

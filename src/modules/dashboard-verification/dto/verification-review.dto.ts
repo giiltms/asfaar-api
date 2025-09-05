@@ -9,9 +9,10 @@ export enum VerificationAction {
 }
 
 export enum SecurityDepartment {
-  SECURITY_OFFICER = 'SECURITY_OFFICER',
+  FINANCE = 'FINANCE',
   EMBASSY_OFFICER = 'EMBASSY_OFFICER',
-  ASFAAR_ADMIN = 'ASFAAR_ADMIN',
+  LAISON_OFFICER = 'LAISON_OFFICER',
+  ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
 }
 

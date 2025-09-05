@@ -46,21 +46,44 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.read, 'BiometricSession');
   },
 
-  [Roles.BIOMETRIC_SUPERVISOR]({ can }) {
+  [Roles.CENTER_MANAGER]({ can }) {
     can(Actions.manage, 'BiometricData');
     can(Actions.manage, 'BiometricSession');
+    can(Actions.manage, 'BiometricCenter');
+    can(Actions.manage, 'BiometricAppointment');
+    can(Actions.read, 'Application');
+    can(Actions.update, 'Application');
+    can(Actions.read, 'User');
+    can(Actions.update, 'User');
   },
 
-  [Roles.SECURITY_OFFICER]({ can }) {
+  [Roles.FINANCE]({ can }) {
     can(Actions.read, 'Application');
+    can(Actions.read, 'Payment');
+    can(Actions.update, 'Payment');
+    can(Actions.create, 'Payment');
+    can(Actions.read, 'ServiceFee');
+    can(Actions.update, 'ServiceFee');
+    can(Actions.read, 'AuditLog');
+  },
+
+  [Roles.LAISON_OFFICER]({ can }) {
+    can(Actions.read, 'Application');
+    can(Actions.update, 'Application');
+    can(Actions.create, 'LiaisonReport');
+    can(Actions.read, 'User');
     can(Actions.create, 'SecurityReport');
     can(Actions.update, 'SecurityStatus');
+    can(Actions.read, 'SecurityAgency');
+    can(Actions.create, 'SecurityAgency');
+    can(Actions.update, 'SecurityAgency');
   },
 
-  [Roles.ASFAAR_ADMIN]({ can }) {
-    can(Actions.manage, 'User');
-    can(Actions.manage, 'Application');
-    can(Actions.read, 'AuditLog');
+  [Roles.GATEHOUSE]({ can }) {
+    can(Actions.read, 'Application');
+    can(Actions.read, 'BiometricAppointment');
+    can(Actions.update, 'BiometricAppointment');
+    can(Actions.create, 'CheckIn');
   },
 
   ADMIN({ user, can }) {

@@ -38,17 +38,24 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.read, UserEntity);
   },
 
-  [Roles.BIOMETRIC_SUPERVISOR]({ can }) {
+  [Roles.CENTER_MANAGER]({ can }) {
     can(Actions.read, UserEntity);
     can(Actions.update, UserEntity);
+    can(Actions.create, UserEntity); // For creating center staff
   },
 
-  [Roles.SECURITY_OFFICER]({ can }) {
+  [Roles.FINANCE]({ can }) {
     can(Actions.read, UserEntity);
   },
 
-  [Roles.ASFAAR_ADMIN]({ can }) {
-    can(Actions.manage, UserEntity);
+  [Roles.LAISON_OFFICER]({ can }) {
+    can(Actions.read, UserEntity);
+    can(Actions.update, UserEntity);
+    can(Actions.create, UserEntity); // For creating security agency staff
+  },
+
+  [Roles.GATEHOUSE]({ can }) {
+    can(Actions.read, UserEntity);
   },
 
   ADMIN({ user, can }) {
@@ -59,3 +66,4 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.manage, UserEntity);
   },
 };
+
