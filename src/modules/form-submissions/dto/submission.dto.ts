@@ -542,6 +542,14 @@ export class FormSubmissionDto {
       flag: string;
       logoUrl: string;
     };
+    availableServiceFees?: {
+      id: string;
+      name: string;
+      description?: string;
+      amount: number;
+      currency: string;
+      isOptional: boolean;
+    }[];
   };
 
   // Include user details for admin views
