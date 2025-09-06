@@ -14,7 +14,7 @@ import { biometricCenterNumberMiddleware } from './middlewares/biometric-center-
 import { embassySubmissionEmailMiddleware } from './middlewares/embassy-submission-email.middleware';
 import { paymentEmailMiddleware } from './middlewares/payment-email.middleware';
 import { biometricCaptureEmailMiddleware } from './middlewares/biometric-capture-email.middleware';
-import { ReferenceNumberMiddleware } from './middlewares/reference-number.middleware';
+import { referenceNumberMiddleware } from './middlewares/reference-number.middleware';
 
 @Injectable()
 export class PrismaService
@@ -22,8 +22,7 @@ export class PrismaService
     Prisma.PrismaClientOptions,
     'query' | 'info' | 'warn' | 'error' | 'beforeExit'
   >
-  implements OnModuleInit
-{
+  implements OnModuleInit {
   constructor(
     @Optional()
     @Inject(PRISMA_SERVICE_OPTIONS)
@@ -42,11 +41,7 @@ export class PrismaService
     this.$use(embassySubmissionEmailMiddleware());
     this.$use(paymentEmailMiddleware());
     this.$use(biometricCaptureEmailMiddleware());
-    this.$use(
-      new ReferenceNumberMiddleware(this).handle.bind(
-        new ReferenceNumberMiddleware(this),
-      ),
-    );
+    this.$use(referenceNumberMiddleware());
   }
 
   async onModuleInit() {
