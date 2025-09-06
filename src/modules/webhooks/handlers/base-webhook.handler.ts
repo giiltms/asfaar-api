@@ -65,8 +65,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           break;
         default:
           this.logger.warn(
-            `Unhandled event type: ${
-              event.event
+            `Unhandled event type: ${event.event
             } for ${this.getProviderName()}`,
           );
       }
@@ -75,14 +74,12 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       await this.recordProcessedEvent(event);
 
       this.logger.log(
-        `Successfully processed ${this.getProviderName()} webhook event: ${
-          event.event
+        `Successfully processed ${this.getProviderName()} webhook event: ${event.event
         }`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to process ${this.getProviderName()} webhook event: ${
-          event.event
+        `Failed to process ${this.getProviderName()} webhook event: ${event.event
         }`,
         error.stack,
       );
@@ -112,8 +109,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
       }
 
       this.logger.log(
-        `Found payment ${payment.id} with status: ${
-          payment.status
+        `Found payment ${payment.id} with status: ${payment.status
         }, submissionId: ${payment.submissionId || 'None'}`,
       );
 
@@ -152,8 +148,7 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           }
 
           this.logger.log(
-            `Current submission status: ${
-              currentSubmission.status
+            `Current submission status: ${currentSubmission.status
             }, referenceNumber: ${currentSubmission.referenceNumber || 'None'}`,
           );
 
@@ -306,7 +301,22 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
    * Find payment by reference
    */
   protected async findPaymentByReference(reference: string) {
-    return this.prisma.payment.findFirst({
+    // First, let's check how many payments match this reference
+    const paymentCount = await this.prisma.payment.count({
+      where: {
+        OR: [
+          { reference },
+          { processorId: reference },
+          { invoiceNumber: reference },
+        ],
+      },
+    });
+
+    this.logger.log(
+      `Found ${paymentCount} payments matching reference: ${reference}`,
+    );
+
+    const payment = await this.prisma.payment.findFirst({
       where: {
         OR: [
           { reference },
@@ -318,6 +328,17 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         submission: true,
       },
     });
+
+    if (payment) {
+      this.logger.log(
+        `Found payment ${payment.id} with submissionId: ${payment.submissionId || 'NULL'
+        }, submission: ${payment.submission ? 'EXISTS' : 'NULL'}`,
+      );
+    } else {
+      this.logger.warn(`No payment found for reference: ${reference}`);
+    }
+
+    return payment;
   }
 
   /**

@@ -88,9 +88,10 @@ export class PaymentsService {
         user: {
           connect: { id: userId },
         },
-        // submission: {
-        //   connect: { id: createDto.submissionId },
-        // },
+        // connect submission if provided
+        submission: {
+          connect: { id: createDto.submissionId },
+        },
       };
 
       const payment = await this.prisma.payment.create({
@@ -228,6 +229,13 @@ export class PaymentsService {
             }
           : undefined,
       };
+
+      // Debug logging
+      this.logger.log(
+        `Creating payment with submissionId: ${
+          initiatePaymentDto.submissionId || 'NULL'
+        }`,
+      );
 
       const payment = await this.prisma.payment.create({
         data: paymentData,
