@@ -51,7 +51,11 @@ export const SYSTEM_ROLES = [Roles.SUPER_ADMIN, Roles.ADMIN];
 export const ADMIN_ROLES = [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCE];
 
 // Embassy and liaison staff
-export const EMBASSY_ROLES = [Roles.EMBASSY_OFFICER, Roles.LIAISON_OFFICER, Roles.AUTHORITY];
+export const EMBASSY_ROLES = [
+  Roles.EMBASSY_OFFICER,
+  Roles.LIAISON_OFFICER,
+  Roles.AUTHORITY,
+];
 
 // Verification and processing staff
 export const VERIFICATION_ROLES = [

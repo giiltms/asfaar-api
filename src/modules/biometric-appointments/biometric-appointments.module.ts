@@ -6,7 +6,6 @@ import { AuthModule } from '@modules/auth/auth.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { BiometricCentersModule } from '@modules/biometric-centers/biometric-centers.module';
 
-
 /**
  * BiometricAppointmentsModule
  *
@@ -20,7 +19,6 @@ import { BiometricCentersModule } from '@modules/biometric-centers/biometric-cen
     AuthModule, // For authentication guards
     PaymentsModule, // For payment validation before booking
     BiometricCentersModule, // For center availability and validation
-
   ],
   controllers: [BiometricAppointmentsController],
   providers: [BiometricAppointmentsService],

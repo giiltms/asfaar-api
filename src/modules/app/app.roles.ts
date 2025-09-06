@@ -41,7 +41,11 @@ export const defaultRoles = [Roles.APPLICANT];
 
 export const systemRoles = [Roles.SUPER_ADMIN, Roles.ADMIN];
 export const adminRoles = [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCE];
-export const embassyRoles = [Roles.EMBASSY_OFFICER, Roles.LIAISON_OFFICER, Roles.AUTHORITY];
+export const embassyRoles = [
+  Roles.EMBASSY_OFFICER,
+  Roles.LIAISON_OFFICER,
+  Roles.AUTHORITY,
+];
 export const verificationRoles = [
   Roles.VERIFICATION_OFFICER,
   Roles.CENTER_MANAGER,
