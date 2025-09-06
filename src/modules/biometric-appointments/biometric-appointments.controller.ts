@@ -50,13 +50,13 @@ export class BiometricAppointmentsController {
   ) {}
 
   /**
-   * Create a new biometric appointment (requires completed payment)
+   * Create a new biometric appointment (will be activated after payment)
    */
   @Post()
   @ApiOperation({
     summary: 'Create a new biometric appointment',
     description:
-      'Create a new biometric appointment for a paid form submission',
+      'Create a new biometric appointment for a form submission. Appointment will be activated when payment is completed.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,

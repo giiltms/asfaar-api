@@ -134,6 +134,9 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           this.logger.log(
             `Submission ${updated.id} moved to SUBMITTED after successful payment ${payment.id}`,
           );
+
+          // Activate the biometric appointment if it exists
+          await this.activateBiometricAppointment(payment.submissionId);
         } catch (e) {
           this.logger.error(
             `Failed to update submission to SUBMITTED for payment ${payment.id}: ${e.message}`,
@@ -418,6 +421,47 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         return PaymentStatus.PENDING;
       default:
         return null;
+    }
+  }
+
+  /**
+   * Activate biometric appointment after successful payment
+   */
+  private async activateBiometricAppointment(
+    submissionId: string,
+  ): Promise<void> {
+    try {
+      const appointment = await this.prisma.biometricAppointment.findUnique({
+        where: { submissionId },
+        select: { id: true, status: true },
+      });
+
+      if (!appointment) {
+        this.logger.warn(
+          `No biometric appointment found for submission ${submissionId}`,
+        );
+        return;
+      }
+
+      if (appointment.status === 'PENDING') {
+        await this.prisma.biometricAppointment.update({
+          where: { id: appointment.id },
+          data: { status: 'ACTIVE' },
+        });
+        this.logger.log(
+          `Biometric appointment ${appointment.id} activated for submission ${submissionId}`,
+        );
+      } else {
+        this.logger.log(
+          `Biometric appointment ${appointment.id} already has status ${appointment.status}, skipping activation`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to activate biometric appointment for submission ${submissionId}: ${error.message}`,
+        error.stack,
+      );
+      // Don't throw - this shouldn't fail the webhook processing
     }
   }
 }

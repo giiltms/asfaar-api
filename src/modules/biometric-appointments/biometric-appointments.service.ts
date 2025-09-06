@@ -42,7 +42,7 @@ export class BiometricAppointmentsService {
 
   /**
    * Create a new biometric appointment
-   * Requires payment validation before booking
+   * Creates appointment with PENDING status, will be activated by payment webhook
    */
   async createAppointment(
     createDto: CreateBiometricAppointmentDto,
@@ -142,7 +142,7 @@ export class BiometricAppointmentsService {
         );
       }
 
-      // 9. Create appointment with ACTIVE status (since payment is completed)
+      // 9. Create appointment with PENDING status (will be activated by payment webhook)
       const appointmentData: Prisma.BiometricAppointmentCreateInput = {
         user: { connect: { id: userId } },
         submission: { connect: { id: createDto.submissionId } },
@@ -154,7 +154,7 @@ export class BiometricAppointmentsService {
         confirmationAcknowledged: createDto.confirmationAcknowledged,
         consentAcknowledged: createDto.consentAcknowledged,
         termsAcknowledged: createDto.termsAcknowledged,
-        status: AppointmentStatus.ACTIVE, // Active since payment is completed
+        status: AppointmentStatus.PENDING, // Will be activated by payment webhook
         createdBy,
         lastModifiedBy: createdBy,
       };
