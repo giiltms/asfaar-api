@@ -58,6 +58,12 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.read, UserEntity);
   },
 
+  [Roles.AUTHORITY]({ can }) {
+    can(Actions.read, UserEntity);
+    can(Actions.update, UserEntity);
+    can(Actions.create, UserEntity); // For creating authority staff
+  },
+
   ADMIN({ user, can }) {
     can(Actions.manage, UserEntity);
   },

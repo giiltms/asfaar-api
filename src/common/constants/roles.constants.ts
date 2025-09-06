@@ -11,6 +11,7 @@ export enum Roles {
   CENTER_MANAGER = 'CENTER_MANAGER',
   RECEPTIONIST = 'RECEPTIONIST',
   GATEHOUSE = 'GATEHOUSE',
+  AUTHORITY = 'AUTHORITY',
 }
 
 export enum Gender {
@@ -26,14 +27,15 @@ export const ROLE_HIERARCHY = {
   [Roles.ADMIN]: 11,
   [Roles.FINANCE]: 10,
   [Roles.LIAISON_OFFICER]: 9, // Higher authority due to security agency management
-  [Roles.EMBASSY_OFFICER]: 8,
-  [Roles.VERIFICATION_OFFICER]: 7,
-  [Roles.CENTER_MANAGER]: 6,
-  [Roles.BIOMETRIC_AGENT]: 5,
-  [Roles.RECEPTIONIST]: 4,
-  [Roles.GATEHOUSE]: 3,
-  [Roles.AGENCY]: 2,
-  [Roles.APPLICANT]: 1,
+  [Roles.AUTHORITY]: 8, // Foreign affairs authority
+  [Roles.EMBASSY_OFFICER]: 7,
+  [Roles.VERIFICATION_OFFICER]: 6,
+  [Roles.CENTER_MANAGER]: 5,
+  [Roles.BIOMETRIC_AGENT]: 4,
+  [Roles.RECEPTIONIST]: 3,
+  [Roles.GATEHOUSE]: 2,
+  [Roles.AGENCY]: 1,
+  [Roles.APPLICANT]: 0,
 } as const;
 
 export const DEFAULT_ROLE = Roles.APPLICANT;
@@ -49,7 +51,7 @@ export const SYSTEM_ROLES = [Roles.SUPER_ADMIN, Roles.ADMIN];
 export const ADMIN_ROLES = [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCE];
 
 // Embassy and liaison staff
-export const EMBASSY_ROLES = [Roles.EMBASSY_OFFICER, Roles.LIAISON_OFFICER];
+export const EMBASSY_ROLES = [Roles.EMBASSY_OFFICER, Roles.LIAISON_OFFICER, Roles.AUTHORITY];
 
 // Verification and processing staff
 export const VERIFICATION_ROLES = [

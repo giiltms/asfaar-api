@@ -86,6 +86,22 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.create, 'CheckIn');
   },
 
+  [Roles.AUTHORITY]({ can }) {
+    can(Actions.read, 'Application');
+    can(Actions.update, 'Application');
+    can(Actions.create, 'ApplicationDecision');
+    can(Actions.read, 'User');
+    can(Actions.update, 'User');
+    can(Actions.read, 'Payment');
+    can(Actions.read, 'ServiceFee');
+    can(Actions.read, 'AuditLog');
+    can(Actions.create, 'AuthorityReport');
+    can(Actions.update, 'AuthorityStatus');
+    can(Actions.read, 'SecurityAgency');
+    can(Actions.create, 'SecurityAgency');
+    can(Actions.update, 'SecurityAgency');
+  },
+
   ADMIN({ user, can }) {
     can(Actions.manage, 'User');
     can(Actions.manage, 'Auth');
