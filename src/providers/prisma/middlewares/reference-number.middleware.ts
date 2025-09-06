@@ -3,6 +3,11 @@ import { Logger } from '@nestjs/common';
 
 export class ReferenceNumberMiddleware {
   private readonly logger = new Logger(ReferenceNumberMiddleware.name);
+  private prisma: any;
+
+  constructor(prisma?: any) {
+    this.prisma = prisma;
+  }
 
   async handle(
     params: Prisma.MiddlewareParams,
@@ -18,7 +23,7 @@ export class ReferenceNumberMiddleware {
           // Get the submission to check if it already has a reference number
           const submission = await (params.runInTransaction
             ? params.runInTransaction
-            : (globalThis as any).prisma
+            : this.prisma
           ).formSubmission.findUnique({
             where,
             select: {
@@ -50,7 +55,7 @@ export class ReferenceNumberMiddleware {
               // Get the biometric appointment to find the center
               const appointment = await (params.runInTransaction
                 ? params.runInTransaction
-                : (globalThis as any).prisma
+                : this.prisma
               ).biometricAppointment.findFirst({
                 where: { submissionId: submission.id },
                 include: {
@@ -71,7 +76,7 @@ export class ReferenceNumberMiddleware {
                 // Get or create application counter for this country/year
                 const counter = await (params.runInTransaction
                   ? params.runInTransaction
-                  : (globalThis as any).prisma
+                  : this.prisma
                 ).$transaction(async (tx) => {
                   // Try to find existing counter
                   let applicationCounter =
@@ -130,7 +135,7 @@ export class ReferenceNumberMiddleware {
                 // Update the submission with the generated reference number
                 await (params.runInTransaction
                   ? params.runInTransaction
-                  : (globalThis as any).prisma
+                  : this.prisma
                 ).formSubmission.update({
                   where,
                   data: { referenceNumber },

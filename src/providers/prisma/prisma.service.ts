@@ -43,8 +43,8 @@ export class PrismaService
     this.$use(paymentEmailMiddleware());
     this.$use(biometricCaptureEmailMiddleware());
     this.$use(
-      new ReferenceNumberMiddleware().handle.bind(
-        new ReferenceNumberMiddleware(),
+      new ReferenceNumberMiddleware(this).handle.bind(
+        new ReferenceNumberMiddleware(this),
       ),
     );
   }
