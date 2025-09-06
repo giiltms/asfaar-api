@@ -399,7 +399,9 @@ export class FormSubmissionsService {
           id: submissionId,
           userId,
           formId,
-          status: SubmissionStatus.DRAFT,
+          status: {
+            in: [SubmissionStatus.DRAFT, SubmissionStatus.PENDING_PAYMENT],
+          },
         },
       });
 
