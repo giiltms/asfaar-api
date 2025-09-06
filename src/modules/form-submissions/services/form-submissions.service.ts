@@ -2126,6 +2126,7 @@ export class FormSubmissionsService {
             amount: serviceFee.amount,
             currency: serviceFee.currency,
             isOptional: serviceFee.isOptional,
+            feeType: serviceFee.feeType,
           })) || [],
       },
       user: submission.user,

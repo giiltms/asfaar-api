@@ -67,7 +67,7 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.read, 'AuditLog');
   },
 
-  [Roles.LAISON_OFFICER]({ can }) {
+  [Roles.LIAISON_OFFICER]({ can }) {
     can(Actions.read, 'Application');
     can(Actions.update, 'Application');
     can(Actions.create, 'LiaisonReport');

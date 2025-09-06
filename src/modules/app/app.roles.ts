@@ -5,7 +5,7 @@ export enum Roles {
   AGENCY = 'AGENCY',
   FINANCE = 'FINANCE',
   EMBASSY_OFFICER = 'EMBASSY_OFFICER',
-  LAISON_OFFICER = 'LAISON_OFFICER',
+  LIAISON_OFFICER = 'LIAISON_OFFICER',
   VERIFICATION_OFFICER = 'VERIFICATION_OFFICER',
   BIOMETRIC_AGENT = 'BIOMETRIC_AGENT',
   CENTER_MANAGER = 'CENTER_MANAGER',
@@ -24,7 +24,7 @@ export const roleHierarchy: Record<Roles, number> = {
   [Roles.SUPER_ADMIN]: 12,
   [Roles.ADMIN]: 11,
   [Roles.FINANCE]: 10,
-  [Roles.LAISON_OFFICER]: 9, // Higher authority due to security agency management
+  [Roles.LIAISON_OFFICER]: 9, // Higher authority due to security agency management
   [Roles.EMBASSY_OFFICER]: 8,
   [Roles.VERIFICATION_OFFICER]: 7,
   [Roles.CENTER_MANAGER]: 6,
@@ -39,7 +39,7 @@ export const defaultRoles = [Roles.APPLICANT];
 
 export const systemRoles = [Roles.SUPER_ADMIN, Roles.ADMIN];
 export const adminRoles = [Roles.SUPER_ADMIN, Roles.ADMIN, Roles.FINANCE];
-export const embassyRoles = [Roles.EMBASSY_OFFICER, Roles.LAISON_OFFICER];
+export const embassyRoles = [Roles.EMBASSY_OFFICER, Roles.LIAISON_OFFICER];
 export const verificationRoles = [
   Roles.VERIFICATION_OFFICER,
   Roles.CENTER_MANAGER,

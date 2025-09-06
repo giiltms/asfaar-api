@@ -11,7 +11,7 @@ export enum VerificationAction {
 export enum SecurityDepartment {
   FINANCE = 'FINANCE',
   EMBASSY_OFFICER = 'EMBASSY_OFFICER',
-  LAISON_OFFICER = 'LAISON_OFFICER',
+  LIAISON_OFFICER = 'LIAISON_OFFICER',
   ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
 }

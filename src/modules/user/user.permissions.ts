@@ -48,7 +48,7 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.read, UserEntity);
   },
 
-  [Roles.LAISON_OFFICER]({ can }) {
+  [Roles.LIAISON_OFFICER]({ can }) {
     can(Actions.read, UserEntity);
     can(Actions.update, UserEntity);
     can(Actions.create, UserEntity); // For creating security agency staff
@@ -66,4 +66,3 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
     can(Actions.manage, UserEntity);
   },
 };
-
