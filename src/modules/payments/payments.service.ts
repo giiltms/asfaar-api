@@ -89,7 +89,7 @@ export class PaymentsService {
           connect: { id: userId },
         },
         // connect submission if provided
-        submission: {
+        submission: createDto.submissionId && {
           connect: { id: createDto.submissionId },
         },
       };
