@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { Logger } from '@nestjs/common';
+import { sendPaymentConfirmationEmail } from './payment-email.middleware';
 
 const prismaInternal = new PrismaClient();
 const logger = new Logger('ReferenceNumberMiddleware');
@@ -124,6 +125,42 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
                   where,
                   data: { referenceNumber },
                 });
+
+                // Now send payment confirmation email with the reference number
+                try {
+                  // Find the payment associated with this submission
+                  const payment = await prismaInternal.payment.findFirst({
+                    where: { submissionId: submission.id },
+                    select: { id: true },
+                  });
+
+                  if (payment) {
+                    logger.log(
+                      `Sending payment confirmation email for payment ${payment.id} with reference number ${referenceNumber}`,
+                    );
+
+                    // Send email asynchronously (don't block the response)
+                    setImmediate(() => {
+                      sendPaymentConfirmationEmail(payment.id).catch(
+                        (error) => {
+                          logger.error(
+                            `Failed to send payment confirmation email for payment ${payment.id}: ${error.message}`,
+                            error.stack,
+                          );
+                        },
+                      );
+                    });
+                  } else {
+                    logger.warn(
+                      `No payment found for submission ${submission.id} to send confirmation email`,
+                    );
+                  }
+                } catch (emailError) {
+                  logger.error(
+                    `Error sending payment confirmation email for submission ${submission.id}: ${emailError.message}`,
+                    emailError.stack,
+                  );
+                }
               } else {
                 logger.warn(
                   `No biometric appointment found for submission: ${submission.id}. Reference number will be generated when appointment is created.`,

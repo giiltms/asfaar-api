@@ -12,7 +12,9 @@ export function setMailServiceForPaymentMiddleware(service: MailService) {
   mailService = service;
 }
 
-async function sendPaymentConfirmationEmail(paymentId: string): Promise<void> {
+export async function sendPaymentConfirmationEmail(
+  paymentId: string,
+): Promise<void> {
   if (!mailService) {
     logger.warn('MailService not available for payment confirmation email');
     return;
@@ -139,14 +141,11 @@ export function paymentEmailMiddleware(): Prisma.Middleware {
             // Status is changing to COMPLETED, proceed with update first
             const result = await next(params);
 
-            // Then send email asynchronously (don't block the response)
-            setImmediate(() => {
-              sendPaymentConfirmationEmail(currentPayment.id).catch((error) => {
-                logger.error(
-                  `Async email send failed for payment ${currentPayment.id}: ${error.message}`,
-                );
-              });
-            });
+            // Note: Payment confirmation email is now sent by the reference number middleware
+            // after the reference number is generated to ensure it's included in the email
+            logger.log(
+              `Payment ${currentPayment.id} marked as completed. Email will be sent after reference number generation.`,
+            );
 
             return result;
           }
