@@ -164,11 +164,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-              id: form.country.id,
-              name: form.country.name,
-              isoCode2: form.country.isoCode2,
-              flag: form.country.flag,
-            }
+                id: form.country.id,
+                name: form.country.name,
+                isoCode2: form.country.isoCode2,
+                flag: form.country.flag,
+              }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -260,12 +260,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-          id: submission.id,
-          status: submission.status,
-          submittedAt: submission.submittedAt,
-          createdAt: submission.createdAt,
-          updatedAt: submission.updatedAt,
-        }
+            id: submission.id,
+            status: submission.status,
+            submittedAt: submission.submittedAt,
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
+          }
         : null,
     };
   }
@@ -332,15 +332,15 @@ export class FormSubmissionsService {
         metadata,
         responses: responses
           ? {
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId instead of formFieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-              instanceIndex: response.instanceIndex ?? 0,
-            })),
-          }
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId instead of formFieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+                instanceIndex: response.instanceIndex ?? 0,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -424,8 +424,8 @@ export class FormSubmissionsService {
     // Get existing responses for validation (to check FILE fields)
     const existingResponses = submission
       ? await this.prisma.fieldResponse.findMany({
-        where: { submissionId: submission.id },
-      })
+          where: { submissionId: submission.id },
+        })
       : [];
 
     // Validate submission against form template
@@ -1049,15 +1049,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -1111,15 +1111,15 @@ export class FormSubmissionsService {
         submittedAt: new Date(), // Update submission date
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId,
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId,
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
         statusLogs: {
           create: {
@@ -1752,40 +1752,40 @@ export class FormSubmissionsService {
       case 'REQUIRED_FILE':
         return new BadRequestException(
           `The field '${fieldName}' requires a file upload. ` +
-          `Please upload a file or contact support if you need help. ` +
-          `Supported formats: ${this.getSupportedFileTypes(field)}`,
+            `Please upload a file or contact support if you need help. ` +
+            `Supported formats: ${this.getSupportedFileTypes(field)}`,
         );
 
       case 'REQUIRED_FIELD':
         return new BadRequestException(
           `The field '${fieldName}' is required to complete your submission. ` +
-          `Please fill in this information before proceeding.`,
+            `Please fill in this information before proceeding.`,
         );
 
       case 'INVALID_FILE_TYPE':
         const allowedTypes = this.getSupportedFileTypes(field);
         return new BadRequestException(
           `The file type for '${fieldName}' is not supported. ` +
-          `Allowed types: ${allowedTypes}. Please try uploading a different file.`,
+            `Allowed types: ${allowedTypes}. Please try uploading a different file.`,
         );
 
       case 'FILE_TOO_LARGE':
         const maxSize = field.fileTypes?.maxSize || '10MB';
         return new BadRequestException(
           `The file for '${fieldName}' is too large. ` +
-          `Maximum size allowed: ${maxSize}. Please compress or resize your file.`,
+            `Maximum size allowed: ${maxSize}. Please compress or resize your file.`,
         );
 
       case 'MULTIPLE_FILES_NOT_ALLOWED':
         return new BadRequestException(
           `The field '${fieldName}' only accepts a single file. ` +
-          `Please upload only one file for this field.`,
+            `Please upload only one file for this field.`,
         );
 
       default:
         return new BadRequestException(
           `There's an issue with the field '${fieldName}'. ` +
-          `Please check your input and try again. If the problem persists, contact support.`,
+            `Please check your input and try again. If the problem persists, contact support.`,
         );
     }
   }
@@ -2273,18 +2273,18 @@ export class FormSubmissionsService {
       // Format dates for display
       const appointmentDateFormatted = appointmentDate
         ? appointmentDate.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
         : 'Not set';
 
       const appointmentTimeFormatted = appointmentTime
         ? appointmentTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        })
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
         : 'Not set';
 
       appointmentData = {
@@ -2300,19 +2300,19 @@ export class FormSubmissionsService {
         minutesUntilAppointment,
         center: submission.appointment.center
           ? {
-            name: submission.appointment.center.name,
-            address: submission.appointment.center.address,
-            city: submission.appointment.center.city,
-            state: submission.appointment.center.state,
-            phone: submission.appointment.center.phone,
-          }
+              name: submission.appointment.center.name,
+              address: submission.appointment.center.address,
+              city: submission.appointment.center.city,
+              state: submission.appointment.center.state,
+              phone: submission.appointment.center.phone,
+            }
           : null,
         booth: submission.appointment.queueEntry?.booth
           ? {
-            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
-            appointmentClass:
-              submission.appointment.queueEntry.booth.appointmentClass,
-          }
+              boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+              appointmentClass:
+                submission.appointment.queueEntry.booth.appointmentClass,
+            }
           : null,
       };
     }
@@ -2333,12 +2333,12 @@ export class FormSubmissionsService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-            name: submission.form.country.name,
-            isoCode2: submission.form.country.isoCode2,
-            isoCode3: submission.form.country.isoCode3,
-            flag: submission.form.country.flag,
-            logoUrl: submission.form.country.logoUrl,
-          }
+              name: submission.form.country.name,
+              isoCode2: submission.form.country.isoCode2,
+              isoCode3: submission.form.country.isoCode3,
+              flag: submission.form.country.flag,
+              logoUrl: submission.form.country.logoUrl,
+            }
           : null,
       },
       submission: {
