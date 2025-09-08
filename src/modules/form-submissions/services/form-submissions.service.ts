@@ -1996,6 +1996,13 @@ export class FormSubmissionsService {
           id: true,
           name: true,
           description: true,
+          applicationType: {
+            select: {
+              code: true,
+              name: true,
+              description: true,
+            },
+          },
           country: {
             select: {
               id: true,
@@ -2135,6 +2142,13 @@ export class FormSubmissionsService {
         id: submission.form.id,
         name: submission.form.name,
         description: submission.form.description,
+        applicationType: submission.form.applicationType
+          ? {
+              id: submission.form.applicationType.id,
+              code: submission.form.applicationType.code,
+              name: submission.form.applicationType.name,
+            }
+          : undefined,
         country: submission.form.country,
         availableServiceFees:
           submission.form.serviceFees?.map((serviceFee: any) => ({

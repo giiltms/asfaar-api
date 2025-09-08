@@ -534,6 +534,11 @@ export class FormSubmissionDto {
     id: string;
     name: string;
     description?: string;
+    applicationType?: {
+      code: string;
+      name: string;
+      description?: string;
+    };
     country?: {
       id: string;
       name: string;
