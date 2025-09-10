@@ -645,7 +645,7 @@ export class CountriesService {
       const updatedCountry = await this.prisma.country.update({
         where: { id: countryId },
         data: {
-          logoUrl: `/uploads/${logoPath}`,
+          logoUrl: logoPath,
           updatedAt: new Date(),
         },
       });
