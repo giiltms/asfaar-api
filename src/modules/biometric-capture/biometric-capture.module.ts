@@ -3,6 +3,7 @@ import { BiometricCaptureController } from './biometric-capture.controller';
 import { BiometricCaptureService } from './services/biometric-capture.service';
 import { BiometricEncryptionService } from '@common/services/biometric-encryption.service';
 import { BiometricValidationService } from '@common/services/biometric-validation.service';
+import { UserContextService } from '@common/services/user-context.service';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
     BiometricCaptureService,
     BiometricEncryptionService,
     BiometricValidationService,
+    UserContextService,
   ],
   exports: [
     BiometricCaptureService,

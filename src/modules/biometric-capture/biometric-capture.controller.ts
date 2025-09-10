@@ -7,10 +7,10 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   HttpCode,
   HttpStatus,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,12 +28,15 @@ import {
   CaptureRequest,
   CaptureResult,
 } from './services/biometric-capture.service';
+import { UserContextService } from '@common/services/user-context.service';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { FingerPosition } from '@prisma/client';
 
 export class CaptureFingerprintsDto {
   submissionId?: string;
-  captureDevice: string;
-  captureLocation: string;
   captureMethod: 'SLAP' | 'INDIVIDUAL';
   fingers: {
     position: FingerPosition;
@@ -65,6 +68,7 @@ export class BiometricCaptureController {
 
   constructor(
     private readonly biometricCaptureService: BiometricCaptureService,
+    private readonly userContextService: UserContextService,
   ) {}
 
   @Post('capture')
@@ -78,7 +82,7 @@ export class BiometricCaptureController {
   @ApiOperation({
     summary: 'Capture and store fingerprint data',
     description:
-      'Capture fingerprint data using Suprema RealScan-G10 or equivalent device. Stores ISO/IEC 19794-2:2005 templates with encryption.',
+      'Capture fingerprint data using Suprema RealScan-G10 or equivalent device. Stores ISO/IEC 19794-2:2005 templates with encryption. Booth and center information is automatically determined from user assignment.',
   })
   @ApiBody({ type: CaptureFingerprintsDto })
   @ApiResponse({
@@ -88,7 +92,8 @@ export class BiometricCaptureController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid fingerprint data or validation failed',
+    description:
+      'Invalid fingerprint data, validation failed, or no booth assignment found',
   })
   @ApiResponse({
     status: 401,
@@ -99,12 +104,22 @@ export class BiometricCaptureController {
     description: 'Forbidden - Insufficient permissions',
   })
   async captureFingerprints(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Body() captureDto: CaptureFingerprintsDto,
   ): Promise<CaptureResponseDto> {
-    this.logger.log(`Fingerprint capture request from user ${req.user.id}`);
+    this.logger.log(`Fingerprint capture request from user ${user.id}`);
 
     try {
+      // Get user's booth and center context automatically
+      const userContext =
+        await this.userContextService.getUserActiveBoothContext(user.id);
+
+      if (!userContext) {
+        throw new BadRequestException(
+          'No active booth or center assignment found. Please ensure you are assigned to a booth or managing a center.',
+        );
+      }
+
       // Convert base64 data to buffers
       const fingers = captureDto.fingers.map((finger) => ({
         position: finger.position,
@@ -115,14 +130,19 @@ export class BiometricCaptureController {
       }));
 
       const captureRequest: CaptureRequest = {
-        userId: req.user.id,
+        userId: user.id,
         submissionId: captureDto.submissionId,
-        captureDevice: captureDto.captureDevice,
-        captureLocation: captureDto.captureLocation,
+        captureDevice: this.userContextService.getDeviceInfo(userContext),
+        captureLocation:
+          this.userContextService.formatLocationString(userContext),
         captureMethod: captureDto.captureMethod,
         fingers,
-        capturedBy: req.user.id,
+        capturedBy: user.id,
       };
+
+      this.logger.log(
+        `Capturing fingerprints at ${userContext.centerName} - Booth ${userContext.boothNumber}`,
+      );
 
       const result = await this.biometricCaptureService.captureFingerprints(
         captureRequest,
@@ -290,16 +310,16 @@ export class BiometricCaptureController {
     description: 'Forbidden - Insufficient permissions',
   })
   async deleteFingerprintData(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Param('biometricDataId') biometricDataId: string,
   ): Promise<void> {
     this.logger.log(
-      `Fingerprint data deletion request for ${biometricDataId} by ${req.user.id}`,
+      `Fingerprint data deletion request for ${biometricDataId} by ${user.id}`,
     );
 
     await this.biometricCaptureService.deleteFingerprintData(
       biometricDataId,
-      req.user.id,
+      user.id,
     );
   }
 
