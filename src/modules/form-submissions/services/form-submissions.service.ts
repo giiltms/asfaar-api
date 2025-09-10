@@ -2009,6 +2009,36 @@ export class FormSubmissionsService {
           email: true,
         },
       },
+      appointment: {
+        select: {
+          id: true,
+          status: true,
+          appointmentDate: true,
+          appointmentTime: true,
+          appointmentClass: true,
+          centerId: true,
+          center: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          queueEntry: {
+            select: {
+              id: true,
+              status: true,
+              queueNumber: true,
+              booth: {
+                select: {
+                  id: true,
+                  boothNumber: true,
+                  appointmentClass: true,
+                },
+              },
+            },
+          },
+        },
+      },
     };
   }
 
@@ -2114,6 +2144,17 @@ export class FormSubmissionsService {
       biometricRequired: submission.biometricRequired || false,
       biometricCompleted: submission.biometricCompleted || false,
       biometricCompletedAt: submission.biometricCompletedAt,
+      biometricAppointment: submission.appointment
+        ? {
+          id: submission.appointment.id,
+          centerId: submission.appointment.centerId,
+          centerName: submission.appointment.center?.name,
+          appointmentDate: submission.appointment.appointmentDate,
+          appointmentTime: submission.appointment.appointmentTime,
+          status: submission.appointment.status,
+          appointmentClass: submission.appointment.appointmentClass,
+        }
+        : undefined,
 
       // Flag management
       isFlagged: submission.isFlagged || false,
