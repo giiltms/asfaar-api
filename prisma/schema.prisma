@@ -1412,9 +1412,9 @@ model BiometricData {
   photoHash     String? // Hash for integrity verification
   photoMetadata Json? // Additional photo metadata (dimensions, format, etc.)
 
-  // Fingerprint Data
-  fingerprintData     Json? // Encrypted fingerprint template data
-  fingerprintHash     String? // Hash for integrity verification
+  // Fingerprint Data (Legacy - now using FingerprintData model)
+  fingerprintData     Json? // Legacy field - use FingerprintData model instead
+  fingerprintHash     String? // Legacy field - use FingerprintData model instead
   fingerprintMetadata Json? // Additional fingerprint metadata (quality scores, etc.)
 
   // Signature Data (if needed)
@@ -1442,6 +1442,13 @@ model BiometricData {
   isEncrypted         Boolean @default(true) // Whether data is encrypted
   encryptionKey       String? // Reference to encryption key (not the actual key)
   dataRetentionPolicy String? // How long to retain this data
+  encryptionAlgorithm String? // e.g., "AES-256-GCM"
+  keyVersion          String? // Version of encryption key used
+
+  // Compliance & Standards
+  templateStandard   String? // e.g., "ISO/IEC 19794-2:2005"
+  captureStandard    String? // e.g., "ISO/IEC 19794-4:2005"
+  dataClassification String  @default("CONFIDENTIAL") // Data classification level
 
   // Audit Fields
   createdAt      DateTime @default(now())
@@ -1488,34 +1495,50 @@ model FingerprintData {
   fingerPosition FingerPosition
   fingerName     String
 
-  // Template Data
-  templateData   Json?
-  templateHash   String?
-  templateFormat String?
+  // ISO/IEC 19794-2:2005 Template Data
+  templateData   Bytes? // Binary minutiae template (ISO/IEC 19794-2:2005)
+  templateHash   String? // SHA-256 hash for integrity verification
+  templateFormat String  @default("ISO19794-2:2005") // Template format standard
 
-  // Quality Information
-  qualityScore    Float?
+  // Optional WSQ Image Storage for Future Reprocessing
+  wsqImageData Bytes? // WSQ-compressed raw fingerprint image
+  wsqImageHash String? // Hash for WSQ image integrity
+  wsqImageSize Int? // Size of WSQ image in bytes
+
+  // Quality Information (NFIQ scoring)
+  nfiqScore       Int? // NFIQ quality score (1-5, where 1-3 are acceptable)
+  qualityScore    Float? // Additional quality metrics (0-100)
   captureAttempts Int     @default(1)
   isAcceptable    Boolean @default(false)
+  isTemplateValid Boolean @default(false) // Template conformance validation
 
   // Capture Details
-  capturedAt    DateTime?
-  captureDevice String?
-  captureMethod String?
+  capturedAt      DateTime?
+  captureDevice   String? // e.g., "Suprema RealScan-G10"
+  captureMethod   String? // "SLAP" or "INDIVIDUAL"
+  captureLocation String? // Physical location of capture
+
+  // Security & Encryption
+  isEncrypted   Boolean @default(true)
+  encryptionKey String? // Reference to encryption key (not actual key)
 
   // Metadata
-  metadata Json?
+  metadata Json? // Additional capture metadata
 
   // Audit Fields
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String? // Who captured this data
+  lastModifiedBy String? // Last person who modified
 
   // Indexes & Constraints
   @@unique([biometricDataId, fingerPosition])
   @@index([biometricDataId])
   @@index([fingerPosition])
-  @@index([qualityScore])
+  @@index([nfiqScore])
   @@index([isAcceptable])
+  @@index([isTemplateValid])
   @@index([biometricDataId, isAcceptable])
+  @@index([capturedAt])
   @@map("fingerprint_data")
 }

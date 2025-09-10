@@ -43,11 +43,16 @@ export const permissions: Permissions<Roles, Subjects, Actions> = {
 
   [Roles.BIOMETRIC_AGENT]({ can }) {
     can(Actions.create, 'BiometricData');
+    can(Actions.read, 'BiometricData');
+    can(Actions.read, 'FingerprintData');
+    can(Actions.create, 'FingerprintData');
     can(Actions.read, 'BiometricSession');
+    can(Actions.create, 'BiometricSession');
   },
 
   [Roles.CENTER_MANAGER]({ can }) {
     can(Actions.manage, 'BiometricData');
+    can(Actions.manage, 'FingerprintData');
     can(Actions.manage, 'BiometricSession');
     can(Actions.manage, 'BiometricCenter');
     can(Actions.manage, 'BiometricAppointment');

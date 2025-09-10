@@ -19,7 +19,7 @@ import { ApplicantDashboardModule } from '../dashboard-applicant/applicant-dashb
 import { CountriesModule } from '../countries/countries.module';
 import { ApplicationTypesModule } from '../application-types/application-types.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
-import { BiometricDataModule } from '../biometric-data/biometric-data.module';
+import { BiometricCaptureModule } from '../biometric-capture/biometric-capture.module';
 import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
 
@@ -48,7 +48,7 @@ import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-front
     CountriesModule,
     ApplicationTypesModule,
     WebhooksModule,
-    BiometricDataModule,
+    BiometricCaptureModule,
     DashboardVerificationModule,
     DashboardFrontdeskModule,
     // HealthModule, // Add HealthModule when it exists
