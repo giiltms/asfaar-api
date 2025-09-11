@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { SubmissionProgressService } from '@common/services/submission-progress.service';
 import {
   FormSubmission,
   FieldResponse,
@@ -41,7 +42,10 @@ import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 export class FormSubmissionsService {
   private readonly logger = new Logger(FormSubmissionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly progressService: SubmissionProgressService,
+  ) {}
 
   // Authenticated Form Access
   async getAvailableFormsForUser(
@@ -346,7 +350,7 @@ export class FormSubmissionsService {
       include: this.getSubmissionInclude(),
     });
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   async submitForm(
@@ -551,7 +555,7 @@ export class FormSubmissionsService {
       return updatedSubmission;
     });
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   /**
@@ -904,7 +908,7 @@ export class FormSubmissionsService {
       }
     });
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   async getUserSubmissions(
@@ -959,34 +963,10 @@ export class FormSubmissionsService {
       this.prisma.formSubmission.count({ where }),
     ]);
 
-    // Calculate form progress for each submission
+    // Progress is already calculated in mapToSubmissionDto
     const submissionsWithProgress = await Promise.all(
       submissions.map(async (submission) => {
-        const submissionDto = this.mapToSubmissionDto(submission);
-
-        try {
-          // Get form progress for this submission
-          const formProgress = await this.getFormProgress(
-            userId,
-            submission.formId,
-          );
-
-          // Add progress information to the submission
-          submissionDto.progress = {
-            progressPercentage: formProgress.overallProgress,
-            nextAction: formProgress.canSubmit
-              ? 'Ready to submit'
-              : 'Complete required fields',
-          };
-        } catch (error) {
-          // If progress calculation fails, set default values
-          submissionDto.progress = {
-            progressPercentage: 0,
-            nextAction: 'Unable to calculate progress',
-          };
-        }
-
-        return submissionDto;
+        return await this.mapToSubmissionDto(submission);
       }),
     );
 
@@ -1017,7 +997,7 @@ export class FormSubmissionsService {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   async updateSubmission(
@@ -1063,7 +1043,7 @@ export class FormSubmissionsService {
       include: this.getSubmissionInclude(),
     });
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   /**
@@ -1135,7 +1115,7 @@ export class FormSubmissionsService {
       include: this.getSubmissionInclude(),
     });
 
-    return this.mapToSubmissionDto(submission);
+    return await this.mapToSubmissionDto(submission);
   }
 
   /**
@@ -1153,7 +1133,9 @@ export class FormSubmissionsService {
       orderBy: { queriedAt: 'desc' },
     });
 
-    return submissions.map((submission) => this.mapToSubmissionDto(submission));
+    return Promise.all(
+      submissions.map((submission) => this.mapToSubmissionDto(submission)),
+    );
   }
 
   async cancelSubmission(
@@ -1241,7 +1223,7 @@ export class FormSubmissionsService {
     // TODO: Add notification to admins if submission was under review
     // TODO: Handle payment refund logic if needed
 
-    return this.mapToSubmissionDto(cancelledSubmission);
+    return await this.mapToSubmissionDto(cancelledSubmission);
   }
 
   async restoreSubmission(submissionId: string): Promise<FormSubmissionDto> {
@@ -1294,7 +1276,7 @@ export class FormSubmissionsService {
       },
     });
 
-    return this.mapToSubmissionDto(restoredSubmission);
+    return await this.mapToSubmissionDto(restoredSubmission);
   }
 
   // Admin Methods
@@ -1353,8 +1335,8 @@ export class FormSubmissionsService {
     ]);
 
     return {
-      submissions: submissions.map((submission) =>
-        this.mapToSubmissionDto(submission),
+      submissions: await Promise.all(
+        submissions.map((submission) => this.mapToSubmissionDto(submission)),
       ),
       total,
       page,
@@ -1391,7 +1373,7 @@ export class FormSubmissionsService {
       include: this.getSubmissionInclude(),
     });
 
-    return this.mapToSubmissionDto(updatedSubmission);
+    return await this.mapToSubmissionDto(updatedSubmission);
   }
 
   async getSubmissionAnalytics(): Promise<SubmissionAnalyticsDto> {
@@ -2132,7 +2114,9 @@ export class FormSubmissionsService {
     return { [field]: sortOrder };
   }
 
-  private mapToSubmissionDto(submission: any): FormSubmissionDto {
+  private async mapToSubmissionDto(
+    submission: any,
+  ): Promise<FormSubmissionDto> {
     return {
       id: submission.id,
       formId: submission.formId,
@@ -2229,9 +2213,39 @@ export class FormSubmissionsService {
       },
       user: submission.user,
       referenceNumber: submission.referenceNumber,
-      // Progress information - will be calculated separately for each submission
-      progress: undefined,
+      // Calculate progress based on completed sections
+      progress: await this.calculateSubmissionProgress(submission.id),
     };
+  }
+
+  /**
+   * Calculate progress for a single submission
+   */
+  private async calculateSubmissionProgress(submissionId: string) {
+    try {
+      const progress = await this.progressService.calculateProgress(
+        submissionId,
+      );
+      return {
+        progressPercentage: progress.progressPercentage,
+        nextAction: progress.nextAction,
+        completedSteps: progress.completedSteps,
+        totalSteps: progress.totalSteps,
+        stepDetails: progress.stepDetails,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to calculate progress for submission ${submissionId}`,
+        error.stack,
+      );
+      return {
+        progressPercentage: 0,
+        nextAction: 'Complete form sections',
+        completedSteps: 0,
+        totalSteps: 0,
+        stepDetails: [],
+      };
+    }
   }
 
   /**

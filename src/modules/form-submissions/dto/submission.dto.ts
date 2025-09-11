@@ -574,11 +574,34 @@ export class FormSubmissionDto {
     properties: {
       progressPercentage: { type: 'number', example: 75 },
       nextAction: { type: 'string', example: 'Complete payment' },
+      completedSteps: { type: 'number', example: 3 },
+      totalSteps: { type: 'number', example: 7 },
+      stepDetails: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            stepName: { type: 'string', example: 'Personal Information' },
+            isCompleted: { type: 'boolean', example: true },
+            stepType: {
+              type: 'string',
+              enum: ['section', 'biometric', 'payment'],
+            },
+          },
+        },
+      },
     },
   })
   progress?: {
     progressPercentage: number;
     nextAction?: string;
+    completedSteps: number;
+    totalSteps: number;
+    stepDetails: {
+      stepName: string;
+      isCompleted: boolean;
+      stepType: 'section' | 'biometric' | 'payment';
+    }[];
   };
 }
 
