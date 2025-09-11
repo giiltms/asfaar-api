@@ -18,6 +18,8 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiProperty,
+  ApiPropertyOptional,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
@@ -35,28 +37,292 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { FingerPosition } from '@prisma/client';
 
+export class FingerDataDto {
+  @ApiProperty({
+    description: 'Finger position according to ISO/IEC 19794-2:2005 standard',
+    enum: FingerPosition,
+    example: 'LEFT_THUMB',
+  })
+  position: FingerPosition;
+
+  @ApiProperty({
+    description: 'Base64 encoded ISO/IEC 19794-2:2005 minutiae template',
+    example: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+  })
+  templateData: string;
+
+  @ApiPropertyOptional({
+    description: 'Base64 encoded WSQ compressed fingerprint image (optional)',
+    example: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+  })
+  wsqImageData?: string;
+}
+
 export class CaptureFingerprintsDto {
+  @ApiPropertyOptional({
+    description: 'Optional submission ID to associate biometric data with a specific application',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   submissionId?: string;
+
+  @ApiProperty({
+    description: 'Capture method used for fingerprint collection',
+    enum: ['SLAP', 'INDIVIDUAL'],
+    example: 'SLAP',
+  })
   captureMethod: 'SLAP' | 'INDIVIDUAL';
-  fingers: {
-    position: FingerPosition;
-    templateData: string; // Base64 encoded
-    wsqImageData?: string; // Base64 encoded
-  }[];
+
+  @ApiProperty({
+    description: 'Array of finger data to capture',
+    type: [FingerDataDto],
+    example: [
+      {
+        position: 'LEFT_THUMB',
+        templateData: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+        wsqImageData: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+      },
+      {
+        position: 'LEFT_INDEX',
+        templateData: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+      },
+    ],
+  })
+  fingers: FingerDataDto[];
+}
+
+export class ValidationResultDto {
+  @ApiProperty({
+    description: 'Whether the fingerprint template is valid',
+    example: true,
+  })
+  isValid: boolean;
+
+  @ApiProperty({
+    description: 'Quality score of the fingerprint (0-100)',
+    example: 85,
+  })
+  qualityScore: number;
+
+  @ApiProperty({
+    description: 'NFIQ (NIST Fingerprint Image Quality) score (1-5, where 1 is best)',
+    example: 2,
+  })
+  nfiqScore: number;
+
+  @ApiProperty({
+    description: 'Validation errors found',
+    type: [String],
+    example: [],
+  })
+  errors: string[];
+
+  @ApiProperty({
+    description: 'Validation warnings',
+    type: [String],
+    example: ['Template quality is below optimal threshold'],
+  })
+  warnings: string[];
 }
 
 export class CaptureResponseDto {
+  @ApiProperty({
+    description: 'Unique identifier for the biometric data record',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   biometricDataId: string;
+
+  @ApiProperty({
+    description: 'Array of fingerprint data IDs created',
+    type: [String],
+    example: [
+      '123e4567-e89b-12d3-a456-426614174001',
+      '123e4567-e89b-12d3-a456-426614174002',
+    ],
+  })
   fingerprintDataIds: string[];
+
+  @ApiProperty({
+    description: 'Whether the overall capture operation was successful',
+    example: true,
+  })
   overallSuccess: boolean;
-  validationResults: {
-    isValid: boolean;
-    qualityScore: number;
-    nfiqScore: number;
-    errors: string[];
-    warnings: string[];
-  }[];
+
+  @ApiProperty({
+    description: 'Validation results for each finger captured',
+    type: [ValidationResultDto],
+    example: [
+      {
+        isValid: true,
+        qualityScore: 85,
+        nfiqScore: 2,
+        errors: [],
+        warnings: [],
+      },
+      {
+        isValid: true,
+        qualityScore: 78,
+        nfiqScore: 3,
+        errors: [],
+        warnings: ['Template quality is below optimal threshold'],
+      },
+    ],
+  })
+  validationResults: ValidationResultDto[];
+
+  @ApiProperty({
+    description: 'Overall errors encountered during capture',
+    type: [String],
+    example: [],
+  })
   errors: string[];
+}
+
+export class BiometricDataDto {
+  @ApiProperty({
+    description: 'Unique identifier for the biometric data',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'User ID associated with the biometric data',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  userId: string;
+
+  @ApiPropertyOptional({
+    description: 'Submission ID if associated with a specific application',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  submissionId?: string;
+
+  @ApiProperty({
+    description: 'Capture device used',
+    example: 'Suprema RealScan-G10',
+  })
+  captureDevice: string;
+
+  @ApiProperty({
+    description: 'Location where capture was performed',
+    example: 'Booth 1, Center A, Lagos Office',
+  })
+  captureLocation: string;
+
+  @ApiProperty({
+    description: 'Method used for capture',
+    enum: ['SLAP', 'INDIVIDUAL'],
+    example: 'SLAP',
+  })
+  captureMethod: string;
+
+  @ApiProperty({
+    description: 'Number of fingers captured',
+    example: 4,
+  })
+  fingerCount: number;
+
+  @ApiProperty({
+    description: 'Date and time when capture was performed',
+    example: '2024-01-15T10:30:00Z',
+  })
+  capturedAt: string;
+
+  @ApiProperty({
+    description: 'User who performed the capture',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  capturedBy: string;
+}
+
+export class FingerprintDataDto {
+  @ApiProperty({
+    description: 'Unique identifier for the fingerprint data',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Finger position',
+    enum: FingerPosition,
+    example: 'LEFT_THUMB',
+  })
+  position: FingerPosition;
+
+  @ApiProperty({
+    description: 'Quality score of the fingerprint (0-100)',
+    example: 85,
+  })
+  qualityScore: number;
+
+  @ApiProperty({
+    description: 'NFIQ score (1-5, where 1 is best)',
+    example: 2,
+  })
+  nfiqScore: number;
+
+  @ApiProperty({
+    description: 'Whether the template is encrypted',
+    example: true,
+  })
+  isEncrypted: boolean;
+
+  @ApiProperty({
+    description: 'Date and time when captured',
+    example: '2024-01-15T10:30:00Z',
+  })
+  capturedAt: string;
+}
+
+export class BiometricDataListDto {
+  @ApiProperty({
+    description: 'Array of biometric data records',
+    type: [BiometricDataDto],
+  })
+  data: BiometricDataDto[];
+
+  @ApiProperty({
+    description: 'Total number of records',
+    example: 25,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: 'Current page number',
+    example: 1,
+  })
+  page: number;
+
+  @ApiProperty({
+    description: 'Number of records per page',
+    example: 10,
+  })
+  limit: number;
+}
+
+export class HealthCheckDto {
+  @ApiProperty({
+    description: 'Service status',
+    example: 'healthy',
+  })
+  status: string;
+
+  @ApiProperty({
+    description: 'Service name',
+    example: 'Biometric Capture Service',
+  })
+  service: string;
+
+  @ApiProperty({
+    description: 'Current timestamp',
+    example: '2024-01-15T10:30:00Z',
+  })
+  timestamp: string;
+
+  @ApiProperty({
+    description: 'Service version',
+    example: '1.0.0',
+  })
+  version: string;
 }
 
 @ApiTags('Biometric Capture')
@@ -178,11 +444,12 @@ export class BiometricCaptureController {
   @ApiOperation({
     summary: 'Retrieve fingerprint data for a user',
     description:
-      'Retrieve decrypted fingerprint data for verification or processing purposes.',
+      'Retrieve decrypted fingerprint data for verification or processing purposes. Returns both biometric data metadata and individual fingerprint records.',
   })
   @ApiResponse({
     status: 200,
     description: 'Fingerprint data retrieved successfully',
+    type: BiometricDataDto,
   })
   @ApiResponse({
     status: 404,
