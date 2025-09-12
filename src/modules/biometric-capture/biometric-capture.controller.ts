@@ -21,6 +21,16 @@ import {
   ApiProperty,
   ApiPropertyOptional,
 } from '@nestjs/swagger';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  IsUUID,
+  ValidateNested,
+  IsNotEmpty,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -43,18 +53,24 @@ export class FingerDataDto {
     enum: FingerPosition,
     example: 'LEFT_THUMB',
   })
+  @IsEnum(FingerPosition)
+  @IsNotEmpty()
   position: FingerPosition;
 
   @ApiProperty({
     description: 'Base64 encoded ISO/IEC 19794-2:2005 minutiae template',
     example: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
   })
+  @IsString()
+  @IsNotEmpty()
   templateData: string;
 
   @ApiPropertyOptional({
     description: 'Base64 encoded WSQ compressed fingerprint image (optional)',
     example: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
   })
+  @IsOptional()
+  @IsString()
   wsqImageData?: string;
 }
 
@@ -63,6 +79,8 @@ export class CaptureFingerprintsDto {
     description: 'Optional submission ID to associate biometric data with a specific application',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
+  @IsOptional()
+  @IsUUID()
   submissionId?: string;
 
   @ApiProperty({
@@ -70,6 +88,8 @@ export class CaptureFingerprintsDto {
     enum: ['SLAP', 'INDIVIDUAL'],
     example: 'SLAP',
   })
+  @IsEnum(['SLAP', 'INDIVIDUAL'])
+  @IsNotEmpty()
   captureMethod: 'SLAP' | 'INDIVIDUAL';
 
   @ApiProperty({
@@ -87,6 +107,9 @@ export class CaptureFingerprintsDto {
       },
     ],
   })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FingerDataDto)
   fingers: FingerDataDto[];
 }
 
