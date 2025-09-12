@@ -1,4 +1,5 @@
 import * as basicAuth from 'express-basic-auth';
+import * as express from 'express';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import {
   INestApplication,
@@ -29,8 +30,18 @@ async function bootstrap(): Promise<{ port: number }> {
     fallthrough: false, // Don't fall through to other handlers
   });
 
-  // Increase body size limits for large biometric payloads
-  // Note: Using global pipes or custom middleware is typical; here we rely on Nest's underlying body-parser options via main bootstrap config.
+  // Configure body parser for large biometric payloads
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+  // Set request timeout for large biometric payloads (5 minutes)
+  app.use((req, res, next) => {
+    if (req.path.includes('/biometric-capture/')) {
+      req.setTimeout(300000); // 5 minutes
+      res.setTimeout(300000); // 5 minutes
+    }
+    next();
+  });
 
   const configService: ConfigService = app.get(ConfigService);
   const appConfig = configService.get('app');
