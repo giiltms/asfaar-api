@@ -6,9 +6,10 @@ import { BiometricValidationService } from '@common/services/biometric-validatio
 import { UserContextService } from '@common/services/user-context.service';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { LocalStorageModule } from '@providers/localstorage/localstorage.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, LocalStorageModule],
   controllers: [BiometricCaptureController],
   providers: [
     BiometricCaptureService,

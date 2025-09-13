@@ -11,6 +11,8 @@ import {
   TemplateValidationResult,
 } from '@common/services/biometric-validation.service';
 import { FingerPosition } from '@prisma/client';
+import { LocalStorageService } from '@providers/localstorage/localstorage.service';
+import * as crypto from 'crypto';
 
 export interface CaptureRequest {
   userId: string;
@@ -42,6 +44,7 @@ export class BiometricCaptureService {
     private readonly prisma: PrismaService,
     private readonly encryptionService: BiometricEncryptionService,
     private readonly validationService: BiometricValidationService,
+    private readonly localStorageService: LocalStorageService,
   ) {}
 
   /**
@@ -480,5 +483,122 @@ export class BiometricCaptureService {
       0,
     );
     return Math.round(totalQuality / validationResults.length);
+  }
+
+  /**
+   * Upload photo for an applicant using reference number
+   * @param referenceNumber - Application reference number
+   * @param photo - Photo file from multer
+   * @param uploadedBy - User ID who uploaded the photo
+   * @param userContext - User's booth and center context
+   * @returns Photo upload result
+   */
+  async uploadPhoto(
+    referenceNumber: string,
+    photo: Express.Multer.File,
+    uploadedBy: string,
+    userContext: any,
+  ): Promise<{
+    photoUrl: string;
+    photoHash: string;
+    photoSize: number;
+    photoMimeType: string;
+    referenceNumber: string;
+    uploadedAt: string;
+  }> {
+    this.logger.log(`Uploading photo for reference ${referenceNumber}`);
+
+    // Find the submission by reference number
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { referenceNumber },
+      include: {
+        user: true,
+        form: {
+          include: {
+            country: true,
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException(
+        `Application with reference number "${referenceNumber}" not found`,
+      );
+    }
+
+    // Generate photo hash for integrity verification
+    const photoHash = crypto
+      .createHash('sha256')
+      .update(photo.buffer as Buffer)
+      .digest('hex');
+
+    // Upload photo to storage
+    const photoUrl = await this.localStorageService.upload(
+      photo,
+      'biometric-photos',
+    );
+
+    // Generate capture location and device info
+    const captureLocation = `${userContext.centerName} - Booth ${userContext.boothNumber}`;
+    const captureDevice = `Booth ${userContext.boothNumber} - ${userContext.centerName}`;
+
+    // Create or update biometric data record
+    const biometricData = await this.prisma.biometricData.upsert({
+      where: {
+        submissionId: submission.id,
+      },
+      update: {
+        photoUrl,
+        photoHash,
+        photoMetadata: {
+          originalName: photo.originalname,
+          mimeType: photo.mimetype,
+          size: photo.size,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy,
+          captureLocation,
+          captureDevice,
+        },
+        capturedBy: uploadedBy,
+        capturedAt: new Date(),
+        captureDevice,
+        captureLocation,
+      },
+      create: {
+        userId: submission.userId,
+        submissionId: submission.id,
+        photoUrl,
+        photoHash,
+        photoMetadata: {
+          originalName: photo.originalname,
+          mimeType: photo.mimetype,
+          size: photo.size,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy,
+          captureLocation,
+          captureDevice,
+        },
+        capturedBy: uploadedBy,
+        capturedAt: new Date(),
+        captureDevice,
+        captureLocation,
+        isEncrypted: true,
+        encryptionAlgorithm: 'AES-256-GCM',
+      },
+    });
+
+    this.logger.log(
+      `Photo uploaded successfully for reference ${referenceNumber}, biometric data ID: ${biometricData.id}`,
+    );
+
+    return {
+      photoUrl,
+      photoHash,
+      photoSize: photo.size,
+      photoMimeType: photo.mimetype,
+      referenceNumber,
+      uploadedAt: new Date().toISOString(),
+    };
   }
 }

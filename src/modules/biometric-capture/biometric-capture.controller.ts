@@ -20,6 +20,8 @@ import {
   ApiBody,
   ApiProperty,
   ApiPropertyOptional,
+  ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import {
   IsString,
@@ -29,8 +31,12 @@ import {
   IsUUID,
   ValidateNested,
   IsNotEmpty,
+  IsNotEmpty as IsNotEmptyValidator,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { LocalStorageService } from '@providers/localstorage/localstorage.service';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -348,6 +354,56 @@ export class HealthCheckDto {
   version: string;
 }
 
+export class PhotoUploadDto {
+  @ApiProperty({
+    description: 'Application reference number (e.g., SA00125000001)',
+    example: 'SA00125000001',
+  })
+  @IsString()
+  @IsNotEmptyValidator()
+  referenceNumber: string;
+}
+
+export class PhotoUploadResponseDto {
+  @ApiProperty({
+    description: 'Success status',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Response message',
+    example: 'Photo uploaded successfully',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'Uploaded photo data',
+    example: {
+      photoUrl: 'https://api.asfaar.com/uploads/biometric-photos/SA00125000001_1705123456789_photo.jpg',
+      photoHash: 'sha256:abc123def456...',
+      photoSize: 2048000,
+      photoMimeType: 'image/jpeg',
+      referenceNumber: 'SA00125000001',
+      uploadedAt: '2025-01-15T10:30:00.000Z',
+    },
+  })
+  data: {
+    photoUrl: string;
+    photoHash: string;
+    photoSize: number;
+    photoMimeType: string;
+    referenceNumber: string;
+    uploadedAt: string;
+  };
+
+  @ApiProperty({
+    description: 'Response timestamp',
+    example: '2025-01-15T10:30:00.000Z',
+  })
+  timestamp: string;
+}
+
 @ApiTags('Biometric Capture')
 @Controller('biometric-capture')
 @UseGuards(AuthGuard, RolesGuard)
@@ -358,6 +414,7 @@ export class BiometricCaptureController {
   constructor(
     private readonly biometricCaptureService: BiometricCaptureService,
     private readonly userContextService: UserContextService,
+    private readonly localStorageService: LocalStorageService,
   ) {}
 
   @Post('capture')
@@ -629,5 +686,126 @@ export class BiometricCaptureController {
       service: 'biometric-capture',
       version: '1.0.0',
     };
+  }
+
+  @Post('photo/:referenceNumber')
+  @Roles(
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.CENTER_MANAGER,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
+  @UseInterceptors(FileInterceptor('photo'))
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Upload applicant photo by reference number',
+    description:
+      'Upload a photo for an applicant using their application reference number. The photo will be associated with their biometric data record. Supports JPEG, PNG, and WebP formats with a maximum size of 10MB.',
+  })
+  @ApiParam({
+    name: 'referenceNumber',
+    description: 'Application reference number (e.g., SA00125000001)',
+    example: 'SA00125000001',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Photo upload data',
+    schema: {
+      type: 'object',
+      properties: {
+        photo: {
+          type: 'string',
+          format: 'binary',
+          description: 'Photo file (JPEG, PNG, or WebP format, max 10MB)',
+        },
+      },
+      required: ['photo'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Photo uploaded successfully',
+    type: PhotoUploadResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid reference number, file format, or file size',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Application not found for the given reference number',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  async uploadPhoto(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('referenceNumber') referenceNumber: string,
+    @UploadedFile() photo: Express.Multer.File,
+  ): Promise<PhotoUploadResponseDto> {
+    this.logger.log(
+      `Photo upload request for reference ${referenceNumber} by user ${user.id}`,
+    );
+
+    // Validate reference number format
+    if (!referenceNumber || referenceNumber.length < 8) {
+      throw new BadRequestException('Invalid reference number format');
+    }
+
+    // Validate photo file
+    if (!photo) {
+      throw new BadRequestException('Photo file is required');
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(photo.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPEG, PNG, and WebP formats are allowed',
+      );
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (photo.size > maxSize) {
+      throw new BadRequestException(
+        'File size too large. Maximum size is 10MB',
+      );
+    }
+
+    try {
+      // Get user's booth and center context for capture location
+      const userContext =
+        await this.userContextService.getUserActiveBoothContext(user.id);
+
+      if (!userContext) {
+        throw new BadRequestException(
+          'No active booth or center assignment found. Please ensure you are assigned to a booth or managing a center.',
+        );
+      }
+
+      // Upload photo using the biometric capture service
+      const result = await this.biometricCaptureService.uploadPhoto(
+        referenceNumber,
+        photo,
+        user.id,
+        userContext,
+      );
+
+      return {
+        success: true,
+        message: 'Photo uploaded successfully',
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error('Photo upload failed', error.stack);
+      throw error;
+    }
   }
 }
