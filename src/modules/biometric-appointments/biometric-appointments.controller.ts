@@ -35,6 +35,7 @@ import {
   JwtUserPayload,
 } from '@common/decorators/current-user.decorator';
 import { PaginationQueryDto } from '@common/dtos';
+import { Roles } from '@prisma/client';
 
 /**
  * Controller for managing biometric appointments
@@ -346,12 +347,29 @@ export class BiometricAppointmentsController {
     @Param('referenceNumber') referenceNumber: string,
     @CurrentUser() user: JwtUserPayload,
   ) {
+    const privilegedRoles = [
+      Roles.ADMIN,
+      Roles.SUPER_ADMIN,
+      Roles.BIOMETRIC_AGENT,
+      Roles.CENTER_MANAGER,
+      Roles.RECEPTIONIST,
+      Roles.VERIFICATION_OFFICER,
+      Roles.EMBASSY_OFFICER,
+      Roles.AUTHORITY,
+      Roles.GATEHOUSE,
+      Roles.LIAISON_OFFICER,
+      Roles.FINANCE,
+      Roles.AGENCY,
+    ];
+
+    const isPrivilegedUser = privilegedRoles.some((role) =>
+      user.roles?.includes(role),
+    );
+
     const appointment =
       await this.appointmentsService.findAppointmentByReferenceNumber(
         referenceNumber,
-        user.roles?.includes('ADMIN') || user.roles?.includes('SUPER_ADMIN')
-          ? undefined
-          : user.id,
+        isPrivilegedUser ? undefined : user.id,
       );
 
     return {
