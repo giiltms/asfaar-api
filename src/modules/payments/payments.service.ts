@@ -770,6 +770,7 @@ export class PaymentsService {
           ...createDto,
           providers: createDto.providers || [],
           isActive: createDto.isActive ?? true,
+          isOptional: createDto.isOptional ?? true,
         },
       });
 

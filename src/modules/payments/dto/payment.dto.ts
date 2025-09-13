@@ -587,6 +587,15 @@ export class CreateServiceFeeDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether the fee is optional',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isOptional?: boolean;
 }
 
 export class UpdateServiceFeeDto {
@@ -654,6 +663,14 @@ export class UpdateServiceFeeDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether the fee is optional',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isOptional?: boolean;
 }
 
 export class ServiceFeeFiltersDto {
