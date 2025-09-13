@@ -530,7 +530,7 @@ export class BiometricCaptureService {
     // Generate photo hash for integrity verification
     const photoHash = crypto
       .createHash('sha256')
-      .update(photo.buffer as Buffer)
+      .update(photo.buffer as any)
       .digest('hex');
 
     // Upload photo to storage
