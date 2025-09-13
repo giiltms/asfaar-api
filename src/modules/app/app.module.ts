@@ -22,6 +22,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
 import { BiometricCaptureModule } from '../biometric-capture/biometric-capture.module';
 import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -51,6 +52,7 @@ import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-front
     BiometricCaptureModule,
     DashboardVerificationModule,
     DashboardFrontdeskModule,
+    AnalyticsModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
