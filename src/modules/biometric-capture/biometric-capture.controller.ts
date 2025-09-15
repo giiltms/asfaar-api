@@ -688,7 +688,7 @@ export class BiometricCaptureController {
     };
   }
 
-  @Post('photo/:referenceNumber')
+  @Post('photo/:submissionId')
   @Roles(
     UserRoles.BIOMETRIC_AGENT,
     UserRoles.CENTER_MANAGER,
@@ -698,14 +698,14 @@ export class BiometricCaptureController {
   @UseInterceptors(FileInterceptor('photo'))
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Upload applicant photo by reference number',
+    summary: 'Upload applicant photo by submission ID',
     description:
-      'Upload a photo for an applicant using their application reference number. The photo will be associated with their biometric data record. Supports JPEG, PNG, and WebP formats with a maximum size of 10MB.',
+      'Upload a photo for an applicant using their form submission ID. The photo will be associated with their biometric data record. Supports JPEG, PNG, and WebP formats with a maximum size of 10MB.',
   })
   @ApiParam({
-    name: 'referenceNumber',
-    description: 'Application reference number (e.g., SA00125000001)',
-    example: 'SA00125000001',
+    name: 'submissionId',
+    description: 'Form submission ID (UUID)',
+    example: '6b7c0c62-6a8a-4b6f-9b7a-6d2f9c3a1b25',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -729,11 +729,11 @@ export class BiometricCaptureController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid reference number, file format, or file size',
+    description: 'Invalid submission ID, file format, or file size',
   })
   @ApiResponse({
     status: 404,
-    description: 'Application not found for the given reference number',
+    description: 'Application not found for the given submission ID',
   })
   @ApiResponse({
     status: 401,
@@ -745,16 +745,16 @@ export class BiometricCaptureController {
   })
   async uploadPhoto(
     @CurrentUser() user: JwtUserPayload,
-    @Param('referenceNumber') referenceNumber: string,
+    @Param('submissionId') submissionId: string,
     @UploadedFile() photo: Express.Multer.File,
   ): Promise<PhotoUploadResponseDto> {
     this.logger.log(
-      `Photo upload request for reference ${referenceNumber} by user ${user.id}`,
+      `Photo upload request for submission ${submissionId} by user ${user.id}`,
     );
 
-    // Validate reference number format
-    if (!referenceNumber || referenceNumber.length < 8) {
-      throw new BadRequestException('Invalid reference number format');
+    // Validate submission id format
+    if (!submissionId || submissionId.length < 8) {
+      throw new BadRequestException('Invalid submission ID format');
     }
 
     // Validate photo file
@@ -791,7 +791,7 @@ export class BiometricCaptureController {
 
       // Upload photo using the biometric capture service
       const result = await this.biometricCaptureService.uploadPhoto(
-        referenceNumber,
+        submissionId,
         photo,
         user.id,
         userContext,

@@ -486,15 +486,15 @@ export class BiometricCaptureService {
   }
 
   /**
-   * Upload photo for an applicant using reference number
-   * @param referenceNumber - Application reference number
+   * Upload photo for an applicant using submission id
+   * @param submissionId - Form submission id
    * @param photo - Photo file from multer
    * @param uploadedBy - User ID who uploaded the photo
    * @param userContext - User's booth and center context
    * @returns Photo upload result
    */
   async uploadPhoto(
-    referenceNumber: string,
+    submissionId: string,
     photo: Express.Multer.File,
     uploadedBy: string,
     userContext: any,
@@ -506,11 +506,11 @@ export class BiometricCaptureService {
     referenceNumber: string;
     uploadedAt: string;
   }> {
-    this.logger.log(`Uploading photo for reference ${referenceNumber}`);
+    this.logger.log(`Uploading photo for submission ${submissionId}`);
 
-    // Find the submission by reference number
+    // Find the submission by id
     const submission = await this.prisma.formSubmission.findUnique({
-      where: { referenceNumber },
+      where: { id: submissionId },
       include: {
         user: true,
         form: {
@@ -523,7 +523,7 @@ export class BiometricCaptureService {
 
     if (!submission) {
       throw new NotFoundException(
-        `Application with reference number "${referenceNumber}" not found`,
+        `Application with id "${submissionId}" not found`,
       );
     }
 
@@ -589,7 +589,7 @@ export class BiometricCaptureService {
     });
 
     this.logger.log(
-      `Photo uploaded successfully for reference ${referenceNumber}, biometric data ID: ${biometricData.id}`,
+      `Photo uploaded successfully for submission ${submissionId}, biometric data ID: ${biometricData.id}`,
     );
 
     return {
@@ -597,7 +597,7 @@ export class BiometricCaptureService {
       photoHash,
       photoSize: photo.size,
       photoMimeType: photo.mimetype,
-      referenceNumber,
+      referenceNumber: submission.referenceNumber || 'N/A',
       uploadedAt: new Date().toISOString(),
     };
   }
