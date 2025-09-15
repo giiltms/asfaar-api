@@ -23,6 +23,7 @@ import { BiometricCaptureModule } from '../biometric-capture/biometric-capture.m
 import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { FinanceModule } from '../finance/finance.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -53,6 +54,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     DashboardVerificationModule,
     DashboardFrontdeskModule,
     AnalyticsModule,
+    FinanceModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
