@@ -36,9 +36,9 @@ export class AnalyticsService {
       // Build date filter
       const dateFilter = this.buildDateFilter(filters?.dateRange);
 
-      // Build country filter
+      // Build country filter (scope to related form.country.name)
       const countryFilter = filters?.country
-        ? { country: filters.country }
+        ? { form: { country: { name: filters.country } } }
         : {};
 
       // Get application data
