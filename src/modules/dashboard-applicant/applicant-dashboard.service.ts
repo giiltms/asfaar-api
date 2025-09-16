@@ -663,6 +663,7 @@ export class ApplicantDashboardService {
 
     const result: QuickApplicationDto = {
       id: submission.id,
+      referenceNumber: submission.referenceNumber,
       formName: submission.form.name,
       status: submission.status,
       submittedAt: submission.submittedAt,

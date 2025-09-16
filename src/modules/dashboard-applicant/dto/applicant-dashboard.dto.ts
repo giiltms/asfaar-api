@@ -166,6 +166,12 @@ export class QuickApplicationDto {
   id: string;
 
   @ApiProperty({
+    description: 'Application reference number',
+    example: 'MA00225000005',
+  })
+  referenceNumber: string;
+
+  @ApiProperty({
     description: 'Form name',
     example: 'Nigeria Visa Application',
   })
