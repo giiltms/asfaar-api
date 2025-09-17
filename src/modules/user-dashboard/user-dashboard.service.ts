@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { SubmissionProgressService } from '@common/services/submission-progress.service';
 import {
   SubmissionStatus,
   AppointmentStatus,
@@ -19,7 +20,10 @@ import {
 export class UserDashboardService {
   private readonly logger = new Logger(UserDashboardService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly submissionProgressService: SubmissionProgressService,
+  ) {}
 
   /**
    * Get comprehensive user dashboard data
@@ -204,20 +208,24 @@ export class UserDashboardService {
       // Build stages timeline
       const stages = this.buildApplicationStages(submission);
 
-      // Calculate progress percentage and next action
-      const { progressPercentage, nextAction } =
-        this.calculateProgress(submission);
+      // Calculate progress percentage and next action using SubmissionProgressService
+      const progressData =
+        await this.submissionProgressService.calculateProgress(submission.id);
+      const { progressPercentage, nextAction } = {
+        progressPercentage: progressData.progressPercentage,
+        nextAction: progressData.nextAction,
+      };
 
       // Calculate days since submission
       const daysSinceSubmission = submission.submittedAt
         ? Math.floor(
-            (Date.now() - submission.submittedAt.getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
+          (Date.now() - submission.submittedAt.getTime()) /
+          (1000 * 60 * 60 * 24),
+        )
         : Math.floor(
-            (Date.now() - submission.createdAt.getTime()) /
-              (1000 * 60 * 60 * 24),
-          );
+          (Date.now() - submission.createdAt.getTime()) /
+          (1000 * 60 * 60 * 24),
+        );
 
       // Estimate completion date
       const estimatedCompletion = this.estimateCompletionDate(submission);
@@ -265,8 +273,10 @@ export class UserDashboardService {
         take: limit,
       });
 
-      return submissions.map((submission) =>
-        this.mapToQuickApplicationDto(submission),
+      return Promise.all(
+        submissions.map((submission) =>
+          this.mapToQuickApplicationDto(submission),
+        ),
       );
     } catch (error) {
       this.logger.error(
@@ -331,8 +341,10 @@ export class UserDashboardService {
         orderBy: { updatedAt: 'desc' },
       });
 
-      return submissions.map((submission) =>
-        this.mapToQuickApplicationDto(submission),
+      return Promise.all(
+        submissions.map((submission) =>
+          this.mapToQuickApplicationDto(submission),
+        ),
       );
     } catch (error) {
       this.logger.error(
@@ -375,8 +387,10 @@ export class UserDashboardService {
         },
       });
 
-      return submissions.map((submission) =>
-        this.mapToQuickApplicationDto(submission),
+      return Promise.all(
+        submissions.map((submission) =>
+          this.mapToQuickApplicationDto(submission),
+        ),
       );
     } catch (error) {
       this.logger.error(
@@ -511,9 +525,8 @@ export class UserDashboardService {
             ? 'COMPLETED'
             : 'IN_PROGRESS',
         timestamp: submission.appointment.createdAt,
-        notes: `Appointment scheduled at ${
-          submission.appointment.center?.name
-        } on ${submission.appointment.appointmentDate.toDateString()}`,
+        notes: `Appointment scheduled at ${submission.appointment.center?.name
+          } on ${submission.appointment.appointmentDate.toDateString()}`,
       });
 
       // Stage 7: Queue Status
@@ -552,61 +565,6 @@ export class UserDashboardService {
     }
 
     return stages;
-  }
-
-  /**
-   * Private helper: Calculate progress percentage and next action
-   */
-  private calculateProgress(submission: any): {
-    progressPercentage: number;
-    nextAction?: string;
-  } {
-    let progressPercentage = 10; // Base for creation
-    let nextAction = 'Complete application';
-
-    if (submission.submittedAt) {
-      progressPercentage = 25;
-      nextAction = 'Wait for review';
-    }
-
-    if (submission.status === SubmissionStatus.UNDER_REVIEW) {
-      progressPercentage = 50;
-      nextAction = 'Wait for decision';
-    }
-
-    if (submission.status === SubmissionStatus.APPROVED) {
-      progressPercentage = 60;
-      nextAction = 'Complete payment';
-    }
-
-    if (submission.payment?.status === PaymentStatus.COMPLETED) {
-      progressPercentage = 75;
-      nextAction = 'Attend biometric appointment';
-    }
-
-    if (submission.appointment?.queueEntry) {
-      const queue = submission.appointment.queueEntry;
-      if (queue.status === QueueStatus.WAITING) {
-        progressPercentage = 85;
-        nextAction = 'Wait in queue';
-      } else if (queue.status === QueueStatus.CALLED) {
-        progressPercentage = 90;
-        nextAction = 'Go to assigned booth';
-      } else if (queue.status === QueueStatus.IN_PROGRESS) {
-        progressPercentage = 95;
-        nextAction = 'Complete biometric capture';
-      } else if (queue.status === QueueStatus.COMPLETED) {
-        progressPercentage = 100;
-        nextAction = undefined;
-      }
-    }
-
-    if (submission.status === SubmissionStatus.REJECTED) {
-      progressPercentage = 0;
-      nextAction = 'Application rejected';
-    }
-
-    return { progressPercentage, nextAction };
   }
 
   /**
@@ -654,9 +612,16 @@ export class UserDashboardService {
   /**
    * Private helper: Map to QuickApplicationDto
    */
-  private mapToQuickApplicationDto(submission: any): QuickApplicationDto {
-    const { progressPercentage, nextAction } =
-      this.calculateProgress(submission);
+  private async mapToQuickApplicationDto(
+    submission: any,
+  ): Promise<QuickApplicationDto> {
+    const progressData = await this.submissionProgressService.calculateProgress(
+      submission.id,
+    );
+    const { progressPercentage, nextAction } = {
+      progressPercentage: progressData.progressPercentage,
+      nextAction: progressData.nextAction,
+    };
 
     const result: QuickApplicationDto = {
       id: submission.id,

@@ -19,6 +19,10 @@ import { AllExceptionsFilter } from '../filters/all-exception.filter';
 import { BadRequestExceptionFilter } from '../filters/bad-request-exception.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 
+// Services
+import { SubmissionProgressService } from './services/submission-progress.service';
+import { PrismaModule } from '@providers/prisma/prisma.module';
+
 /**
  * Common module that provides global configuration, validation, exception handling,
  * rate limiting, and other cross-cutting concerns for the entire application.
@@ -26,6 +30,9 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
 @Global()
 @Module({
   imports: [
+    // Prisma module for database access
+    PrismaModule,
+
     // Global configuration module
     ConfigModule.forRoot({
       isGlobal: true,
@@ -56,6 +63,9 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
     // ]),
   ],
   providers: [
+    // Services
+    SubmissionProgressService,
+
     // Global validation pipe with enhanced error handling
     {
       provide: APP_PIPE,
@@ -91,6 +101,6 @@ import { TransformInterceptor } from './interceptors/transform.interceptor';
       useClass: TransformInterceptor,
     },
   ],
-  exports: [ConfigModule],
+  exports: [ConfigModule, SubmissionProgressService],
 })
 export class CommonModule {}

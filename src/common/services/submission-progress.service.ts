@@ -66,6 +66,7 @@ export class SubmissionProgressService {
               fileUrls: true,
             },
           },
+          appointment: true,
         },
       });
 
@@ -80,7 +81,6 @@ export class SubmissionProgressService {
       // Calculate section completion
       const sectionDetails = sections.map((section) => {
         const allFields = section.groups.flatMap((group) => group.fields);
-        const requiredFields = allFields.filter((field) => field.required);
         const completedFields = allFields.filter(
           (field) =>
             responseFieldIds.has(field.id) &&
@@ -107,7 +107,7 @@ export class SubmissionProgressService {
       const totalSections = sections.length;
 
       // Calculate additional steps (biometric appointment and payment)
-      const biometricCompleted = submission.biometricCompleted || false;
+      const biometricCompleted = !!submission.appointment; // Appointment is scheduled
       const paymentCompleted = submission.paymentCompleted || false;
 
       // Create step details
@@ -118,7 +118,7 @@ export class SubmissionProgressService {
           stepType: 'section' as const,
         })),
         {
-          stepName: 'Biometric Appointment',
+          stepName: 'Schedule Biometric Appointment',
           isCompleted: biometricCompleted,
           stepType: 'biometric' as const,
         },
