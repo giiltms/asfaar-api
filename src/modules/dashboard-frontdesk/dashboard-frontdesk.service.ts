@@ -517,6 +517,8 @@ export class DashboardFrontdeskService {
               checkedInAt: true,
               checkedInBy: true,
               status: true,
+              appointmentDate: true,
+              appointmentTime: true,
               queueEntry: {
                 select: {
                   queueNumber: true,
@@ -569,6 +571,8 @@ export class DashboardFrontdeskService {
             queueStatus: queueEntry?.status,
             isInQueue: !!queueEntry,
             paymentStatus: submission.payment?.status || 'PENDING',
+            appointmentDate: appointment?.appointmentDate,
+            appointmentTime: appointment?.appointmentTime,
           };
         },
       );
@@ -656,6 +660,8 @@ export class DashboardFrontdeskService {
             select: {
               id: true,
               appointmentDate: true,
+              appointmentTime: true,
+              appointmentClass: true,
               status: true,
               checkedIn: true,
               checkedInAt: true,
@@ -737,6 +743,9 @@ export class DashboardFrontdeskService {
         phone: submission.user.phone,
         status: submission.status,
         applicationType: submission.form.applicationType?.code || 'UNKNOWN',
+        appointmentDate: appointment?.appointmentDate,
+        appointmentTime: appointment?.appointmentTime,
+        appointmentClass: appointment?.appointmentClass,
         submittedAt: submission.submittedAt,
         queuePosition: queueEntry?.queueNumber,
         estimatedWaitTime: queueEntry?.estimatedWaitTime,

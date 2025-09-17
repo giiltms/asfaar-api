@@ -9,6 +9,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { AppointmentClass } from '@prisma/client';
 
 export class QueueStatsDto {
   @ApiProperty({
@@ -338,6 +339,18 @@ export class ApplicantListItemDto {
     enum: ['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
   })
   paymentStatus: string;
+
+  @ApiProperty({
+    description: 'Appointment date',
+    example: '2025-08-29T10:30:00Z',
+  })
+  appointmentDate: Date;
+
+  @ApiProperty({
+    description: 'Appointment time',
+    example: '10:30:00',
+  })
+  appointmentTime: Date;
 }
 
 export class ApplicantListFiltersDto {
@@ -548,4 +561,11 @@ export class ApplicantDetailDto extends ApplicantListItemDto {
     timestamp: Date;
     description?: string;
   }>;
+
+  @ApiProperty({
+    description: 'Appointment class',
+    example: AppointmentClass.REGULAR,
+    enum: AppointmentClass,
+  })
+  appointmentClass: AppointmentClass;
 }
