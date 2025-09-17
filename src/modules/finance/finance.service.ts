@@ -13,7 +13,14 @@ import {
   FinanceFiltersDto,
   FinanceMetadataDto,
 } from './dto/finance.dto';
-import { addDays, subDays, format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import {
+  addDays,
+  subDays,
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachMonthOfInterval,
+} from 'date-fns';
 
 @Injectable()
 export class FinanceService {
@@ -24,7 +31,9 @@ export class FinanceService {
   /**
    * Get comprehensive finance overview for finance dashboard
    */
-  async getFinanceOverview(query: FinanceQueryDto): Promise<FinanceOverviewResponseDto> {
+  async getFinanceOverview(
+    query: FinanceQueryDto,
+  ): Promise<FinanceOverviewResponseDto> {
     try {
       this.logger.log('Generating finance overview analytics');
 
@@ -35,7 +44,10 @@ export class FinanceService {
       const additionalFilters = this.buildAdditionalFilters(query);
 
       // Get finance data
-      const financeData = await this.getFinanceData(dateFilter, additionalFilters);
+      const financeData = await this.getFinanceData(
+        dateFilter,
+        additionalFilters,
+      );
 
       // Build response
       const response: FinanceOverviewResponseDto = {
@@ -105,7 +117,9 @@ export class FinanceService {
   /**
    * Get finance overview statistics
    */
-  private async getFinanceOverviewStats(whereClause: any): Promise<FinanceOverviewDto> {
+  private async getFinanceOverviewStats(
+    whereClause: any,
+  ): Promise<FinanceOverviewDto> {
     const [
       totalRevenue,
       totalTransactions,
@@ -128,9 +142,16 @@ export class FinanceService {
     ]);
 
     const revenue = totalRevenue._sum.amount || 0;
-    const monthlyGrowth = this.calculateMonthlyGrowth(revenue, previousMonthRevenue);
-    const averageTransactionValue = totalTransactions > 0 ? revenue / totalTransactions : 0;
-    const successRate = totalTransactions > 0 ? (successfulPayments / totalTransactions) * 100 : 0;
+    const monthlyGrowth = this.calculateMonthlyGrowth(
+      revenue,
+      previousMonthRevenue,
+    );
+    const averageTransactionValue =
+      totalTransactions > 0 ? revenue / totalTransactions : 0;
+    const successRate =
+      totalTransactions > 0
+        ? (successfulPayments / totalTransactions) * 100
+        : 0;
 
     return {
       totalRevenue: revenue,
@@ -146,7 +167,9 @@ export class FinanceService {
   /**
    * Get payment provider breakdown
    */
-  private async getPaymentProviderData(whereClause: any): Promise<PaymentProviderDataDto> {
+  private async getPaymentProviderData(
+    whereClause: any,
+  ): Promise<PaymentProviderDataDto> {
     const providerData = await this.prisma.payment.groupBy({
       by: ['processor'],
       where: { ...whereClause, status: PaymentStatus.COMPLETED },
@@ -156,7 +179,8 @@ export class FinanceService {
     const result: PaymentProviderDataDto = {};
     providerData.forEach((item) => {
       if (item.processor) {
-        const provider = item.processor.toLowerCase() as keyof PaymentProviderDataDto;
+        const provider =
+          item.processor.toLowerCase() as keyof PaymentProviderDataDto;
         if (provider in result) {
           result[provider] = item._sum.amount || 0;
         }
@@ -169,7 +193,9 @@ export class FinanceService {
   /**
    * Get payment type breakdown
    */
-  private async getPaymentTypeData(whereClause: any): Promise<PaymentTypeDataDto> {
+  private async getPaymentTypeData(
+    whereClause: any,
+  ): Promise<PaymentTypeDataDto> {
     const typeData = await this.prisma.paymentServiceFee.groupBy({
       by: ['feeType'],
       where: {
@@ -184,7 +210,9 @@ export class FinanceService {
     const result: PaymentTypeDataDto = {};
     typeData.forEach((item) => {
       if (item.feeType) {
-        const typeName = this.getFeeTypeDisplayName(item.feeType) as keyof PaymentTypeDataDto;
+        const typeName = this.getFeeTypeDisplayName(
+          item.feeType,
+        ) as keyof PaymentTypeDataDto;
         if (typeName in result) {
           result[typeName] = item._sum.amount || 0;
         }
@@ -197,7 +225,9 @@ export class FinanceService {
   /**
    * Get monthly transaction trends
    */
-  private async getMonthlyTransactions(whereClause: any): Promise<MonthlyTransactionDto[]> {
+  private async getMonthlyTransactions(
+    whereClause: any,
+  ): Promise<MonthlyTransactionDto[]> {
     const startDate = whereClause.createdAt?.gte || subDays(new Date(), 365);
     const endDate = whereClause.createdAt?.lte || new Date();
 
@@ -241,7 +271,9 @@ export class FinanceService {
   /**
    * Get recent payments
    */
-  private async getRecentPayments(whereClause: any): Promise<RecentPaymentDto[]> {
+  private async getRecentPayments(
+    whereClause: any,
+  ): Promise<RecentPaymentDto[]> {
     const payments = await this.prisma.payment.findMany({
       where: whereClause,
       include: {
@@ -284,7 +316,10 @@ export class FinanceService {
       type: this.getPaymentTypeDescription(payment.serviceFees || []),
       amount: payment.amount,
       status: payment.status.toLowerCase(),
-      user: `${payment.user?.firstName || ''} ${payment.user?.lastName || ''}`.trim() || 'Unknown User',
+      user:
+        `${payment.user?.firstName || ''} ${
+          payment.user?.lastName || ''
+        }`.trim() || 'Unknown User',
       reference: payment.reference || payment.invoiceNumber || 'N/A',
       date: format(payment.createdAt, 'yyyy-MM-dd'),
       country: payment.submission?.form?.country?.name || '-',
@@ -368,7 +403,10 @@ export class FinanceService {
   /**
    * Calculate monthly growth percentage
    */
-  private calculateMonthlyGrowth(currentRevenue: number, previousRevenue: number): number {
+  private calculateMonthlyGrowth(
+    currentRevenue: number,
+    previousRevenue: number,
+  ): number {
     if (previousRevenue === 0) return currentRevenue > 0 ? 100 : 0;
     return Number(((currentRevenue - previousRevenue) / previousRevenue) * 100);
   }
@@ -422,7 +460,9 @@ export class FinanceService {
     if (query.startDate && query.endDate) {
       const start = new Date(query.startDate);
       const end = new Date(query.endDate);
-      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil(
+        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+      );
       return `Last ${diffDays} days`;
     }
     return 'Last 30 days';
