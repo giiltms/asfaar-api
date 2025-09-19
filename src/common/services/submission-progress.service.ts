@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { SubmissionStatus } from '@prisma/client';
+import { SubmissionStatus, PaymentStatus } from '@prisma/client';
 
 export interface SubmissionProgress {
   progressPercentage: number;
@@ -67,6 +67,7 @@ export class SubmissionProgressService {
             },
           },
           appointment: true,
+          payment: true,
         },
       });
 
@@ -108,7 +109,7 @@ export class SubmissionProgressService {
 
       // Calculate additional steps (biometric appointment and payment)
       const biometricCompleted = !!submission.appointment; // Appointment is scheduled
-      const paymentCompleted = submission.paymentCompleted || false;
+      const paymentCompleted = submission.payment?.status === PaymentStatus.COMPLETED || false;
 
       // Create step details
       const stepDetails = [
