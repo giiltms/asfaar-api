@@ -107,9 +107,37 @@ export class SubmissionProgressService {
       ).length;
       const totalSections = sections.length;
 
+      // Debug section details
+      this.logger.debug(
+        `Section completion details for submission ${submissionId}:`,
+        {
+          sectionDetails: sectionDetails.map((s) => ({
+            sectionTitle: s.sectionTitle,
+            isCompleted: s.isCompleted,
+            completedFields: s.completedFields,
+            totalFields: s.totalFields,
+          })),
+          completedSections,
+          totalSections,
+        },
+      );
+
       // Calculate additional steps (biometric appointment and payment)
       const biometricCompleted = !!submission.appointment; // Appointment is scheduled
-      const paymentCompleted = submission.payment?.status === PaymentStatus.COMPLETED || false;
+      const paymentCompleted =
+        submission.payment?.status === PaymentStatus.COMPLETED || false;
+
+      // Debug logging
+      this.logger.debug(`Submission ${submissionId} progress calculation:`, {
+        totalSections,
+        completedSections,
+        hasAppointment: !!submission.appointment,
+        appointmentId: submission.appointment?.id,
+        hasPayment: !!submission.payment,
+        paymentStatus: submission.payment?.status,
+        paymentCompleted,
+        biometricCompleted,
+      });
 
       // Create step details
       const stepDetails = [
