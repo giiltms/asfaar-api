@@ -14,6 +14,7 @@ import {
   BiometricAppointment,
   AppointmentStatus,
   PaymentStatus,
+  SubmissionStatus,
 } from '@prisma/client';
 import {
   CreateBiometricAppointmentDto,
@@ -656,6 +657,22 @@ export class BiometricAppointmentsService {
           center: true,
         },
       });
+
+      // Update the associated FormSubmission to mark biometrics as completed
+      if (appointment.submissionId) {
+        await this.prisma.formSubmission.update({
+          where: { id: appointment.submissionId },
+          data: {
+            status: SubmissionStatus.UNDER_REVIEW,
+            biometricCompleted: true,
+            biometricCompletedAt: new Date(),
+          },
+        });
+
+        this.logger.log(
+          `FormSubmission ${appointment.submissionId} marked as biometric completed for appointment ${id}`,
+        );
+      }
 
       // Also update the associated queue entry to COMPLETED status
       const queueEntry = await this.prisma.queueEntry.findFirst({
