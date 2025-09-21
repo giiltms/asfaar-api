@@ -390,12 +390,12 @@ export class DashboardVerificationService {
             name: submission.form.name,
             country: submission.form.country
               ? {
-                  name: submission.form.country.name,
-                  isoCode2: submission.form.country.isoCode2,
-                  isoCode3: submission.form.country.isoCode3,
-                  flag: submission.form.country.flag,
-                  logoUrl: submission.form.country.logoUrl,
-                }
+                name: submission.form.country.name,
+                isoCode2: submission.form.country.isoCode2,
+                isoCode3: submission.form.country.isoCode3,
+                flag: submission.form.country.flag,
+                logoUrl: submission.form.country.logoUrl,
+              }
               : null,
           },
           formResponses: this.transformFormResponses(
@@ -403,63 +403,63 @@ export class DashboardVerificationService {
           ),
           ninVerification: ninVerification
             ? {
-                id: ninVerification.id,
-                nin: ninVerification.nin,
-                firstName: ninVerification.firstName,
-                lastName: ninVerification.lastName,
-                fullName: ninVerification.fullName,
-                dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-                gender: ninVerification.gender,
-                phoneNumber: ninVerification.phoneNumber,
-                photo: ninVerification.photo,
-                verificationStatus: ninVerification.verificationStatus,
-                verificationDate:
-                  ninVerification.verificationDate?.toISOString(),
-                address: {
-                  line1: ninVerification.addressLine1,
-                  city: ninVerification.city,
-                  state: ninVerification.state,
-                  lga: ninVerification.lga,
-                  country: ninVerification.country,
-                },
-              }
+              id: ninVerification.id,
+              nin: ninVerification.nin,
+              firstName: ninVerification.firstName,
+              lastName: ninVerification.lastName,
+              fullName: ninVerification.fullName,
+              dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+              gender: ninVerification.gender,
+              phoneNumber: ninVerification.phoneNumber,
+              photo: ninVerification.photo,
+              verificationStatus: ninVerification.verificationStatus,
+              verificationDate:
+                ninVerification.verificationDate?.toISOString(),
+              address: {
+                line1: ninVerification.addressLine1,
+                city: ninVerification.city,
+                state: ninVerification.state,
+                lga: ninVerification.lga,
+                country: ninVerification.country,
+              },
+            }
             : null,
           biometricData: biometricData
             ? {
-                id: biometricData.id,
-                photoUrl: biometricData.photoUrl,
-                photoQualityScore: biometricData.photoQualityScore,
-                fingerprintQualityScore: biometricData.fingerprintQualityScore,
-                overallQualityScore: biometricData.overallQualityScore,
-                isVerified: biometricData.isVerified,
-                verificationStatus: biometricData.verificationStatus,
-                capturedAt: biometricData.capturedAt?.toISOString(),
-                capturedBy: biometricData.capturedBy,
-                captureDevice: biometricData.captureDevice,
-                fingerprintFingers:
-                  biometricData.fingerprintFingers?.map((finger) => ({
-                    fingerPosition: finger.fingerPosition,
-                    fingerName: finger.fingerName,
-                    qualityScore: finger.qualityScore,
-                    isAcceptable: finger.isAcceptable,
-                    capturedAt: finger.capturedAt?.toISOString(),
-                  })) || [],
-              }
+              id: biometricData.id,
+              photoUrl: biometricData.photoUrl,
+              photoQualityScore: biometricData.photoQualityScore,
+              fingerprintQualityScore: biometricData.fingerprintQualityScore,
+              overallQualityScore: biometricData.overallQualityScore,
+              isVerified: biometricData.isVerified,
+              verificationStatus: biometricData.verificationStatus,
+              capturedAt: biometricData.capturedAt?.toISOString(),
+              capturedBy: biometricData.capturedBy,
+              captureDevice: biometricData.captureDevice,
+              fingerprintFingers:
+                biometricData.fingerprintFingers?.map((finger) => ({
+                  fingerPosition: finger.fingerPosition,
+                  fingerName: finger.fingerName,
+                  qualityScore: finger.qualityScore,
+                  isAcceptable: finger.isAcceptable,
+                  capturedAt: finger.capturedAt?.toISOString(),
+                })) || [],
+            }
             : null,
           userProfilePhoto: submission.user.avatar,
           appointment: submission.appointment
             ? {
-                id: submission.appointment.id,
-                appointmentDate:
-                  submission.appointment.appointmentDate?.toISOString(),
-                center: {
-                  name: submission.appointment.center.name,
-                  address: submission.appointment.center.address,
-                  city: submission.appointment.center.city,
-                  state: submission.appointment.center.state,
-                },
-                status: submission.appointment.status,
-              }
+              id: submission.appointment.id,
+              appointmentDate:
+                submission.appointment.appointmentDate?.toISOString(),
+              center: {
+                name: submission.appointment.center.name,
+                address: submission.appointment.center.address,
+                city: submission.appointment.center.city,
+                state: submission.appointment.center.state,
+              },
+              status: submission.appointment.status,
+            }
             : null,
         };
       },
@@ -605,73 +605,73 @@ export class DashboardVerificationService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-              name: submission.form.country.name,
-              isoCode2: submission.form.country.isoCode2,
-              isoCode3: submission.form.country.isoCode3,
-              flag: submission.form.country.flag,
-              logoUrl: submission.form.country.logoUrl,
-            }
+            name: submission.form.country.name,
+            isoCode2: submission.form.country.isoCode2,
+            isoCode3: submission.form.country.isoCode3,
+            flag: submission.form.country.flag,
+            logoUrl: submission.form.country.logoUrl,
+          }
           : null,
       },
       formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
-            id: ninVerification.id,
-            nin: ninVerification.nin,
-            firstName: ninVerification.firstName,
-            lastName: ninVerification.lastName,
-            fullName: ninVerification.fullName,
-            dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-            gender: ninVerification.gender,
-            phoneNumber: ninVerification.phoneNumber,
-            photo: ninVerification.photo,
-            verificationStatus: ninVerification.verificationStatus,
-            verificationDate: ninVerification.verificationDate?.toISOString(),
-            address: {
-              line1: ninVerification.addressLine1,
-              city: ninVerification.city,
-              state: ninVerification.state,
-              lga: ninVerification.lga,
-              country: ninVerification.country,
-            },
-          }
+          id: ninVerification.id,
+          nin: ninVerification.nin,
+          firstName: ninVerification.firstName,
+          lastName: ninVerification.lastName,
+          fullName: ninVerification.fullName,
+          dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+          gender: ninVerification.gender,
+          phoneNumber: ninVerification.phoneNumber,
+          photo: ninVerification.photo,
+          verificationStatus: ninVerification.verificationStatus,
+          verificationDate: ninVerification.verificationDate?.toISOString(),
+          address: {
+            line1: ninVerification.addressLine1,
+            city: ninVerification.city,
+            state: ninVerification.state,
+            lga: ninVerification.lga,
+            country: ninVerification.country,
+          },
+        }
         : null,
       biometricData: biometricData
         ? {
-            id: biometricData.id,
-            photoUrl: biometricData.photoUrl,
-            photoQualityScore: biometricData.photoQualityScore,
-            fingerprintQualityScore: biometricData.fingerprintQualityScore,
-            overallQualityScore: biometricData.overallQualityScore,
-            isVerified: biometricData.isVerified,
-            verificationStatus: biometricData.verificationStatus,
-            capturedAt: biometricData.capturedAt?.toISOString(),
-            capturedBy: biometricData.capturedBy,
-            captureDevice: biometricData.captureDevice,
-            fingerprintFingers:
-              biometricData.fingerprintFingers?.map((finger) => ({
-                fingerPosition: finger.fingerPosition,
-                fingerName: finger.fingerName,
-                qualityScore: finger.qualityScore,
-                isAcceptable: finger.isAcceptable,
-                capturedAt: finger.capturedAt?.toISOString(),
-              })) || [],
-          }
+          id: biometricData.id,
+          photoUrl: biometricData.photoUrl,
+          photoQualityScore: biometricData.photoQualityScore,
+          fingerprintQualityScore: biometricData.fingerprintQualityScore,
+          overallQualityScore: biometricData.overallQualityScore,
+          isVerified: biometricData.isVerified,
+          verificationStatus: biometricData.verificationStatus,
+          capturedAt: biometricData.capturedAt?.toISOString(),
+          capturedBy: biometricData.capturedBy,
+          captureDevice: biometricData.captureDevice,
+          fingerprintFingers:
+            biometricData.fingerprintFingers?.map((finger) => ({
+              fingerPosition: finger.fingerPosition,
+              fingerName: finger.fingerName,
+              qualityScore: finger.qualityScore,
+              isAcceptable: finger.isAcceptable,
+              capturedAt: finger.capturedAt?.toISOString(),
+            })) || [],
+        }
         : null,
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment
         ? {
-            id: submission.appointment.id,
-            appointmentDate:
-              submission.appointment.appointmentDate?.toISOString(),
-            center: {
-              name: submission.appointment.center.name,
-              address: submission.appointment.center.address,
-              city: submission.appointment.center.city,
-              state: submission.appointment.center.state,
-            },
-            status: submission.appointment.status,
-          }
+          id: submission.appointment.id,
+          appointmentDate:
+            submission.appointment.appointmentDate?.toISOString(),
+          center: {
+            name: submission.appointment.center.name,
+            address: submission.appointment.center.address,
+            city: submission.appointment.center.city,
+            state: submission.appointment.center.state,
+          },
+          status: submission.appointment.status,
+        }
         : null,
     };
   }
@@ -795,11 +795,10 @@ export class DashboardVerificationService {
             fromStatus: submission.status,
             toStatus: SubmissionStatus.QUERIED,
             reason: 'Application queried for additional information',
-            notes: `Query: ${queryMessage}${
-              requiredDocuments && requiredDocuments.length > 0
+            notes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
                 ? ` - Required documents: ${requiredDocuments.join(', ')}`
                 : ''
-            }`,
+              }`,
             changedBy: reviewerId,
           },
         },
@@ -816,11 +815,10 @@ export class DashboardVerificationService {
         where: { id: biometricData.id },
         data: {
           verificationStatus: 'NEEDS_REVIEW',
-          verificationNotes: `Query: ${queryMessage}${
-            requiredDocuments && requiredDocuments.length > 0
+          verificationNotes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
               ? ` - Required: ${requiredDocuments.join(', ')}`
               : ''
-          }`,
+            }`,
           lastModifiedBy: reviewerId,
         },
       });
@@ -901,9 +899,8 @@ export class DashboardVerificationService {
             fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
             toStatus: SubmissionStatus.PROCESSING,
             reason: 'Application verified and sent to embassy for processing',
-            notes: `Priority: ${priority}${
-              processingNotes ? ` - ${processingNotes}` : ''
-            }`,
+            notes: `Priority: ${priority}${processingNotes ? ` - ${processingNotes}` : ''
+              }`,
             changedBy: reviewerId,
           },
         },

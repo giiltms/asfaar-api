@@ -21,6 +21,7 @@ import { ApplicationTypesModule } from '../application-types/application-types.m
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { BiometricCaptureModule } from '../biometric-capture/biometric-capture.module';
 import { DashboardVerificationModule } from '../dashboard-verification/dashboard-verification.module';
+import { DashboardLiaisonModule } from '../dashboard-liaison/dashboard-liaison.module';
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { FinanceModule } from '../finance/finance.module';
@@ -52,6 +53,7 @@ import { FinanceModule } from '../finance/finance.module';
     WebhooksModule,
     BiometricCaptureModule,
     DashboardVerificationModule,
+    DashboardLiaisonModule,
     DashboardFrontdeskModule,
     AnalyticsModule,
     FinanceModule,
