@@ -787,6 +787,9 @@ model FormSubmission {
   payment       Payment?
   biometricData BiometricData?
 
+  // Flags raised against this submission
+  flags Flag[]
+
   @@map("form_submissions")
 }
 
@@ -806,6 +809,86 @@ model SubmissionStatusLog {
 
   @@index([submissionId, changedAt])
   @@map("submission_status_logs")
+}
+
+/// Flags raised by staff on a submission
+model Flag {
+  id           String         @id @default(uuid())
+  submissionId String
+  submission   FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  // Who created the flag (staff user id from JWT)
+  createdById String
+
+  // Routing/ownership
+  targetDepartment SecurityDepartment
+
+  // Categorization and priority
+  flagType      FlagType
+  priorityLevel PriorityLevel
+
+  // Details
+  reason String
+  notes  String?
+
+  // Lifecycle
+  status       FlagStatus @default(OPEN)
+  resolvedById String?
+  resolvedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  actions FlagAction[]
+
+  @@index([submissionId, status, targetDepartment])
+  @@map("flags")
+}
+
+/// Action/comments timeline on a flag
+model FlagAction {
+  id        String   @id @default(uuid())
+  flagId    String
+  flag      Flag     @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  actorId   String // staff user id
+  action    String // e.g., COMMENT, ESCALATE, RESOLVE
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([flagId, createdAt])
+  @@map("flag_actions")
+}
+
+enum FlagStatus {
+  OPEN
+  RESOLVED
+}
+
+enum FlagType {
+  SECURITY_CONCERN
+  DOCUMENT_ISSUE
+  SUSPICIOUS_ACTIVITY
+  INCOMPLETE_INFORMATION
+  FRAUD_DETECTED
+  COMPLIANCE_VIOLATION
+  OTHER
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Target department for flags/routing
+enum SecurityDepartment {
+  FINANCE
+  EMBASSY_OFFICER
+  LIAISON_OFFICER
+  AUTHORITY
+  ADMIN
+  SUPER_ADMIN
 }
 
 model FieldResponse {

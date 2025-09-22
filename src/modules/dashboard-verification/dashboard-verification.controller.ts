@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -19,6 +18,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
 import { DashboardVerificationService } from './dashboard-verification.service';
 import {
   ApplicationReviewDto,
@@ -124,7 +124,7 @@ export class DashboardVerificationController {
   @ApiOperation({
     summary: 'Flag application and send to security department',
     description:
-      'Flag an application for security review and specify which department should handle it',
+      'Flag an application for security review with enhanced details including flag type, priority level, and detailed reason',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -146,14 +146,14 @@ export class DashboardVerificationController {
   async flagApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() flagDto: FlagApplicationDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
     // Ensure the submissionId in the body matches the param
     flagDto.submissionId = submissionId;
 
     const result = await this.dashboardVerificationService.flagApplication(
       flagDto,
-      req.user.id,
+      user.id,
     );
 
     return {
@@ -190,14 +190,14 @@ export class DashboardVerificationController {
   async queryApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() queryDto: QueryApplicationDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
     // Ensure the submissionId in the body matches the param
     queryDto.submissionId = submissionId;
 
     const result = await this.dashboardVerificationService.queryApplication(
       queryDto,
-      req.user.id,
+      user.id,
     );
 
     return {
@@ -233,14 +233,14 @@ export class DashboardVerificationController {
   async processApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() processDto: ProcessApplicationDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<{ success: boolean; message: string }>> {
     // Ensure the submissionId in the body matches the param
     processDto.submissionId = submissionId;
 
     const result = await this.dashboardVerificationService.processApplication(
       processDto,
-      req.user.id,
+      user.id,
     );
 
     return {

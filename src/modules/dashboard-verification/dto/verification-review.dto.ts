@@ -17,6 +17,24 @@ export enum SecurityDepartment {
   SUPER_ADMIN = 'SUPER_ADMIN',
 }
 
+// Enhanced flagging enums
+export enum FlagType {
+  SECURITY_CONCERN = 'SECURITY_CONCERN',
+  DOCUMENT_ISSUE = 'DOCUMENT_ISSUE',
+  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
+  INCOMPLETE_INFORMATION = 'INCOMPLETE_INFORMATION',
+  FRAUD_DETECTED = 'FRAUD_DETECTED',
+  COMPLIANCE_VIOLATION = 'COMPLIANCE_VIOLATION',
+  OTHER = 'OTHER',
+}
+
+export enum PriorityLevel {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
 // DTO for flagging an application to security
 export class FlagApplicationDto {
   @ApiProperty({ description: 'Application submission ID' })
@@ -30,7 +48,21 @@ export class FlagApplicationDto {
   @IsEnum(SecurityDepartment)
   targetDepartment: SecurityDepartment;
 
-  @ApiProperty({ description: 'Reason for flagging' })
+  @ApiProperty({
+    description: 'Type of flag',
+    enum: FlagType,
+  })
+  @IsEnum(FlagType)
+  flagType: FlagType;
+
+  @ApiProperty({
+    description: 'Priority level of the flag',
+    enum: PriorityLevel,
+  })
+  @IsEnum(PriorityLevel)
+  priorityLevel: PriorityLevel;
+
+  @ApiProperty({ description: 'Detailed reason for flagging' })
   @IsString()
   flagReason: string;
 

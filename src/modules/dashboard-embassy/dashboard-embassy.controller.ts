@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -19,6 +18,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { DashboardEmbassyService } from './dashboard-embassy.service';
 import {
   ApplicationReviewDto,
@@ -43,7 +46,8 @@ export class DashboardEmbassyController {
   @Get('applications')
   @ApiOperation({
     summary: 'Get applications for embassy officer country',
-    description: 'Retrieves applications for the embassy officer\'s assigned country',
+    description:
+      "Retrieves applications for the embassy officer's assigned country",
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -99,12 +103,12 @@ export class DashboardEmbassyController {
     description: 'Items per page',
   })
   async getApplicationsForCountry(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query('countryCode') countryCode: string,
     @Query() filters: Omit<EmbassyReviewFiltersDto, 'countryCode'>,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsForCountry(
-      req.user.id,
+      user.id,
       countryCode,
       filters,
     );
@@ -120,7 +124,8 @@ export class DashboardEmbassyController {
   @Get('applications/:submissionId')
   @ApiOperation({
     summary: 'Get detailed application for embassy review',
-    description: 'Retrieves detailed application data for embassy officer review',
+    description:
+      'Retrieves detailed application data for embassy officer review',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -158,7 +163,8 @@ export class DashboardEmbassyController {
   @Get('stats')
   @ApiOperation({
     summary: 'Get embassy officer statistics',
-    description: 'Retrieves statistics for applications handled by the embassy officer for their country',
+    description:
+      'Retrieves statistics for applications handled by the embassy officer for their country',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -172,11 +178,11 @@ export class DashboardEmbassyController {
     description: 'Country code for the embassy officer',
   })
   async getEmbassyStats(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query('countryCode') countryCode: string,
   ): Promise<BaseResponseDto<EmbassyStatsDto>> {
     const result = await this.dashboardEmbassyService.getEmbassyStats(
-      req.user.id,
+      user.id,
       countryCode,
     );
 
@@ -191,7 +197,8 @@ export class DashboardEmbassyController {
   @Post('applications/:submissionId/action')
   @ApiOperation({
     summary: 'Take final action on application',
-    description: 'Allows embassy officer to make final decisions: approve, reject, request info, or suspend applications',
+    description:
+      'Allows embassy officer to make final decisions: approve, reject, request info, or suspend applications',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -217,16 +224,17 @@ export class DashboardEmbassyController {
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Query('countryCode') countryCode: string,
     @Body() actionDto: EmbassyActionDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<EmbassyActionResponseDto>> {
     // Ensure the submissionId in the body matches the param
     actionDto.submissionId = submissionId;
 
-    const result = await this.dashboardEmbassyService.takeFinalActionOnApplication(
-      actionDto,
-      req.user.id,
-      countryCode,
-    );
+    const result =
+      await this.dashboardEmbassyService.takeFinalActionOnApplication(
+        actionDto,
+        user.id,
+        countryCode,
+      );
 
     return {
       success: true,
@@ -239,7 +247,8 @@ export class DashboardEmbassyController {
   @Get('applications/status/:status')
   @ApiOperation({
     summary: 'Get applications by status',
-    description: 'Retrieves applications with specific status for embassy officer country',
+    description:
+      'Retrieves applications with specific status for embassy officer country',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -274,10 +283,10 @@ export class DashboardEmbassyController {
     @Query('countryCode') countryCode: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsByStatus(
-      req.user.id,
+      user.id,
       countryCode,
       status,
       page,

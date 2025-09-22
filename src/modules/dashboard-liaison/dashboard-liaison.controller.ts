@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -19,6 +18,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
 import { DashboardLiaisonService } from './dashboard-liaison.service';
 import {
   ApplicationReviewDto,
@@ -69,11 +69,11 @@ export class DashboardLiaisonController {
     description: 'Items per page',
   })
   async getFlaggedApplications(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
     @Query() filters: LiaisonReviewFiltersDto,
   ): Promise<BaseResponseDto<LiaisonReviewListDto>> {
     const result = await this.dashboardLiaisonService.getFlaggedApplications(
-      req.user.id,
+      user.id,
       filters,
     );
 
@@ -126,10 +126,10 @@ export class DashboardLiaisonController {
     type: LiaisonStatsDto,
   })
   async getLiaisonStats(
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<LiaisonStatsDto>> {
     const result = await this.dashboardLiaisonService.getLiaisonStats(
-      req.user.id,
+      user.id,
     );
 
     return {
@@ -162,14 +162,14 @@ export class DashboardLiaisonController {
   async takeActionOnApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @Body() actionDto: LiaisonActionDto,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<LiaisonActionResponseDto>> {
     // Ensure the submissionId in the body matches the param
     actionDto.submissionId = submissionId;
 
     const result = await this.dashboardLiaisonService.takeActionOnApplication(
       actionDto,
-      req.user.id,
+      user.id,
     );
 
     return {
@@ -211,10 +211,10 @@ export class DashboardLiaisonController {
     @Param('status') status: SubmissionStatus,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
-    @Request() req: any,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<LiaisonReviewListDto>> {
     const result = await this.dashboardLiaisonService.getApplicationsByStatus(
-      req.user.id,
+      user.id,
       status,
       page,
       limit,

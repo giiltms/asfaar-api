@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
 import {
@@ -683,29 +683,62 @@ export class DashboardVerificationService {
     flagDto: FlagApplicationDto,
     reviewerId: string,
   ): Promise<{ success: boolean; message: string }> {
-    const { submissionId, targetDepartment, flagReason, notes } = flagDto;
+    const {
+      submissionId,
+      targetDepartment,
+      flagType,
+      priorityLevel,
+      flagReason,
+      notes,
+    } = flagDto;
 
-    // Update submission with flagged status
+    // Enforce single OPEN flag per submission per department
+    const existingOpenFlag = await this.prisma.flag.findFirst({
+      where: {
+        submissionId,
+        status: 'OPEN',
+        targetDepartment: targetDepartment as any,
+      },
+      select: { id: true },
+    });
+
+    if (existingOpenFlag) {
+      throw new BadRequestException(
+        'An open flag already exists for this submission and department',
+      );
+    }
+
+    // Create flag record
+    await this.prisma.flag.create({
+      data: {
+        submissionId,
+        createdById: reviewerId,
+        targetDepartment: targetDepartment as any,
+        flagType: flagType as any,
+        priorityLevel: priorityLevel as any,
+        reason: flagReason,
+        notes,
+        status: 'OPEN',
+      },
+    });
+
+    // Update submission status and audit log
     await this.prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
         status: SubmissionStatus.FLAGGED,
+        isFlagged: true,
+        flagReason: flagReason,
+        flaggedAt: new Date(),
+        flaggedBy: reviewerId,
         reviewedAt: new Date(),
         reviewedBy: reviewerId,
         reviewNotes: notes,
-        metadata: {
-          action: 'FLAGGED',
-          targetDepartment,
-          flagReason,
-          reviewedBy: reviewerId,
-          reviewedAt: new Date().toISOString(),
-          ...(notes && { notes }),
-        },
         statusLogs: {
           create: {
             fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
             toStatus: SubmissionStatus.FLAGGED,
-            reason: 'Application flagged for security review',
+            reason: `Application flagged for security review - ${flagType} (${priorityLevel} priority)`,
             notes: `Flagged to ${targetDepartment}: ${flagReason}`,
             changedBy: reviewerId,
           },
@@ -723,19 +756,19 @@ export class DashboardVerificationService {
         where: { id: biometricData.id },
         data: {
           verificationStatus: 'FLAGGED',
-          verificationNotes: `Flagged to ${targetDepartment}: ${flagReason}`,
+          verificationNotes: `Flagged to ${targetDepartment} - ${flagType} (${priorityLevel}): ${flagReason}`,
           lastModifiedBy: reviewerId,
         },
       });
     }
 
     this.logger.log(
-      `Application ${submissionId} flagged to ${targetDepartment} by ${reviewerId}`,
+      `Application ${submissionId} flagged to ${targetDepartment} - ${flagType} (${priorityLevel} priority) by ${reviewerId}`,
     );
 
     return {
       success: true,
-      message: `Application flagged and sent to ${targetDepartment} successfully`,
+      message: `Application flagged and sent to ${targetDepartment} successfully (${flagType} - ${priorityLevel} priority)`,
     };
   }
 
@@ -796,8 +829,8 @@ export class DashboardVerificationService {
             toStatus: SubmissionStatus.QUERIED,
             reason: 'Application queried for additional information',
             notes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-                ? ` - Required documents: ${requiredDocuments.join(', ')}`
-                : ''
+              ? ` - Required documents: ${requiredDocuments.join(', ')}`
+              : ''
               }`,
             changedBy: reviewerId,
           },
@@ -816,8 +849,8 @@ export class DashboardVerificationService {
         data: {
           verificationStatus: 'NEEDS_REVIEW',
           verificationNotes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-              ? ` - Required: ${requiredDocuments.join(', ')}`
-              : ''
+            ? ` - Required: ${requiredDocuments.join(', ')}`
+            : ''
             }`,
           lastModifiedBy: reviewerId,
         },
