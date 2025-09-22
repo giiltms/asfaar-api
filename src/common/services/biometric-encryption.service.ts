@@ -63,8 +63,8 @@ export class BiometricEncryptionService {
       // Generate random IV (12 bytes for GCM)
       const iv = crypto.randomBytes(12);
 
-      // Create cipher
-      const cipher = crypto.createCipher(this.algorithm, this.encryptionKey);
+      // Create cipher with GCM mode
+      const cipher = crypto.createCipheriv(this.algorithm, this.encryptionKey, iv);
       cipher.setAAD(Buffer.from(additionalData || '', 'utf8'));
 
       // Encrypt data
@@ -105,10 +105,11 @@ export class BiometricEncryptionService {
     additionalData?: string,
   ): Promise<DecryptionResult> {
     try {
-      // Create decipher
-      const decipher = crypto.createDecipher(
+      // Create decipher with GCM mode
+      const decipher = crypto.createDecipheriv(
         this.algorithm,
         this.encryptionKey,
+        iv,
       );
       decipher.setAAD(Buffer.from(additionalData || '', 'utf8'));
       decipher.setAuthTag(tag);
