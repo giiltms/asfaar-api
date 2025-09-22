@@ -18,16 +18,20 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { Roles as UserRoles } from '@common/constants/roles.constants';
 import {
   CurrentUser,
   JwtUserPayload,
 } from '@common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { SetUserRoleDto } from './dto/set-user-role.dto';
-import { ListUsersDTO, UpdateUserDto } from './dto/users.dto';
+import { ListUsersDTO, UpdateUserDto, CreateUserDto } from './dto/users.dto';
 import { UpdateUserCentersDto } from './dto/update-user-centers.dto';
 import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import UserEntity from './entities/user.entity';
+import Serialize from '@common/decorators/serialize.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -41,6 +45,31 @@ export class UserController {
   @UseInterceptors(ClassSerializerInterceptor) // Handle pagination + serialization
   async getUsers(@Query() query: ListUsersDTO) {
     return this.userService.getUsers(query);
+  }
+
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @Serialize(UserEntity)
+  @ApiOperation({
+    summary: 'Create a new user (Admin only)',
+    description:
+      'Create a new user account with specified roles and center assignments. Only accessible by ADMIN and SUPER_ADMIN roles.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully',
+    type: UserEntity,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<UserEntity> {
+    return this.userService.createUserWithCenters(
+      createUserDto,
+      createUserDto.centerIds,
+    );
   }
 
   @Get('me')
