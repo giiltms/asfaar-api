@@ -10,7 +10,7 @@ import {
   BiometricValidationService,
   TemplateValidationResult,
 } from '@common/services/biometric-validation.service';
-import { FingerPosition } from '@prisma/client';
+import { FingerPosition, SubmissionStatus } from '@prisma/client';
 import { LocalStorageService } from '@providers/localstorage/localstorage.service';
 import * as crypto from 'crypto';
 
@@ -194,6 +194,18 @@ export class BiometricCaptureService {
           verificationStatus: overallSuccess ? 'VERIFIED' : 'NEEDS_RETAKES',
         },
       });
+
+      // If linked to a submission, mark biometrics completed and route to verification
+      if (request.submissionId) {
+        await this.prisma.formSubmission.update({
+          where: { id: request.submissionId },
+          data: {
+            biometricCompleted: true,
+            biometricCompletedAt: new Date(),
+            status: SubmissionStatus.UNDER_REVIEW,
+          },
+        });
+      }
 
       this.logger.log(
         `Fingerprint capture completed for user ${request.userId}. Success: ${overallSuccess}, Fingers: ${fingerprintDataIds.length}`,
@@ -450,7 +462,9 @@ export class BiometricCaptureService {
     });
 
     if (!biometricData) {
-      throw new NotFoundException('Fingerprint data not found for this submission');
+      throw new NotFoundException(
+        'Fingerprint data not found for this submission',
+      );
     }
 
     return {
