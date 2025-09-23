@@ -633,9 +633,13 @@ export class BiometricAppointmentsService {
     try {
       const appointment = await this.findAppointmentById(id);
 
-      if (appointment.status !== AppointmentStatus.ACTIVE) {
+      const validStatuses = [
+        AppointmentStatus.AT_BOOTH,
+        AppointmentStatus.IN_QUEUE,
+      ];
+      if (!validStatuses.includes(appointment.status as any)) {
         throw new BadRequestException(
-          `Can only complete biometric capture for active appointments. Current status: ${appointment.status}`,
+          `Can only complete biometric capture for appointments at booth or in queue. Current status: ${appointment.status}`,
         );
       }
       const result = await this.prisma.$transaction(async (tx) => {
