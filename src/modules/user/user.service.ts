@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
 import { Prisma, Roles, User } from '@prisma/client';
-import { PaginatorTypes } from '@nodeteam/nestjs-prisma-pagination';
 import { ListUsersDTO } from './dto/users.dto';
-import { UserFiltersDTO } from './dto/user-filters.dto';
 import { USER_NOT_FOUND } from '@common/constants';
 import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import { PrismaService } from '@providers/prisma/prisma.service';
@@ -181,7 +179,7 @@ export class UserService {
     id: string,
     data: Prisma.UserUpdateInput,
   ): Promise<UserEntity> {
-    const user = await this.findById(id);
+    await this.findById(id);
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data,
@@ -208,7 +206,7 @@ export class UserService {
    * @returns The deleted user.
    */
   async deleteUser(id: string): Promise<UserEntity> {
-    const user = await this.findById(id);
+    await this.findById(id);
     const deletedUser = await this.prisma.user.delete({
       where: { id },
       include: {
@@ -235,7 +233,7 @@ export class UserService {
    * @returns The updated user.
    */
   async updateUserRoles(userId: string, roles: Roles[]): Promise<UserEntity> {
-    const user = await this.findById(userId);
+    await this.findById(userId);
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { roles },
@@ -263,7 +261,7 @@ export class UserService {
    * @returns The updated user.
    */
   async setUserRole(userId: string, role: Roles): Promise<UserEntity> {
-    const user = await this.findById(userId);
+    await this.findById(userId);
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { roles: [role] },
@@ -290,7 +288,7 @@ export class UserService {
    * @returns The activated user.
    */
   async activateUser(userId: string): Promise<UserEntity> {
-    const user = await this.findById(userId);
+    await this.findById(userId);
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: true },
@@ -317,7 +315,7 @@ export class UserService {
    * @returns The deactivated user.
    */
   async deactivateUser(userId: string): Promise<UserEntity> {
-    const user = await this.findById(userId);
+    await this.findById(userId);
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: false },
@@ -490,6 +488,7 @@ export class UserService {
   async updateUserCenters(
     userId: string,
     centerIds: string[],
+    changedById?: string,
   ): Promise<UserEntity> {
     // First verify the user exists
     const user = await this.userRepository.findById(userId);
@@ -510,6 +509,12 @@ export class UserService {
         `Centers not found: ${missingIds.join(', ')}`,
       );
     }
+
+    // Capture previous centers for audit
+    const previous = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { biometricCenters: { select: { id: true } } },
+    });
 
     // Update user centers by updating the biometricCenters relation
     const updatedUser = await this.prisma.user.update({
@@ -533,6 +538,25 @@ export class UserService {
         },
       },
     });
+
+    // Write audit log (non-blocking best-effort)
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'UPDATE',
+          resource: 'USER_CENTERS',
+          resourceId: userId,
+          userId: changedById,
+          oldValues: {
+            centerIds: (previous?.biometricCenters || []).map((c) => c.id),
+          },
+          newValues: { centerIds },
+          timestamp: new Date(),
+        },
+      });
+    } catch (e) {
+      // swallow audit errors
+    }
 
     return new UserEntity(updatedUser);
   }

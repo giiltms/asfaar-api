@@ -247,8 +247,13 @@ export class UserController {
   async updateUserCenters(
     @Param('id') id: string,
     @Body() updateCentersDto: UpdateUserCentersDto,
+    @CurrentUser() actor: JwtUserPayload,
   ): Promise<UserEntity> {
-    return this.userService.updateUserCenters(id, updateCentersDto.centerIds);
+    return this.userService.updateUserCenters(
+      id,
+      updateCentersDto.centerIds,
+      actor?.id,
+    );
   }
 
   @Get(':id/centers')

@@ -454,6 +454,21 @@ export class BoothsService {
         `Assigned agent ${updatedBooth.agent.firstName} ${updatedBooth.agent.lastName} to booth ${updatedBooth.boothNumber}`,
       );
 
+      // best-effort audit
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'UPDATE',
+            resource: 'BOOTH_ASSIGNMENT',
+            resourceId: boothId,
+            userId: assignedBy,
+            oldValues: { previousAgentId: booth.agentId },
+            newValues: { agentId: assignDto.agentId },
+            timestamp: new Date(),
+          },
+        });
+      } catch (e) {}
+
       return updatedBooth;
     } catch (error) {
       this.logger.error(
@@ -511,10 +526,24 @@ export class BoothsService {
       });
 
       this.logger.log(
-        `Unassigned agent from booth ${updatedBooth.boothNumber}${
-          reason ? `: ${reason}` : ''
+        `Unassigned agent from booth ${updatedBooth.boothNumber}${reason ? `: ${reason}` : ''
         }`,
       );
+
+      // best-effort audit
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'UPDATE',
+            resource: 'BOOTH_ASSIGNMENT',
+            resourceId: boothId,
+            userId: unassignedBy,
+            oldValues: { previousAgentId: booth.agentId },
+            newValues: { agentId: null, reason },
+            timestamp: new Date(),
+          },
+        });
+      } catch (e) {}
 
       return updatedBooth;
     } catch (error) {
