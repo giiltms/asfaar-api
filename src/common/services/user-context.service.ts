@@ -106,7 +106,7 @@ export class UserContextService {
         return null;
       }
 
-      return centers.map(center => ({
+      return centers.map((center) => ({
         centerId: center.id,
         centerName: center.name,
         centerCode: center.code,
@@ -131,66 +131,12 @@ export class UserContextService {
   async getUserActiveBoothContext(
     userId: string,
   ): Promise<UserBoothContext | null> {
-    // First try to get user's assigned booth
+    // Only return explicit booth assignment; do not auto-pick fallbacks
     const assignedBooth = await this.getUserBoothContext(userId);
     if (assignedBooth) {
       return assignedBooth;
     }
-
-    // If no assigned booth, try to get first available booth from user's managed centers
-    try {
-      const centers = await this.getUserCenterContext(userId);
-      if (!centers || centers.length === 0) {
-        return null;
-      }
-
-      // Get first available booth from any of the user's managed centers
-      const booth = await this.prisma.booth.findFirst({
-        where: {
-          centerId: { in: centers.map((c) => c.centerId) },
-          isActive: true,
-          isOccupied: false,
-        },
-        include: {
-          center: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-              address: true,
-              city: true,
-              state: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (!booth) {
-        this.logger.warn(
-          `No available booths found in user ${userId}'s managed centers`,
-        );
-        return null;
-      }
-
-      return {
-        boothId: booth.id,
-        boothNumber: booth.boothNumber,
-        centerId: booth.center.id,
-        centerName: booth.center.name,
-        centerCode: booth.center.code,
-        centerAddress: booth.center.address,
-        centerCity: booth.center.city,
-        centerState: booth.center.state,
-        appointmentClass: booth.appointmentClass,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to get user active booth context for user ${userId}`,
-        error.stack,
-      );
-      return null;
-    }
+    return null;
   }
 
   /**
