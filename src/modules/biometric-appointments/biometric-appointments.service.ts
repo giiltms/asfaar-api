@@ -22,7 +22,6 @@ import {
   RescheduleAppointmentDto,
   CompleteBiometricCaptureDto,
   AppointmentFiltersDto,
-  UpdateAppointmentDto,
 } from './dto/biometric-appointment.dto';
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
@@ -639,65 +638,70 @@ export class BiometricAppointmentsService {
           `Can only complete biometric capture for active appointments. Current status: ${appointment.status}`,
         );
       }
-
-      const updatedAppointment = await this.prisma.biometricAppointment.update({
-        where: { id },
-        data: {
-          status: AppointmentStatus.COMPLETED,
-          biometricsCaptured: true,
-          capturedAt: new Date(),
-          capturedBy,
-          captureQuality: captureDto.captureQuality,
-          adminNotes: captureDto.adminNotes,
-          lastModifiedBy: capturedBy,
-        },
-        include: {
-          user: true,
-          submission: true,
-          center: true,
-        },
-      });
-
-      // Update the associated FormSubmission to mark biometrics as completed
-      if (appointment.submissionId) {
-        await this.prisma.formSubmission.update({
-          where: { id: appointment.submissionId },
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1) Update appointment to COMPLETED
+        const updatedAppointment = await tx.biometricAppointment.update({
+          where: { id },
           data: {
-            status: SubmissionStatus.UNDER_REVIEW,
-            biometricCompleted: true,
-            biometricCompletedAt: new Date(),
+            status: AppointmentStatus.COMPLETED,
+            biometricsCaptured: true,
+            capturedAt: new Date(),
+            capturedBy,
+            captureQuality: captureDto.captureQuality,
+            adminNotes: captureDto.adminNotes,
+            lastModifiedBy: capturedBy,
+          },
+          include: {
+            user: true,
+            submission: true,
+            center: true,
           },
         });
 
-        this.logger.log(
-          `FormSubmission ${appointment.submissionId} marked as biometric completed for appointment ${id}`,
-        );
-      }
+        // 2) Mark submission as biometric completed and move to UNDER_REVIEW with status log
+        if (appointment.submissionId) {
+          const fromStatus = updatedAppointment.submission?.status;
+          await tx.formSubmission.update({
+            where: { id: appointment.submissionId },
+            data: {
+              status: SubmissionStatus.UNDER_REVIEW,
+              biometricCompleted: true,
+              biometricCompletedAt: new Date(),
+              statusLogs: {
+                create: {
+                  fromStatus: fromStatus || undefined,
+                  toStatus: SubmissionStatus.UNDER_REVIEW,
+                  reason: 'Biometric capture completed',
+                  notes: captureDto.adminNotes,
+                  changedBy: capturedBy,
+                },
+              },
+            },
+          });
+        }
 
-      // Also update the associated queue entry to COMPLETED status
-      const queueEntry = await this.prisma.queueEntry.findFirst({
-        where: { appointmentId: id },
-      });
-
-      if (queueEntry) {
-        await this.prisma.queueEntry.update({
-          where: { id: queueEntry.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
-          },
+        // 3) Update queue entry to COMPLETED
+        const queueEntry = await tx.queueEntry.findFirst({
+          where: { appointmentId: id },
         });
+        if (queueEntry) {
+          await tx.queueEntry.update({
+            where: { id: queueEntry.id },
+            data: {
+              status: 'COMPLETED',
+              completedAt: new Date(),
+            },
+          });
+        }
 
-        this.logger.log(
-          `Queue entry ${queueEntry.id} marked as COMPLETED for appointment ${id}`,
-        );
-      }
+        return updatedAppointment;
+      });
 
       this.logger.log(
         `Completed biometric capture for appointment ${id} by ${capturedBy}`,
       );
 
-      return updatedAppointment;
+      return result;
     } catch (error) {
       this.logger.error(
         `Failed to complete biometric capture ${id}: ${error.message}`,
