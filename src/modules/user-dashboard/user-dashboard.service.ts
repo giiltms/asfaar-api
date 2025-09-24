@@ -368,7 +368,14 @@ export class UserDashboardService {
           appointment: {
             appointmentDate: { gte: new Date() },
             status: {
-              in: [AppointmentStatus.PENDING, AppointmentStatus.ACTIVE],
+              in: [
+                AppointmentStatus.PENDING,
+                AppointmentStatus.SCHEDULED,
+                AppointmentStatus.ACTIVE,
+                AppointmentStatus.CHECKED_IN,
+                AppointmentStatus.IN_QUEUE,
+                AppointmentStatus.AT_BOOTH,
+              ],
             },
           },
         },
