@@ -6,12 +6,14 @@ import {
   Param,
   UseGuards,
   HttpStatus,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import {
@@ -23,6 +25,7 @@ import {
   CheckInAppointmentDto,
   AddToQueueDto,
   UpdateQueueStatusDto,
+  AssignBoothDto,
 } from './dto/appointment-management.dto';
 
 @ApiTags('Appointment Management')
@@ -132,6 +135,7 @@ export class AppointmentManagementController {
     summary: 'Assign booth to applicant',
     description: 'Assign a specific booth to an applicant in the queue',
   })
+  @ApiBody({ type: AssignBoothDto })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Booth assigned successfully',
@@ -146,13 +150,13 @@ export class AppointmentManagementController {
   })
   async assignBooth(
     @Param('queueEntryId') queueEntryId: string,
-    @Body() boothData: { boothId: string },
+    @Body(ValidationPipe) assignBoothDto: AssignBoothDto,
     @CurrentUser() user: JwtUserPayload,
   ) {
     const userId = user.id;
     return this.dashboardFrontdeskService.assignBooth(
       queueEntryId,
-      boothData.boothId,
+      assignBoothDto.boothId,
       userId,
     );
   }
