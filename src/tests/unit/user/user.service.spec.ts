@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from '@modules/user/user.service';
 import { UserRepository } from '@modules/user/user.repository';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { AuditService } from '@modules/audit/audit.service';
 
 describe('UserService', () => {
   let service: UserService;
@@ -41,6 +42,12 @@ describe('UserService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: 'AuditService',
+          useValue: {
+            createAuditLog: jest.fn(),
+          },
         },
       ],
     }).compile();

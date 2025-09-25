@@ -8,13 +8,6 @@ import {
 } from '@nestjs/common';
 
 // Mock data
-const mockManager = {
-  id: 'manager-1',
-  firstName: 'Jane',
-  lastName: 'Smith',
-  email: 'jane@example.com',
-};
-
 const mockCenter = {
   id: 'center-1',
   name: 'ASFAAR-ABUJA HQ',
@@ -36,8 +29,6 @@ const mockCenter = {
   bufferTime: 15,
   servicesOffered: ['Biometric Capture', 'Document Verification'],
   specialFacilities: ['Wheelchair Access', 'Parking'],
-  managerId: 'manager-1',
-  manager: mockManager,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
   createdBy: 'admin-1',
@@ -121,13 +112,11 @@ describe('BiometricCentersService', () => {
       bufferTime: 15,
       servicesOffered: ['Biometric Capture'],
       specialFacilities: ['Parking'],
-      managerId: 'manager-1',
     };
 
     it('should create center successfully', async () => {
       // Arrange
       prismaService.biometricCenter.findFirst.mockResolvedValue(null); // duplicate check
-      prismaService.user.findUnique.mockResolvedValue(mockManager);
       prismaService.biometricCenter.create.mockResolvedValue(mockCenter);
 
       // Act
@@ -147,7 +136,6 @@ describe('BiometricCentersService', () => {
 
     it('should throw ConflictException when name already exists', async () => {
       // Arrange
-      prismaService.user.findUnique.mockResolvedValue(mockManager); // Mock manager found
       const conflictingCenter = { ...mockCenter, name: createCenterDto.name }; // Same name
       prismaService.biometricCenter.findFirst.mockResolvedValue(
         conflictingCenter,
@@ -161,7 +149,6 @@ describe('BiometricCentersService', () => {
 
     it('should throw ConflictException when code already exists', async () => {
       // Arrange
-      prismaService.user.findUnique.mockResolvedValue(mockManager); // Mock manager found
       const conflictingCenter = { ...mockCenter, code: createCenterDto.code }; // Same code
       prismaService.biometricCenter.findFirst.mockResolvedValue(
         conflictingCenter,
@@ -173,16 +160,6 @@ describe('BiometricCentersService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw BadRequestException when manager does not exist', async () => {
-      // Arrange
-      prismaService.biometricCenter.findFirst.mockResolvedValue(null);
-      prismaService.user.findUnique.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(
-        service.createCenter(createCenterDto, 'admin-1'),
-      ).rejects.toThrow(BadRequestException);
-    });
 
     it('should set default values when not provided', async () => {
       // Arrange
@@ -195,7 +172,6 @@ describe('BiometricCentersService', () => {
       };
 
       prismaService.biometricCenter.findFirst.mockResolvedValue(null);
-      prismaService.user.findUnique.mockResolvedValue(null); // No manager for this test
       prismaService.biometricCenter.create.mockResolvedValue({
         ...mockCenter,
         ...minimalDto,
