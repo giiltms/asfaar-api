@@ -71,9 +71,9 @@ export class UserContextService {
   }
 
   /**
-   * Get user's center assignments (for center managers)
+   * Get user's center assignments (for all staff)
    * @param userId - User ID
-   * @returns Array of centers the user manages
+   * @returns Array of centers the user has access to
    */
   async getUserCenterContext(userId: string): Promise<Array<{
     centerId: string;
@@ -84,29 +84,29 @@ export class UserContextService {
     centerState: string;
   }> | null> {
     try {
-      const centers = await this.prisma.biometricCenter.findMany({
-        where: {
-          managerId: userId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          address: true,
-          city: true,
-          state: true,
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          biometricCenters: {
+            where: { isActive: true },
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              address: true,
+              city: true,
+              state: true,
+            },
+          },
         },
       });
 
-      if (centers.length === 0) {
-        this.logger.warn(
-          `No center management assignment found for user ${userId}`,
-        );
+      if (!user || user.biometricCenters.length === 0) {
+        this.logger.warn(`No center assignment found for user ${userId}`);
         return null;
       }
 
-      return centers.map((center) => ({
+      return user.biometricCenters.map((center) => ({
         centerId: center.id,
         centerName: center.name,
         centerCode: center.code,

@@ -1,17 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
 import { Prisma, Roles, User } from '@prisma/client';
 import { ListUsersDTO } from './dto/users.dto';
 import { USER_NOT_FOUND } from '@common/constants';
 import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { AuditService } from '@modules/audit/audit.service';
 import UserEntity from './entities/user.entity';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {}
 
   async findById(id: string): Promise<UserEntity> {
@@ -480,7 +484,7 @@ export class UserService {
   }
 
   /**
-   * Update user centers
+   * Update user centers (staff access)
    * @param userId The user ID
    * @param centerIds Array of center IDs to assign to the user
    * @returns Updated user entity
@@ -603,9 +607,8 @@ export class UserService {
       userId: userWithCenters.id,
       userEmail: userWithCenters.email,
       userName:
-        `${userWithCenters.firstName || ''} ${
-          userWithCenters.lastName || ''
-        }`.trim() || 'Unknown User',
+        `${userWithCenters.firstName || ''} ${userWithCenters.lastName || ''
+          }`.trim() || 'Unknown User',
       centers: userWithCenters.biometricCenters,
       totalCenters: userWithCenters.biometricCenters.length,
     };

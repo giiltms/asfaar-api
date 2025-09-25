@@ -173,7 +173,7 @@ model User {
   payments              Payment[] // NEW: User's payments
   FormSubmission        FormSubmission[]
   ninVerifications      NinVerification[]
-  biometricCenters      BiometricCenter[]      @relation("CenterManager")
+  biometricCenters      BiometricCenter[]      @relation("CenterStaff")
   biometricAppointments BiometricAppointment[]
   booths                Booth[]                @relation("BoothAgent")
   biometricSessions     BiometricSession[]     @relation("BiometricAgent")
@@ -1135,8 +1135,7 @@ model BiometricCenter {
   specialFacilities String[] // Special facilities (wheelchair access, etc.)
 
   // Staff and Management
-  managerId String? // Manager user ID
-  manager   User?   @relation("CenterManager", fields: [managerId], references: [id])
+  // Note: Multiple managers can manage the same center (many-to-many relationship)
 
   // Audit Fields
   createdAt      DateTime @default(now())
@@ -1148,6 +1147,7 @@ model BiometricCenter {
   appointments BiometricAppointment[]
   booths       Booth[]
   queueEntries QueueEntry[]
+  staff        User[]                 @relation("CenterStaff") // Staff who have access to this center
 
   @@index([city])
   @@index([state])
