@@ -768,7 +768,7 @@ export class SubmissionQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by submission date from',
+    description: 'Filter by creation date from',
     example: '2024-01-01',
   })
   @IsOptional()
@@ -776,7 +776,7 @@ export class SubmissionQueryDto {
   dateFrom?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by submission date to',
+    description: 'Filter by creation date to',
     example: '2024-12-31',
   })
   @IsOptional()

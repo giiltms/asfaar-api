@@ -946,8 +946,8 @@ export class FormSubmissionsService {
           { form: { description: { contains: search, mode: 'insensitive' } } },
         ],
       }),
-      ...(dateFrom && { submittedAt: { gte: new Date(dateFrom) } }),
-      ...(dateTo && { submittedAt: { lte: new Date(dateTo) } }),
+      ...(dateFrom && { createdAt: { gte: new Date(dateFrom) } }),
+      ...(dateTo && { createdAt: { lte: new Date(dateTo) } }),
     };
 
     const orderBy = this.buildSubmissionOrderBy(sortBy, sortOrder);
@@ -1317,8 +1317,8 @@ export class FormSubmissionsService {
           { user: { lastName: { contains: search, mode: 'insensitive' } } },
         ],
       }),
-      ...(dateFrom && { submittedAt: { gte: new Date(dateFrom) } }),
-      ...(dateTo && { submittedAt: { lte: new Date(dateTo) } }),
+      ...(dateFrom && { createdAt: { gte: new Date(dateFrom) } }),
+      ...(dateTo && { createdAt: { lte: new Date(dateTo) } }),
     };
 
     const orderBy = this.buildSubmissionOrderBy(sortBy, sortOrder);
