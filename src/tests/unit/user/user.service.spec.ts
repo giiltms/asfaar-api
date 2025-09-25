@@ -44,7 +44,7 @@ describe('UserService', () => {
           useValue: mockPrismaService,
         },
         {
-          provide: 'AuditService',
+          provide: AuditService,
           useValue: {
             createAuditLog: jest.fn(),
           },
