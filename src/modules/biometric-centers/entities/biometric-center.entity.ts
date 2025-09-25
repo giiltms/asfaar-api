@@ -86,9 +86,6 @@ export class BiometricCenterEntity {
   @Expose()
   specialFacilities: string[];
 
-  @ApiPropertyOptional({ description: 'Manager ID' })
-  @Expose()
-  managerId?: string;
 
   @ApiProperty({ description: 'Creation timestamp' })
   @Expose()

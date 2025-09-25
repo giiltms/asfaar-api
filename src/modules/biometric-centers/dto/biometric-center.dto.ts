@@ -220,13 +220,6 @@ export class CreateBiometricCenterDto {
   @IsString({ each: true })
   specialFacilities?: string[];
 
-  @ApiPropertyOptional({
-    description: 'Manager user ID',
-    example: 'uuid-string',
-  })
-  @IsOptional()
-  @IsString()
-  managerId?: string;
 }
 
 // DTO for updating a biometric center (all fields optional except ID)
@@ -375,8 +368,6 @@ export class BiometricCenterResponseDto {
   @ApiProperty({ description: 'Special facilities', type: [String] })
   specialFacilities: string[];
 
-  @ApiPropertyOptional({ description: 'Manager ID' })
-  managerId?: string;
 
   @ApiProperty({ description: 'Creation timestamp' })
   createdAt: Date;
