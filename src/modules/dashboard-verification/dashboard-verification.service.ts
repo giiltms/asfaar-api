@@ -580,7 +580,11 @@ export class DashboardVerificationService {
     }
 
     const ninVerification = submission.user.ninVerifications?.[0];
-    const biometricData = submission.biometricData?.[0];
+    const biometricData = submission.biometricData;
+
+    if (!biometricData) {
+      throw new Error('Biometric data not found for this application');
+    }
 
     return {
       referenceNumber: submission.referenceNumber,
@@ -636,28 +640,26 @@ export class DashboardVerificationService {
           },
         }
         : null,
-      biometricData: biometricData
-        ? {
-          id: biometricData.id,
-          photoUrl: biometricData.photoUrl,
-          photoQualityScore: biometricData.photoQualityScore,
-          fingerprintQualityScore: biometricData.fingerprintQualityScore,
-          overallQualityScore: biometricData.overallQualityScore,
-          isVerified: biometricData.isVerified,
-          verificationStatus: biometricData.verificationStatus,
-          capturedAt: biometricData.capturedAt?.toISOString(),
-          capturedBy: biometricData.capturedBy,
-          captureDevice: biometricData.captureDevice,
-          fingerprintFingers:
-            biometricData.fingerprintFingers?.map((finger) => ({
-              fingerPosition: finger.fingerPosition,
-              fingerName: finger.fingerName,
-              qualityScore: finger.qualityScore,
-              isAcceptable: finger.isAcceptable,
-              capturedAt: finger.capturedAt?.toISOString(),
-            })) || [],
-        }
-        : null,
+      biometricData: {
+        id: biometricData.id,
+        photoUrl: biometricData.photoUrl,
+        photoQualityScore: biometricData.photoQualityScore,
+        fingerprintQualityScore: biometricData.fingerprintQualityScore,
+        overallQualityScore: biometricData.overallQualityScore,
+        isVerified: biometricData.isVerified,
+        verificationStatus: biometricData.verificationStatus,
+        capturedAt: biometricData.capturedAt?.toISOString(),
+        capturedBy: biometricData.capturedBy,
+        captureDevice: biometricData.captureDevice,
+        fingerprintFingers:
+          biometricData.fingerprintFingers?.map((finger) => ({
+            fingerPosition: finger.fingerPosition,
+            fingerName: finger.fingerName,
+            qualityScore: finger.qualityScore,
+            isAcceptable: finger.isAcceptable,
+            capturedAt: finger.capturedAt?.toISOString(),
+          })) || [],
+      },
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment
         ? {

@@ -255,8 +255,8 @@ export class ApplicationReviewDto {
     }>;
   };
 
-  @ApiProperty({ description: 'User profile photo' })
-  userProfilePhoto: string;
+  @ApiPropertyOptional({ description: 'User profile photo' })
+  userProfilePhoto?: string;
 
   @ApiProperty({ description: 'Appointment information' })
   appointment: {
