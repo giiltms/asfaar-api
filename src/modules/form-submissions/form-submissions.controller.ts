@@ -391,6 +391,29 @@ export class FormSubmissionsController {
     return this.submissionsService.getSubmissionById(user.id, id);
   }
 
+  // get submission by reference number
+  @Get('reference-number/:referenceNumber')
+  @ApiOperation({
+    summary: 'Get submission by Reference number',
+    description: 'Get a specific submission (user can only access their own)',
+  })
+  @ApiParam({
+    name: 'referenceNumber',
+    description: 'Refrence Number',
+    example: 'MA00425000026',
+  })
+  @ApiOkBaseResponse({ dto: FormSubmissionDto })
+  @ApiDefaultResponse({ type: FormSubmissionDto })
+  async getSubmissionByReferenceNumber(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('referenceNumber') referenceNumber: string,
+  ): Promise<FormSubmissionDto> {
+    return this.submissionsService.getSubmissionByReferenceNumber(
+      user.id,
+      referenceNumber,
+    );
+  }
+
   @Put(':id')
   @ApiOperation({
     summary: 'Update submission',

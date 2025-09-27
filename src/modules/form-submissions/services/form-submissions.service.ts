@@ -1000,6 +1000,27 @@ export class FormSubmissionsService {
     return await this.mapToSubmissionDto(submission);
   }
 
+  async getSubmissionByReferenceNumber(
+    userId: string,
+    referenceNumber: string,
+  ): Promise<FormSubmissionDto> {
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { referenceNumber },
+      include: this.getSubmissionInclude(),
+    });
+
+    if (!submission) {
+      throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
+    }
+
+    if (submission.userId !== userId) {
+      // Allow admin access
+      throw new ForbiddenException(FORBIDDEN_RESOURCE);
+    }
+
+    return await this.mapToSubmissionDto(submission);
+  }
+
   async updateSubmission(
     userId: string,
     submissionId: string,
