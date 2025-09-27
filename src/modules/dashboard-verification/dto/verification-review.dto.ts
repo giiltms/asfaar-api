@@ -234,7 +234,7 @@ export class ApplicationReviewDto {
     };
   };
 
-  @ApiProperty({ description: 'Biometric data' })
+  @ApiProperty({ description: 'Biometric data (excluding encrypted fingerprint data)' })
   biometricData: {
     id: string;
     photoUrl: string;
@@ -246,13 +246,7 @@ export class ApplicationReviewDto {
     capturedAt: string;
     capturedBy: string;
     captureDevice: string;
-    fingerprintFingers: Array<{
-      fingerPosition: string;
-      fingerName: string;
-      qualityScore: number;
-      isAcceptable: boolean;
-      capturedAt: string;
-    }>;
+    // Note: fingerprintFingers data is encrypted and available via GET /api/v1/biometric-capture/data/:userId
   };
 
   @ApiPropertyOptional({ description: 'User profile photo' })

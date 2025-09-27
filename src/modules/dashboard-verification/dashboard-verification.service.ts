@@ -509,15 +509,7 @@ export class DashboardVerificationService {
             },
           },
         },
-        biometricData: {
-          include: {
-            fingerprintFingers: {
-              orderBy: {
-                fingerPosition: 'asc',
-              },
-            },
-          },
-        },
+        biometricData: true,
         appointment: {
           include: {
             center: {
@@ -651,14 +643,7 @@ export class DashboardVerificationService {
         capturedAt: biometricData.capturedAt?.toISOString(),
         capturedBy: biometricData.capturedBy,
         captureDevice: biometricData.captureDevice,
-        fingerprintFingers:
-          biometricData.fingerprintFingers?.map((finger) => ({
-            fingerPosition: finger.fingerPosition,
-            fingerName: finger.fingerName,
-            qualityScore: finger.qualityScore,
-            isAcceptable: finger.isAcceptable,
-            capturedAt: finger.capturedAt?.toISOString(),
-          })) || [],
+        // Note: fingerprintFingers data is encrypted and available via GET /api/v1/biometric-capture/data/:userId
       },
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment
