@@ -64,7 +64,11 @@ export class BiometricEncryptionService {
       const iv = crypto.randomBytes(12);
 
       // Create cipher with GCM mode
-      const cipher = crypto.createCipheriv(this.algorithm, this.encryptionKey, iv);
+      const cipher = crypto.createCipheriv(
+        this.algorithm,
+        this.encryptionKey,
+        iv,
+      );
       cipher.setAAD(Buffer.from(additionalData || '', 'utf8'));
 
       // Encrypt data
