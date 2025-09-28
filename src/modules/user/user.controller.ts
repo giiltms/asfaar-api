@@ -27,7 +27,12 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { SetUserRoleDto } from './dto/set-user-role.dto';
-import { ListUsersDTO, UpdateUserDto, CreateUserDto } from './dto/users.dto';
+import {
+  ListUsersDTO,
+  UpdateUserDto,
+  CreateUserDto,
+  UpdateUserCountryDto,
+} from './dto/users.dto';
 import { UpdateUserCentersDto } from './dto/update-user-centers.dto';
 import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import UserEntity from './entities/user.entity';
@@ -270,5 +275,42 @@ export class UserController {
     @Param('id') id: string,
   ): Promise<UserCentersResponseDto> {
     return this.userService.getUserCenters(id);
+  }
+
+  @Patch(':id/country')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Update user country assignment',
+    description:
+      'Assign or update the country that an embassy officer is responsible for',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User country assignment updated successfully',
+    type: UserEntity,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid country ID or country not found',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient permissions',
+  })
+  @UseInterceptors(ClassSerializerInterceptor)
+  async updateUserCountry(
+    @Param('id') id: string,
+    @Body() updateCountryDto: UpdateUserCountryDto,
+    @CurrentUser() actor: JwtUserPayload,
+  ): Promise<UserEntity> {
+    return this.userService.updateUserCountry(
+      id,
+      updateCountryDto.countryId,
+      actor?.id,
+    );
   }
 }

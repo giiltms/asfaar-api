@@ -65,6 +65,16 @@ export class UserRepository {
             logoUrl: true,
           },
         },
+        country: {
+          select: {
+            id: true,
+            name: true,
+            isoCode2: true,
+            isoCode3: true,
+            flag: true,
+            logoUrl: true,
+          },
+        },
       },
     });
   }

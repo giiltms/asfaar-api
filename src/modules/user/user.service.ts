@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserRepository } from '@modules/user/user.repository';
 import { Prisma, Roles, User } from '@prisma/client';
 import { ListUsersDTO } from './dto/users.dto';
@@ -431,6 +436,16 @@ export class UserService {
             logoUrl: true,
           },
         },
+        country: {
+          select: {
+            id: true,
+            name: true,
+            isoCode2: true,
+            isoCode3: true,
+            flag: true,
+            logoUrl: true,
+          },
+        },
       }, // include
       orderBy,
       paginationOptions,
@@ -616,11 +631,130 @@ export class UserService {
       userId: userWithCenters.id,
       userEmail: userWithCenters.email,
       userName:
-        `${userWithCenters.firstName || ''} ${
-          userWithCenters.lastName || ''
-        }`.trim() || 'Unknown User',
+        `${userWithCenters.firstName || ''} ${userWithCenters.lastName || ''}`.trim() ||
+        'Unknown User',
       centers: userWithCenters.biometricCenters,
       totalCenters: userWithCenters.biometricCenters.length,
     };
+  }
+
+  /**
+   * Update user's assigned country
+   */
+  async updateUserCountry(
+    userId: string,
+    countryId: string,
+    changedById: string,
+  ): Promise<UserEntity> {
+    try {
+      // Validate user exists
+      const user = await this.findById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Validate country exists
+      const country = await this.prisma.country.findUnique({
+        where: { id: countryId },
+        select: { id: true, name: true, isoCode2: true, isActive: true },
+      });
+
+      if (!country) {
+        throw new BadRequestException('Country not found');
+      }
+
+      if (!country.isActive) {
+        throw new BadRequestException('Country is not active');
+      }
+
+      // Validate user has embassy role (optional validation)
+      const hasEmbassyRole = user.roles.some((role) =>
+        ['EMBASSY_OFFICER', 'LIAISON_OFFICER', 'AUTHORITY'].includes(role),
+      );
+
+      if (!hasEmbassyRole) {
+        this.logger.warn(
+          `User ${userId} assigned to country ${countryId} but doesn't have embassy role`,
+        );
+      }
+
+      // Get current country assignment for audit
+      const currentUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { countryId: true },
+      });
+
+      // Update user's country assignment
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          countryId: countryId,
+        },
+        include: {
+          addresses: {
+            orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+          },
+          ninVerifications: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+          biometricCenters: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              address: true,
+              city: true,
+              state: true,
+              isActive: true,
+            },
+          },
+          departments: {
+            select: {
+              id: true,
+              name: true,
+              agency: true,
+              description: true,
+              logoUrl: true,
+            },
+          },
+          country: {
+            select: {
+              id: true,
+              name: true,
+              isoCode2: true,
+              isoCode3: true,
+              flag: true,
+              logoUrl: true,
+            },
+          },
+        },
+      });
+
+      // Create audit log
+      await this.auditService.createAuditLog({
+        user: { id: changedById } as any,
+        action: 'UPDATE',
+        resource: 'USER_COUNTRY',
+        resourceId: userId,
+        oldValues: { countryId: currentUser?.countryId },
+        newValues: { countryId: countryId },
+        url: `/users/${userId}/country`,
+        ipAddress: 'N/A',
+        userAgent: 'N/A',
+      });
+
+      this.logger.log(
+        `User ${userId} assigned to country ${country.name} (${country.isoCode2}) by ${changedById}`,
+      );
+
+      return new UserEntity(updatedUser);
+    } catch (error) {
+      this.logger.error(
+        `Failed to update user country for user ${userId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

@@ -430,3 +430,13 @@ export class ListUsersDTO {
   @IsBoolean()
   isVerified?: boolean;
 }
+
+// Update User Country DTO
+export class UpdateUserCountryDto {
+  @ApiProperty({
+    description: 'Country ID to assign to the user',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsUUID()
+  countryId: string;
+}

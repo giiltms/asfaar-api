@@ -165,6 +165,8 @@ model User {
   sessions      UserSession[]
   addresses     Address[] // User addresses relation
   departments   Department[]     @relation("DepartmentStaff")
+  country       Country?         @relation(fields: [countryId], references: [id])
+  countryId     String?
 
   // Payment relations
   paymentMethods        PaymentMethod[]
@@ -616,6 +618,7 @@ model Country {
   createdBy String?
 
   // Relations
+  users        User[]
   forms               DynamicForm[]
   applicationCounters ApplicationCounter[]
   applicationTypes    ApplicationType[]

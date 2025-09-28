@@ -92,6 +92,9 @@ export default class UserEntity implements User {
   @Expose()
   updatedAt: Date;
 
+  @Expose()
+  countryId: string | null;
+
   @ApiPropertyOptional({
     description: 'User addresses (default address first)',
     type: 'object',
@@ -122,6 +125,14 @@ export default class UserEntity implements User {
   @Expose()
   @Type(() => Object)
   departments?: any[]; // Using any[] to avoid circular dependency issues
+
+  @ApiPropertyOptional({
+    description: 'User assigned country (for embassy officers)',
+    type: 'object',
+  })
+  @Expose()
+  @Type(() => Object)
+  country?: any; // Using any to avoid circular dependency issues
 
   @ApiPropertyOptional({
     description: 'User NIN verifications (most recent first)',
