@@ -104,6 +104,14 @@ export class CaptureFingerprintsDto {
   captureMethod: 'SLAP' | 'INDIVIDUAL';
 
   @ApiProperty({
+    description: 'Device used for capture',
+    example: 'Suprema RealScan-G10',
+  })
+  @IsString()
+  @IsNotEmpty()
+  captureDevice: string;
+
+  @ApiProperty({
     description: 'Array of finger data to capture',
     type: [FingerDataDto],
     example: [
@@ -599,7 +607,7 @@ export class BiometricCaptureController {
   @ApiOperation({
     summary: 'Capture and store fingerprint data',
     description:
-      'Capture fingerprint data using Suprema RealScan-G10 or equivalent device. Stores ISO/IEC 19794-2:2005 templates with encryption. Booth and center information is automatically determined from user assignment.',
+      'Capture fingerprint data using the specified biometric device. Stores ISO/IEC 19794-2:2005 templates with encryption. Device information is provided by the user, while booth and center information is automatically determined from user assignment.',
   })
   @ApiBody({ type: CaptureFingerprintsDto })
   @ApiResponse({
@@ -649,7 +657,7 @@ export class BiometricCaptureController {
       const captureRequest: CaptureRequest = {
         userId: user.id,
         submissionId: captureDto.submissionId,
-        captureDevice: this.userContextService.getDeviceInfo(userContext),
+        captureDevice: captureDto.captureDevice,
         captureLocation:
           this.userContextService.formatLocationString(userContext),
         captureMethod: captureDto.captureMethod,

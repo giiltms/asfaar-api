@@ -529,7 +529,7 @@ export class BiometricCaptureService {
 
     // Generate capture location and device info
     const captureLocation = `${userContext.centerName} - Booth ${userContext.boothNumber}`;
-    const captureDevice = `Booth ${userContext.boothNumber} - ${userContext.centerName}`;
+    const captureDevice = `Photo Capture - ${userContext.centerName}`;
 
     // Create or update biometric data record
     const biometricData = await this.prisma.biometricData.upsert({
