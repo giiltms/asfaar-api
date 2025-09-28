@@ -238,14 +238,21 @@ export class FinanceService {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
 
+      // Set proper time boundaries for the month
+      const monthStartWithTime = new Date(monthStart);
+      monthStartWithTime.setHours(0, 0, 0, 0);
+
+      const monthEndWithTime = new Date(monthEnd);
+      monthEndWithTime.setHours(23, 59, 59, 999);
+
       const monthData = await this.prisma.payment.groupBy({
         by: ['processor'],
         where: {
           ...whereClause,
           status: PaymentStatus.COMPLETED,
           createdAt: {
-            gte: monthStart,
-            lte: monthEnd,
+            gte: monthStartWithTime,
+            lte: monthEndWithTime,
           },
         },
         _count: { id: true },
@@ -333,19 +340,31 @@ export class FinanceService {
    */
   private buildDateFilter(query: FinanceQueryDto): any {
     if (query.startDate && query.endDate) {
+      const startOfDay = new Date(query.startDate);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date(query.endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
       return {
         createdAt: {
-          gte: new Date(query.startDate),
-          lte: new Date(query.endDate),
+          gte: startOfDay,
+          lte: endOfDay,
         },
       };
     }
 
     // Default to last 30 days
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
     return {
       createdAt: {
-        gte: subDays(new Date(), 30),
-        lte: new Date(),
+        gte: thirtyDaysAgo,
+        lte: today,
       },
     };
   }
@@ -384,6 +403,10 @@ export class FinanceService {
     const currentMonthStart = startOfMonth(new Date());
     const previousMonthEnd = subDays(currentMonthStart, 1);
     const previousMonthStart = startOfMonth(previousMonthEnd);
+
+    // Set proper time boundaries
+    previousMonthStart.setHours(0, 0, 0, 0);
+    previousMonthEnd.setHours(23, 59, 59, 999);
 
     const result = await this.prisma.payment.aggregate({
       where: {
