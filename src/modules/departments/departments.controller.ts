@@ -327,29 +327,4 @@ export class DepartmentsController {
     await this.departmentsService.deleteDepartment(id, user.id);
   }
 
-  @Get(':id/test')
-  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
-  @ApiOperation({
-    summary: 'Test endpoint for department',
-    description: 'Smoke test endpoint to verify department module is working',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Department module is working',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string' },
-        departmentId: { type: 'string' },
-        timestamp: { type: 'string' },
-      },
-    },
-  })
-  async testEndpoint(@Param('id') id: string) {
-    return {
-      message: 'Department module is working correctly',
-      departmentId: id,
-      timestamp: new Date().toISOString(),
-    };
-  }
 }
