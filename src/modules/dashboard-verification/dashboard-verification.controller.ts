@@ -122,9 +122,9 @@ export class DashboardVerificationController {
 
   @Post('applications/:submissionId/flag')
   @ApiOperation({
-    summary: 'Flag application and send to security department',
+    summary: 'Flag application and send to other departments',
     description:
-      'Flag an application for security review with enhanced details including flag type, priority level, and detailed reason',
+      'Flag an application for review by other departments with enhanced details including flag type, priority level, and detailed reason',
   })
   @ApiResponse({
     status: HttpStatus.OK,
