@@ -64,32 +64,7 @@ export class DepartmentsController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Department data with logo file',
-    schema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Department name',
-          example: 'Immigration Services',
-        },
-        agency: {
-          type: 'string',
-          description: 'Agency that the department belongs to',
-          example: 'Ministry of Interior',
-        },
-        description: {
-          type: 'string',
-          description: 'Department description',
-          example: 'Handles immigration and visa processing services',
-        },
-        logo: {
-          type: 'string',
-          format: 'binary',
-          description: 'Logo file (JPEG, PNG, WebP, SVG - max 5MB)',
-        },
-      },
-      required: ['name', 'agency', 'description', 'logo'],
-    },
+    type: CreateDepartmentMultipartDto,
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
