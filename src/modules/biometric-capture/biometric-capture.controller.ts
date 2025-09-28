@@ -11,6 +11,7 @@ import {
   HttpStatus,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -37,6 +38,7 @@ import { Type } from 'class-transformer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { LocalStorageService } from '@providers/localstorage/localstorage.service';
+import { PrismaService } from '@providers/prisma/prisma.service';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -273,7 +275,7 @@ export class BiometricDataDto {
 export class FingerprintDataDto {
   @ApiProperty({
     description: 'Unique identifier for the fingerprint data',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    example: 'finger-001',
   })
   id: string;
 
@@ -282,7 +284,13 @@ export class FingerprintDataDto {
     enum: FingerPosition,
     example: 'LEFT_THUMB',
   })
-  position: FingerPosition;
+  fingerPosition: FingerPosition;
+
+  @ApiProperty({
+    description: 'Human-readable finger name',
+    example: 'Left Thumb',
+  })
+  fingerName: string;
 
   @ApiProperty({
     description: 'Quality score of the fingerprint (0-100)',
@@ -297,16 +305,48 @@ export class FingerprintDataDto {
   nfiqScore: number;
 
   @ApiProperty({
-    description: 'Whether the template is encrypted',
+    description: 'Whether the fingerprint quality is acceptable',
     example: true,
   })
-  isEncrypted: boolean;
+  isAcceptable: boolean;
+
+  @ApiProperty({
+    description: 'Whether the fingerprint template is valid',
+    example: true,
+  })
+  isTemplateValid: boolean;
 
   @ApiProperty({
     description: 'Date and time when captured',
-    example: '2024-01-15T10:30:00Z',
+    example: '2024-01-15T14:30:00.000Z',
   })
   capturedAt: string;
+
+  @ApiProperty({
+    description: 'Device used for capture',
+    example: 'Suprema RealScan-G10 - ASFAAR-ABJ-HQ-Dev',
+  })
+  captureDevice: string;
+
+  @ApiProperty({
+    description: 'Method used for capture',
+    example: 'LIVE_SCAN',
+  })
+  captureMethod: string;
+
+  @ApiProperty({
+    description: 'Decrypted template data (ISO/IEC 19794-2:2005 format)',
+    example:
+      'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+  })
+  templateData: Buffer;
+
+  @ApiPropertyOptional({
+    description: 'Decrypted WSQ-compressed fingerprint image data (optional)',
+    example:
+      'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+  })
+  wsqImageData?: Buffer;
 }
 
 export class BiometricDataListDto {
@@ -360,8 +400,8 @@ export class FingerprintDataResponseDto {
       id: '456e7890-e89b-12d3-a456-426614174001',
       firstName: 'John',
       lastName: 'Doe',
-      email: 'john.doe@example.com'
-    }
+      email: 'john.doe@example.com',
+    },
   })
   user: {
     id: string;
@@ -378,7 +418,7 @@ export class FingerprintDataResponseDto {
 
   @ApiProperty({
     description: 'Device used for capture',
-    example: 'Booth 1 - Lagos Center',
+    example: 'Suprema RealScan-G10',
   })
   captureDevice: string;
 
@@ -406,21 +446,53 @@ export class FingerprintDataResponseDto {
     example: [
       {
         id: 'finger-001',
-        position: 'LEFT_THUMB',
+        fingerPosition: 'LEFT_THUMB',
+        fingerName: 'Left Thumb',
         qualityScore: 85,
         nfiqScore: 2,
-        isEncrypted: true,
-        capturedAt: '2024-01-15T14:30:00.000Z'
+        isAcceptable: true,
+        isTemplateValid: true,
+        capturedAt: '2024-01-15T14:30:00.000Z',
+        captureDevice: 'Suprema RealScan-G10',
+        captureMethod: 'LIVE_SCAN',
+        templateData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+        wsqImageData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
       },
       {
         id: 'finger-002',
-        position: 'RIGHT_THUMB',
+        fingerPosition: 'RIGHT_THUMB',
+        fingerName: 'Right Thumb',
         qualityScore: 78,
         nfiqScore: 3,
-        isEncrypted: true,
-        capturedAt: '2024-01-15T14:30:00.000Z'
-      }
-    ]
+        isAcceptable: true,
+        isTemplateValid: true,
+        capturedAt: '2024-01-15T14:30:00.000Z',
+        captureDevice: 'Suprema RealScan-G10',
+        captureMethod: 'LIVE_SCAN',
+        templateData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+        wsqImageData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+      },
+      {
+        id: 'finger-003',
+        fingerPosition: 'LEFT_INDEX',
+        fingerName: 'Left Index',
+        qualityScore: 92,
+        nfiqScore: 1,
+        isAcceptable: true,
+        isTemplateValid: true,
+        capturedAt: '2024-01-15T14:30:00.000Z',
+        captureDevice: 'Suprema RealScan-G10',
+        captureMethod: 'LIVE_SCAN',
+        templateData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+        wsqImageData:
+          'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/',
+      },
+    ],
   })
   fingers: FingerprintDataDto[];
 }
@@ -513,6 +585,7 @@ export class BiometricCaptureController {
     private readonly biometricCaptureService: BiometricCaptureService,
     private readonly userContextService: UserContextService,
     private readonly localStorageService: LocalStorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('capture')
@@ -726,7 +799,18 @@ export class BiometricCaptureController {
       `Fingerprint data retrieval request for submission ${submissionId}`,
     );
 
-    return await this.biometricCaptureService.getFingerprintDataBySubmissionId(
+    // Get the user ID from the submission first
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      select: { userId: true },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    return await this.biometricCaptureService.getFingerprintData(
+      submission.userId,
       submissionId,
     );
   }

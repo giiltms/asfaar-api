@@ -284,7 +284,7 @@ export class ApplicationReviewDto {
       verificationStatus: 'PENDING',
       capturedAt: '2024-01-15T14:30:00.000Z',
       capturedBy: 'agent-001',
-      captureDevice: 'Booth 1 - Lagos Center',
+      captureDevice: 'Suprema RealScan-G10',
       fingerprintCount: 10,
       fingerprintQualitySummary: {
         averageQuality: 78,
