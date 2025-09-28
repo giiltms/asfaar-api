@@ -26,6 +26,7 @@ import { DashboardEmbassyModule } from '../dashboard-embassy/dashboard-embassy.m
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { FinanceModule } from '../finance/finance.module';
+import { DepartmentsModule } from '../departments/departments.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -59,6 +60,7 @@ import { FinanceModule } from '../finance/finance.module';
     DashboardFrontdeskModule,
     AnalyticsModule,
     FinanceModule,
+    DepartmentsModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],

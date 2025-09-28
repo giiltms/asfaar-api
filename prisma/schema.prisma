@@ -164,6 +164,7 @@ model User {
   notifications Notification[]
   sessions      UserSession[]
   addresses     Address[] // User addresses relation
+  departments   Department[]     @relation("DepartmentStaff")
 
   // Payment relations
   paymentMethods        PaymentMethod[]
@@ -821,7 +822,8 @@ model Flag {
   createdById String
 
   // Routing/ownership
-  targetDepartment SecurityDepartment
+  targetDepartment   Department @relation(fields: [targetDepartmentId], references: [id], name: "DepartmentFlagging")
+  targetDepartmentId String
 
   // Categorization and priority
   flagType      FlagType
@@ -839,9 +841,11 @@ model Flag {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  actions FlagAction[]
+  actions      FlagAction[]
+  Department   Department?  @relation(fields: [departmentId], references: [id])
+  departmentId String?
 
-  @@index([submissionId, status, targetDepartment])
+  @@index([submissionId, status, targetDepartmentId])
   @@map("flags")
 }
 
@@ -881,14 +885,20 @@ enum PriorityLevel {
   URGENT
 }
 
-// Target department for flags/routing
-enum SecurityDepartment {
-  FINANCE
-  EMBASSY_OFFICER
-  LIAISON_OFFICER
-  AUTHORITY
-  ADMIN
-  SUPER_ADMIN
+model Department {
+  id          String @id @default(uuid())
+  name        String
+  agency      String
+  description String
+  logoUrl     String
+  staffs      User[] @relation("DepartmentStaff")
+  flaggings   Flag[] @relation("DepartmentFlagging")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Flag      Flag[]
+
+  @@map("departments")
 }
 
 model FieldResponse {
