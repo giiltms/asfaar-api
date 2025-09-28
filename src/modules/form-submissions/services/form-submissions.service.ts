@@ -944,8 +944,24 @@ export class FormSubmissionsService {
           { form: { description: { contains: search, mode: 'insensitive' } } },
         ],
       }),
-      ...(dateFrom && { createdAt: { gte: new Date(dateFrom) } }),
-      ...(dateTo && { createdAt: { lte: new Date(dateTo) } }),
+      ...(dateFrom && {
+        createdAt: {
+          gte: (() => {
+            const startOfDay = new Date(dateFrom);
+            startOfDay.setHours(0, 0, 0, 0);
+            return startOfDay;
+          })()
+        }
+      }),
+      ...(dateTo && {
+        createdAt: {
+          lte: (() => {
+            const endOfDay = new Date(dateTo);
+            endOfDay.setHours(23, 59, 59, 999);
+            return endOfDay;
+          })()
+        }
+      }),
     };
 
     const orderBy = this.buildSubmissionOrderBy(sortBy, sortOrder);
@@ -1336,8 +1352,24 @@ export class FormSubmissionsService {
           { user: { lastName: { contains: search, mode: 'insensitive' } } },
         ],
       }),
-      ...(dateFrom && { createdAt: { gte: new Date(dateFrom) } }),
-      ...(dateTo && { createdAt: { lte: new Date(dateTo) } }),
+      ...(dateFrom && {
+        createdAt: {
+          gte: (() => {
+            const startOfDay = new Date(dateFrom);
+            startOfDay.setHours(0, 0, 0, 0);
+            return startOfDay;
+          })()
+        }
+      }),
+      ...(dateTo && {
+        createdAt: {
+          lte: (() => {
+            const endOfDay = new Date(dateTo);
+            endOfDay.setHours(23, 59, 59, 999);
+            return endOfDay;
+          })()
+        }
+      }),
     };
 
     const orderBy = this.buildSubmissionOrderBy(sortBy, sortOrder);
