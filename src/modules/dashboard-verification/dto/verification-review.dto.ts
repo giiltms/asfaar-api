@@ -130,25 +130,25 @@ export class VerificationReviewDto {
 export class ApplicationReviewDto {
   @ApiProperty({
     description: 'Application reference number',
-    example: 'MA00125000037'
+    example: 'MA00125000037',
   })
   referenceNumber: string;
 
   @ApiProperty({
     description: 'Submission ID',
-    example: '123e4567-e89b-12d3-a456-426614174000'
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   submissionId: string;
 
   @ApiProperty({
     description: 'Application status',
-    example: 'UNDER_REVIEW'
+    example: 'UNDER_REVIEW',
   })
   status: string;
 
   @ApiProperty({
     description: 'Date submitted',
-    example: '2024-01-15T10:30:00.000Z'
+    example: '2024-01-15T10:30:00.000Z',
   })
   submittedAt: string;
 
@@ -165,8 +165,8 @@ export class ApplicationReviewDto {
       dateOfBirth: '1990-05-15',
       gender: 'MALE',
       state: 'Lagos',
-      lga: 'Ikeja'
-    }
+      lga: 'Ikeja',
+    },
   })
   applicant: {
     id: string;
@@ -192,9 +192,9 @@ export class ApplicationReviewDto {
         isoCode2: 'US',
         isoCode3: 'USA',
         flag: '🇺🇸',
-        logoUrl: 'https://example.com/us-flag.png'
-      }
-    }
+        logoUrl: 'https://example.com/us-flag.png',
+      },
+    },
   })
   form: {
     id: string;
@@ -275,7 +275,8 @@ export class ApplicationReviewDto {
   };
 
   @ApiProperty({
-    description: 'Biometric data summary (detailed fingerprint data available via separate endpoint)',
+    description:
+      'Biometric data summary (detailed fingerprint data available via separate endpoint)',
     example: {
       id: 'abc12345-e89b-12d3-a456-426614174003',
       photoUrl: 'https://storage.example.com/biometric-photos/photo-123.jpg',
@@ -289,9 +290,9 @@ export class ApplicationReviewDto {
       fingerprintQualitySummary: {
         averageQuality: 78,
         acceptableFingers: 8,
-        totalFingers: 10
-      }
-    }
+        totalFingers: 10,
+      },
+    },
   })
   biometricData: {
     id: string;
@@ -322,10 +323,10 @@ export class ApplicationReviewDto {
         name: 'Lagos Biometric Center',
         address: '123 Victoria Island',
         city: 'Lagos',
-        state: 'Lagos'
+        state: 'Lagos',
       },
-      status: 'COMPLETED'
-    }
+      status: 'COMPLETED',
+    },
   })
   appointment: {
     id: string;
