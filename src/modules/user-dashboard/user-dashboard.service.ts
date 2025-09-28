@@ -219,13 +219,13 @@ export class UserDashboardService {
       // Calculate days since submission
       const daysSinceSubmission = submission.submittedAt
         ? Math.floor(
-          (Date.now() - submission.submittedAt.getTime()) /
-          (1000 * 60 * 60 * 24),
-        )
+            (Date.now() - submission.submittedAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+          )
         : Math.floor(
-          (Date.now() - submission.createdAt.getTime()) /
-          (1000 * 60 * 60 * 24),
-        );
+            (Date.now() - submission.createdAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+          );
 
       // Estimate completion date
       const estimatedCompletion = this.estimateCompletionDate(submission);
@@ -366,7 +366,7 @@ export class UserDashboardService {
         where: {
           userId,
           appointment: {
-            appointmentDate: { gte: new Date() },
+            appointmentTime: { gte: new Date() },
             status: {
               in: [
                 AppointmentStatus.PENDING,
@@ -390,7 +390,7 @@ export class UserDashboardService {
           payment: true,
         },
         orderBy: {
-          appointment: { appointmentDate: 'asc' },
+          appointment: { appointmentTime: 'asc' },
         },
       });
 
@@ -532,8 +532,9 @@ export class UserDashboardService {
             ? 'COMPLETED'
             : 'IN_PROGRESS',
         timestamp: submission.appointment.createdAt,
-        notes: `Appointment scheduled at ${submission.appointment.center?.name
-          } on ${submission.appointment.appointmentDate.toDateString()}`,
+        notes: `Appointment scheduled at ${
+          submission.appointment.center?.name
+        } on ${submission.appointment.appointmentTime.toDateString()}`,
       });
 
       // Stage 7: Queue Status
@@ -603,8 +604,8 @@ export class UserDashboardService {
     ) {
       daysToAdd = 14; // 2 weeks to schedule appointment
     } else if (submission.appointment && !submission.appointment.queueEntry) {
-      const appointmentDate = new Date(submission.appointment.appointmentDate);
-      return appointmentDate > now ? appointmentDate : undefined;
+      const appointmentTime = new Date(submission.appointment.appointmentTime);
+      return appointmentTime > now ? appointmentTime : undefined;
     }
 
     if (daysToAdd > 0) {
@@ -644,7 +645,6 @@ export class UserDashboardService {
     if (submission.appointment) {
       result.appointment = {
         id: submission.appointment.id,
-        appointmentDate: submission.appointment.appointmentDate,
         appointmentTime: submission.appointment.appointmentTime,
         status: submission.appointment.status,
         centerName: submission.appointment.center?.name || 'Unknown Center',

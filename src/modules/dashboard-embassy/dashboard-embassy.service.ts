@@ -162,7 +162,7 @@ export class DashboardEmbassyService {
             },
             appointment: {
               select: {
-                appointmentDate: true,
+                appointmentTime: true,
                 status: true,
                 center: {
                   select: {
@@ -212,17 +212,17 @@ export class DashboardEmbassyService {
           },
           appointment: submission.appointment
             ? {
-              appointmentDate: submission.appointment.appointmentDate,
-              status: submission.appointment.status,
-              center: submission.appointment.center.name,
-            }
+                appointmentTime: submission.appointment.appointmentTime,
+                status: submission.appointment.status,
+                center: submission.appointment.center.name,
+              }
             : null,
           payment: submission.payment
             ? {
-              amount: submission.payment.amount,
-              status: submission.payment.status,
-              currency: submission.payment.currency,
-            }
+                amount: submission.payment.amount,
+                status: submission.payment.status,
+                currency: submission.payment.currency,
+              }
             : null,
         };
       });
@@ -406,12 +406,12 @@ export class DashboardEmbassyService {
       const averageProcessingTime =
         processingTimeData.length > 0
           ? processingTimeData.reduce((sum, app) => {
-            const processingTime =
-              app.reviewedAt.getTime() - app.submittedAt.getTime();
-            return sum + processingTime;
-          }, 0) /
-          processingTimeData.length /
-          (1000 * 60 * 60 * 24) // Convert to days
+              const processingTime =
+                app.reviewedAt.getTime() - app.submittedAt.getTime();
+              return sum + processingTime;
+            }, 0) /
+            processingTimeData.length /
+            (1000 * 60 * 60 * 24) // Convert to days
           : 0;
 
       return {

@@ -72,7 +72,7 @@ export class DashboardLiaisonService {
             },
             appointment: {
               select: {
-                appointmentDate: true,
+                appointmentTime: true,
                 status: true,
                 center: {
                   select: {
@@ -118,7 +118,7 @@ export class DashboardLiaisonService {
         },
         appointment: submission.appointment
           ? {
-            appointmentDate: submission.appointment.appointmentDate,
+            appointmentTime: submission.appointment.appointmentTime,
             status: submission.appointment.status,
             center: submission.appointment.center.name,
           }

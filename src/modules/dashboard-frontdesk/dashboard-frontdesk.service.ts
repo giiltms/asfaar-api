@@ -133,7 +133,7 @@ export class DashboardFrontdeskService {
           status: SubmissionStatus.SUBMITTED,
           appointment: {
             centerId: { in: centerIds },
-            appointmentDate: {
+            appointmentTime: {
               gte: today,
             },
             status: 'PENDING',
@@ -147,7 +147,7 @@ export class DashboardFrontdeskService {
           status: SubmissionStatus.SUBMITTED,
           appointment: {
             centerId: { in: centerIds },
-            appointmentDate: {
+            appointmentTime: {
               gte: today,
             },
             status: 'ACTIVE',
@@ -517,7 +517,6 @@ export class DashboardFrontdeskService {
               checkedInAt: true,
               checkedInBy: true,
               status: true,
-              appointmentDate: true,
               appointmentTime: true,
               queueEntry: {
                 select: {
@@ -571,7 +570,6 @@ export class DashboardFrontdeskService {
             queueStatus: queueEntry?.status,
             isInQueue: !!queueEntry,
             paymentStatus: submission.payment?.status || 'PENDING',
-            appointmentDate: appointment?.appointmentDate,
             appointmentTime: appointment?.appointmentTime,
           };
         },
@@ -659,7 +657,6 @@ export class DashboardFrontdeskService {
           appointment: {
             select: {
               id: true,
-              appointmentDate: true,
               appointmentTime: true,
               appointmentClass: true,
               status: true,
@@ -743,7 +740,6 @@ export class DashboardFrontdeskService {
         phone: submission.user.phone,
         status: submission.status,
         applicationType: submission.form.applicationType?.code || 'UNKNOWN',
-        appointmentDate: appointment?.appointmentDate,
         appointmentTime: appointment?.appointmentTime,
         appointmentClass: appointment?.appointmentClass,
         submittedAt: submission.submittedAt,
@@ -762,7 +758,7 @@ export class DashboardFrontdeskService {
         formData,
         biometricAppointment: submission.appointment
           ? {
-              appointmentDate: submission.appointment.appointmentDate,
+              appointmentTime: submission.appointment.appointmentTime,
               status: submission.appointment.status,
               centerName: submission.appointment.center?.name,
             }
@@ -853,10 +849,10 @@ export class DashboardFrontdeskService {
     }
 
     // Appointment
-    if (submission.appointment?.appointmentDate) {
+    if (submission.appointment?.appointmentTime) {
       timeline.push({
         step: 'APPOINTMENT_SCHEDULED',
-        timestamp: submission.appointment.appointmentDate,
+        timestamp: submission.appointment.appointmentTime,
         description: 'Biometric appointment scheduled',
       });
     }

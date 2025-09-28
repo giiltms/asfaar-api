@@ -52,7 +52,7 @@ export class EmbassyApplicationDto {
 
   @ApiProperty({ description: 'Appointment information' })
   appointment: {
-    appointmentDate: Date;
+    appointmentTime: Date;
     status: string;
     center: string;
   } | null;

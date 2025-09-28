@@ -618,7 +618,7 @@ export class QueueService {
       const scheduled = await this.prisma.biometricAppointment.count({
         where: {
           ...(centerId ? { centerId } : {}),
-          appointmentDate: {
+          appointmentTime: {
             gte: today,
             lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
           },
@@ -679,12 +679,12 @@ export class QueueService {
 
     // Check if appointment date is today
     const today = new Date();
-    const appointmentDate = new Date(appointment.appointmentDate);
+    const appointmentTime = new Date(appointment.appointmentTime);
 
     if (
-      appointmentDate.getFullYear() !== today.getFullYear() ||
-      appointmentDate.getMonth() !== today.getMonth() ||
-      appointmentDate.getDate() !== today.getDate()
+      appointmentTime.getFullYear() !== today.getFullYear() ||
+      appointmentTime.getMonth() !== today.getMonth() ||
+      appointmentTime.getDate() !== today.getDate()
     ) {
       throw new BadRequestException(
         'Can only join queue on the appointment date',

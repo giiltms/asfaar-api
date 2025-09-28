@@ -368,7 +368,7 @@ export class ApplicantDashboardService {
         where: {
           userId,
           appointment: {
-            appointmentDate: { gte: new Date() },
+            appointmentTime: { gte: new Date() },
             status: {
               in: [
                 AppointmentStatus.PENDING,
@@ -392,7 +392,7 @@ export class ApplicantDashboardService {
           payment: true,
         },
         orderBy: {
-          appointment: { appointmentDate: 'asc' },
+          appointment: { appointmentTime: 'asc' },
         },
       });
 

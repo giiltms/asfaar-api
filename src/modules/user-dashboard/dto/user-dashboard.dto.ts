@@ -206,7 +206,6 @@ export class QuickApplicationDto {
   })
   appointment?: {
     id: string;
-    appointmentDate: Date;
     appointmentTime: Date;
     status: AppointmentStatus;
     centerName: string;

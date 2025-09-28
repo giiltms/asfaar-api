@@ -394,7 +394,7 @@ export class BiometricCentersService {
     const bookedSlots = await this.prisma.biometricAppointment.count({
       where: {
         centerId,
-        appointmentDate: {
+        appointmentTime: {
           gte: startOfDay,
           lte: endOfDay,
         },

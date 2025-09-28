@@ -148,7 +148,6 @@ export class BiometricAppointmentsService {
         submission: { connect: { id: createDto.submissionId } },
         center: { connect: { id: createDto.centerId } },
         appointmentClass: createDto.appointmentClass || 'REGULAR',
-        appointmentDate: new Date(createDto.appointmentDate),
         appointmentTime: new Date(createDto.appointmentTime),
         specialRequirements: createDto.specialRequirements,
         confirmationAcknowledged: createDto.confirmationAcknowledged,
@@ -203,12 +202,10 @@ export class BiometricAppointmentsService {
       });
 
       this.logger.log(
-        `Created biometric appointment: ${result.id} for submission: ${
-          createDto.submissionId
-        }${
-          result.submission.referenceNumber
-            ? ` with reference: ${result.submission.referenceNumber}`
-            : ''
+        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId
+        }${result.submission.referenceNumber
+          ? ` with reference: ${result.submission.referenceNumber}`
+          : ''
         }`,
       );
 
@@ -276,12 +273,16 @@ export class BiometricAppointmentsService {
     }
 
     if (fromDate || toDate) {
-      where.appointmentDate = {};
+      where.appointmentTime = {};
       if (fromDate) {
-        where.appointmentDate.gte = new Date(fromDate);
+        const startOfDay = new Date(fromDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        where.appointmentTime.gte = startOfDay;
       }
       if (toDate) {
-        where.appointmentDate.lte = new Date(toDate);
+        const endOfDay = new Date(toDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.appointmentTime.lte = endOfDay;
       }
     }
 
@@ -298,7 +299,7 @@ export class BiometricAppointmentsService {
         where,
         skip,
         take: limit,
-        orderBy: [{ appointmentDate: 'asc' }, { appointmentTime: 'asc' }],
+        orderBy: [{ appointmentTime: 'asc' }],
         include: {
           user: {
             select: {
@@ -592,8 +593,7 @@ export class BiometricAppointmentsService {
         where: { id },
         data: {
           originalAppointmentDate:
-            appointment.originalAppointmentDate || appointment.appointmentDate,
-          appointmentDate: new Date(rescheduleDto.appointmentDate),
+            appointment.originalAppointmentDate || appointment.appointmentTime,
           appointmentTime: new Date(rescheduleDto.appointmentTime),
           centerId,
           rescheduleReason: rescheduleDto.rescheduleReason,

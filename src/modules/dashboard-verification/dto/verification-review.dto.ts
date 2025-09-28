@@ -321,7 +321,7 @@ export class ApplicationReviewDto {
   })
   appointment: {
     id: string;
-    appointmentDate: string;
+    appointmentTime: string;
     center: {
       name: string;
       address: string;
