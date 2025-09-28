@@ -103,7 +103,6 @@ export class CreateDepartmentMultipartDto {
   @IsString()
   @IsNotEmpty()
   description: string;
-
 }
 
 export class DepartmentQueryDto {
