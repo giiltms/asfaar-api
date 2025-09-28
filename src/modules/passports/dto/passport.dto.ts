@@ -120,6 +120,82 @@ export class CreatePassportDto {
   passportMetadata?: any;
 }
 
+export class CreatePassportMultipartDto {
+  @ApiProperty({
+    description: 'Passport number',
+    example: 'A12345678',
+  })
+  @IsString()
+  @IsNotEmpty()
+  passportNumber: string;
+
+  @ApiPropertyOptional({
+    description: 'Type of passport',
+    enum: PassportType,
+    example: PassportType.ORDINARY,
+    default: PassportType.ORDINARY,
+  })
+  @IsOptional()
+  @IsEnum(PassportType)
+  passportType?: PassportType = PassportType.ORDINARY;
+
+  @ApiProperty({
+    description: 'Passport issue date',
+    example: '2020-01-15T00:00:00.000Z',
+  })
+  @IsDateString()
+  passportIssueDate: string;
+
+  @ApiProperty({
+    description: 'Passport expiry date',
+    example: '2030-01-15T00:00:00.000Z',
+  })
+  @IsDateString()
+  passportExpiryDate: string;
+
+  @ApiProperty({
+    description: 'Country that issued the passport (ISO 3166-1 alpha-3)',
+    example: 'NGA',
+  })
+  @IsString()
+  @IsNotEmpty()
+  passportIssueCountry: string;
+
+  @ApiPropertyOptional({
+    description: 'Main passport photo URL (if not uploading file)',
+    example: 'https://storage.example.com/passports/photo-123.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  passportPhoto?: string;
+
+  @ApiPropertyOptional({
+    description: 'Back page scan URL (if not uploading file)',
+    example: 'https://storage.example.com/passports/back-123.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  passportBackPhoto?: string;
+
+  @ApiPropertyOptional({
+    description: 'Document hash for integrity verification',
+    example: 'sha256:abc123def456...',
+  })
+  @IsOptional()
+  @IsString()
+  documentHash?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional passport metadata (MRZ, etc.)',
+    example: {
+      mrz: 'P<NGAJOHN<<DOE<<<<<<<<<<<<<<<<<<<<<<<<<<<A12345678NGA8001015M3001151<<<<<<<<<<<<<<08',
+      issuingAuthority: 'Federal Ministry of Interior',
+    },
+  })
+  @IsOptional()
+  passportMetadata?: any;
+}
+
 export class UpdatePassportDto {
   @ApiPropertyOptional({
     description: 'Passport number',

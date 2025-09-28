@@ -11,7 +11,13 @@ import {
   HttpStatus,
   ValidationPipe,
   ParseUUIDPipe,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -19,10 +25,13 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiParam,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { PassportsService } from './passports.service';
 import {
   CreatePassportDto,
+  CreatePassportMultipartDto,
   UpdatePassportDto,
   VerifyPassportDto,
   PassportQueryDto,
@@ -47,9 +56,76 @@ export class PassportsController {
 
   @Post()
   @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.VERIFICATION_OFFICER)
+  @UseInterceptors(FileInterceptor('passportFrontPhoto'))
   @ApiOperation({
     summary: 'Create a new passport',
-    description: 'Create a new international passport record for a user',
+    description: 'Create a new international passport record for a user with passport data page upload',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Passport data with passport data page (biographical page) file upload',
+    schema: {
+      type: 'object',
+      properties: {
+        passportNumber: {
+          type: 'string',
+          description: 'Passport number',
+          example: 'A12345678',
+        },
+        passportType: {
+          type: 'string',
+          enum: ['ORDINARY', 'DIPLOMATIC', 'OFFICIAL', 'EMERGENCY'],
+          description: 'Type of passport',
+          example: 'ORDINARY',
+        },
+        passportIssueDate: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Passport issue date',
+          example: '2020-01-15T00:00:00.000Z',
+        },
+        passportExpiryDate: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Passport expiry date',
+          example: '2030-01-15T00:00:00.000Z',
+        },
+        passportIssueCountry: {
+          type: 'string',
+          description: 'Country that issued the passport (ISO 3166-1 alpha-3)',
+          example: 'NGA',
+        },
+        passportPhoto: {
+          type: 'string',
+          description: 'Main passport photo URL (if not uploading file)',
+          example: 'https://storage.example.com/passports/photo-123.jpg',
+        },
+        passportBackPhoto: {
+          type: 'string',
+          description: 'Back page scan URL (if not uploading file)',
+          example: 'https://storage.example.com/passports/back-123.jpg',
+        },
+        documentHash: {
+          type: 'string',
+          description: 'Document hash for integrity verification',
+          example: 'sha256:abc123def456...',
+        },
+        passportMetadata: {
+          type: 'object',
+          description: 'Additional passport metadata (MRZ, etc.)',
+          example: {
+            mrz: 'P<NGAJOHN<<DOE<<<<<<<<<<<<<<<<<<<<<<<<<<<A12345678NGA8001015M3001151<<<<<<<<<<<<<<08',
+            issuingAuthority: 'Federal Ministry of Interior',
+          },
+        },
+        passportFrontPhoto: {
+          type: 'string',
+          format: 'binary',
+          description: 'Passport data page (biographical page) scan (JPEG, PNG, WebP, PDF - max 10MB)',
+        },
+      },
+      required: ['passportNumber', 'passportIssueDate', 'passportExpiryDate', 'passportIssueCountry', 'passportFrontPhoto'],
+    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -69,12 +145,25 @@ export class PassportsController {
     description: 'Insufficient permissions',
   })
   async createPassport(
-    @Body(ValidationPipe) createPassportDto: CreatePassportDto,
+    @Body(ValidationPipe) createPassportDto: CreatePassportMultipartDto,
     @CurrentUser() user: JwtUserPayload,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({
+            fileType: /^(image\/(jpeg|jpg|png|webp)|application\/pdf)$/,
+          }),
+        ],
+        fileIsRequired: true, // Passport data page is required
+      }),
+    )
+    passportFrontPhotoFile: Express.Multer.File,
   ): Promise<BaseResponseDto<PassportEntity>> {
-    const passport = await this.passportsService.createPassport(
+    const passport = await this.passportsService.createPassportWithFile(
       user.id,
       createPassportDto,
+      passportFrontPhotoFile,
       user.id,
     );
 

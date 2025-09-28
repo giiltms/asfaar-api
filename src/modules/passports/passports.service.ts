@@ -5,8 +5,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { LocalStorageService } from '@providers/localstorage/localstorage.service';
 import {
   CreatePassportDto,
+  CreatePassportMultipartDto,
   UpdatePassportDto,
   VerifyPassportDto,
   PassportQueryDto,
@@ -19,7 +21,10 @@ import { PassportEntity } from './entities/passport.entity';
 export class PassportsService {
   private readonly logger = new Logger(PassportsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly localStorageService: LocalStorageService,
+  ) {}
 
   /**
    * Create a new passport for a user
@@ -86,6 +91,86 @@ export class PassportsService {
     });
 
     this.logger.log(`Passport created successfully with ID ${passport.id}`);
+
+    return this.mapToEntity(passport);
+  }
+
+  /**
+   * Create a new passport for a user with file upload
+   */
+  async createPassportWithFile(
+    userId: string,
+    createPassportDto: CreatePassportMultipartDto,
+    passportFrontPhotoFile: Express.Multer.File,
+    createdBy: string,
+  ): Promise<PassportEntity> {
+    this.logger.log(`Creating passport with file upload for user ${userId}`);
+
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Check if passport number already exists for this user
+    const existingPassport = await this.prisma.internationalPassport.findFirst({
+      where: {
+        userId,
+        passportNumber: createPassportDto.passportNumber,
+      },
+    });
+
+    if (existingPassport) {
+      throw new BadRequestException(
+        `Passport with number ${createPassportDto.passportNumber} already exists for this user`,
+      );
+    }
+
+    // Validate dates
+    const issueDate = new Date(createPassportDto.passportIssueDate);
+    const expiryDate = new Date(createPassportDto.passportExpiryDate);
+
+    if (issueDate >= expiryDate) {
+      throw new BadRequestException('Issue date must be before expiry date');
+    }
+
+    if (expiryDate <= new Date()) {
+      throw new BadRequestException('Passport is already expired');
+    }
+
+    // Upload the passport front photo file
+    const passportFrontPhotoUrl = await this.localStorageService.upload(
+      passportFrontPhotoFile,
+      `passports/${userId}`,
+    );
+
+    // Calculate file hash and size
+    const crypto = require('crypto');
+    const fileHash = crypto.createHash('sha256').update(passportFrontPhotoFile.buffer).digest('hex');
+
+    const passport = await this.prisma.internationalPassport.create({
+      data: {
+        userId,
+        passportNumber: createPassportDto.passportNumber,
+        passportType: createPassportDto.passportType || PassportType.ORDINARY,
+        passportIssueDate: issueDate,
+        passportExpiryDate: expiryDate,
+        passportIssueCountry: createPassportDto.passportIssueCountry,
+        passportPhoto: createPassportDto.passportPhoto,
+        passportFrontPhoto: passportFrontPhotoUrl,
+        passportBackPhoto: createPassportDto.passportBackPhoto,
+        documentHash: createPassportDto.documentHash || fileHash,
+        documentSize: passportFrontPhotoFile.size,
+        passportMetadata: createPassportDto.passportMetadata,
+        createdBy,
+        lastModifiedBy: createdBy,
+      },
+    });
+
+    this.logger.log(`Passport created successfully with file upload, ID ${passport.id}`);
 
     return this.mapToEntity(passport);
   }
