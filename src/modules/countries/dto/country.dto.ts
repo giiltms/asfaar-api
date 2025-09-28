@@ -9,6 +9,7 @@ import {
   Min,
   Max,
   IsIn,
+  IsNumber,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -121,7 +122,7 @@ export class CreateCountryDto {
 
   @ApiPropertyOptional({ description: 'Application fee in USD', example: 150 })
   @IsOptional()
-  @IsDecimal({ decimal_digits: '0,2' })
+  @IsNumber()
   @Type(() => Number)
   applicationFee?: number;
 }
