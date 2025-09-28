@@ -187,9 +187,6 @@ export class BiometricCaptureService {
       await this.prisma.biometricData.update({
         where: { id: biometricData.id },
         data: {
-          fingerprintQualityScore:
-            this.calculateOverallQuality(validationResults),
-          overallQualityScore: this.calculateOverallQuality(validationResults),
           isVerified: overallSuccess,
           verificationStatus: overallSuccess ? 'VERIFIED' : 'NEEDS_RETAKES',
         },
@@ -317,12 +314,12 @@ export class BiometricCaptureService {
     }
 
     // Soft delete by updating metadata
-    const currentMetadata = (biometricData.fingerprintMetadata as any) || {};
+    const currentMetadata = (biometricData.photoMetadata as any) || {};
     await this.prisma.biometricData.update({
       where: { id: biometricDataId },
       data: {
         lastModifiedBy: deletedBy,
-        fingerprintMetadata: {
+        photoMetadata: {
           ...currentMetadata,
           deletedAt: new Date().toISOString(),
           deletedBy,
@@ -465,28 +462,11 @@ export class BiometricCaptureService {
       capturedAt: biometricData.capturedAt,
       captureDevice: biometricData.captureDevice,
       captureLocation: biometricData.captureLocation,
-      overallQualityScore: biometricData.overallQualityScore,
+      // Note: Overall quality score is calculated from individual finger quality scores
       isVerified: biometricData.isVerified,
       verificationStatus: biometricData.verificationStatus,
       fingers: biometricData.fingerprintFingers,
     };
-  }
-
-  /**
-   * Calculate overall quality score from validation results
-   * @param validationResults - Array of validation results
-   * @returns Overall quality score (0-100)
-   */
-  private calculateOverallQuality(
-    validationResults: TemplateValidationResult[],
-  ): number {
-    if (validationResults.length === 0) return 0;
-
-    const totalQuality = validationResults.reduce(
-      (sum, result) => sum + result.qualityScore,
-      0,
-    );
-    return Math.round(totalQuality / validationResults.length);
   }
 
   /**
@@ -505,6 +485,7 @@ export class BiometricCaptureService {
   ): Promise<{
     photoUrl: string;
     photoHash: string;
+    photoQualityScore: number;
     photoSize: number;
     photoMimeType: string;
     referenceNumber: string;
@@ -537,6 +518,9 @@ export class BiometricCaptureService {
       .update(photo.buffer as any)
       .digest('hex');
 
+    // Calculate photo quality score
+    const photoQualityScore = this.calculatePhotoQuality(photo);
+
     // Upload photo to storage
     const photoUrl = await this.localStorageService.upload(
       photo,
@@ -555,6 +539,7 @@ export class BiometricCaptureService {
       update: {
         photoUrl,
         photoHash,
+        photoQualityScore,
         photoMetadata: {
           originalName: photo.originalname,
           mimeType: photo.mimetype,
@@ -574,6 +559,7 @@ export class BiometricCaptureService {
         submissionId: submission.id,
         photoUrl,
         photoHash,
+        photoQualityScore,
         photoMetadata: {
           originalName: photo.originalname,
           mimeType: photo.mimetype,
@@ -599,10 +585,52 @@ export class BiometricCaptureService {
     return {
       photoUrl,
       photoHash,
+      photoQualityScore,
       photoSize: photo.size,
       photoMimeType: photo.mimetype,
       referenceNumber: submission.referenceNumber || 'N/A',
       uploadedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Calculate photo quality score based on various factors
+   * @param photo - The uploaded photo file
+   * @returns Quality score (0-100)
+   */
+  private calculatePhotoQuality(photo: Express.Multer.File): number {
+    let qualityScore = 0;
+
+    // File size factor (larger files generally have better quality)
+    const sizeFactor = Math.min(100, (photo.size / (2 * 1024 * 1024)) * 100); // 2MB = 100%
+
+    // MIME type factor (JPEG and PNG are preferred)
+    let mimeTypeFactor = 0;
+    switch (photo.mimetype) {
+      case 'image/jpeg':
+      case 'image/jpg':
+        mimeTypeFactor = 100;
+        break;
+      case 'image/png':
+        mimeTypeFactor = 95;
+        break;
+      case 'image/webp':
+        mimeTypeFactor = 90;
+        break;
+      case 'image/gif':
+        mimeTypeFactor = 70;
+        break;
+      default:
+        mimeTypeFactor = 50;
+    }
+
+    // Filename factor (proper naming indicates better capture process)
+    const filenameFactor = photo.originalname && photo.originalname.length > 5 ? 100 : 80;
+
+    // Calculate weighted average
+    qualityScore = (sizeFactor * 0.4) + (mimeTypeFactor * 0.4) + (filenameFactor * 0.2);
+
+    // Ensure score is within bounds
+    return Math.round(Math.max(0, Math.min(100, qualityScore)));
   }
 }

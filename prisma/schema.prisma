@@ -618,7 +618,7 @@ model Country {
   createdBy String?
 
   // Relations
-  users        User[]
+  users               User[]
   forms               DynamicForm[]
   applicationCounters ApplicationCounter[]
   applicationTypes    ApplicationType[]
@@ -1508,20 +1508,9 @@ model BiometricData {
   photoHash     String? // Hash for integrity verification
   photoMetadata Json? // Additional photo metadata (dimensions, format, etc.)
 
-  // Fingerprint Data (Legacy - now using FingerprintData model)
-  fingerprintData     Json? // Legacy field - use FingerprintData model instead
-  fingerprintHash     String? // Legacy field - use FingerprintData model instead
-  fingerprintMetadata Json? // Additional fingerprint metadata (quality scores, etc.)
-
-  // Signature Data (if needed)
-  signatureUrl      String?
-  signatureHash     String?
-  signatureMetadata Json?
-
   // Quality and Validation
-  photoQualityScore       Float? // Quality score 0-100
-  fingerprintQualityScore Float? // Quality score 0-100
-  overallQualityScore     Float? // Combined quality score
+  photoQualityScore Float? // Quality score 0-100 for photo
+  // Note: Fingerprint quality scores are stored in individual FingerprintData records
 
   // Status and Validation
   isVerified         Boolean @default(false) // Whether data has been verified

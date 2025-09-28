@@ -234,18 +234,19 @@ export class ApplicationReviewDto {
     };
   };
 
-  @ApiProperty({ description: 'Biometric data (excluding encrypted fingerprint data)' })
+  @ApiProperty({
+    description: 'Biometric data (excluding encrypted fingerprint data)',
+  })
   biometricData: {
     id: string;
     photoUrl: string;
     photoQualityScore: number;
-    fingerprintQualityScore: number;
-    overallQualityScore: number;
     isVerified: boolean;
     verificationStatus: string;
     capturedAt: string;
     capturedBy: string;
     captureDevice: string;
+    // Note: Fingerprint quality scores are stored in individual FingerprintData records
     // Note: fingerprintFingers data is encrypted and available via GET /api/v1/biometric-capture/data/:userId
   };
 
