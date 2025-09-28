@@ -794,127 +794,144 @@ export class DashboardVerificationService {
   ): Promise<{ success: boolean; message: string }> {
     const { submissionId, queryMessage, requiredDocuments, notes } = queryDto;
 
-    // Get submission with user details for email notification
-    const submission = await this.prisma.formSubmission.findUnique({
-      where: { id: submissionId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        form: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    if (!submission?.user) {
-      throw new Error('Submission or user not found');
-    }
-
-    // Update submission with queried status
-    await this.prisma.formSubmission.update({
-      where: { id: submissionId },
-      data: {
-        status: SubmissionStatus.QUERIED,
-        isQueried: true,
-        queryMessage,
-        queriedAt: new Date(),
-        queriedBy: reviewerId,
-        reviewedAt: new Date(),
-        reviewedBy: reviewerId,
-        reviewNotes: notes,
-        metadata: {
-          action: 'QUERIED',
-          requiredDocuments: requiredDocuments || [],
-          reviewedAt: new Date().toISOString(),
-        },
-        statusLogs: {
-          create: {
-            fromStatus: submission.status,
-            toStatus: SubmissionStatus.QUERIED,
-            reason: 'Application queried for additional information',
-            notes: `Query: ${queryMessage}${
-              requiredDocuments && requiredDocuments.length > 0
-                ? ` - Required documents: ${requiredDocuments.join(', ')}`
-                : ''
-            }`,
-            changedBy: reviewerId,
-          },
-        },
-      },
-    });
-
-    // Update biometric data verification status if exists
-    const biometricData = await this.prisma.biometricData.findFirst({
-      where: { submissionId },
-    });
-
-    if (biometricData) {
-      await this.prisma.biometricData.update({
-        where: { id: biometricData.id },
-        data: {
-          verificationStatus: 'NEEDS_REVIEW',
-          verificationNotes: `Query: ${queryMessage}${
-            requiredDocuments && requiredDocuments.length > 0
-              ? ` - Required: ${requiredDocuments.join(', ')}`
-              : ''
-          }`,
-          lastModifiedBy: reviewerId,
-        },
-      });
-    }
-
-    // Send email notification to applicant
     try {
-      const userName =
-        submission.user.firstName && submission.user.lastName
-          ? `${submission.user.firstName} ${submission.user.lastName}`
-          : submission.user.firstName || submission.user.email.split('@')[0];
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1) Get submission with user details for email notification
+        const submission = await tx.formSubmission.findUnique({
+          where: { id: submissionId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            form: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
 
-      const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
-      const applicationUrl = `${siteUrl}/applications/${submissionId}/edit`;
+        if (!submission?.user) {
+          throw new BadRequestException('Submission or user not found');
+        }
 
-      const emailData: ApplicationQueryData = {
-        userName,
-        userEmail: submission.user.email,
-        referenceNumber: submission.referenceNumber || 'N/A',
-        queryMessage,
-        requiredDocuments: requiredDocuments || [],
-        queryDate: new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }),
-        applicationUrl,
-      };
+        // 2) Update submission with queried status
+        const updatedSubmission = await tx.formSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: SubmissionStatus.QUERIED,
+            isQueried: true,
+            queryMessage,
+            queriedAt: new Date(),
+            queriedBy: reviewerId,
+            reviewedAt: new Date(),
+            reviewedBy: reviewerId,
+            reviewNotes: notes,
+            metadata: {
+              action: 'QUERIED',
+              requiredDocuments: requiredDocuments || [],
+              reviewedAt: new Date().toISOString(),
+            },
+            statusLogs: {
+              create: {
+                fromStatus: submission.status,
+                toStatus: SubmissionStatus.QUERIED,
+                reason: 'Application queried for additional information',
+                notes: `Query: ${queryMessage}${
+                  requiredDocuments && requiredDocuments.length > 0
+                    ? ` - Required documents: ${requiredDocuments.join(', ')}`
+                    : ''
+                }`,
+                changedBy: reviewerId,
+              },
+            },
+          },
+        });
 
-      await this.mailService.sendApplicationQueryNotification(emailData);
+        // 3) Update biometric data verification status if exists
+        const biometricData = await tx.biometricData.findFirst({
+          where: { submissionId },
+        });
+
+        if (biometricData) {
+          await tx.biometricData.update({
+            where: { id: biometricData.id },
+            data: {
+              verificationStatus: 'NEEDS_REVIEW',
+              verificationNotes: `Query: ${queryMessage}${
+                requiredDocuments && requiredDocuments.length > 0
+                  ? ` - Required: ${requiredDocuments.join(', ')}`
+                  : ''
+              }`,
+              lastModifiedBy: reviewerId,
+            },
+          });
+        }
+
+        return {
+          submission,
+          updatedSubmission,
+          biometricDataUpdated: !!biometricData,
+        };
+      });
+
+      // Send email notification to applicant (outside transaction)
+      try {
+        const userName =
+          result.submission.user.firstName && result.submission.user.lastName
+            ? `${result.submission.user.firstName} ${result.submission.user.lastName}`
+            : result.submission.user.firstName ||
+              result.submission.user.email.split('@')[0];
+
+        const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+        const applicationUrl = `${siteUrl}/applications/${submissionId}/edit`;
+
+        const emailData: ApplicationQueryData = {
+          userName,
+          userEmail: result.submission.user.email,
+          referenceNumber: result.submission.referenceNumber || 'N/A',
+          queryMessage,
+          requiredDocuments: requiredDocuments || [],
+          queryDate: new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          applicationUrl,
+        };
+
+        await this.mailService.sendApplicationQueryNotification(emailData);
+        this.logger.log(
+          `Application query email sent to ${result.submission.user.email}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to send application query email: ${error.message}`,
+        );
+        // Don't fail the entire operation if email fails
+      }
+
       this.logger.log(
-        `Application query email sent to ${submission.user.email}`,
+        `Application ${submissionId} queried by ${reviewerId}: ${queryMessage}`,
       );
+
+      return {
+        success: true,
+        message: 'Application queried and notification sent to applicant',
+      };
     } catch (error) {
       this.logger.error(
-        `Failed to send application query email: ${error.message}`,
+        `Failed to query application ${submissionId}: ${error.message}`,
+        error.stack,
       );
-      // Don't fail the entire operation if email fails
+      throw error;
     }
-
-    this.logger.log(
-      `Application ${submissionId} queried by ${reviewerId}: ${queryMessage}`,
-    );
-
-    return {
-      success: true,
-      message: 'Application queried and notification sent to applicant',
-    };
   }
 
   /**
@@ -926,61 +943,87 @@ export class DashboardVerificationService {
   ): Promise<{ success: boolean; message: string }> {
     const { submissionId, processingNotes, priority = 'NORMAL' } = processDto;
 
-    // Update submission with processing status
-    await this.prisma.formSubmission.update({
-      where: { id: submissionId },
-      data: {
-        status: SubmissionStatus.PROCESSING,
-        reviewedAt: new Date(),
-        reviewedBy: reviewerId,
-        reviewNotes: processingNotes,
-        metadata: {
-          action: 'PROCESSING',
-          priority,
-          reviewedBy: reviewerId,
-          reviewedAt: new Date().toISOString(),
-          sentToEmbassy: true,
-          ...(processingNotes && { processingNotes }),
-        },
-        statusLogs: {
-          create: {
-            fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
-            toStatus: SubmissionStatus.PROCESSING,
-            reason: 'Application verified and sent to embassy for processing',
-            notes: `Priority: ${priority}${
-              processingNotes ? ` - ${processingNotes}` : ''
-            }`,
-            changedBy: reviewerId,
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1) Get current submission status
+        const currentSubmission = await tx.formSubmission.findUnique({
+          where: { id: submissionId },
+          select: { status: true },
+        });
+
+        if (!currentSubmission) {
+          throw new BadRequestException('Submission not found');
+        }
+
+        // 2) Update submission with processing status
+        const updatedSubmission = await tx.formSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: SubmissionStatus.PROCESSING,
+            reviewedAt: new Date(),
+            reviewedBy: reviewerId,
+            reviewNotes: processingNotes,
+            metadata: {
+              action: 'PROCESSING',
+              priority,
+              reviewedBy: reviewerId,
+              reviewedAt: new Date().toISOString(),
+              sentToEmbassy: true,
+              ...(processingNotes && { processingNotes }),
+            },
+            statusLogs: {
+              create: {
+                fromStatus: currentSubmission.status,
+                toStatus: SubmissionStatus.PROCESSING,
+                reason:
+                  'Application verified and sent to embassy for processing',
+                notes: `Priority: ${priority}${
+                  processingNotes ? ` - ${processingNotes}` : ''
+                }`,
+                changedBy: reviewerId,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    // Update biometric data verification status if exists
-    const biometricData = await this.prisma.biometricData.findFirst({
-      where: { submissionId },
-    });
+        // 3) Update biometric data verification status if exists
+        const biometricData = await tx.biometricData.findFirst({
+          where: { submissionId },
+        });
 
-    if (biometricData) {
-      await this.prisma.biometricData.update({
-        where: { id: biometricData.id },
-        data: {
-          isVerified: true,
-          verificationStatus: 'VERIFIED',
-          verificationNotes: `Verified and sent to embassy for processing (Priority: ${priority})`,
-          lastModifiedBy: reviewerId,
-        },
+        if (biometricData) {
+          await tx.biometricData.update({
+            where: { id: biometricData.id },
+            data: {
+              isVerified: true,
+              verificationStatus: 'VERIFIED',
+              verificationNotes: `Verified and sent to embassy for processing (Priority: ${priority})`,
+              lastModifiedBy: reviewerId,
+            },
+          });
+        }
+
+        return {
+          submission: updatedSubmission,
+          biometricDataUpdated: !!biometricData,
+        };
       });
+
+      this.logger.log(
+        `Application ${submissionId} sent to embassy by ${reviewerId} (Priority: ${priority})`,
+      );
+
+      return {
+        success: true,
+        message: `Application verified and sent to embassy for processing (Priority: ${priority})`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to process application ${submissionId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
-
-    this.logger.log(
-      `Application ${submissionId} sent to embassy by ${reviewerId} (Priority: ${priority})`,
-    );
-
-    return {
-      success: true,
-      message: `Application verified and sent to embassy for processing (Priority: ${priority})`,
-    };
   }
 
   /**
