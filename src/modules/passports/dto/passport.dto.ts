@@ -93,14 +93,6 @@ export class CreatePassportDto {
   passportBackPhoto?: string;
 
   @ApiPropertyOptional({
-    description: 'Document hash for integrity verification',
-    example: 'sha256:abc123def456...',
-  })
-  @IsOptional()
-  @IsString()
-  documentHash?: string;
-
-  @ApiPropertyOptional({
     description: 'Document size in bytes',
     example: 2048576,
   })
@@ -176,14 +168,6 @@ export class CreatePassportMultipartDto {
   @IsOptional()
   @IsString()
   passportBackPhoto?: string;
-
-  @ApiPropertyOptional({
-    description: 'Document hash for integrity verification',
-    example: 'sha256:abc123def456...',
-  })
-  @IsOptional()
-  @IsString()
-  documentHash?: string;
 
   @ApiPropertyOptional({
     description: 'Additional passport metadata (MRZ, etc.)',
@@ -263,14 +247,6 @@ export class UpdatePassportDto {
   @IsOptional()
   @IsString()
   passportBackPhoto?: string;
-
-  @ApiPropertyOptional({
-    description: 'Document hash for integrity verification',
-    example: 'sha256:abc123def456...',
-  })
-  @IsOptional()
-  @IsString()
-  documentHash?: string;
 
   @ApiPropertyOptional({
     description: 'Document size in bytes',

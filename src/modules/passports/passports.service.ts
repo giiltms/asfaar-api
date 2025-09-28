@@ -71,6 +71,9 @@ export class PassportsService {
       throw new BadRequestException('Passport is already expired');
     }
 
+    // Compute document hash for integrity verification (always server-side)
+    const documentHash = this.computeDocumentHash(createPassportDto);
+
     const passport = await this.prisma.internationalPassport.create({
       data: {
         userId,
@@ -82,7 +85,7 @@ export class PassportsService {
         passportPhoto: createPassportDto.passportPhoto,
         passportFrontPhoto: createPassportDto.passportFrontPhoto,
         passportBackPhoto: createPassportDto.passportBackPhoto,
-        documentHash: createPassportDto.documentHash,
+        documentHash,
         documentSize: createPassportDto.documentSize,
         passportMetadata: createPassportDto.passportMetadata,
         createdBy,
@@ -147,9 +150,14 @@ export class PassportsService {
       `passports/${userId}`,
     );
 
-    // Calculate file hash and size
+    // Calculate file hash and size for integrity verification
     const crypto = require('crypto');
-    const fileHash = crypto.createHash('sha256').update(passportFrontPhotoFile.buffer).digest('hex');
+    const fileHash = crypto
+      .createHash('sha256')
+      .update(passportFrontPhotoFile.buffer)
+      .digest('hex');
+
+    // Always use computed hash for file integrity (no user-provided hash)
 
     const passport = await this.prisma.internationalPassport.create({
       data: {
@@ -162,7 +170,7 @@ export class PassportsService {
         passportPhoto: createPassportDto.passportPhoto,
         passportFrontPhoto: passportFrontPhotoUrl,
         passportBackPhoto: createPassportDto.passportBackPhoto,
-        documentHash: createPassportDto.documentHash || fileHash,
+        documentHash: fileHash, // Always use computed hash for integrity
         documentSize: passportFrontPhotoFile.size,
         passportMetadata: createPassportDto.passportMetadata,
         createdBy,
@@ -170,7 +178,9 @@ export class PassportsService {
       },
     });
 
-    this.logger.log(`Passport created successfully with file upload, ID ${passport.id}`);
+    this.logger.log(
+      `Passport created successfully with file upload, ID ${passport.id}`,
+    );
 
     return this.mapToEntity(passport);
   }
@@ -441,6 +451,30 @@ export class PassportsService {
         return acc;
       }, {} as Record<string, number>),
     };
+  }
+
+  /**
+   * Compute document hash for integrity verification
+   */
+  private computeDocumentHash(data: any): string {
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256');
+
+    // Hash the passport data for integrity
+    const passportData = {
+      passportNumber: data.passportNumber,
+      passportType: data.passportType,
+      passportIssueDate: data.passportIssueDate,
+      passportExpiryDate: data.passportExpiryDate,
+      passportIssueCountry: data.passportIssueCountry,
+      passportPhoto: data.passportPhoto,
+      passportFrontPhoto: data.passportFrontPhoto,
+      passportBackPhoto: data.passportBackPhoto,
+      passportMetadata: data.passportMetadata,
+    };
+
+    hash.update(JSON.stringify(passportData));
+    return hash.digest('hex');
   }
 
   /**

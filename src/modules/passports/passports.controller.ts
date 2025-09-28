@@ -59,11 +59,13 @@ export class PassportsController {
   @UseInterceptors(FileInterceptor('passportFrontPhoto'))
   @ApiOperation({
     summary: 'Create a new passport',
-    description: 'Create a new international passport record for a user with passport data page upload',
+    description:
+      'Create a new international passport record for a user with passport data page upload',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Passport data with passport data page (biographical page) file upload',
+    description:
+      'Passport data with passport data page (biographical page) file upload',
     schema: {
       type: 'object',
       properties: {
@@ -105,11 +107,6 @@ export class PassportsController {
           description: 'Back page scan URL (if not uploading file)',
           example: 'https://storage.example.com/passports/back-123.jpg',
         },
-        documentHash: {
-          type: 'string',
-          description: 'Document hash for integrity verification',
-          example: 'sha256:abc123def456...',
-        },
         passportMetadata: {
           type: 'object',
           description: 'Additional passport metadata (MRZ, etc.)',
@@ -121,10 +118,17 @@ export class PassportsController {
         passportFrontPhoto: {
           type: 'string',
           format: 'binary',
-          description: 'Passport data page (biographical page) scan (JPEG, PNG, WebP, PDF - max 10MB)',
+          description:
+            'Passport data page (biographical page) scan (JPEG, PNG, WebP, PDF - max 10MB)',
         },
       },
-      required: ['passportNumber', 'passportIssueDate', 'passportExpiryDate', 'passportIssueCountry', 'passportFrontPhoto'],
+      required: [
+        'passportNumber',
+        'passportIssueDate',
+        'passportExpiryDate',
+        'passportIssueCountry',
+        'passportFrontPhoto',
+      ],
     },
   })
   @ApiResponse({
