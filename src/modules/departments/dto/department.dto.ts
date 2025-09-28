@@ -104,12 +104,6 @@ export class CreateDepartmentMultipartDto {
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({
-    description: 'Logo file (JPEG, PNG, WebP, SVG - max 5MB)',
-    type: 'string',
-    format: 'binary',
-  })
-  logo: any;
 }
 
 export class DepartmentQueryDto {
