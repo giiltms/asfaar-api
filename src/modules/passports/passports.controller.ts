@@ -1,0 +1,358 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  HttpStatus,
+  ValidationPipe,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
+import { PassportsService } from './passports.service';
+import {
+  CreatePassportDto,
+  UpdatePassportDto,
+  VerifyPassportDto,
+  PassportQueryDto,
+} from './dto/passport.dto';
+import { PassportEntity } from './entities/passport.entity';
+import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
+import { Roles as UserRoles } from '@common/constants/roles.constants';
+import { BaseResponseDto } from '@common/dtos/base-response.dto';
+
+@ApiTags('Passports')
+@Controller('passports')
+@UseGuards(AuthGuard, RolesGuard)
+@ApiBearerAuth()
+export class PassportsController {
+  constructor(private readonly passportsService: PassportsService) {}
+
+  @Post()
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.VERIFICATION_OFFICER)
+  @ApiOperation({
+    summary: 'Create a new passport',
+    description: 'Create a new international passport record for a user',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Passport created successfully',
+    type: PassportEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data or passport already exists',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions',
+  })
+  async createPassport(
+    @Body(ValidationPipe) createPassportDto: CreatePassportDto,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<PassportEntity>> {
+    const passport = await this.passportsService.createPassport(
+      user.id,
+      createPassportDto,
+      user.id,
+    );
+
+    return {
+      success: true,
+      message: 'Passport created successfully',
+      data: passport,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get()
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.VERIFICATION_OFFICER)
+  @ApiOperation({
+    summary: 'Get all passports',
+    description: 'Retrieve all passports with pagination and filtering options',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Passports retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            passports: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/PassportEntity' },
+            },
+            total: { type: 'number' },
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            totalPages: { type: 'number' },
+          },
+        },
+        timestamp: { type: 'string' },
+      },
+    },
+  })
+  async findAllPassports(
+    @Query(ValidationPipe) query: PassportQueryDto,
+  ): Promise<BaseResponseDto<any>> {
+    const result = await this.passportsService.findAllPassports(query);
+
+    return {
+      success: true,
+      message: 'Passports retrieved successfully',
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('my')
+  @Roles(
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+    UserRoles.VERIFICATION_OFFICER,
+    UserRoles.APPLICANT,
+  )
+  @ApiOperation({
+    summary: 'Get my passports',
+    description: 'Retrieve all passports for the current user',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User passports retrieved successfully',
+    type: [PassportEntity],
+  })
+  async findMyPassports(
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<PassportEntity[]>> {
+    const passports = await this.passportsService.findUserPassports(user.id);
+
+    return {
+      success: true,
+      message: 'User passports retrieved successfully',
+      data: passports,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('statistics')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Get passport statistics',
+    description: 'Retrieve passport statistics and analytics',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Passport statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            verified: { type: 'number' },
+            pending: { type: 'number' },
+            rejected: { type: 'number' },
+            expired: { type: 'number' },
+            byType: { type: 'object' },
+            byCountry: { type: 'object' },
+          },
+        },
+        timestamp: { type: 'string' },
+      },
+    },
+  })
+  async getPassportStatistics(): Promise<BaseResponseDto<any>> {
+    const statistics = await this.passportsService.getPassportStatistics();
+
+    return {
+      success: true,
+      message: 'Passport statistics retrieved successfully',
+      data: statistics,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':id')
+  @Roles(
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+    UserRoles.VERIFICATION_OFFICER,
+    UserRoles.APPLICANT,
+  )
+  @ApiOperation({
+    summary: 'Get passport by ID',
+    description: 'Retrieve a specific passport by its ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Passport ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Passport retrieved successfully',
+    type: PassportEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Passport not found',
+  })
+  async findPassportById(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<BaseResponseDto<PassportEntity>> {
+    const passport = await this.passportsService.findPassportById(id);
+
+    return {
+      success: true,
+      message: 'Passport retrieved successfully',
+      data: passport,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Patch(':id')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.VERIFICATION_OFFICER)
+  @ApiOperation({
+    summary: 'Update passport',
+    description: 'Update passport information',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Passport ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Passport updated successfully',
+    type: PassportEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Passport not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data',
+  })
+  async updatePassport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(ValidationPipe) updatePassportDto: UpdatePassportDto,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<PassportEntity>> {
+    const passport = await this.passportsService.updatePassport(
+      id,
+      updatePassportDto,
+      user.id,
+    );
+
+    return {
+      success: true,
+      message: 'Passport updated successfully',
+      data: passport,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Patch(':id/verify')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.VERIFICATION_OFFICER)
+  @ApiOperation({
+    summary: 'Verify passport',
+    description: 'Update passport verification status',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Passport ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Passport verification updated successfully',
+    type: PassportEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Passport not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid verification data',
+  })
+  async verifyPassport(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(ValidationPipe) verifyPassportDto: VerifyPassportDto,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<PassportEntity>> {
+    const passport = await this.passportsService.verifyPassport(
+      id,
+      verifyPassportDto,
+      user.id,
+    );
+
+    return {
+      success: true,
+      message: 'Passport verification updated successfully',
+      data: passport,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Delete(':id')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Delete passport',
+    description: 'Delete a passport record',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Passport ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Passport deleted successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Passport not found',
+  })
+  async deletePassport(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<BaseResponseDto<null>> {
+    await this.passportsService.deletePassport(id);
+
+    return {
+      success: true,
+      message: 'Passport deleted successfully',
+      data: null,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}

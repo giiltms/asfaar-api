@@ -169,20 +169,67 @@ model User {
   countryId     String?
 
   // Payment relations
-  paymentMethods        PaymentMethod[]
-  transactions          Transaction[]
-  subscriptions         Subscription[]
-  wallets               Wallet[]
-  payments              Payment[] // NEW: User's payments
-  FormSubmission        FormSubmission[]
-  ninVerifications      NinVerification[]
-  biometricCenters      BiometricCenter[]      @relation("CenterStaff")
-  biometricAppointments BiometricAppointment[]
-  booths                Booth[]                @relation("BoothAgent")
-  biometricSessions     BiometricSession[]     @relation("BiometricAgent")
-  biometricData         BiometricData[]
+  paymentMethods         PaymentMethod[]
+  transactions           Transaction[]
+  subscriptions          Subscription[]
+  wallets                Wallet[]
+  payments               Payment[] // NEW: User's payments
+  FormSubmission         FormSubmission[]
+  ninVerifications       NinVerification[]
+  biometricCenters       BiometricCenter[]       @relation("CenterStaff")
+  biometricAppointments  BiometricAppointment[]
+  booths                 Booth[]                 @relation("BoothAgent")
+  biometricSessions      BiometricSession[]      @relation("BiometricAgent")
+  biometricData          BiometricData[]
+  internationalPassports InternationalPassport[]
 
   @@map("users")
+}
+
+// international passport for user
+// not all fields are required
+model InternationalPassport {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Passport Details
+  passportNumber       String
+  passportType         String   @default("ORDINARY") // ORDINARY, DIPLOMATIC, OFFICIAL, EMERGENCY
+  passportIssueDate    DateTime
+  passportExpiryDate   DateTime
+  passportIssueCountry String // ISO 3166-1 alpha-3 country code
+
+  // Document Photos
+  passportPhoto      String? // Main passport photo
+  passportFrontPhoto String? // Front page scan
+  passportBackPhoto  String? // Back page scan
+
+  // Verification & Status
+  isVerified         Boolean   @default(false)
+  verificationStatus String? // PENDING, VERIFIED, REJECTED, EXPIRED
+  verificationNotes  String?
+  verifiedAt         DateTime?
+  verifiedBy         String?
+
+  // Document Metadata
+  passportMetadata Json? // Additional passport data (MRZ, etc.)
+  documentHash     String? // Hash for integrity verification
+  documentSize     Int? // File size in bytes
+
+  // Audit Fields
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  lastModifiedBy String?
+
+  // Constraints
+  @@unique([userId, passportNumber]) // One passport number per user
+  @@index([passportNumber])
+  @@index([passportExpiryDate])
+  @@index([isVerified])
+  @@index([verificationStatus])
+  @@map("international_passports")
 }
 
 model UserProfile {

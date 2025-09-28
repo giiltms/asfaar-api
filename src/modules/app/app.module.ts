@@ -27,6 +27,7 @@ import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-front
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { FinanceModule } from '../finance/finance.module';
 import { DepartmentsModule } from '../departments/departments.module';
+import { PassportsModule } from '../passports/passports.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -61,6 +62,7 @@ import { DepartmentsModule } from '../departments/departments.module';
     AnalyticsModule,
     FinanceModule,
     DepartmentsModule,
+    PassportsModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],
