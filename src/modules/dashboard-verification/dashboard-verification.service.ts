@@ -679,84 +679,110 @@ export class DashboardVerificationService {
       notes,
     } = flagDto;
 
-    // Enforce single OPEN flag per submission per department
-    const existingOpenFlag = await this.prisma.flag.findFirst({
-      where: {
-        submissionId,
-        status: 'OPEN',
-        targetDepartment: targetDepartment as any,
-      },
-      select: { id: true },
-    });
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1) Check for existing open flag and get current submission status
+        const [existingOpenFlag, currentSubmission] = await Promise.all([
+          tx.flag.findFirst({
+            where: {
+              submissionId,
+              status: 'OPEN',
+              targetDepartmentId: targetDepartment as any,
+            },
+            select: { id: true },
+          }),
+          tx.formSubmission.findUnique({
+            where: { id: submissionId },
+            select: { status: true },
+          }),
+        ]);
 
-    if (existingOpenFlag) {
-      throw new BadRequestException(
-        'An open flag already exists for this submission and department',
-      );
-    }
+        if (existingOpenFlag) {
+          throw new BadRequestException(
+            'An open flag already exists for this submission and department',
+          );
+        }
 
-    // Create flag record
-    await this.prisma.flag.create({
-      data: {
-        submissionId,
-        createdById: reviewerId,
-        targetDepartment: targetDepartment as any,
-        flagType: flagType as any,
-        priorityLevel: priorityLevel as any,
-        reason: flagReason,
-        notes,
-        status: 'OPEN',
-      },
-    });
+        if (!currentSubmission) {
+          throw new BadRequestException('Submission not found');
+        }
 
-    // Update submission status and audit log
-    await this.prisma.formSubmission.update({
-      where: { id: submissionId },
-      data: {
-        status: SubmissionStatus.FLAGGED,
-        isFlagged: true,
-        flagReason: flagReason,
-        flaggedAt: new Date(),
-        flaggedBy: reviewerId,
-        reviewedAt: new Date(),
-        reviewedBy: reviewerId,
-        reviewNotes: notes,
-        statusLogs: {
-          create: {
-            fromStatus: SubmissionStatus.UNDER_REVIEW, // Assuming it was under review
-            toStatus: SubmissionStatus.FLAGGED,
-            reason: `Application flagged for security review - ${flagType} (${priorityLevel} priority)`,
-            notes: `Flagged to ${targetDepartment}: ${flagReason}`,
-            changedBy: reviewerId,
+        // 2) Create flag record
+        const flag = await tx.flag.create({
+          data: {
+            submissionId,
+            createdById: reviewerId,
+            targetDepartmentId: targetDepartment as any,
+            flagType: flagType as any,
+            priorityLevel: priorityLevel as any,
+            reason: flagReason,
+            notes,
+            status: 'OPEN',
           },
-        },
-      },
-    });
+        });
 
-    // Update biometric data verification status if exists
-    const biometricData = await this.prisma.biometricData.findFirst({
-      where: { submissionId },
-    });
+        // 3) Update submission status and create audit log
+        const updatedSubmission = await tx.formSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: SubmissionStatus.FLAGGED,
+            isFlagged: true,
+            flagReason: flagReason,
+            flaggedAt: new Date(),
+            flaggedBy: reviewerId,
+            reviewedAt: new Date(),
+            reviewedBy: reviewerId,
+            reviewNotes: notes,
+            statusLogs: {
+              create: {
+                fromStatus: currentSubmission.status,
+                toStatus: SubmissionStatus.FLAGGED,
+                reason: `Application flagged for security review - ${flagType} (${priorityLevel} priority)`,
+                notes: `Flagged to ${targetDepartment}: ${flagReason}`,
+                changedBy: reviewerId,
+              },
+            },
+          },
+        });
 
-    if (biometricData) {
-      await this.prisma.biometricData.update({
-        where: { id: biometricData.id },
-        data: {
-          verificationStatus: 'FLAGGED',
-          verificationNotes: `Flagged to ${targetDepartment} - ${flagType} (${priorityLevel}): ${flagReason}`,
-          lastModifiedBy: reviewerId,
-        },
+        // 4) Update biometric data verification status if exists
+        const biometricData = await tx.biometricData.findFirst({
+          where: { submissionId },
+        });
+
+        if (biometricData) {
+          await tx.biometricData.update({
+            where: { id: biometricData.id },
+            data: {
+              verificationStatus: 'FLAGGED',
+              verificationNotes: `Flagged to ${targetDepartment} - ${flagType} (${priorityLevel}): ${flagReason}`,
+              lastModifiedBy: reviewerId,
+            },
+          });
+        }
+
+        return {
+          flag,
+          submission: updatedSubmission,
+          biometricDataUpdated: !!biometricData,
+        };
       });
+
+      this.logger.log(
+        `Application ${submissionId} flagged to ${targetDepartment} - ${flagType} (${priorityLevel} priority) by ${reviewerId}`,
+      );
+
+      return {
+        success: true,
+        message: `Application flagged and sent to ${targetDepartment} successfully (${flagType} - ${priorityLevel} priority)`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to flag application ${submissionId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
-
-    this.logger.log(
-      `Application ${submissionId} flagged to ${targetDepartment} - ${flagType} (${priorityLevel} priority) by ${reviewerId}`,
-    );
-
-    return {
-      success: true,
-      message: `Application flagged and sent to ${targetDepartment} successfully (${flagType} - ${priorityLevel} priority)`,
-    };
   }
 
   /**
@@ -816,8 +842,8 @@ export class DashboardVerificationService {
             toStatus: SubmissionStatus.QUERIED,
             reason: 'Application queried for additional information',
             notes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-              ? ` - Required documents: ${requiredDocuments.join(', ')}`
-              : ''
+                ? ` - Required documents: ${requiredDocuments.join(', ')}`
+                : ''
               }`,
             changedBy: reviewerId,
           },
@@ -836,8 +862,8 @@ export class DashboardVerificationService {
         data: {
           verificationStatus: 'NEEDS_REVIEW',
           verificationNotes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-            ? ` - Required: ${requiredDocuments.join(', ')}`
-            : ''
+              ? ` - Required: ${requiredDocuments.join(', ')}`
+              : ''
             }`,
           lastModifiedBy: reviewerId,
         },
