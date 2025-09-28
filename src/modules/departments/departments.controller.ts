@@ -12,17 +12,26 @@ import {
   ClassSerializerInterceptor,
   HttpStatus,
   ValidationPipe,
+  UploadedFile,
+  UseInterceptors as UseNestInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { DepartmentsService } from './departments.service';
 import {
   CreateDepartmentDto,
+  CreateDepartmentMultipartDto,
   UpdateDepartmentDto,
   DepartmentQueryDto,
 } from './dto/department.dto';
@@ -30,7 +39,10 @@ import { DepartmentEntity } from './entities/department.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
-import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { Roles as UserRoles } from '@common/constants/roles.constants';
 
 @ApiTags('Departments')
@@ -43,10 +55,41 @@ export class DepartmentsController {
 
   @Post()
   @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @UseNestInterceptors(FileInterceptor('logo'))
   @ApiOperation({
     summary: 'Create a new department',
     description:
-      'Create a new department with name, agency, description, and logo URL',
+      'Create a new department with name, agency, description, and upload a logo file',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Department data with logo file',
+    schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Department name',
+          example: 'Immigration Services',
+        },
+        agency: {
+          type: 'string',
+          description: 'Agency that the department belongs to',
+          example: 'Ministry of Interior',
+        },
+        description: {
+          type: 'string',
+          description: 'Department description',
+          example: 'Handles immigration and visa processing services',
+        },
+        logo: {
+          type: 'string',
+          format: 'binary',
+          description: 'Logo file (JPEG, PNG, WebP, SVG - max 5MB)',
+        },
+      },
+      required: ['name', 'agency', 'description', 'logo'],
+    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -55,7 +98,7 @@ export class DepartmentsController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid input data',
+    description: 'Invalid input data or logo file',
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
@@ -66,11 +109,24 @@ export class DepartmentsController {
     description: 'Insufficient permissions',
   })
   async createDepartment(
-    @Body(ValidationPipe) createDepartmentDto: CreateDepartmentDto,
+    @Body(ValidationPipe) createDepartmentDto: CreateDepartmentMultipartDto,
     @CurrentUser() user: JwtUserPayload,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({
+            fileType: /^image\/(jpeg|jpg|png|webp|svg\+xml)$/,
+          }),
+        ],
+        fileIsRequired: true, // Logo is now required
+      }),
+    )
+    logoFile: Express.Multer.File,
   ): Promise<DepartmentEntity> {
-    return this.departmentsService.createDepartment(
+    return this.departmentsService.createDepartmentWithLogo(
       createDepartmentDto,
+      logoFile,
       user.id,
     );
   }

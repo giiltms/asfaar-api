@@ -32,13 +32,13 @@ export class CreateDepartmentDto {
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({
-    description: 'URL to department logo',
+  @ApiPropertyOptional({
+    description: 'URL to department logo (optional if uploading file via multipart)',
     example: 'https://example.com/logos/immigration-logo.png',
   })
+  @IsOptional()
   @IsString()
-  @IsUrl()
-  logoUrl: string;
+  logoUrl?: string;
 }
 
 export class UpdateDepartmentDto {
@@ -77,6 +77,32 @@ export class UpdateDepartmentDto {
   @IsString()
   @IsUrl()
   logoUrl?: string;
+}
+
+export class CreateDepartmentMultipartDto {
+  @ApiProperty({
+    description: 'Department name',
+    example: 'Immigration Services',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({
+    description: 'Agency that the department belongs to',
+    example: 'Ministry of Interior',
+  })
+  @IsString()
+  @IsNotEmpty()
+  agency: string;
+
+  @ApiProperty({
+    description: 'Department description',
+    example: 'Handles immigration and visa processing services',
+  })
+  @IsString()
+  @IsNotEmpty()
+  description: string;
 }
 
 export class DepartmentQueryDto {

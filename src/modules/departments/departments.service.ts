@@ -1,6 +1,17 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { CreateDepartmentDto, UpdateDepartmentDto, DepartmentQueryDto } from './dto/department.dto';
+import { LocalStorageService } from '@providers/localstorage/localstorage.service';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+  DepartmentQueryDto,
+} from './dto/department.dto';
 import { DepartmentEntity } from './entities/department.entity';
 import { Prisma } from '@prisma/client';
 
@@ -8,12 +19,52 @@ import { Prisma } from '@prisma/client';
 export class DepartmentsService {
   private readonly logger = new Logger(DepartmentsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly localStorageService: LocalStorageService,
+  ) {}
+
+  /**
+   * Create a new department with logo upload
+   */
+  async createDepartmentWithLogo(
+    createDto: CreateDepartmentDto,
+    logoFile: Express.Multer.File,
+    createdBy: string,
+  ): Promise<DepartmentEntity> {
+    try {
+      // Validate logo file
+      this.validateLogoFile(logoFile);
+
+      // Upload logo file
+      const logoUrl = await this.localStorageService.upload(
+        logoFile,
+        'departments/logos',
+      );
+
+      // Create department with uploaded logo URL
+      const departmentData = {
+        ...createDto,
+        logoUrl,
+      };
+
+      return this.createDepartment(departmentData, createdBy);
+    } catch (error) {
+      this.logger.error(
+        `Failed to create department with logo: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 
   /**
    * Create a new department
    */
-  async createDepartment(createDto: CreateDepartmentDto, createdBy: string): Promise<DepartmentEntity> {
+  async createDepartment(
+    createDto: CreateDepartmentDto,
+    createdBy: string,
+  ): Promise<DepartmentEntity> {
     try {
       // Check if department with same name already exists
       const existingDepartment = await this.prisma.department.findFirst({
@@ -26,12 +77,17 @@ export class DepartmentsService {
       });
 
       if (existingDepartment) {
-        throw new ConflictException(`A department with the name "${createDto.name}" already exists`);
+        throw new ConflictException(
+          `A department with the name "${createDto.name}" already exists`,
+        );
       }
 
       const department = await this.prisma.department.create({
         data: {
-          ...createDto,
+          name: createDto.name,
+          agency: createDto.agency,
+          description: createDto.description,
+          logoUrl: createDto.logoUrl || '', // Provide default empty string if not provided
         },
         include: {
           _count: {
@@ -55,7 +111,10 @@ export class DepartmentsService {
         activeFlaggingCount: department._count.flaggings,
       });
     } catch (error) {
-      this.logger.error(`Failed to create department: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create department: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -112,10 +171,7 @@ export class DepartmentsService {
           where,
           skip,
           take: limit,
-          orderBy: [
-            { agency: 'asc' },
-            { name: 'asc' },
-          ],
+          orderBy: [{ agency: 'asc' }, { name: 'asc' }],
           include: {
             _count: {
               select: {
@@ -135,18 +191,24 @@ export class DepartmentsService {
       const totalPages = Math.ceil(total / limit);
 
       return {
-        departments: departments.map((dept) => new DepartmentEntity({
-          ...dept,
-          staffCount: dept._count.staffs,
-          activeFlaggingCount: dept._count.flaggings,
-        })),
+        departments: departments.map(
+          (dept) =>
+            new DepartmentEntity({
+              ...dept,
+              staffCount: dept._count.staffs,
+              activeFlaggingCount: dept._count.flaggings,
+            }),
+        ),
         total,
         page,
         limit,
         totalPages,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch departments: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch departments: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -182,7 +244,10 @@ export class DepartmentsService {
         activeFlaggingCount: department._count.flaggings,
       });
     } catch (error) {
-      this.logger.error(`Failed to fetch department ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch department ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -190,7 +255,11 @@ export class DepartmentsService {
   /**
    * Update department
    */
-  async updateDepartment(id: string, updateDto: UpdateDepartmentDto, updatedBy: string): Promise<DepartmentEntity> {
+  async updateDepartment(
+    id: string,
+    updateDto: UpdateDepartmentDto,
+    updatedBy: string,
+  ): Promise<DepartmentEntity> {
     try {
       // Check if department exists
       const existingDepartment = await this.prisma.department.findUnique({
@@ -216,7 +285,9 @@ export class DepartmentsService {
         });
 
         if (nameConflict) {
-          throw new ConflictException(`A department with the name "${updateDto.name}" already exists`);
+          throw new ConflictException(
+            `A department with the name "${updateDto.name}" already exists`,
+          );
         }
       }
 
@@ -247,7 +318,10 @@ export class DepartmentsService {
         activeFlaggingCount: updatedDepartment._count.flaggings,
       });
     } catch (error) {
-      this.logger.error(`Failed to update department ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update department ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -293,7 +367,10 @@ export class DepartmentsService {
 
       this.logger.log(`Department deleted: ${id} by ${deletedBy}`);
     } catch (error) {
-      this.logger.error(`Failed to delete department ${id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to delete department ${id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -315,7 +392,10 @@ export class DepartmentsService {
 
       return agencies.map((dept) => dept.agency);
     } catch (error) {
-      this.logger.error(`Failed to fetch agencies: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch agencies: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -370,8 +450,48 @@ export class DepartmentsService {
         })),
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch department statistics: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to fetch department statistics: ${error.message}`,
+        error.stack,
+      );
       throw error;
+    }
+  }
+
+  /**
+   * Validate logo file
+   */
+  private validateLogoFile(file: Express.Multer.File): void {
+    if (!file) {
+      throw new BadRequestException('Logo file is required');
+    }
+
+    // Validate file type
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/svg+xml',
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPEG, PNG, WebP, and SVG formats are allowed for logos',
+      );
+    }
+
+    // Validate file size (5MB max for logos)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        'File size too large. Maximum size for logos is 5MB',
+      );
+    }
+
+    // Validate filename
+    if (!file.originalname || file.originalname.trim().length === 0) {
+      throw new BadRequestException('Invalid filename');
     }
   }
 }
