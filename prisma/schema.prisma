@@ -1380,7 +1380,6 @@ model BiometricAppointment {
   status           AppointmentStatus @default(PENDING)
 
   // Date and Time
-  appointmentDate DateTime? // Date of the appointment
   appointmentTime DateTime? // Full date-time for the appointment
 
   // Requirements and Notes
@@ -1426,7 +1425,6 @@ model BiometricAppointment {
   @@index([userId])
   @@index([submissionId])
   @@index([centerId])
-  @@index([appointmentDate])
   @@index([appointmentTime])
   @@index([status])
   @@index([appointmentClass])

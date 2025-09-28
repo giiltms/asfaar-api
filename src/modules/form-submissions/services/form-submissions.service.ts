@@ -575,7 +575,6 @@ export class FormSubmissionsService {
         // This preserves the current status (e.g., ACTIVE from payment webhook)
         centerId: appointmentData.centerId,
         appointmentClass: appointmentData.appointmentClass || 'REGULAR',
-        appointmentDate: new Date(appointmentData.appointmentDate),
         appointmentTime: new Date(appointmentData.appointmentTime),
         specialRequirements: appointmentData.specialRequirements,
         confirmationAcknowledged: appointmentData.confirmationAcknowledged,
@@ -588,7 +587,6 @@ export class FormSubmissionsService {
         submissionId,
         centerId: appointmentData.centerId,
         appointmentClass: appointmentData.appointmentClass || 'REGULAR',
-        appointmentDate: new Date(appointmentData.appointmentDate),
         appointmentTime: new Date(appointmentData.appointmentTime),
         specialRequirements: appointmentData.specialRequirements,
         confirmationAcknowledged: appointmentData.confirmationAcknowledged,
@@ -2016,7 +2014,6 @@ export class FormSubmissionsService {
         select: {
           id: true,
           status: true,
-          appointmentDate: true,
           appointmentTime: true,
           appointmentClass: true,
           centerId: true,
@@ -2108,7 +2105,6 @@ export class FormSubmissionsService {
         select: {
           id: true,
           status: true,
-          appointmentDate: true,
           appointmentTime: true,
           queueEntry: {
             select: {
@@ -2154,7 +2150,6 @@ export class FormSubmissionsService {
           id: submission.appointment.id,
           centerId: submission.appointment.centerId,
           centerName: submission.appointment.center?.name,
-          appointmentDate: submission.appointment.appointmentDate,
           appointmentTime: submission.appointment.appointmentTime,
           status: submission.appointment.status,
           appointmentClass: submission.appointment.appointmentClass,
@@ -2347,13 +2342,12 @@ export class FormSubmissionsService {
     let appointmentData = null;
     if (submission.appointment) {
       const now = new Date();
-      const appointmentDate = submission.appointment.appointmentDate;
       const appointmentTime = submission.appointment.appointmentTime;
 
       // Check if appointment is today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const apptDateOnly = appointmentDate ? new Date(appointmentDate) : null;
+      const apptDateOnly = appointmentTime ? new Date(appointmentTime) : null;
       if (apptDateOnly) {
         apptDateOnly.setHours(0, 0, 0, 0);
       }
@@ -2362,36 +2356,17 @@ export class FormSubmissionsService {
         : false;
 
       // Calculate time difference
-      const appointmentDateTime = appointmentTime || appointmentDate;
+      const appointmentDateTime = appointmentTime;
       const timeDiffMs = appointmentDateTime
         ? appointmentDateTime.getTime() - now.getTime()
         : 0;
       const minutesUntilAppointment = Math.round(timeDiffMs / (1000 * 60));
       const hasTimePassed = minutesUntilAppointment < 0;
 
-      // Format dates for display
-      const appointmentDateFormatted = appointmentDate
-        ? appointmentDate.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-        : 'Not set';
-
-      const appointmentTimeFormatted = appointmentTime
-        ? appointmentTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        })
-        : 'Not set';
 
       appointmentData = {
         id: submission.appointment.id,
-        appointmentDate: submission.appointment.appointmentDate,
         appointmentTime: submission.appointment.appointmentTime,
-        appointmentDateFormatted,
-        appointmentTimeFormatted,
         appointmentClass: submission.appointment.appointmentClass,
         status: submission.appointment.status,
         isToday,

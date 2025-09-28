@@ -31,10 +31,6 @@ export class BiometricAppointmentEntity {
   @Expose()
   status: AppointmentStatus;
 
-  @ApiPropertyOptional({ description: 'Appointment date' })
-  @Expose()
-  @Transform(({ value }) => value?.toISOString())
-  appointmentDate?: Date;
 
   @ApiPropertyOptional({ description: 'Appointment time' })
   @Expose()

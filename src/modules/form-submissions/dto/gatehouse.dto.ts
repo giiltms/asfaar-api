@@ -115,12 +115,6 @@ export class GatehouseAppointmentDto {
   @ApiProperty({ description: 'Appointment ID' })
   id: string;
 
-  @ApiProperty({
-    description: 'Appointment date (CRITICAL for verification)',
-    format: 'date-time',
-    example: '2025-01-15T00:00:00.000Z',
-  })
-  appointmentDate: Date;
 
   @ApiProperty({
     description: 'Appointment time (CRITICAL for verification)',
@@ -129,17 +123,6 @@ export class GatehouseAppointmentDto {
   })
   appointmentTime: Date;
 
-  @ApiProperty({
-    description: 'Human-readable appointment date',
-    example: 'January 15, 2025',
-  })
-  appointmentDateFormatted: string;
-
-  @ApiProperty({
-    description: 'Human-readable appointment time',
-    example: '9:00 AM',
-  })
-  appointmentTimeFormatted: string;
 
   @ApiProperty({ description: 'Appointment class', example: 'REGULAR' })
   appointmentClass: string;

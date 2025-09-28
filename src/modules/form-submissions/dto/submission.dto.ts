@@ -399,7 +399,6 @@ export class FormSubmissionDto {
     id: string;
     centerId: string;
     centerName?: string;
-    appointmentDate: Date;
     appointmentTime: Date;
     status: string;
     appointmentClass: string;
