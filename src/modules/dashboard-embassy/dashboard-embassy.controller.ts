@@ -55,12 +55,6 @@ export class DashboardEmbassyController {
     type: EmbassyReviewListDto,
   })
   @ApiQuery({
-    name: 'countryCode',
-    required: true,
-    type: String,
-    description: 'Country code for the embassy officer',
-  })
-  @ApiQuery({
     name: 'status',
     required: false,
     enum: SubmissionStatus,
@@ -104,12 +98,10 @@ export class DashboardEmbassyController {
   })
   async getApplicationsForCountry(
     @CurrentUser() user: JwtUserPayload,
-    @Query('countryCode') countryCode: string,
     @Query() filters: Omit<EmbassyReviewFiltersDto, 'countryCode'>,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsForCountry(
       user.id,
-      countryCode,
       filters,
     );
 
@@ -137,19 +129,13 @@ export class DashboardEmbassyController {
     description: 'Application not found or not for embassy officer country',
   })
   @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
-  @ApiQuery({
-    name: 'countryCode',
-    required: true,
-    type: String,
-    description: 'Country code for the embassy officer',
-  })
   async getApplicationForReview(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
-    @Query('countryCode') countryCode: string,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<ApplicationReviewDto>> {
     const result = await this.dashboardEmbassyService.getApplicationForReview(
       submissionId,
-      countryCode,
+      user.id,
     );
 
     return {
@@ -171,20 +157,10 @@ export class DashboardEmbassyController {
     description: 'Statistics retrieved successfully',
     type: EmbassyStatsDto,
   })
-  @ApiQuery({
-    name: 'countryCode',
-    required: true,
-    type: String,
-    description: 'Country code for the embassy officer',
-  })
   async getEmbassyStats(
     @CurrentUser() user: JwtUserPayload,
-    @Query('countryCode') countryCode: string,
   ): Promise<BaseResponseDto<EmbassyStatsDto>> {
-    const result = await this.dashboardEmbassyService.getEmbassyStats(
-      user.id,
-      countryCode,
-    );
+    const result = await this.dashboardEmbassyService.getEmbassyStats(user.id);
 
     return {
       success: true,
@@ -214,15 +190,8 @@ export class DashboardEmbassyController {
     description: 'Invalid action or missing required fields',
   })
   @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
-  @ApiQuery({
-    name: 'countryCode',
-    required: true,
-    type: String,
-    description: 'Country code for the embassy officer',
-  })
   async takeFinalActionOnApplication(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
-    @Query('countryCode') countryCode: string,
     @Body() actionDto: EmbassyActionDto,
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<EmbassyActionResponseDto>> {
@@ -233,7 +202,6 @@ export class DashboardEmbassyController {
       await this.dashboardEmbassyService.takeFinalActionOnApplication(
         actionDto,
         user.id,
-        countryCode,
       );
 
     return {
@@ -261,12 +229,6 @@ export class DashboardEmbassyController {
     description: 'Application status to filter by',
   })
   @ApiQuery({
-    name: 'countryCode',
-    required: true,
-    type: String,
-    description: 'Country code for the embassy officer',
-  })
-  @ApiQuery({
     name: 'page',
     required: false,
     type: Number,
@@ -280,14 +242,12 @@ export class DashboardEmbassyController {
   })
   async getApplicationsByStatus(
     @Param('status') status: SubmissionStatus,
-    @Query('countryCode') countryCode: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsByStatus(
       user.id,
-      countryCode,
       status,
       page,
       limit,

@@ -23,14 +23,53 @@ export class DashboardEmbassyService {
   ) {}
 
   /**
+   * Get user's assigned country
+   */
+  private async getUserAssignedCountry(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        country: {
+          select: {
+            id: true,
+            name: true,
+            isoCode2: true,
+            isActive: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (!user.country) {
+      throw new Error(
+        'No country assigned to this embassy officer. Please contact an administrator to assign a country.',
+      );
+    }
+
+    if (!user.country.isActive) {
+      throw new Error(
+        `Assigned country "${user.country.name}" is not active. Please contact an administrator.`,
+      );
+    }
+
+    return user.country.isoCode2;
+  }
+
+  /**
    * Get applications for embassy officer's country
    */
   async getApplicationsForCountry(
     embassyOfficerId: string,
-    countryCode: string,
     filters: EmbassyReviewFiltersDto = {},
   ): Promise<EmbassyReviewListDto> {
     try {
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+
       this.logger.log(
         `Getting applications for country ${countryCode} for embassy officer ${embassyOfficerId}`,
       );
@@ -216,9 +255,12 @@ export class DashboardEmbassyService {
    */
   async getApplicationForReview(
     submissionId: string,
-    countryCode: string,
+    embassyOfficerId: string,
   ): Promise<ApplicationReviewDto> {
     try {
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+
       this.logger.log(
         `Getting application ${submissionId} for embassy review in country ${countryCode}`,
       );
@@ -265,11 +307,11 @@ export class DashboardEmbassyService {
   /**
    * Get embassy officer statistics for their country
    */
-  async getEmbassyStats(
-    embassyOfficerId: string,
-    countryCode: string,
-  ): Promise<EmbassyStatsDto> {
+  async getEmbassyStats(embassyOfficerId: string): Promise<EmbassyStatsDto> {
     try {
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+
       this.logger.log(
         `Getting stats for country ${countryCode} for embassy officer ${embassyOfficerId}`,
       );
@@ -361,12 +403,16 @@ export class DashboardEmbassyService {
         },
       });
 
-      const averageProcessingTime = processingTimeData.length > 0
-        ? processingTimeData.reduce((sum, app) => {
-          const processingTime = app.reviewedAt.getTime() - app.submittedAt.getTime();
-          return sum + processingTime;
-        }, 0) / processingTimeData.length / (1000 * 60 * 60 * 24) // Convert to days
-        : 0;
+      const averageProcessingTime =
+        processingTimeData.length > 0
+          ? processingTimeData.reduce((sum, app) => {
+            const processingTime =
+              app.reviewedAt.getTime() - app.submittedAt.getTime();
+            return sum + processingTime;
+          }, 0) /
+          processingTimeData.length /
+          (1000 * 60 * 60 * 24) // Convert to days
+          : 0;
 
       return {
         totalApplications,
@@ -392,11 +438,13 @@ export class DashboardEmbassyService {
   async takeFinalActionOnApplication(
     actionDto: EmbassyActionDto,
     embassyOfficerId: string,
-    countryCode: string,
   ): Promise<EmbassyActionResponseDto> {
     try {
       const { submissionId, action, reason, notes, requiredDocuments } =
         actionDto;
+
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
 
       this.logger.log(
         `Embassy officer ${embassyOfficerId} taking final action ${action} on application ${submissionId}`,
@@ -466,7 +514,7 @@ export class DashboardEmbassyService {
           reviewedBy: embassyOfficerId,
           reviewNotes: notes,
           metadata: {
-            ...(submission.metadata as any || {}),
+            ...((submission.metadata as any) || {}),
             embassyAction: action,
             embassyReason: reason,
             embassyNotes: notes,
@@ -543,18 +591,20 @@ export class DashboardEmbassyService {
    */
   async getApplicationsByStatus(
     embassyOfficerId: string,
-    countryCode: string,
     status: SubmissionStatus,
     page = 1,
     limit = 10,
   ): Promise<EmbassyReviewListDto> {
     try {
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+
       this.logger.log(
         `Getting ${status} applications for country ${countryCode} for embassy officer ${embassyOfficerId}`,
       );
 
       // Use the same logic as getApplicationsForCountry but with specific status
-      return await this.getApplicationsForCountry(embassyOfficerId, countryCode, {
+      return await this.getApplicationsForCountry(embassyOfficerId, {
         status: [status],
         page,
         limit,
