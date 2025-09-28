@@ -184,8 +184,16 @@ export class AnalyticsService {
           ...dateFilter,
           status: SubmissionStatus.APPROVED,
           updatedAt: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0)),
-            lt: new Date(new Date().setHours(23, 59, 59, 999)),
+            gte: (() => {
+              const startOfDay = new Date();
+              startOfDay.setHours(0, 0, 0, 0);
+              return startOfDay;
+            })(),
+            lte: (() => {
+              const endOfDay = new Date();
+              endOfDay.setHours(23, 59, 59, 999);
+              return endOfDay;
+            })(),
           },
         },
       }),
@@ -271,10 +279,16 @@ export class AnalyticsService {
       };
     }
 
+    const startOfDay = new Date(dateRange.start);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(dateRange.end);
+    endOfDay.setHours(23, 59, 59, 999);
+
     return {
       createdAt: {
-        gte: new Date(dateRange.start),
-        lte: new Date(dateRange.end),
+        gte: startOfDay,
+        lte: endOfDay,
       },
     };
   }

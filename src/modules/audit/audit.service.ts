@@ -86,10 +86,14 @@ export class AuditService {
     if (filters.dateFrom || filters.dateTo) {
       where.timestamp = {};
       if (filters.dateFrom) {
-        where.timestamp.gte = new Date(filters.dateFrom);
+        const startOfDay = new Date(filters.dateFrom);
+        startOfDay.setHours(0, 0, 0, 0);
+        where.timestamp.gte = startOfDay;
       }
       if (filters.dateTo) {
-        where.timestamp.lte = new Date(filters.dateTo);
+        const endOfDay = new Date(filters.dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.timestamp.lte = endOfDay;
       }
     }
 
