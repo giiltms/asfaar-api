@@ -128,19 +128,46 @@ export class VerificationReviewDto {
 }
 
 export class ApplicationReviewDto {
-  @ApiProperty({ description: 'Application reference number' })
+  @ApiProperty({
+    description: 'Application reference number',
+    example: 'MA00125000037'
+  })
   referenceNumber: string;
 
-  @ApiProperty({ description: 'Submission ID' })
+  @ApiProperty({
+    description: 'Submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   submissionId: string;
 
-  @ApiProperty({ description: 'Application status' })
+  @ApiProperty({
+    description: 'Application status',
+    example: 'UNDER_REVIEW'
+  })
   status: string;
 
-  @ApiProperty({ description: 'Date submitted' })
+  @ApiProperty({
+    description: 'Date submitted',
+    example: '2024-01-15T10:30:00.000Z'
+  })
   submittedAt: string;
 
-  @ApiProperty({ description: 'Applicant information' })
+  @ApiProperty({
+    description: 'Applicant information',
+    example: {
+      id: '456e7890-e89b-12d3-a456-426614174001',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com',
+      phone: '+2348012345678',
+      nin: '12345678901',
+      ninVerified: true,
+      dateOfBirth: '1990-05-15',
+      gender: 'MALE',
+      state: 'Lagos',
+      lga: 'Ikeja'
+    }
+  })
   applicant: {
     id: string;
     firstName: string;
@@ -155,7 +182,20 @@ export class ApplicationReviewDto {
     lga: string;
   };
 
-  @ApiProperty({ description: 'Form information' })
+  @ApiProperty({
+    description: 'Form information',
+    example: {
+      id: '789e0123-e89b-12d3-a456-426614174002',
+      name: 'Tourist Visa Application',
+      country: {
+        name: 'United States',
+        isoCode2: 'US',
+        isoCode3: 'USA',
+        flag: '🇺🇸',
+        logoUrl: 'https://example.com/us-flag.png'
+      }
+    }
+  })
   form: {
     id: string;
     name: string;
@@ -235,7 +275,23 @@ export class ApplicationReviewDto {
   };
 
   @ApiProperty({
-    description: 'Biometric data (excluding encrypted fingerprint data)',
+    description: 'Biometric data summary (detailed fingerprint data available via separate endpoint)',
+    example: {
+      id: 'abc12345-e89b-12d3-a456-426614174003',
+      photoUrl: 'https://storage.example.com/biometric-photos/photo-123.jpg',
+      photoQualityScore: 85,
+      isVerified: false,
+      verificationStatus: 'PENDING',
+      capturedAt: '2024-01-15T14:30:00.000Z',
+      capturedBy: 'agent-001',
+      captureDevice: 'Booth 1 - Lagos Center',
+      fingerprintCount: 10,
+      fingerprintQualitySummary: {
+        averageQuality: 78,
+        acceptableFingers: 8,
+        totalFingers: 10
+      }
+    }
   })
   biometricData: {
     id: string;
@@ -246,14 +302,31 @@ export class ApplicationReviewDto {
     capturedAt: string;
     capturedBy: string;
     captureDevice: string;
-    // Note: Fingerprint quality scores are stored in individual FingerprintData records
-    // Note: fingerprintFingers data is encrypted and available via GET /api/v1/biometric-capture/data/:userId
+    fingerprintCount: number; // Number of fingers captured
+    fingerprintQualitySummary: {
+      averageQuality: number;
+      acceptableFingers: number;
+      totalFingers: number;
+    };
   };
 
   @ApiPropertyOptional({ description: 'User profile photo' })
   userProfilePhoto?: string;
 
-  @ApiProperty({ description: 'Appointment information' })
+  @ApiProperty({
+    description: 'Appointment information',
+    example: {
+      id: 'def67890-e89b-12d3-a456-426614174004',
+      appointmentDate: '2024-01-16T09:00:00.000Z',
+      center: {
+        name: 'Lagos Biometric Center',
+        address: '123 Victoria Island',
+        city: 'Lagos',
+        state: 'Lagos'
+      },
+      status: 'COMPLETED'
+    }
+  })
   appointment: {
     id: string;
     appointmentDate: string;

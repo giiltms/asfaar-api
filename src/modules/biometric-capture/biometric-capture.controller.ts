@@ -335,6 +335,96 @@ export class BiometricDataListDto {
   limit: number;
 }
 
+export class FingerprintDataResponseDto {
+  @ApiProperty({
+    description: 'Unique identifier for the biometric data record',
+    example: 'abc12345-e89b-12d3-a456-426614174003',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'User ID associated with the biometric data',
+    example: '456e7890-e89b-12d3-a456-426614174001',
+  })
+  userId: string;
+
+  @ApiProperty({
+    description: 'Submission ID associated with the biometric data',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  submissionId: string;
+
+  @ApiProperty({
+    description: 'User information',
+    example: {
+      id: '456e7890-e89b-12d3-a456-426614174001',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com'
+    }
+  })
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+
+  @ApiProperty({
+    description: 'Date and time when biometric data was captured',
+    example: '2024-01-15T14:30:00.000Z',
+  })
+  capturedAt: string;
+
+  @ApiProperty({
+    description: 'Device used for capture',
+    example: 'Booth 1 - Lagos Center',
+  })
+  captureDevice: string;
+
+  @ApiProperty({
+    description: 'Location where capture occurred',
+    example: 'Lagos Biometric Center - Booth 1',
+  })
+  captureLocation: string;
+
+  @ApiProperty({
+    description: 'Whether the biometric data has been verified',
+    example: false,
+  })
+  isVerified: boolean;
+
+  @ApiProperty({
+    description: 'Current verification status',
+    example: 'PENDING',
+  })
+  verificationStatus: string;
+
+  @ApiProperty({
+    description: 'Array of individual fingerprint data',
+    type: [FingerprintDataDto],
+    example: [
+      {
+        id: 'finger-001',
+        position: 'LEFT_THUMB',
+        qualityScore: 85,
+        nfiqScore: 2,
+        isEncrypted: true,
+        capturedAt: '2024-01-15T14:30:00.000Z'
+      },
+      {
+        id: 'finger-002',
+        position: 'RIGHT_THUMB',
+        qualityScore: 78,
+        nfiqScore: 3,
+        isEncrypted: true,
+        capturedAt: '2024-01-15T14:30:00.000Z'
+      }
+    ]
+  })
+  fingers: FingerprintDataDto[];
+}
+
 export class HealthCheckDto {
   @ApiProperty({
     description: 'Service status',
@@ -608,13 +698,14 @@ export class BiometricCaptureController {
     UserRoles.VERIFICATION_OFFICER,
   )
   @ApiOperation({
-    summary: 'Get fingerprint data by submission ID',
+    summary: 'Get detailed fingerprint data by submission ID',
     description:
-      'Retrieve fingerprint data associated with a specific form submission.',
+      'Retrieve complete decrypted fingerprint data associated with a specific form submission. This endpoint provides detailed fingerprint information including individual finger data, quality scores, and capture metadata. Use this endpoint when you need to review specific fingerprint details after viewing the summary in the verification dashboard.',
   })
   @ApiResponse({
     status: 200,
     description: 'Fingerprint data retrieved successfully',
+    type: FingerprintDataResponseDto,
   })
   @ApiResponse({
     status: 404,

@@ -365,7 +365,7 @@ export class DashboardVerificationService {
     const mappedApplications: ApplicationReviewDto[] = applications.map(
       (submission) => {
         const ninVerification = submission.user.ninVerifications?.[0];
-        const biometricData = submission.biometricData?.[0];
+        const biometricData = submission.biometricData;
 
         return {
           referenceNumber: submission.referenceNumber,
@@ -429,21 +429,15 @@ export class DashboardVerificationService {
               id: biometricData.id,
               photoUrl: biometricData.photoUrl,
               photoQualityScore: biometricData.photoQualityScore,
-              fingerprintQualityScore: biometricData.fingerprintQualityScore,
-              overallQualityScore: biometricData.overallQualityScore,
               isVerified: biometricData.isVerified,
               verificationStatus: biometricData.verificationStatus,
               capturedAt: biometricData.capturedAt?.toISOString(),
               capturedBy: biometricData.capturedBy,
               captureDevice: biometricData.captureDevice,
-              fingerprintFingers:
-                biometricData.fingerprintFingers?.map((finger) => ({
-                  fingerPosition: finger.fingerPosition,
-                  fingerName: finger.fingerName,
-                  qualityScore: finger.qualityScore,
-                  isAcceptable: finger.isAcceptable,
-                  capturedAt: finger.capturedAt?.toISOString(),
-                })) || [],
+              fingerprintCount: biometricData.fingerprintFingers?.length || 0,
+              fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
+                biometricData.fingerprintFingers || [],
+              ),
             }
             : null,
           userProfilePhoto: submission.user.avatar,
@@ -509,7 +503,15 @@ export class DashboardVerificationService {
             },
           },
         },
-        biometricData: true,
+        biometricData: {
+          include: {
+            fingerprintFingers: {
+              orderBy: {
+                fingerPosition: 'asc',
+              },
+            },
+          },
+        },
         appointment: {
           include: {
             center: {
@@ -636,13 +638,15 @@ export class DashboardVerificationService {
         id: biometricData.id,
         photoUrl: biometricData.photoUrl,
         photoQualityScore: biometricData.photoQualityScore,
-        // Note: Fingerprint quality scores are stored in individual FingerprintData records
         isVerified: biometricData.isVerified,
         verificationStatus: biometricData.verificationStatus,
         capturedAt: biometricData.capturedAt?.toISOString(),
         capturedBy: biometricData.capturedBy,
         captureDevice: biometricData.captureDevice,
-        // Note: fingerprintFingers data is encrypted and available via GET /api/v1/biometric-capture/data/:userId
+        fingerprintCount: biometricData.fingerprintFingers?.length || 0,
+        fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
+          biometricData.fingerprintFingers || [],
+        ),
       },
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment
@@ -1088,6 +1092,37 @@ export class DashboardVerificationService {
       queriedToday,
       processingToday,
       averageVerificationTime,
+    };
+  }
+
+  /**
+   * Calculate fingerprint quality summary
+   */
+  private calculateFingerprintQualitySummary(fingerprintFingers: any[]): {
+    averageQuality: number;
+    acceptableFingers: number;
+    totalFingers: number;
+  } {
+    if (!fingerprintFingers || fingerprintFingers.length === 0) {
+      return {
+        averageQuality: 0,
+        acceptableFingers: 0,
+        totalFingers: 0,
+      };
+    }
+
+    const totalFingers = fingerprintFingers.length;
+    const acceptableFingers = fingerprintFingers.filter(
+      (finger) => finger.isAcceptable,
+    ).length;
+    const averageQuality =
+      fingerprintFingers.reduce((sum, finger) => sum + (finger.qualityScore || 0), 0) /
+      totalFingers;
+
+    return {
+      averageQuality: Math.round(averageQuality),
+      acceptableFingers,
+      totalFingers,
     };
   }
 }
