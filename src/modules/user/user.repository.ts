@@ -56,6 +56,15 @@ export class UserRepository {
             isActive: true,
           },
         },
+        departments: {
+          select: {
+            id: true,
+            name: true,
+            agency: true,
+            description: true,
+            logoUrl: true,
+          },
+        },
       },
     });
   }

@@ -115,6 +115,15 @@ export default class UserEntity implements User {
   }
 
   @ApiPropertyOptional({
+    description: 'User departments',
+    type: 'object',
+    isArray: true,
+  })
+  @Expose()
+  @Type(() => Object)
+  departments?: any[]; // Using any[] to avoid circular dependency issues
+
+  @ApiPropertyOptional({
     description: 'User NIN verifications (most recent first)',
     type: 'object',
     isArray: true,

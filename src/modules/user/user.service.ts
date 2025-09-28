@@ -422,6 +422,15 @@ export class UserService {
             isActive: true,
           },
         },
+        departments: {
+          select: {
+            id: true,
+            name: true,
+            agency: true,
+            description: true,
+            logoUrl: true,
+          },
+        },
       }, // include
       orderBy,
       paginationOptions,
