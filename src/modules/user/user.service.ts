@@ -616,8 +616,9 @@ export class UserService {
       userId: userWithCenters.id,
       userEmail: userWithCenters.email,
       userName:
-        `${userWithCenters.firstName || ''} ${userWithCenters.lastName || ''
-          }`.trim() || 'Unknown User',
+        `${userWithCenters.firstName || ''} ${
+          userWithCenters.lastName || ''
+        }`.trim() || 'Unknown User',
       centers: userWithCenters.biometricCenters,
       totalCenters: userWithCenters.biometricCenters.length,
     };
