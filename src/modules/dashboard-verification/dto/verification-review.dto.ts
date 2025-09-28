@@ -8,15 +8,6 @@ export enum VerificationAction {
   PROCESSING = 'PROCESSING',
 }
 
-export enum SecurityDepartment {
-  FINANCE = 'FINANCE',
-  EMBASSY_OFFICER = 'EMBASSY_OFFICER',
-  LIAISON_OFFICER = 'LIAISON_OFFICER',
-  AUTHORITY = 'AUTHORITY',
-  ADMIN = 'ADMIN',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-}
-
 // Enhanced flagging enums
 export enum FlagType {
   SECURITY_CONCERN = 'SECURITY_CONCERN',
@@ -42,11 +33,11 @@ export class FlagApplicationDto {
   submissionId: string;
 
   @ApiProperty({
-    description: 'Security department to send to',
-    enum: SecurityDepartment,
+    description: 'Department ID to flag the application to',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @IsEnum(SecurityDepartment)
-  targetDepartment: SecurityDepartment;
+  @IsUUID()
+  targetDepartmentId: string;
 
   @ApiProperty({
     description: 'Type of flag',

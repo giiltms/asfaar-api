@@ -675,7 +675,7 @@ export class DashboardVerificationService {
   ): Promise<{ success: boolean; message: string }> {
     const {
       submissionId,
-      targetDepartment,
+      targetDepartmentId,
       flagType,
       priorityLevel,
       flagReason,
@@ -683,6 +683,17 @@ export class DashboardVerificationService {
     } = flagDto;
 
     try {
+      // First, validate that the target department exists
+      const department = await this.prisma.department.findUnique({
+        where: { id: targetDepartmentId },
+      });
+
+      if (!department) {
+        throw new BadRequestException(
+          `Department with ID ${targetDepartmentId} not found`,
+        );
+      }
+
       const result = await this.prisma.$transaction(async (tx) => {
         // 1) Check for existing open flag and get current submission status
         const [existingOpenFlag, currentSubmission] = await Promise.all([
@@ -690,7 +701,7 @@ export class DashboardVerificationService {
             where: {
               submissionId,
               status: 'OPEN',
-              targetDepartmentId: targetDepartment as any,
+              targetDepartmentId,
             },
             select: { id: true },
           }),
@@ -715,7 +726,7 @@ export class DashboardVerificationService {
           data: {
             submissionId,
             createdById: reviewerId,
-            targetDepartmentId: targetDepartment as any,
+            targetDepartmentId,
             flagType: flagType as any,
             priorityLevel: priorityLevel as any,
             reason: flagReason,
@@ -724,7 +735,7 @@ export class DashboardVerificationService {
           },
         });
 
-        // 3) Update submission status and create audit log
+        // 4) Update submission status and create audit log
         const updatedSubmission = await tx.formSubmission.update({
           where: { id: submissionId },
           data: {
@@ -740,15 +751,15 @@ export class DashboardVerificationService {
               create: {
                 fromStatus: currentSubmission.status,
                 toStatus: SubmissionStatus.FLAGGED,
-                reason: `Application flagged for security review - ${flagType} (${priorityLevel} priority)`,
-                notes: `Flagged to ${targetDepartment}: ${flagReason}`,
+                reason: `Application flagged for review - ${flagType} (${priorityLevel} priority)`,
+                notes: `Flagged to ${department.name}: ${flagReason}`,
                 changedBy: reviewerId,
               },
             },
           },
         });
 
-        // 4) Update biometric data verification status if exists
+        // 5) Update biometric data verification status if exists
         const biometricData = await tx.biometricData.findFirst({
           where: { submissionId },
         });
@@ -758,7 +769,7 @@ export class DashboardVerificationService {
             where: { id: biometricData.id },
             data: {
               verificationStatus: 'FLAGGED',
-              verificationNotes: `Flagged to ${targetDepartment} - ${flagType} (${priorityLevel}): ${flagReason}`,
+              verificationNotes: `Flagged to ${department.name} - ${flagType} (${priorityLevel}): ${flagReason}`,
               lastModifiedBy: reviewerId,
             },
           });
@@ -772,12 +783,12 @@ export class DashboardVerificationService {
       });
 
       this.logger.log(
-        `Application ${submissionId} flagged to ${targetDepartment} - ${flagType} (${priorityLevel} priority) by ${reviewerId}`,
+        `Application ${submissionId} flagged to ${department.name} - ${flagType} (${priorityLevel} priority) by ${reviewerId}`,
       );
 
       return {
         success: true,
-        message: `Application flagged and sent to ${targetDepartment} successfully (${flagType} - ${priorityLevel} priority)`,
+        message: `Application flagged and sent to ${department.name} successfully (${flagType} - ${priorityLevel} priority)`,
       };
     } catch (error) {
       this.logger.error(
