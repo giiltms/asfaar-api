@@ -459,6 +459,88 @@ export class DepartmentsService {
   }
 
   /**
+   * Update department logo
+   */
+  async updateDepartmentLogo(
+    departmentId: string,
+    logoFile: Express.Multer.File,
+    updatedBy: string,
+  ): Promise<DepartmentEntity> {
+    try {
+      // Validate logo file
+      this.validateLogoFile(logoFile);
+
+      // Check if department exists
+      const existingDepartment = await this.prisma.department.findUnique({
+        where: { id: departmentId },
+        select: { id: true, name: true, logoUrl: true },
+      });
+
+      if (!existingDepartment) {
+        throw new NotFoundException('Department not found');
+      }
+
+      // Upload new logo file
+      const newLogoUrl = await this.localStorageService.upload(
+        logoFile,
+        'departments/logos',
+      );
+
+      // Update department with new logo URL
+      const updatedDepartment = await this.prisma.department.update({
+        where: { id: departmentId },
+        data: {
+          logoUrl: newLogoUrl,
+        },
+        include: {
+          _count: {
+            select: {
+              staffs: true,
+              flaggings: {
+                where: {
+                  status: 'OPEN',
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Delete old logo file if it exists and is different
+      if (
+        existingDepartment.logoUrl &&
+        existingDepartment.logoUrl !== newLogoUrl
+      ) {
+        try {
+          await this.localStorageService.delete(existingDepartment.logoUrl);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to delete old logo file: ${existingDepartment.logoUrl}`,
+            error.stack,
+          );
+          // Don't fail the operation if old file deletion fails
+        }
+      }
+
+      this.logger.log(
+        `Department logo updated: ${departmentId} by ${updatedBy}`,
+      );
+
+      return new DepartmentEntity({
+        ...updatedDepartment,
+        staffCount: updatedDepartment._count.staffs,
+        activeFlaggingCount: updatedDepartment._count.flaggings,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to update department logo for ${departmentId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Validate logo file
    */
   private validateLogoFile(file: Express.Multer.File): void {

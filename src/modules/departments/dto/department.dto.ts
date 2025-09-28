@@ -3,7 +3,6 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsUUID,
   IsUrl,
 } from 'class-validator';
 
@@ -33,7 +32,8 @@ export class CreateDepartmentDto {
   description: string;
 
   @ApiPropertyOptional({
-    description: 'URL to department logo (optional if uploading file via multipart)',
+    description:
+      'URL to department logo (optional if uploading file via multipart)',
     example: 'https://example.com/logos/immigration-logo.png',
   })
   @IsOptional()

@@ -30,7 +30,6 @@ import {
 } from '@nestjs/swagger';
 import { DepartmentsService } from './departments.service';
 import {
-  CreateDepartmentDto,
   CreateDepartmentMultipartDto,
   UpdateDepartmentDto,
   DepartmentQueryDto,
@@ -298,6 +297,64 @@ export class DepartmentsController {
     );
   }
 
+  @Patch(':id/logo')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @UseNestInterceptors(FileInterceptor('logo'))
+  @ApiOperation({
+    summary: 'Update department logo',
+    description: 'Upload a new logo for an existing department',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Logo file for the department',
+    schema: {
+      type: 'object',
+      properties: {
+        logo: {
+          type: 'string',
+          format: 'binary',
+          description: 'Logo file (JPEG, PNG, WebP, SVG - max 5MB)',
+        },
+      },
+      required: ['logo'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Department logo updated successfully',
+    type: DepartmentEntity,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid logo file',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Department not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions',
+  })
+  async updateDepartmentLogo(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtUserPayload,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({
+            fileType: /^image\/(jpeg|jpg|png|webp|svg\+xml)$/,
+          }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    logoFile: Express.Multer.File,
+  ): Promise<DepartmentEntity> {
+    return this.departmentsService.updateDepartmentLogo(id, logoFile, user.id);
+  }
+
   @Delete(':id')
   @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({
@@ -326,5 +383,4 @@ export class DepartmentsController {
   ): Promise<void> {
     await this.departmentsService.deleteDepartment(id, user.id);
   }
-
 }
