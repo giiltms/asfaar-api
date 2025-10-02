@@ -34,6 +34,7 @@ import {
   UpdateUserCountryDto,
 } from './dto/users.dto';
 import { UpdateUserCentersDto } from './dto/update-user-centers.dto';
+import { UpdateUserDepartmentsDto } from './dto/update-user-departments.dto';
 import { UserCentersResponseDto } from './dto/user-centers-response.dto';
 import UserEntity from './entities/user.entity';
 import Serialize from '@common/decorators/serialize.decorator';
@@ -259,6 +260,57 @@ export class UserController {
       updateCentersDto.centerIds,
       actor?.id,
     );
+  }
+
+  @Patch(':id/departments')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.CENTER_MANAGER)
+  @ApiOperation({
+    summary: 'Update user departments',
+    description:
+      'Assign or update the departments that a user belongs to. Only accessible by Admin, Super Admin, and Center Manager roles.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User departments updated successfully',
+    type: UserEntity,
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Insufficient permissions. Only Admin, Super Admin, and Center Manager roles can update user departments.',
+  })
+  @UseInterceptors(ClassSerializerInterceptor)
+  async updateUserDepartments(
+    @Param('id') id: string,
+    @Body() updateDepartmentsDto: UpdateUserDepartmentsDto,
+    @CurrentUser() actor: JwtUserPayload,
+  ): Promise<UserEntity> {
+    return this.userService.updateUserDepartments(
+      id,
+      updateDepartmentsDto.departmentIds,
+      actor?.id,
+    );
+  }
+
+  @Get(':id/departments')
+  @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.CENTER_MANAGER)
+  @ApiOperation({
+    summary: 'Get user departments',
+    description:
+      'Retrieve all departments assigned to a specific user. Only accessible by Admin, Super Admin, and Center Manager roles.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User departments retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Insufficient permissions. Only Admin, Super Admin, and Center Manager roles can view user departments.',
+  })
+  @UseInterceptors(ClassSerializerInterceptor)
+  async getUserDepartments(@Param('id') id: string): Promise<any> {
+    return this.userService.getUserDepartments(id);
   }
 
   @Get(':id/centers')

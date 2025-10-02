@@ -590,6 +590,151 @@ export class UserService {
   }
 
   /**
+   * Update user departments (staff access)
+   * @param userId The user ID
+   * @param departmentIds Array of department IDs to assign to the user
+   * @returns Updated user entity
+   */
+  async updateUserDepartments(
+    userId: string,
+    departmentIds: string[],
+    changedById?: string,
+  ): Promise<UserEntity> {
+    // First verify the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+
+    // Verify all departments exist
+    const departments = await this.prisma.department.findMany({
+      where: { id: { in: departmentIds } },
+      select: { id: true },
+    });
+
+    if (departments.length !== departmentIds.length) {
+      const foundIds = departments.map((d) => d.id);
+      const missingIds = departmentIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Departments not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // Capture previous departments for audit
+    const previous = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { departments: { select: { id: true } } },
+    });
+
+    // Update user departments by updating the departments relation
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        departments: {
+          set: departmentIds.map((id) => ({ id })),
+        },
+      },
+      include: {
+        departments: {
+          select: {
+            id: true,
+            name: true,
+            agency: true,
+            description: true,
+            logoUrl: true,
+          },
+        },
+      },
+    });
+
+    // Write audit log (non-blocking best-effort)
+    try {
+      const previousIds = previous?.departments?.map((d) => d.id) || [];
+      const currentIds =
+        (updatedUser as any).departments?.map((d: any) => d.id) || [];
+
+      const added = currentIds.filter((id) => !previousIds.includes(id));
+      const removed = previousIds.filter((id) => !currentIds.includes(id));
+
+      if (added.length > 0 || removed.length > 0) {
+        await this.prisma.auditLog.create({
+          data: {
+            userId,
+            action: 'USER_DEPARTMENTS_UPDATED',
+            resource: 'User',
+            resourceId: userId,
+            oldValues: {
+              departments: previousIds,
+            },
+            newValues: {
+              departments: currentIds,
+              added: added,
+              removed: removed,
+            },
+            timestamp: new Date(),
+          },
+        });
+      }
+    } catch (auditError) {
+      this.logger.warn(
+        'Failed to write audit log for user departments update',
+        auditError,
+      );
+    }
+
+    this.logger.log(
+      `User ${userId} departments updated by ${
+        changedById || 'system'
+      }. Added: [${departmentIds.join(', ')}]`,
+    );
+
+    return new UserEntity(updatedUser);
+  }
+
+  /**
+   * Get user departments
+   * @param userId The user ID
+   * @returns User departments
+   */
+  async getUserDepartments(userId: string): Promise<any> {
+    // First verify the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException(USER_NOT_FOUND);
+    }
+
+    // Get user with departments
+    const userWithDepartments = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        departments: {
+          select: {
+            id: true,
+            name: true,
+            agency: true,
+            description: true,
+            logoUrl: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    return {
+      userId: userWithDepartments.id,
+      email: userWithDepartments.email,
+      fullName: `${userWithDepartments.firstName || ''} ${
+        userWithDepartments.lastName || ''
+      }`.trim(),
+      departments: (userWithDepartments as any).departments || [],
+    };
+  }
+
+  /**
    * Get user centers
    * @param userId The user ID
    * @returns User centers response
@@ -631,8 +776,9 @@ export class UserService {
       userId: userWithCenters.id,
       userEmail: userWithCenters.email,
       userName:
-        `${userWithCenters.firstName || ''} ${userWithCenters.lastName || ''}`.trim() ||
-        'Unknown User',
+        `${userWithCenters.firstName || ''} ${
+          userWithCenters.lastName || ''
+        }`.trim() || 'Unknown User',
       centers: userWithCenters.biometricCenters,
       totalCenters: userWithCenters.biometricCenters.length,
     };
