@@ -432,18 +432,6 @@ export class BiometricCaptureService {
         },
         fingerprintFingers: {
           orderBy: { fingerPosition: 'asc' },
-          select: {
-            id: true,
-            fingerPosition: true,
-            fingerName: true,
-            nfiqScore: true,
-            qualityScore: true,
-            isAcceptable: true,
-            isTemplateValid: true,
-            capturedAt: true,
-            captureDevice: true,
-            captureMethod: true,
-          },
         },
       },
     });
@@ -454,6 +442,57 @@ export class BiometricCaptureService {
       );
     }
 
+    // Decrypt fingerprint data
+    const decryptedFingers = await Promise.all(
+      biometricData.fingerprintFingers.map(async (finger) => {
+        try {
+          // Decrypt template data
+          const metadata = finger.metadata as any;
+          const templateDecryption =
+            await this.encryptionService.decryptBiometricData(
+              finger.templateData,
+              Buffer.from(metadata.templateIV, 'base64'),
+              Buffer.from(metadata.templateTag, 'base64'),
+              `template_${finger.fingerPosition}`,
+            );
+
+          // Decrypt WSQ image if available
+          let wsqImageData = null;
+          if (finger.wsqImageData) {
+            const wsqDecryption =
+              await this.encryptionService.decryptBiometricData(
+                finger.wsqImageData,
+                Buffer.from(metadata.wsqIV, 'base64'),
+                Buffer.from(metadata.wsqTag, 'base64'),
+                `wsq_${finger.fingerPosition}`,
+              );
+            wsqImageData = wsqDecryption.decryptedData;
+          }
+
+          return {
+            id: finger.id,
+            fingerPosition: finger.fingerPosition,
+            fingerName: finger.fingerName,
+            templateData: templateDecryption.decryptedData,
+            wsqImageData,
+            nfiqScore: finger.nfiqScore,
+            qualityScore: finger.qualityScore,
+            isAcceptable: finger.isAcceptable,
+            isTemplateValid: finger.isTemplateValid,
+            capturedAt: finger.capturedAt,
+            captureDevice: finger.captureDevice,
+            captureMethod: finger.captureMethod,
+          };
+        } catch (error) {
+          this.logger.error(
+            `Failed to decrypt fingerprint data for ${finger.fingerPosition}`,
+            error.stack,
+          );
+          return null;
+        }
+      }),
+    );
+
     return {
       id: biometricData.id,
       userId: biometricData.userId,
@@ -462,10 +501,9 @@ export class BiometricCaptureService {
       capturedAt: biometricData.capturedAt,
       captureDevice: biometricData.captureDevice,
       captureLocation: biometricData.captureLocation,
-      // Note: Overall quality score is calculated from individual finger quality scores
       isVerified: biometricData.isVerified,
       verificationStatus: biometricData.verificationStatus,
-      fingers: biometricData.fingerprintFingers,
+      fingers: decryptedFingers.filter(Boolean),
     };
   }
 

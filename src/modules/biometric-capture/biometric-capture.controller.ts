@@ -807,18 +807,7 @@ export class BiometricCaptureController {
       `Fingerprint data retrieval request for submission ${submissionId}`,
     );
 
-    // Get the user ID from the submission first
-    const submission = await this.prisma.formSubmission.findUnique({
-      where: { id: submissionId },
-      select: { userId: true },
-    });
-
-    if (!submission) {
-      throw new NotFoundException('Submission not found');
-    }
-
-    return await this.biometricCaptureService.getFingerprintData(
-      submission.userId,
+    return await this.biometricCaptureService.getFingerprintDataBySubmissionId(
       submissionId,
     );
   }
