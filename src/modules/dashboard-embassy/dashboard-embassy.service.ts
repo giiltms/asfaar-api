@@ -129,10 +129,14 @@ export class DashboardEmbassyService {
       if (dateFrom || dateTo) {
         whereClause.submittedAt = {};
         if (dateFrom) {
-          whereClause.submittedAt.gte = new Date(dateFrom);
+          const startOfDay = new Date(dateFrom);
+          startOfDay.setHours(0, 0, 0, 0);
+          whereClause.submittedAt.gte = startOfDay;
         }
         if (dateTo) {
-          whereClause.submittedAt.lte = new Date(dateTo);
+          const endOfDay = new Date(dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          whereClause.submittedAt.lte = endOfDay;
         }
       }
 
@@ -187,7 +191,7 @@ export class DashboardEmbassyService {
       ]);
 
       const applications = submissions.map((submission) => {
-        const metadata = submission.metadata as any;
+        const metadata = (submission.metadata as any) || {};
         return {
           id: submission.id,
           referenceNumber: submission.referenceNumber,
@@ -202,27 +206,27 @@ export class DashboardEmbassyService {
           priority: metadata?.priority || 'NORMAL',
           processingNotes: metadata?.processingNotes || '',
           applicant: {
-            firstName: submission.user.firstName,
-            lastName: submission.user.lastName,
-            email: submission.user.email,
+            firstName: submission.user?.firstName || '',
+            lastName: submission.user?.lastName || '',
+            email: submission.user?.email || '',
           },
           form: {
-            name: submission.form.name,
-            country: submission.form.country.name,
+            name: submission.form?.name || '',
+            country: submission.form?.country?.name || '',
           },
           appointment: submission.appointment
             ? {
-                appointmentTime: submission.appointment.appointmentTime,
-                status: submission.appointment.status,
-                center: submission.appointment.center.name,
-              }
+              appointmentTime: submission.appointment.appointmentTime,
+              status: submission.appointment.status,
+              center: submission.appointment.center?.name || '',
+            }
             : null,
           payment: submission.payment
             ? {
-                amount: submission.payment.amount,
-                status: submission.payment.status,
-                currency: submission.payment.currency,
-              }
+              amount: submission.payment.amount,
+              status: submission.payment.status,
+              currency: submission.payment.currency,
+            }
             : null,
         };
       });
@@ -406,12 +410,12 @@ export class DashboardEmbassyService {
       const averageProcessingTime =
         processingTimeData.length > 0
           ? processingTimeData.reduce((sum, app) => {
-              const processingTime =
-                app.reviewedAt.getTime() - app.submittedAt.getTime();
-              return sum + processingTime;
-            }, 0) /
-            processingTimeData.length /
-            (1000 * 60 * 60 * 24) // Convert to days
+            const processingTime =
+              app.reviewedAt.getTime() - app.submittedAt.getTime();
+            return sum + processingTime;
+          }, 0) /
+          processingTimeData.length /
+          (1000 * 60 * 60 * 24) // Convert to days
           : 0;
 
       return {
