@@ -89,13 +89,25 @@ export default class CountryEntity implements Country {
   @Transform(({ value }) => {
     if (value === null || value === undefined) return null;
     try {
-      const stringValue =
-        typeof value === 'object' && value.toString
-          ? value.toString()
-          : String(value);
+      // Handle Prisma Decimal type
+      if (value && typeof value === 'object' && 'toNumber' in value) {
+        return value.toNumber();
+      }
+      // Handle string values
+      if (typeof value === 'string') {
+        const num = parseFloat(value);
+        return Number.isFinite(num) ? num : null;
+      }
+      // Handle number values
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+      }
+      // Fallback: try to convert to string then parse
+      const stringValue = String(value);
       const num = parseFloat(stringValue);
       return Number.isFinite(num) ? num : null;
-    } catch {
+    } catch (error) {
+      console.warn('Failed to transform applicationFee:', value, error);
       return null;
     }
   })
