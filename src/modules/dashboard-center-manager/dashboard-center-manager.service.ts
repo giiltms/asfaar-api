@@ -175,7 +175,7 @@ export class DashboardCenterManagerService {
           },
         }),
 
-        // In progress count
+        // In progress count (sessions that are started but not completed)
         this.prisma.biometricSession.count({
           where: {
             booth: {
@@ -238,12 +238,10 @@ export class DashboardCenterManagerService {
           },
         }),
 
-        // Queue length
+        // Queue length (people waiting or called but not yet in progress)
         this.prisma.queueEntry.count({
           where: {
-            booth: {
-              centerId: { in: centerIds },
-            },
+            centerId: { in: centerIds },
             status: {
               in: ['WAITING', 'CALLED'],
             },
@@ -273,6 +271,7 @@ export class DashboardCenterManagerService {
         }),
 
         // Agents offline (BIOMETRIC_AGENT role, not in any active session)
+        // Note: This is the same as available agents for now - could be enhanced with last activity tracking
         this.prisma.user.count({
           where: {
             roles: {
@@ -291,8 +290,6 @@ export class DashboardCenterManagerService {
                 },
               },
             },
-            // Add additional criteria for "offline" - this might need refinement
-            // based on your business logic for what constitutes "offline"
           },
         }),
       ]);
