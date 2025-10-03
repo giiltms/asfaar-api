@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, HttpStatus } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -14,7 +14,11 @@ import {
   JwtUserPayload,
 } from '@common/decorators/current-user.decorator';
 import { DashboardCenterManagerService } from './dashboard-center-manager.service';
-import { CenterManagerStatsResponseDto } from './dto/center-manager-stats.dto';
+import {
+  CenterManagerStatsResponseDto,
+  CalendarFiltersDto,
+  CalendarSlotsResponseDto,
+} from './dto/center-manager-stats.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 
 @ApiTags('Center Manager Dashboard')
@@ -82,6 +86,37 @@ export class DashboardCenterManagerController {
     return {
       success: true,
       message: 'Center manager statistics retrieved successfully',
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Get calendar slots for a date range
+   */
+  @Get('calendar/slots')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Get calendar slots for date range',
+    description: 'Retrieve calendar slots with appointments for the specified date range',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Calendar slots retrieved successfully',
+    type: CalendarSlotsResponseDto,
+  })
+  async getCalendarSlots(
+    @Query() filters: CalendarFiltersDto,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<CalendarSlotsResponseDto>> {
+    const result = await this.dashboardCenterManagerService.getCalendarSlots(
+      user.id,
+      filters,
+    );
+
+    return {
+      success: true,
+      message: 'Calendar slots retrieved successfully',
       data: result,
       timestamp: new Date().toISOString(),
     };

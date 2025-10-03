@@ -3,6 +3,9 @@ import { PrismaService } from '@providers/prisma/prisma.service';
 import {
   StationStatsDto,
   CenterManagerStatsResponseDto,
+  CalendarFiltersDto,
+  CalendarSlotDto,
+  CalendarSlotsResponseDto,
 } from './dto/center-manager-stats.dto';
 
 @Injectable()
@@ -333,5 +336,232 @@ export class DashboardCenterManagerService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Get calendar slots for a date range
+   */
+  async getCalendarSlots(
+    userId: string,
+    filters: CalendarFiltersDto,
+  ): Promise<CalendarSlotsResponseDto> {
+    try {
+      // Get user's assigned centers
+      const centers = await this.getUserCenters(userId);
+      const centerIds = filters.centerId
+        ? [filters.centerId]
+        : centers.map(center => center.id);
+
+      if (centerIds.length === 0) {
+        throw new NotFoundException('No centers assigned to this user');
+      }
+
+      // Parse date range
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
+
+      // Set proper time boundaries
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      this.logger.log(
+        `Getting calendar slots for user ${userId} from ${filters.startDate} to ${filters.endDate}`,
+      );
+
+      // Get center configurations for slot generation
+      const centerConfigs = await this.prisma.biometricCenter.findMany({
+        where: { id: { in: centerIds } },
+        select: {
+          id: true,
+          name: true,
+          openingTime: true,
+          closingTime: true,
+          appointmentDuration: true,
+          bufferTime: true,
+          workingDays: true,
+        },
+      });
+
+      // Get existing appointments in the date range
+      const appointments = await this.prisma.biometricAppointment.findMany({
+        where: {
+          centerId: { in: centerIds },
+          appointmentTime: {
+            gte: startDate,
+            lte: endDate,
+          },
+          ...(filters.appointmentClass && { appointmentClass: filters.appointmentClass as any }),
+          ...(filters.status && { status: filters.status as any }),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              avatar: true,
+            },
+          },
+          submission: {
+            select: {
+              id: true,
+              referenceNumber: true,
+              form: {
+                select: {
+                  name: true,
+                  country: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          queueEntry: {
+            select: {
+              id: true,
+              booth: {
+                select: {
+                  id: true,
+                  boothNumber: true,
+                  appointmentClass: true,
+                  agent: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Generate time slots for each center and date
+      const slots: CalendarSlotDto[] = [];
+      const currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+
+        for (const center of centerConfigs) {
+          const centerSlots = this.generateTimeSlotsForDate(
+            currentDate,
+            center,
+            appointments.filter(apt =>
+              apt.centerId === center.id &&
+              apt.appointmentTime?.toISOString().split('T')[0] === dateStr
+            ),
+          );
+          slots.push(...centerSlots);
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Calculate statistics
+      const totalSlots = slots.length;
+      const availableSlots = slots.filter(slot => slot.status === 'AVAILABLE').length;
+      const bookedSlots = slots.filter(slot => slot.status === 'BOOKED').length;
+
+      return {
+        slots,
+        totalSlots,
+        availableSlots,
+        bookedSlots,
+        dateRange: `${filters.startDate} to ${filters.endDate}`,
+        viewType: filters.viewType,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get calendar slots: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Generate time slots for a specific date and center
+   */
+  private generateTimeSlotsForDate(
+    date: Date,
+    center: any,
+    appointments: any[],
+  ): CalendarSlotDto[] {
+    const slots: CalendarSlotDto[] = [];
+
+    if (!center.openingTime || !center.closingTime) {
+      return slots;
+    }
+
+    // Parse opening and closing times
+    const [openHour, openMinute] = center.openingTime.split(':').map(Number);
+    const [closeHour, closeMinute] = center.closingTime.split(':').map(Number);
+
+    const slotDuration = center.appointmentDuration || 30; // minutes
+    const bufferTime = center.bufferTime || 15; // minutes
+    const totalSlotTime = slotDuration + bufferTime;
+
+    // Generate slots from opening to closing time
+    const startTime = new Date(date);
+    startTime.setHours(openHour, openMinute, 0, 0);
+
+    const endTime = new Date(date);
+    endTime.setHours(closeHour, closeMinute, 0, 0);
+
+    let currentTime = new Date(startTime);
+
+    while (currentTime < endTime) {
+      const slotEndTime = new Date(currentTime);
+      slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
+
+      if (slotEndTime <= endTime) {
+        const timeStr = currentTime.toTimeString().slice(0, 5);
+        const endTimeStr = slotEndTime.toTimeString().slice(0, 5);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Check if this slot is booked
+        const bookedAppointment = appointments.find(apt => {
+          const aptTime = new Date(apt.appointmentTime);
+          return aptTime.getTime() === currentTime.getTime();
+        });
+
+        const slot: CalendarSlotDto = {
+          id: `slot-${center.id}-${dateStr}-${timeStr}`,
+          startTime: timeStr,
+          endTime: endTimeStr,
+          date: dateStr,
+          status: bookedAppointment ? 'BOOKED' : 'AVAILABLE',
+          appointment: bookedAppointment ? {
+            id: bookedAppointment.id,
+            referenceNumber: bookedAppointment.submission.referenceNumber || bookedAppointment.id,
+            applicantName: `${bookedAppointment.user.firstName || ''} ${bookedAppointment.user.lastName || ''}`.trim(),
+            country: bookedAppointment.submission.form.country.name,
+            formType: bookedAppointment.submission.form.name,
+            appointmentClass: bookedAppointment.appointmentClass,
+            boothNumber: bookedAppointment.queueEntry?.booth?.boothNumber || 'TBD',
+            agentName: bookedAppointment.queueEntry?.booth?.agent
+              ? `${bookedAppointment.queueEntry.booth.agent.firstName} ${bookedAppointment.queueEntry.booth.agent.lastName}`.trim()
+              : 'Unassigned',
+            status: bookedAppointment.status,
+            appointmentId: bookedAppointment.id,
+            submissionId: bookedAppointment.submission.id,
+          } : undefined,
+        };
+
+        slots.push(slot);
+      }
+
+      // Move to next slot
+      currentTime.setMinutes(currentTime.getMinutes() + totalSlotTime);
+    }
+
+    return slots;
   }
 }
