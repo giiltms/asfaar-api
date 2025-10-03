@@ -24,6 +24,7 @@ import { DashboardVerificationModule } from '../dashboard-verification/dashboard
 import { DashboardLiaisonModule } from '../dashboard-liaison/dashboard-liaison.module';
 import { DashboardEmbassyModule } from '../dashboard-embassy/dashboard-embassy.module';
 import { DashboardFrontdeskModule } from '../dashboard-frontdesk/dashboard-frontdesk.module';
+import { DashboardCenterManagerModule } from '../dashboard-center-manager/dashboard-center-manager.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { FinanceModule } from '../finance/finance.module';
 import { DepartmentsModule } from '../departments/departments.module';
@@ -59,6 +60,7 @@ import { PassportsModule } from '../passports/passports.module';
     DashboardLiaisonModule,
     DashboardEmbassyModule,
     DashboardFrontdeskModule,
+    DashboardCenterManagerModule,
     AnalyticsModule,
     FinanceModule,
     DepartmentsModule,
