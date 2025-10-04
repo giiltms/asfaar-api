@@ -85,9 +85,28 @@ export class BiometricCaptureService {
         );
       }
 
-      // Create biometric data record
-      const biometricData = await this.prisma.biometricData.create({
-        data: {
+      // Create or update biometric data record
+      this.logger.log(
+        `Creating or updating biometric data for submission ${request.submissionId}`,
+      );
+      const biometricData = await this.prisma.biometricData.upsert({
+        where: {
+          submissionId: request.submissionId,
+        },
+        update: {
+          capturedBy: request.capturedBy,
+          capturedAt: new Date(),
+          captureDevice: request.captureDevice,
+          captureLocation: request.captureLocation,
+          templateStandard: 'ISO/IEC 19794-2:2005',
+          captureStandard: 'ISO/IEC 19794-4:2005',
+          dataClassification: 'CONFIDENTIAL',
+          encryptionAlgorithm: this.encryptionService.getAlgorithm(),
+          keyVersion: this.encryptionService.getKeyVersion(),
+          isEncrypted: true,
+          lastModifiedBy: request.capturedBy,
+        },
+        create: {
           userId: request.userId,
           submissionId: request.submissionId,
           capturedBy: request.capturedBy,
@@ -128,9 +147,52 @@ export class BiometricCaptureService {
             );
           }
 
-          // Create fingerprint data record
-          const fingerprintData = await this.prisma.fingerprintData.create({
-            data: {
+          // Create or update fingerprint data record
+          this.logger.log(
+            `Creating or updating fingerprint data for ${finger.position}`,
+          );
+          const fingerprintData = await this.prisma.fingerprintData.upsert({
+            where: {
+              biometricDataId_fingerPosition: {
+                biometricDataId: biometricData.id,
+                fingerPosition: finger.position,
+              },
+            },
+            update: {
+              fingerName: this.getFingerName(finger.position),
+              templateData: templateEncryption.encryptedData,
+              templateHash: this.encryptionService.generateHash(
+                finger.templateData,
+              ),
+              templateFormat: 'ISO19794-2:2005',
+              wsqImageData: wsqEncryption?.encryptedData,
+              wsqImageHash: finger.wsqImageData
+                ? this.encryptionService.generateHash(finger.wsqImageData)
+                : null,
+              wsqImageSize: finger.wsqImageData?.length,
+              nfiqScore: validation.nfiqScore,
+              qualityScore: validation.qualityScore,
+              isAcceptable: validation.isValid,
+              isTemplateValid: validation.isValid,
+              capturedAt: new Date(),
+              captureDevice: request.captureDevice,
+              captureMethod: request.captureMethod,
+              captureLocation: request.captureLocation,
+              isEncrypted: true,
+              encryptionKey: templateEncryption.keyVersion,
+              metadata: {
+                templateSize: finger.templateData.length,
+                wsqImageSize: finger.wsqImageData?.length,
+                validationWarnings: validation.warnings,
+                encryptionAlgorithm: templateEncryption.algorithm,
+                templateIV: templateEncryption.iv.toString('base64'),
+                templateTag: templateEncryption.tag.toString('base64'),
+                wsqIV: wsqEncryption?.iv.toString('base64'),
+                wsqTag: wsqEncryption?.tag.toString('base64'),
+              },
+              lastModifiedBy: request.capturedBy,
+            },
+            create: {
               biometricDataId: biometricData.id,
               fingerPosition: finger.position,
               fingerName: this.getFingerName(finger.position),
