@@ -185,8 +185,8 @@ export class DashboardCenterManagerService {
               centerId: { in: centerIds },
             },
             completedAt: null,
-            startedAt: {
-              not: null,
+            NOT: {
+              startedAt: null,
             },
           },
         }),
@@ -265,8 +265,8 @@ export class DashboardCenterManagerService {
             biometricSessions: {
               none: {
                 completedAt: null,
-                startedAt: {
-                  not: null,
+                NOT: {
+                  startedAt: null,
                 },
               },
             },
@@ -288,8 +288,8 @@ export class DashboardCenterManagerService {
             biometricSessions: {
               none: {
                 completedAt: null,
-                startedAt: {
-                  not: null,
+                NOT: {
+                  startedAt: null,
                 },
               },
             },
