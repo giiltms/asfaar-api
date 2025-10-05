@@ -631,6 +631,26 @@ export class CaptureStatusResponseDto {
   submissionId: string;
 
   @ApiProperty({
+    description: 'Basic application details',
+    example: {
+      referenceNumber: 'SA00125000001',
+      formName: 'Tourist Visa',
+      country: 'Saudi Arabia',
+      appointmentStatus: 'AT_BOOTH',
+      appointmentClass: 'REGULAR',
+      appointmentTime: '2025-01-15T10:00:00.000Z',
+    },
+  })
+  application: {
+    referenceNumber: string | null;
+    formName: string | null;
+    country: string | null;
+    appointmentStatus: string | null;
+    appointmentClass: string | null;
+    appointmentTime: string | null;
+  };
+
+  @ApiProperty({
     description: 'Applicant information',
     example: {
       id: 'user-123',

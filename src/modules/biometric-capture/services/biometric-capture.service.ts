@@ -742,7 +742,7 @@ export class BiometricCaptureService {
    * @returns Detailed capture status
    */
   async getCaptureStatus(submissionId: string) {
-    // Get submission with user info
+    // Get submission with user info and basic application details
     const submission = await this.prisma.formSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -752,6 +752,21 @@ export class BiometricCaptureService {
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        form: {
+          select: {
+            name: true,
+            country: {
+              select: { name: true },
+            },
+          },
+        },
+        appointment: {
+          select: {
+            status: true,
+            appointmentClass: true,
+            appointmentTime: true,
           },
         },
       },
@@ -825,11 +840,20 @@ export class BiometricCaptureService {
 
     return {
       submissionId: submission.id,
+      application: {
+        referenceNumber: submission.referenceNumber ?? null,
+        formName: submission.form?.name ?? null,
+        country: submission.form?.country?.name ?? null,
+        appointmentStatus: submission.appointment?.status ?? null,
+        appointmentClass: submission.appointment?.appointmentClass ?? null,
+        appointmentTime:
+          submission.appointment?.appointmentTime?.toISOString() ?? null,
+      },
       applicant: {
-        id: submission.user.id,
-        firstName: submission.user.firstName || '',
-        lastName: submission.user.lastName || '',
-        email: submission.user.email || '',
+        id: (submission as any).user.id,
+        firstName: (submission as any).user.firstName || '',
+        lastName: (submission as any).user.lastName || '',
+        email: (submission as any).user.email || '',
       },
       photo: {
         isCaptured: photoCaptured,
