@@ -21,7 +21,7 @@ export class CreateBoothDto {
     example: 'A1',
   })
   @IsString()
-  @Length(1, 10)
+  @Length(1, 20)
   boothNumber: string;
 
   @ApiProperty({
@@ -89,7 +89,7 @@ export class UpdateBoothDto {
   })
   @IsOptional()
   @IsString()
-  @Length(1, 10)
+  @Length(1, 20)
   boothNumber?: string;
 
   @ApiPropertyOptional({
