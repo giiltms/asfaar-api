@@ -11,7 +11,6 @@ import {
   HttpStatus,
   Logger,
   BadRequestException,
-  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -46,7 +45,6 @@ import { Roles as UserRoles } from '@common/constants/roles.constants';
 import {
   BiometricCaptureService,
   CaptureRequest,
-  CaptureResult,
 } from './services/biometric-capture.service';
 import { UserContextService } from '@common/services/user-context.service';
 import {
@@ -582,6 +580,116 @@ export class PhotoUploadResponseDto {
   timestamp: string;
 }
 
+// Capture Status DTOs
+export class FingerCaptureStatusDto {
+  @ApiProperty({
+    description: 'Finger position',
+    enum: FingerPosition,
+    example: 'LEFT_THUMB',
+  })
+  position: FingerPosition;
+
+  @ApiProperty({ description: 'Finger name', example: 'Left Thumb' })
+  fingerName: string;
+
+  @ApiProperty({
+    description: 'Whether this finger has been captured',
+    example: true,
+  })
+  isCaptured: boolean;
+
+  @ApiPropertyOptional({ description: 'Quality score (0-100)', example: 85 })
+  qualityScore?: number;
+
+  @ApiPropertyOptional({ description: 'NFIQ score (1-5)', example: 2 })
+  nfiqScore?: number;
+
+  @ApiPropertyOptional({ description: 'Whether acceptable', example: true })
+  isAcceptable?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Capture timestamp',
+    example: '2025-01-15T10:30:00.000Z',
+  })
+  capturedAt?: string;
+
+  @ApiPropertyOptional({ description: 'Number of attempts', example: 1 })
+  captureAttempts?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID of the officer who captured this finger',
+    example: 'agent-123',
+  })
+  capturedBy?: string;
+}
+
+export class CaptureStatusResponseDto {
+  @ApiProperty({
+    description: 'Submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  submissionId: string;
+
+  @ApiProperty({
+    description: 'Applicant information',
+    example: {
+      id: 'user-123',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+    },
+  })
+  applicant: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+
+  @ApiProperty({
+    description: 'Photo capture status',
+    example: {
+      isCaptured: true,
+      qualityScore: 92,
+      capturedAt: '2025-01-15T10:25:00.000Z',
+      capturedBy: 'agent-123',
+    },
+  })
+  photo: {
+    isCaptured: boolean;
+    qualityScore?: number;
+    capturedAt?: string;
+    photoUrl?: string;
+    capturedBy?: string;
+  };
+
+  @ApiProperty({
+    description: 'Fingerprint capture status for each finger',
+    type: [FingerCaptureStatusDto],
+  })
+  fingerprints: FingerCaptureStatusDto[];
+
+  @ApiProperty({
+    description: 'Overall completion status',
+    example: {
+      isComplete: false,
+      completionPercentage: 75,
+      missingItems: ['RIGHT_PINKY'],
+    },
+  })
+  overallStatus: {
+    isComplete: boolean;
+    completionPercentage: number;
+    missingItems: string[];
+  };
+
+  @ApiProperty({
+    description: 'Timestamp',
+    example: '2025-01-15T10:30:00.000Z',
+  })
+  timestamp: string;
+}
+
 @ApiTags('Biometric Capture')
 @Controller('biometric-capture')
 @UseGuards(AuthGuard, RolesGuard)
@@ -866,6 +974,43 @@ export class BiometricCaptureController {
       service: 'biometric-capture',
       version: '1.0.0',
     };
+  }
+
+  /**
+   * Get capture status for an applicant by submission ID
+   */
+  @Get('status/submission/:submissionId')
+  @Roles(
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.CENTER_MANAGER,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
+  @ApiOperation({
+    summary: 'Get biometric capture status for an applicant',
+    description:
+      'Get detailed capture status including photo and fingerprint capture progress for state management in Windows app',
+  })
+  @ApiParam({
+    name: 'submissionId',
+    description: 'Form submission ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Capture status retrieved successfully',
+    type: CaptureStatusResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Submission not found',
+  })
+  async getCaptureStatus(
+    @Param('submissionId') submissionId: string,
+  ): Promise<CaptureStatusResponseDto> {
+    this.logger.log(`Getting capture status for submission ${submissionId}`);
+
+    return await this.biometricCaptureService.getCaptureStatus(submissionId);
   }
 
   @Post('photo/:submissionId')

@@ -725,12 +725,126 @@ export class BiometricCaptureService {
     }
 
     // Filename factor (proper naming indicates better capture process)
-    const filenameFactor = photo.originalname && photo.originalname.length > 5 ? 100 : 80;
+    const filenameFactor =
+      photo.originalname && photo.originalname.length > 5 ? 100 : 80;
 
     // Calculate weighted average
-    qualityScore = (sizeFactor * 0.4) + (mimeTypeFactor * 0.4) + (filenameFactor * 0.2);
+    qualityScore =
+      sizeFactor * 0.4 + mimeTypeFactor * 0.4 + filenameFactor * 0.2;
 
     // Ensure score is within bounds
     return Math.round(Math.max(0, Math.min(100, qualityScore)));
+  }
+
+  /**
+   * Get capture status for an applicant by submission ID
+   * @param submissionId - Form submission ID
+   * @returns Detailed capture status
+   */
+  async getCaptureStatus(submissionId: string) {
+    // Get submission with user info
+    const submission = await this.prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    // Get biometric data if it exists
+    const biometricData = await this.prisma.biometricData.findFirst({
+      where: { submissionId },
+      include: {
+        fingerprintFingers: {
+          orderBy: { fingerPosition: 'asc' },
+        },
+      },
+    });
+
+    // Define all required fingers
+    const allFingers: FingerPosition[] = [
+      'LEFT_THUMB',
+      'LEFT_INDEX',
+      'LEFT_MIDDLE',
+      'LEFT_RING',
+      'LEFT_LITTLE',
+      'RIGHT_THUMB',
+      'RIGHT_INDEX',
+      'RIGHT_MIDDLE',
+      'RIGHT_RING',
+      'RIGHT_LITTLE',
+    ];
+
+    // Map fingerprint status
+    const fingerprintStatus = allFingers.map((position) => {
+      const finger = biometricData?.fingerprintFingers?.find(
+        (f) => f.fingerPosition === position,
+      );
+
+      return {
+        position,
+        fingerName: this.getFingerName(position),
+        isCaptured: !!finger,
+        qualityScore: finger?.qualityScore || undefined,
+        nfiqScore: finger?.nfiqScore || undefined,
+        isAcceptable: finger?.isAcceptable || undefined,
+        capturedAt: finger?.capturedAt?.toISOString() || undefined,
+        captureAttempts: finger?.captureAttempts || undefined,
+        capturedBy: finger?.createdBy || undefined,
+      };
+    });
+
+    // Calculate completion status
+    const capturedCount = fingerprintStatus.filter((f) => f.isCaptured).length;
+    const photoCaptured = !!biometricData?.photoUrl;
+    const totalItems = allFingers.length + 1; // 10 fingers + 1 photo
+    const completedItems = capturedCount + (photoCaptured ? 1 : 0);
+    const completionPercentage = Math.round(
+      (completedItems / totalItems) * 100,
+    );
+
+    const missingItems: string[] = [];
+    if (!photoCaptured) {
+      missingItems.push('PHOTO');
+    }
+    fingerprintStatus.forEach((f) => {
+      if (!f.isCaptured) {
+        missingItems.push(f.position);
+      }
+    });
+
+    return {
+      submissionId: submission.id,
+      applicant: {
+        id: submission.user.id,
+        firstName: submission.user.firstName || '',
+        lastName: submission.user.lastName || '',
+        email: submission.user.email || '',
+      },
+      photo: {
+        isCaptured: photoCaptured,
+        qualityScore: biometricData?.photoQualityScore || undefined,
+        capturedAt: biometricData?.capturedAt?.toISOString() || undefined,
+        photoUrl: biometricData?.photoUrl || undefined,
+        capturedBy: biometricData?.capturedBy || undefined,
+      },
+      fingerprints: fingerprintStatus,
+      overallStatus: {
+        isComplete: completedItems === totalItems,
+        completionPercentage,
+        missingItems,
+      },
+      timestamp: new Date().toISOString(),
+    };
   }
 }
