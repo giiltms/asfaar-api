@@ -871,4 +871,116 @@ export class BiometricCaptureService {
       timestamp: new Date().toISOString(),
     };
   }
+
+  /**
+   * Get biometric officer statistics
+   */
+  async getOfficerStats(userId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const [
+      totalApplicantsCaptured,
+      applicantsCapturedToday,
+      activeSessions,
+      sessionsCompletedToday,
+    ] = await Promise.all([
+      // Applicants captured = distinct submissions with any fingerprints or photo captured by this user
+      this.prisma.biometricData.count({ where: { capturedBy: userId } }),
+      this.prisma.biometricData.count({
+        where: {
+          capturedBy: userId,
+          capturedAt: { gte: startOfDay, lte: endOfDay },
+        },
+      }),
+      this.prisma.biometricSession.count({
+        where: { agentId: userId, completedAt: null },
+      }),
+      this.prisma.biometricSession.count({
+        where: {
+          agentId: userId,
+          completedAt: { gte: startOfDay, lte: endOfDay },
+        },
+      }),
+    ]);
+
+    return {
+      totalApplicantsCaptured,
+      applicantsCapturedToday,
+      activeSessions,
+      sessionsCompletedToday,
+    };
+  }
+
+  /**
+   * Get biometric officer capture history
+   */
+  async getOfficerHistory(
+    userId: string,
+    filters: {
+      fromDate?: string;
+      toDate?: string;
+      page: number;
+      pageSize: number;
+    },
+  ) {
+    const { page, pageSize } = filters;
+    const whereDate: any = {};
+    if (filters.fromDate) {
+      const start = new Date(filters.fromDate);
+      start.setHours(0, 0, 0, 0);
+      whereDate.gte = start;
+    }
+    if (filters.toDate) {
+      const end = new Date(filters.toDate);
+      end.setHours(23, 59, 59, 999);
+      whereDate.lte = end;
+    }
+
+    const whereBiometricData: any = {
+      capturedBy: userId,
+      ...(filters.fromDate || filters.toDate ? { capturedAt: whereDate } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.biometricData.findMany({
+        where: whereBiometricData,
+        orderBy: { capturedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          submission: {
+            select: {
+              id: true,
+              referenceNumber: true,
+              user: { select: { firstName: true, lastName: true } },
+              form: {
+                select: { name: true, country: { select: { name: true } } },
+              },
+            },
+          },
+          fingerprintFingers: { select: { id: true } },
+        },
+      }),
+      this.prisma.biometricData.count({ where: whereBiometricData }),
+    ]);
+
+    const mapped = items.map((bd) => ({
+      submissionId: bd.submission?.id ?? '',
+      referenceNumber: bd.submission?.referenceNumber ?? null,
+      capturedAt: bd.capturedAt?.toISOString() ?? '',
+      applicantName: `${bd.submission?.user?.firstName ?? ''} ${bd.submission?.user?.lastName ?? ''
+        }`.trim(),
+      formName: bd.submission?.form?.name ?? '',
+      country: bd.submission?.form?.country?.name ?? '',
+      center: bd.captureLocation?.split(' - Booth ')[0] ?? '',
+      booth: bd.captureLocation?.split(' - Booth ')[1] ?? '',
+      fingersCaptured: bd.fingerprintFingers.length,
+      photoUploaded: !!bd.photoUrl,
+    }));
+
+    return { items: mapped, page, pageSize, total };
+  }
 }

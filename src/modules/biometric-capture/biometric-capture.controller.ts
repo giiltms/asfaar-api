@@ -22,6 +22,7 @@ import {
   ApiPropertyOptional,
   ApiParam,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import {
   IsString,
@@ -710,6 +711,77 @@ export class CaptureStatusResponseDto {
   timestamp: string;
 }
 
+// Officer stats & history DTOs
+export class OfficerStatsDto {
+  @ApiProperty({
+    description: 'Total applicants captured (distinct submissions)',
+    example: 85,
+  })
+  totalApplicantsCaptured: number;
+
+  @ApiProperty({ description: 'Applicants captured today', example: 6 })
+  applicantsCapturedToday: number;
+
+  @ApiProperty({ description: 'Active sessions currently', example: 1 })
+  activeSessions: number;
+
+  @ApiProperty({ description: 'Sessions completed today', example: 5 })
+  sessionsCompletedToday: number;
+}
+
+export class CaptureHistoryItemDto {
+  @ApiProperty({ description: 'Submission ID', example: 'uuid' })
+  submissionId: string;
+
+  @ApiProperty({
+    description: 'Reference number',
+    example: 'SA00125000001',
+    required: false,
+  })
+  referenceNumber?: string | null;
+
+  @ApiProperty({
+    description: 'Captured at (UTC ISO string)',
+    example: '2025-01-15T10:30:00.000Z',
+  })
+  capturedAt: string;
+
+  @ApiProperty({ description: 'Applicant name', example: 'John Doe' })
+  applicantName: string;
+
+  @ApiProperty({ description: 'Form name', example: 'Tourist Visa' })
+  formName: string;
+
+  @ApiProperty({ description: 'Country', example: 'Saudi Arabia' })
+  country: string;
+
+  @ApiProperty({ description: 'Center name', example: 'Riyadh Center' })
+  center: string;
+
+  @ApiProperty({ description: 'Booth number', example: 'A1' })
+  booth: string;
+
+  @ApiProperty({ description: 'Fingers captured count', example: 10 })
+  fingersCaptured: number;
+
+  @ApiProperty({ description: 'Photo uploaded', example: true })
+  photoUploaded: boolean;
+}
+
+export class CaptureHistoryResponseDto {
+  @ApiProperty({ type: [CaptureHistoryItemDto] })
+  items: CaptureHistoryItemDto[];
+
+  @ApiProperty({ description: 'Current page', example: 1 })
+  page: number;
+
+  @ApiProperty({ description: 'Page size', example: 20 })
+  pageSize: number;
+
+  @ApiProperty({ description: 'Total items', example: 120 })
+  total: number;
+}
+
 @ApiTags('Biometric Capture')
 @Controller('biometric-capture')
 @UseGuards(AuthGuard, RolesGuard)
@@ -1032,6 +1104,11 @@ export class BiometricCaptureController {
 
     return await this.biometricCaptureService.getCaptureStatus(submissionId);
   }
+
+  /**
+   * Get biometric officer statistics (self)
+   */
+  // moved officer stats & history to dashboard/biometric
 
   @Post('photo/:submissionId')
   @Roles(
