@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpStatus,
   ParseUUIDPipe,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +19,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
-import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { DashboardLiaisonService } from './dashboard-liaison.service';
 import {
   ApplicationReviewDto,
@@ -43,7 +47,8 @@ export class DashboardLiaisonController {
   @Get('applications')
   @ApiOperation({
     summary: 'Get applications flagged to liaison officer',
-    description: 'Retrieves applications that have been flagged to the liaison officer for review',
+    description:
+      'Retrieves applications that have been flagged to the liaison officer for review',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -70,7 +75,8 @@ export class DashboardLiaisonController {
   })
   async getFlaggedApplications(
     @CurrentUser() user: JwtUserPayload,
-    @Query() filters: LiaisonReviewFiltersDto,
+    @Query(new ValidationPipe({ transform: true }))
+    filters: LiaisonReviewFiltersDto,
   ): Promise<BaseResponseDto<LiaisonReviewListDto>> {
     const result = await this.dashboardLiaisonService.getFlaggedApplications(
       user.id,
@@ -88,7 +94,8 @@ export class DashboardLiaisonController {
   @Get('applications/:submissionId')
   @ApiOperation({
     summary: 'Get detailed application for liaison review',
-    description: 'Retrieves detailed application data for liaison officer review',
+    description:
+      'Retrieves detailed application data for liaison officer review',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -118,7 +125,8 @@ export class DashboardLiaisonController {
   @Get('stats')
   @ApiOperation({
     summary: 'Get liaison officer statistics',
-    description: 'Retrieves statistics for applications handled by the liaison officer',
+    description:
+      'Retrieves statistics for applications handled by the liaison officer',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -128,9 +136,7 @@ export class DashboardLiaisonController {
   async getLiaisonStats(
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<LiaisonStatsDto>> {
-    const result = await this.dashboardLiaisonService.getLiaisonStats(
-      user.id,
-    );
+    const result = await this.dashboardLiaisonService.getLiaisonStats(user.id);
 
     return {
       success: true,
@@ -143,7 +149,8 @@ export class DashboardLiaisonController {
   @Post('applications/:submissionId/action')
   @ApiOperation({
     summary: 'Take action on flagged application',
-    description: 'Allows liaison officer to approve, reject, request info, or escalate applications',
+    description:
+      'Allows liaison officer to approve, reject, request info, or escalate applications',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -183,7 +190,8 @@ export class DashboardLiaisonController {
   @Get('applications/status/:status')
   @ApiOperation({
     summary: 'Get applications by status',
-    description: 'Retrieves applications with specific status for liaison officer',
+    description:
+      'Retrieves applications with specific status for liaison officer',
   })
   @ApiResponse({
     status: HttpStatus.OK,

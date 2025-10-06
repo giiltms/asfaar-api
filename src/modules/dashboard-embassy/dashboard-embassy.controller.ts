@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpStatus,
   ParseUUIDPipe,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -98,7 +99,8 @@ export class DashboardEmbassyController {
   })
   async getApplicationsForCountry(
     @CurrentUser() user: JwtUserPayload,
-    @Query() filters: Omit<EmbassyReviewFiltersDto, 'countryCode'>,
+    @Query(new ValidationPipe({ transform: true }))
+    filters: Omit<EmbassyReviewFiltersDto, 'countryCode'>,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsForCountry(
       user.id,
