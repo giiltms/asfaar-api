@@ -38,12 +38,32 @@ export class DashboardLiaisonService {
         limit = 10,
       } = filters;
 
-      // Build where clause for flagged applications
-      const whereClause = {
+      // Determine departments assigned to this liaison officer
+      const userWithDepartments = await this.prisma.user.findUnique({
+        where: { id: liaisonOfficerId },
+        select: { departments: { select: { id: true } } },
+      });
+
+      const departmentIds = (userWithDepartments?.departments || []).map(
+        (d) => d.id,
+      );
+
+      // If the liaison officer has no departments, return empty result
+      if (departmentIds.length === 0) {
+        return {
+          applications: [],
+          pagination: { page, limit, total: 0, totalPages: 0 },
+        };
+      }
+
+      // Build where clause for flagged applications routed to liaison's departments (open flags only)
+      const whereClause: any = {
         status: { in: status },
-        metadata: {
-          path: ['targetDepartment'],
-          equals: 'LIAISON_OFFICER',
+        flags: {
+          some: {
+            status: 'OPEN',
+            targetDepartmentId: { in: departmentIds },
+          },
         },
       };
 
@@ -164,33 +184,45 @@ export class DashboardLiaisonService {
     try {
       this.logger.log(`Getting application ${submissionId} for liaison review`);
 
-      // Verify the application is flagged to liaison officer
-      const submission = await this.prisma.formSubmission.findUnique({
-        where: { id: submissionId },
-        select: {
-          id: true,
-          status: true,
-          metadata: true,
+      // Verify the application is flagged to one of liaison officer's departments (OPEN flag)
+      const userWithDepartments = await this.prisma.user.findUnique({
+        where: { id: submissionId as unknown as string },
+        select: { id: true },
+      });
+
+      const liaisonWithDepartments = await this.prisma.user.findUnique({
+        where: { id: submissionId as unknown as string },
+        select: { id: true },
+      });
+
+      const liaisonDepartments = await this.prisma.user.findUnique({
+        where: { id: (arguments as any)?.[0] },
+        select: { departments: { select: { id: true } } },
+      });
+
+      const allowedDepartmentIds = (liaisonDepartments?.departments || []).map(
+        (d) => d.id,
+      );
+
+      const submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          id: submissionId,
+          status: SubmissionStatus.FLAGGED,
+          flags: {
+            some: {
+              status: 'OPEN',
+              targetDepartmentId: { in: allowedDepartmentIds },
+            },
+          },
         },
+        select: { id: true },
       });
 
       if (!submission) {
         throw new Error(`Application ${submissionId} not found`);
       }
 
-      if (submission.status !== SubmissionStatus.FLAGGED) {
-        throw new Error(
-          `Application ${submissionId} is not flagged for liaison review`,
-        );
-      }
-
-      // Check if flagged to liaison officer
-      const metadata = submission.metadata as any;
-      if (metadata?.targetDepartment !== 'LIAISON_OFFICER') {
-        throw new Error(
-          `Application ${submissionId} is not flagged to liaison officer`,
-        );
-      }
+      // Submission must be flagged to liaison's department; the previous query already enforces this
 
       // Reuse the verification service method
       return await this.verificationService.getApplicationForReview(
@@ -297,32 +329,35 @@ export class DashboardLiaisonService {
         `Liaison officer ${liaisonOfficerId} taking action ${action} on application ${submissionId}`,
       );
 
-      // Verify the application is flagged to liaison officer
-      const submission = await this.prisma.formSubmission.findUnique({
-        where: { id: submissionId },
-        select: {
-          id: true,
-          status: true,
-          metadata: true,
+      // Verify the application is flagged to one of liaison officer's departments (OPEN flag)
+      const liaisonDepartments = await this.prisma.user.findUnique({
+        where: { id: liaisonOfficerId },
+        select: { departments: { select: { id: true } } },
+      });
+
+      const allowedDepartmentIds = (liaisonDepartments?.departments || []).map(
+        (d) => d.id,
+      );
+
+      const submission = await this.prisma.formSubmission.findFirst({
+        where: {
+          id: submissionId,
+          status: SubmissionStatus.FLAGGED,
+          flags: {
+            some: {
+              status: 'OPEN',
+              targetDepartmentId: { in: allowedDepartmentIds },
+            },
+          },
         },
+        select: { id: true },
       });
 
       if (!submission) {
         throw new Error(`Application ${submissionId} not found`);
       }
 
-      if (submission.status !== SubmissionStatus.FLAGGED) {
-        throw new Error(
-          `Application ${submissionId} is not flagged for liaison review`,
-        );
-      }
-
-      const metadata = submission.metadata as any;
-      if (metadata?.targetDepartment !== 'LIAISON_OFFICER') {
-        throw new Error(
-          `Application ${submissionId} is not flagged to liaison officer`,
-        );
-      }
+      // Submission must be flagged to liaison's department; the query above enforces this
 
       let newStatus: SubmissionStatus;
       let actionMessage: string;
@@ -356,15 +391,6 @@ export class DashboardLiaisonService {
           reviewedAt: new Date(),
           reviewedBy: liaisonOfficerId,
           reviewNotes: notes,
-          metadata: {
-            ...(metadata || {}),
-            liaisonAction: action,
-            liaisonReason: reason,
-            liaisonNotes: notes,
-            liaisonOfficerId,
-            liaisonActionAt: new Date().toISOString(),
-            ...(requiredDocuments && { requiredDocuments }),
-          },
           statusLogs: {
             create: {
               fromStatus: SubmissionStatus.FLAGGED,

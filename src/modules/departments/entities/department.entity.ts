@@ -36,7 +36,9 @@ export class DepartmentEntity {
   @Expose()
   staffCount?: number;
 
-  @ApiProperty({ description: 'Number of active flaggings for this department' })
+  @ApiProperty({
+    description: 'Number of active flaggings for this department',
+  })
   @Expose()
   activeFlaggingCount?: number;
 
