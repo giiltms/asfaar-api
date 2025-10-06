@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsNumber,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
 
 // Reuse the existing DTOs from verification dashboard
@@ -114,7 +121,9 @@ export class LiaisonActionDto {
   @IsString()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Required documents for REQUEST_INFO action' })
+  @ApiPropertyOptional({
+    description: 'Required documents for REQUEST_INFO action',
+  })
   @IsOptional()
   requiredDocuments?: string[];
 }
@@ -127,10 +136,14 @@ export class LiaisonReviewFiltersDto {
 
   @ApiPropertyOptional({ description: 'Page number' })
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   page?: number;
 
   @ApiPropertyOptional({ description: 'Items per page' })
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   limit?: number;
 }
 

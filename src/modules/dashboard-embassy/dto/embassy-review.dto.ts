@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsNumber,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
 
 // Reuse the existing DTOs from verification dashboard
@@ -103,7 +110,6 @@ export class EmbassyStatsDto {
   @ApiProperty({ description: 'Applications queried by embassy' })
   queriedApplications: number;
 
-
   @ApiProperty({ description: 'Average processing time in days' })
   averageProcessingTime: number;
 }
@@ -116,7 +122,7 @@ export class EmbassyActionDto {
 
   @ApiProperty({
     description: 'Final action to take on the application',
-    enum: ['APPROVE', 'REJECT', 'REQUEST_INFO']
+    enum: ['APPROVE', 'REJECT', 'REQUEST_INFO'],
   })
   @IsEnum(['APPROVE', 'REJECT', 'REQUEST_INFO'])
   action: 'APPROVE' | 'REJECT' | 'REQUEST_INFO';
@@ -130,10 +136,11 @@ export class EmbassyActionDto {
   @IsString()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Required documents for REQUEST_INFO action' })
+  @ApiPropertyOptional({
+    description: 'Required documents for REQUEST_INFO action',
+  })
   @IsOptional()
   requiredDocuments?: string[];
-
 }
 
 export class EmbassyReviewFiltersDto {
@@ -147,7 +154,9 @@ export class EmbassyReviewFiltersDto {
   @IsEnum(['LOW', 'NORMAL', 'HIGH', 'URGENT'])
   priority?: string;
 
-  @ApiPropertyOptional({ description: 'Search by applicant name or reference number' })
+  @ApiPropertyOptional({
+    description: 'Search by applicant name or reference number',
+  })
   @IsOptional()
   @IsString()
   search?: string;
@@ -164,10 +173,14 @@ export class EmbassyReviewFiltersDto {
 
   @ApiPropertyOptional({ description: 'Page number' })
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   page?: number;
 
   @ApiPropertyOptional({ description: 'Items per page' })
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   limit?: number;
 }
 
