@@ -224,7 +224,7 @@ export class DashboardFrontdeskService {
         this.prisma.formSubmission.count({
           where: {
             status: SubmissionStatus.APPROVED,
-            updatedAt: {
+            reviewedAt: {
               gte: today,
             },
             appointment: {

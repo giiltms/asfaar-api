@@ -183,7 +183,7 @@ export class AnalyticsService {
         where: {
           ...dateFilter,
           status: SubmissionStatus.APPROVED,
-          updatedAt: {
+          reviewedAt: {
             gte: (() => {
               const startOfDay = new Date();
               startOfDay.setHours(0, 0, 0, 0);
