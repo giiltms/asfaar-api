@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { YouVerifyProvider } from './providers/youverify.provider';
-import { TempNINData, Gender } from '@prisma/client';
+import { Gender } from '@prisma/client';
 
 export interface VerifyNinDto {
   nin: string;
@@ -63,16 +63,10 @@ export class NinVerificationService {
         throw new BadRequestException('NIN must be 11 digits');
       }
 
-      // Check if NIN already exists in temp data
+      // Check if NIN already exists in temp data - we'll upsert instead of throwing error
       const existingTemp = await this.prisma.tempNINData.findUnique({
         where: { nin: normalizedNin },
       });
-
-      if (existingTemp) {
-        throw new ConflictException(
-          'NIN verification already in progress. Please use confirm-nin endpoint.',
-        );
-      }
 
       // Check if NIN has already been used by any user
       const existingUser = await this.prisma.user.findFirst({
@@ -131,9 +125,36 @@ export class NinVerificationService {
         }
       }
 
-      // Save to temp schema
-      const tempNinData = await this.prisma.tempNINData.create({
-        data: {
+      // Upsert to temp schema - update existing or create new
+      const tempNinData = await this.prisma.tempNINData.upsert({
+        where: { nin: normalizedNin },
+        update: {
+          firstName: verifiedData.firstName || '',
+          middleName: verifiedData.middleName,
+          lastName: verifiedData.lastName || '',
+          fullName: verifiedData.fullName,
+          dateOfBirth: request.dateOfBirth,
+          gender: verifiedData.gender || 'MALE',
+          phoneNumber: verifiedData.phoneNumber,
+          photo: verifiedData.photo,
+          addressLine1: verifiedData.address?.line1 || '',
+          city: verifiedData.address?.city,
+          state: verifiedData.address?.state || '',
+          lga: verifiedData.address?.lga || '',
+          country: verifiedData.address?.country || 'Nigeria',
+          birthState: verifiedData.birthPlace?.state,
+          birthLga: verifiedData.birthPlace?.lga,
+          verificationId: verificationResponse.verificationId,
+          verified: true,
+          verificationStatus: 'VERIFIED',
+          verificationMethod: 'YOUVERIFY',
+          verificationDate: new Date(),
+          verificationAttempts: existingTemp
+            ? existingTemp.verificationAttempts + 1
+            : 1,
+          lastVerificationAttempt: new Date(),
+        },
+        create: {
           nin: normalizedNin,
           firstName: verifiedData.firstName || '',
           middleName: verifiedData.middleName,
@@ -155,6 +176,8 @@ export class NinVerificationService {
           verificationStatus: 'VERIFIED',
           verificationMethod: 'YOUVERIFY',
           verificationDate: new Date(),
+          verificationAttempts: 1,
+          lastVerificationAttempt: new Date(),
         },
       });
 
@@ -320,17 +343,8 @@ export class NinVerificationService {
         };
       }
 
-      // Check if NIN already exists in temp data
-      const existingTemp = await this.prisma.tempNINData.findUnique({
-        where: { nin: normalizedNin },
-      });
-
-      if (existingTemp) {
-        return {
-          available: false,
-          reason: 'NIN verification already in progress',
-        };
-      }
+      // Check if NIN already exists in temp data - now we allow re-verification
+      // We'll just update the existing record instead of creating a new one
 
       // Check if NIN has already been used by any user
       const existingUser = await this.prisma.user.findFirst({
