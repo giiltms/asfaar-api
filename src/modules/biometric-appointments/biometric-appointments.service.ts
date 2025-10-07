@@ -496,6 +496,39 @@ export class BiometricAppointmentsService {
             state: true,
           },
         },
+        biometricSession: {
+          select: {
+            id: true,
+            photoCaptured: true,
+            fingerprintsCaptured: true,
+            signatureCaptured: true,
+            startedAt: true,
+            completedAt: true,
+            booth: {
+              select: {
+                id: true,
+                boothNumber: true,
+                isActive: true,
+                isOccupied: true,
+              },
+            },
+          },
+        },
+        queueEntry: {
+          select: {
+            id: true,
+            boothId: true,
+            status: true,
+            booth: {
+              select: {
+                id: true,
+                boothNumber: true,
+                isActive: true,
+                isOccupied: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -505,7 +538,16 @@ export class BiometricAppointmentsService {
       );
     }
 
-    return appointment;
+    // Add booth assignment status for convenience
+    const appointmentWithStatus = {
+      ...appointment,
+      assignedToBooth:
+        appointment.status === 'AT_BOOTH' ||
+        !!appointment.biometricSession ||
+        !!appointment.queueEntry?.boothId,
+    };
+
+    return appointmentWithStatus;
   }
 
   /**

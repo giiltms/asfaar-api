@@ -31,7 +31,6 @@ export class BiometricAppointmentEntity {
   @Expose()
   status: AppointmentStatus;
 
-
   @ApiPropertyOptional({ description: 'Appointment time' })
   @Expose()
   @Transform(({ value }) => value?.toISOString())
@@ -97,6 +96,13 @@ export class BiometricAppointmentEntity {
   @ApiPropertyOptional({ description: 'Capture quality assessment' })
   @Expose()
   captureQuality?: string;
+
+  @ApiProperty({
+    description:
+      'Whether applicant has been assigned to a booth (status is AT_BOOTH, has biometric session, or has boothId in queue)',
+  })
+  @Expose()
+  assignedToBooth: boolean;
 
   @ApiProperty({ description: 'Creation timestamp' })
   @Expose()
