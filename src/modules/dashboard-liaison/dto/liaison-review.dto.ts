@@ -6,7 +6,7 @@ import {
   IsUUID,
   IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
 
 // Reuse the existing DTOs from verification dashboard
@@ -135,16 +135,16 @@ export class LiaisonReviewFiltersDto {
   status?: SubmissionStatus[];
 
   @ApiPropertyOptional({ description: 'Page number' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
-  page?: number;
+  page?: number = 1;
 
   @ApiPropertyOptional({ description: 'Items per page' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
-  limit?: number;
+  limit?: number = 10;
 }
 
 export class LiaisonActionResponseDto {
