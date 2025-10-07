@@ -100,7 +100,7 @@ export class DashboardEmbassyController {
   async getApplicationsForCountry(
     @CurrentUser() user: JwtUserPayload,
     @Query(new ValidationPipe({ transform: true }))
-    filters: Omit<EmbassyReviewFiltersDto, 'countryCode'>,
+    filters: EmbassyReviewFiltersDto,
   ): Promise<BaseResponseDto<EmbassyReviewListDto>> {
     const result = await this.dashboardEmbassyService.getApplicationsForCountry(
       user.id,
