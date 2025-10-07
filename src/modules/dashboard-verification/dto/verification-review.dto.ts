@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsUUID, IsArray } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsUUID,
+  IsArray,
+  IsNumber,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 // New enums for correct verification officer actions
 export enum VerificationAction {
@@ -361,4 +369,24 @@ export class VerificationStatsDto {
 
   @ApiProperty({ description: 'Average verification time in minutes' })
   averageVerificationTime: number;
+}
+
+// DTO for verification review query parameters
+export class VerificationReviewQueryDto {
+  @ApiPropertyOptional({ description: 'Page number' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  limit?: number = 10;
+
+  @ApiPropertyOptional({ description: 'Filter by status' })
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

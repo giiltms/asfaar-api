@@ -34,6 +34,8 @@ import {
   IsNotEmpty,
   IsNotEmpty as IsNotEmptyValidator,
 } from 'class-validator';
+import { ValidationPipe } from '@nestjs/common';
+import { FingerprintListQueryDto } from './dto/biometric-capture.dto';
 import { Type } from 'class-transformer';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile } from '@nestjs/common';
@@ -954,19 +956,17 @@ export class BiometricCaptureController {
     description: 'Forbidden - Insufficient permissions',
   })
   async listFingerprintData(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('userId') userId?: string,
-    @Query('submissionId') submissionId?: string,
+    @Query(new ValidationPipe({ transform: true }))
+    query: FingerprintListQueryDto,
   ) {
     this.logger.log('Fingerprint data list request');
 
     // Implementation for listing all fingerprint data with pagination and filtering
     return await this.biometricCaptureService.listFingerprintData({
-      page,
-      limit,
-      userId,
-      submissionId,
+      page: query.page,
+      limit: query.limit,
+      userId: query.userId,
+      submissionId: query.submissionId,
     });
   }
 

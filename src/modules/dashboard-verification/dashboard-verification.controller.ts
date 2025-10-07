@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpStatus,
   ParseUUIDPipe,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,7 +19,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
-import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { DashboardVerificationService } from './dashboard-verification.service';
 import {
   ApplicationReviewDto,
@@ -27,6 +31,7 @@ import {
   ProcessApplicationDto,
   VerificationReviewListDto,
   VerificationStatsDto,
+  VerificationReviewQueryDto,
 } from './dto/verification-review.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 
@@ -69,15 +74,14 @@ export class DashboardVerificationController {
     description: 'Filter by status',
   })
   async getApplicationsForReview(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('status') status?: string,
+    @Query(new ValidationPipe({ transform: true }))
+    query: VerificationReviewQueryDto,
   ): Promise<BaseResponseDto<VerificationReviewListDto>> {
     const result =
       await this.dashboardVerificationService.getApplicationsForReview(
-        page,
-        limit,
-        status,
+        query.page,
+        query.limit,
+        query.status,
       );
 
     return {

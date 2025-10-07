@@ -234,8 +234,8 @@ export class DashboardVerificationService {
    * Get applications with biometric data for verification officer review
    */
   async getApplicationsForReview(
-    page = 1,
-    limit = 10,
+    page: number,
+    limit: number,
     status?: string,
   ): Promise<VerificationReviewListDto> {
     const skip = (page - 1) * limit;
