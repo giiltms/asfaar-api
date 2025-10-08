@@ -9,6 +9,7 @@ import {
   LiaisonActionDto,
   LiaisonReviewFiltersDto,
   LiaisonActionResponseDto,
+  LiaisonAction,
 } from './dto/liaison-review.dto';
 
 @Injectable()
@@ -354,19 +355,19 @@ export class DashboardLiaisonService {
       let actionMessage: string;
 
       switch (action) {
-        case 'APPROVE':
+        case LiaisonAction.APPROVE:
           newStatus = SubmissionStatus.UNDER_REVIEW;
           actionMessage = 'Application approved by liaison officer';
           break;
-        case 'REJECT':
+        case LiaisonAction.REJECT:
           newStatus = SubmissionStatus.REJECTED;
           actionMessage = 'Application rejected by liaison officer';
           break;
-        case 'REQUEST_INFO':
+        case LiaisonAction.REQUEST_INFO:
           newStatus = SubmissionStatus.QUERIED;
           actionMessage = 'Additional information requested by liaison officer';
           break;
-        case 'ESCALATE':
+        case LiaisonAction.ESCALATE:
           newStatus = SubmissionStatus.FLAGGED;
           actionMessage = 'Application escalated by liaison officer';
           break;
@@ -395,7 +396,7 @@ export class DashboardLiaisonService {
       });
 
       // If requesting info, send notification to applicant
-      if (action === 'REQUEST_INFO') {
+      if (action === LiaisonAction.REQUEST_INFO) {
         // TODO: Implement notification service
         this.logger.log(
           `Notification sent to applicant for additional information request`,

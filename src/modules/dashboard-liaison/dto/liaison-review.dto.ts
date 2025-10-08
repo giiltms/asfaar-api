@@ -6,8 +6,16 @@ import {
   IsUUID,
   IsNumber,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
+
+// Liaison officer action enum
+export enum LiaisonAction {
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  REQUEST_INFO = 'REQUEST_INFO',
+  ESCALATE = 'ESCALATE',
+}
 
 // Reuse the existing DTOs from verification dashboard
 export { ApplicationReviewDto } from '@modules/dashboard-verification/dto/verification-review.dto';
@@ -108,9 +116,12 @@ export class LiaisonActionDto {
   @IsUUID()
   submissionId: string;
 
-  @ApiProperty({ description: 'Action to take on the application' })
-  @IsEnum(['APPROVE', 'REJECT', 'REQUEST_INFO', 'ESCALATE'])
-  action: 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'ESCALATE';
+  @ApiProperty({
+    description: 'Action to take on the application',
+    enum: LiaisonAction,
+  })
+  @IsEnum(LiaisonAction)
+  action: LiaisonAction;
 
   @ApiProperty({ description: 'Reason for the action' })
   @IsString()
