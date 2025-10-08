@@ -6,8 +6,37 @@ import {
   IsUUID,
   IsNumber,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
+
+// Embassy officer action enum
+export enum EmbassyAction {
+  APPROVE = 'APPROVE',
+  REJECT = 'REJECT',
+  REQUEST_INFO = 'REQUEST_INFO',
+}
+
+// Embassy officer action reason enum
+export enum EmbassyActionReason {
+  // For APPROVE
+  DOCUMENTS_VERIFIED = 'DOCUMENTS_VERIFIED',
+  REQUIREMENTS_MET = 'REQUIREMENTS_MET',
+  NO_CONCERNS = 'NO_CONCERNS',
+  ELIGIBLE_FOR_VISA = 'ELIGIBLE_FOR_VISA',
+
+  // For REJECT
+  INSUFFICIENT_DOCUMENTATION = 'INSUFFICIENT_DOCUMENTATION',
+  FAILED_SECURITY_CHECK = 'FAILED_SECURITY_CHECK',
+  INELIGIBLE_CRITERIA = 'INELIGIBLE_CRITERIA',
+  FRAUDULENT_INFORMATION = 'FRAUDULENT_INFORMATION',
+  COUNTRY_POLICY_VIOLATION = 'COUNTRY_POLICY_VIOLATION',
+
+  // For REQUEST_INFO
+  MISSING_DOCUMENTS = 'MISSING_DOCUMENTS',
+  ADDITIONAL_VERIFICATION = 'ADDITIONAL_VERIFICATION',
+  CLARIFICATION_NEEDED = 'CLARIFICATION_NEEDED',
+  UPDATED_INFORMATION = 'UPDATED_INFORMATION',
+}
 
 // Reuse the existing DTOs from verification dashboard
 export { ApplicationReviewDto } from '@modules/dashboard-verification/dto/verification-review.dto';
@@ -122,14 +151,17 @@ export class EmbassyActionDto {
 
   @ApiProperty({
     description: 'Final action to take on the application',
-    enum: ['APPROVE', 'REJECT', 'REQUEST_INFO'],
+    enum: EmbassyAction,
   })
-  @IsEnum(['APPROVE', 'REJECT', 'REQUEST_INFO'])
-  action: 'APPROVE' | 'REJECT' | 'REQUEST_INFO';
+  @IsEnum(EmbassyAction)
+  action: EmbassyAction;
 
-  @ApiProperty({ description: 'Reason for the action' })
-  @IsString()
-  reason: string;
+  @ApiProperty({
+    description: 'Reason for the action',
+    enum: EmbassyActionReason,
+  })
+  @IsEnum(EmbassyActionReason)
+  reason: EmbassyActionReason;
 
   @ApiPropertyOptional({ description: 'Additional notes' })
   @IsOptional()

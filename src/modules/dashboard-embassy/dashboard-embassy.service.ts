@@ -10,6 +10,8 @@ import {
   EmbassyActionDto,
   EmbassyReviewFiltersDto,
   EmbassyActionResponseDto,
+  EmbassyAction,
+  EmbassyActionReason,
 } from './dto/embassy-review.dto';
 
 @Injectable()
@@ -493,15 +495,15 @@ export class DashboardEmbassyService {
       let emailSent = false;
 
       switch (action) {
-        case 'APPROVE':
+        case EmbassyAction.APPROVE:
           newStatus = SubmissionStatus.APPROVED;
           actionMessage = 'Application approved by embassy';
           break;
-        case 'REJECT':
+        case EmbassyAction.REJECT:
           newStatus = SubmissionStatus.REJECTED;
           actionMessage = 'Application rejected by embassy';
           break;
-        case 'REQUEST_INFO':
+        case EmbassyAction.REQUEST_INFO:
           newStatus = SubmissionStatus.QUERIED;
           actionMessage = 'Additional information requested by embassy';
           break;
@@ -540,7 +542,10 @@ export class DashboardEmbassyService {
 
       // Send email notification to applicant
       try {
-        if (action === 'APPROVE' || action === 'REJECT') {
+        if (
+          action === EmbassyAction.APPROVE ||
+          action === EmbassyAction.REJECT
+        ) {
           // Use existing embassy submission notification for now
           await this.mailService.sendEmbassySubmissionNotification({
             userName: `${submission.user.firstName} ${submission.user.lastName}`,
@@ -550,7 +555,7 @@ export class DashboardEmbassyService {
             submissionDate: new Date().toISOString(),
           });
           emailSent = true;
-        } else if (action === 'REQUEST_INFO') {
+        } else if (action === EmbassyAction.REQUEST_INFO) {
           await this.mailService.sendApplicationQueryNotification({
             userName: `${submission.user.firstName} ${submission.user.lastName}`,
             userEmail: submission.user.email,
