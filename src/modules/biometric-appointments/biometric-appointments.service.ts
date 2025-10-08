@@ -538,13 +538,30 @@ export class BiometricAppointmentsService {
       );
     }
 
-    // Add booth assignment status for convenience
+    // Add computed status fields for better API response
     const appointmentWithStatus = {
       ...appointment,
+      // Booth assignment status
       assignedToBooth:
         appointment.status === 'AT_BOOTH' ||
         !!appointment.biometricSession ||
         !!appointment.queueEntry?.boothId,
+
+      // Capture status - check both formal session and direct capture
+      photoCaptured:
+        appointment.biometricSession?.photoCaptured ??
+        (appointment.biometricsCaptured && appointment.capturedAt
+          ? true
+          : false),
+
+      fingerprintsCaptured:
+        appointment.biometricSession?.fingerprintsCaptured ??
+        (appointment.biometricsCaptured && appointment.capturedAt
+          ? true
+          : false),
+
+      signatureCaptured:
+        appointment.biometricSession?.signatureCaptured ?? false,
     };
 
     return appointmentWithStatus;

@@ -104,6 +104,27 @@ export class BiometricAppointmentEntity {
   @Expose()
   assignedToBooth: boolean;
 
+  @ApiProperty({
+    description:
+      'Whether photo capture is completed (from biometric session or direct capture)',
+  })
+  @Expose()
+  photoCaptured: boolean;
+
+  @ApiProperty({
+    description:
+      'Whether fingerprints capture is completed (from biometric session or direct capture)',
+  })
+  @Expose()
+  fingerprintsCaptured: boolean;
+
+  @ApiProperty({
+    description:
+      'Whether signature capture is completed (from biometric session only)',
+  })
+  @Expose()
+  signatureCaptured: boolean;
+
   @ApiProperty({ description: 'Creation timestamp' })
   @Expose()
   @Transform(({ value }) => value?.toISOString())
