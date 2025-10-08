@@ -180,23 +180,14 @@ export class DashboardLiaisonService {
    */
   async getApplicationForReview(
     submissionId: string,
+    liaisonOfficerId: string,
   ): Promise<ApplicationReviewDto> {
     try {
       this.logger.log(`Getting application ${submissionId} for liaison review`);
 
       // Verify the application is flagged to one of liaison officer's departments (OPEN flag)
-      const userWithDepartments = await this.prisma.user.findUnique({
-        where: { id: submissionId as unknown as string },
-        select: { id: true },
-      });
-
-      const liaisonWithDepartments = await this.prisma.user.findUnique({
-        where: { id: submissionId as unknown as string },
-        select: { id: true },
-      });
-
       const liaisonDepartments = await this.prisma.user.findUnique({
-        where: { id: (arguments as any)?.[0] },
+        where: { id: liaisonOfficerId },
         select: { departments: { select: { id: true } } },
       });
 

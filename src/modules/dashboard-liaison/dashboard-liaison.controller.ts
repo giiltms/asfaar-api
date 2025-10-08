@@ -109,9 +109,11 @@ export class DashboardLiaisonController {
   @ApiParam({ name: 'submissionId', description: 'Application submission ID' })
   async getApplicationForReview(
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<ApplicationReviewDto>> {
     const result = await this.dashboardLiaisonService.getApplicationForReview(
       submissionId,
+      user.id,
     );
 
     return {
