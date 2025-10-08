@@ -17,6 +17,29 @@ export enum LiaisonAction {
   ESCALATE = 'ESCALATE',
 }
 
+// Liaison officer action reason enum
+export enum LiaisonActionReason {
+  // For APPROVE
+  DOCUMENTS_VERIFIED = 'DOCUMENTS_VERIFIED',
+  INFORMATION_COMPLETE = 'INFORMATION_COMPLETE',
+  NO_ISSUES_FOUND = 'NO_ISSUES_FOUND',
+
+  // For REJECT
+  INSUFFICIENT_DOCUMENTATION = 'INSUFFICIENT_DOCUMENTATION',
+  FRAUDULENT_INFORMATION = 'FRAUDULENT_INFORMATION',
+  SECURITY_CONCERNS = 'SECURITY_CONCERNS',
+
+  // For REQUEST_INFO
+  MISSING_DOCUMENTS = 'MISSING_DOCUMENTS',
+  CLARIFICATION_NEEDED = 'CLARIFICATION_NEEDED',
+  ADDITIONAL_VERIFICATION = 'ADDITIONAL_VERIFICATION',
+
+  // For ESCALATE
+  COMPLEX_CASE = 'COMPLEX_CASE',
+  REQUIRES_HIGHER_AUTHORITY = 'REQUIRES_HIGHER_AUTHORITY',
+  TECHNICAL_ISSUES = 'TECHNICAL_ISSUES',
+}
+
 // Reuse the existing DTOs from verification dashboard
 export { ApplicationReviewDto } from '@modules/dashboard-verification/dto/verification-review.dto';
 
@@ -123,9 +146,12 @@ export class LiaisonActionDto {
   @IsEnum(LiaisonAction)
   action: LiaisonAction;
 
-  @ApiProperty({ description: 'Reason for the action' })
-  @IsString()
-  reason: string;
+  @ApiProperty({
+    description: 'Reason for the action',
+    enum: LiaisonActionReason,
+  })
+  @IsEnum(LiaisonActionReason)
+  reason: LiaisonActionReason;
 
   @ApiPropertyOptional({ description: 'Additional notes' })
   @IsOptional()
