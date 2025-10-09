@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { DashboardVerificationService } from '@modules/dashboard-verification/dashboard-verification.service';
-import { MailService } from '@modules/mail/services/mail.service';
+import {
+  MailService,
+  ApplicationDecisionData,
+} from '@modules/mail/services/mail.service';
 import { SubmissionStatus } from '@prisma/client';
 import {
   ApplicationReviewDto,
@@ -218,17 +221,17 @@ export class DashboardEmbassyService {
           },
           appointment: submission.appointment
             ? {
-                appointmentTime: submission.appointment.appointmentTime,
-                status: submission.appointment.status,
-                center: submission.appointment.center?.name || '',
-              }
+              appointmentTime: submission.appointment.appointmentTime,
+              status: submission.appointment.status,
+              center: submission.appointment.center?.name || '',
+            }
             : null,
           payment: submission.payment
             ? {
-                amount: submission.payment.amount,
-                status: submission.payment.status,
-                currency: submission.payment.currency,
-              }
+              amount: submission.payment.amount,
+              status: submission.payment.status,
+              currency: submission.payment.currency,
+            }
             : null,
         };
       });
@@ -412,12 +415,12 @@ export class DashboardEmbassyService {
       const averageProcessingTime =
         processingTimeData.length > 0
           ? processingTimeData.reduce((sum, app) => {
-              const processingTime =
-                app.reviewedAt.getTime() - app.submittedAt.getTime();
-              return sum + processingTime;
-            }, 0) /
-            processingTimeData.length /
-            (1000 * 60 * 60 * 24) // Convert to days
+            const processingTime =
+              app.reviewedAt.getTime() - app.submittedAt.getTime();
+            return sum + processingTime;
+          }, 0) /
+          processingTimeData.length /
+          (1000 * 60 * 60 * 24) // Convert to days
           : 0;
 
       return {
@@ -546,13 +549,20 @@ export class DashboardEmbassyService {
           action === EmbassyAction.APPROVE ||
           action === EmbassyAction.REJECT
         ) {
-          // Use existing embassy submission notification for now
-          await this.mailService.sendEmbassySubmissionNotification({
+          // Send application decision notification
+          await this.mailService.sendApplicationDecisionNotification({
             userName: `${submission.user.firstName} ${submission.user.lastName}`,
             userEmail: submission.user.email,
             referenceNumber: submission.referenceNumber,
             embassyName: `Embassy of ${submission.form.country.name}`,
-            submissionDate: new Date().toISOString(),
+            decision:
+              action === EmbassyAction.APPROVE ? 'APPROVED' : 'REJECTED',
+            decisionDate: new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            reason: reason,
           });
           emailSent = true;
         } else if (action === EmbassyAction.REQUEST_INFO) {

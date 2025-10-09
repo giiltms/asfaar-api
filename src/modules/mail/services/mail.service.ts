@@ -41,6 +41,16 @@ export interface ApplicationQueryData {
   applicationUrl: string;
 }
 
+export interface ApplicationDecisionData {
+  userName: string;
+  userEmail: string;
+  referenceNumber: string;
+  embassyName: string;
+  decision: 'APPROVED' | 'REJECTED';
+  decisionDate: string;
+  reason?: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -267,6 +277,41 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send application query notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendApplicationDecisionNotification(
+    data: ApplicationDecisionData,
+  ): Promise<void> {
+    try {
+      const subject =
+        data.decision === 'APPROVED'
+          ? 'Visa Application Approved - Asfaar Visa Services'
+          : 'Visa Application Decision - Asfaar Visa Services';
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject,
+        template: 'applicationdecision',
+        context: {
+          userName: data.userName,
+          referenceNumber: data.referenceNumber,
+          embassyName: data.embassyName,
+          decision: data.decision,
+          decisionDate: data.decisionDate,
+          reason: data.reason,
+        },
+      });
+
+      this.logger.log(
+        `Application decision notification (${data.decision}) sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send application decision notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;
