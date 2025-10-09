@@ -30,6 +30,7 @@ import { FinanceModule } from '../finance/finance.module';
 import { DepartmentsModule } from '../departments/departments.module';
 import { PassportsModule } from '../passports/passports.module';
 import { DashboardBiometricModule } from '../dashboard-biometric/dashboard-biometric.module';
+import { DashboardAuthorityModule } from '../dashboard-authority/dashboard-authority.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -63,6 +64,7 @@ import { DashboardBiometricModule } from '../dashboard-biometric/dashboard-biome
     DashboardFrontdeskModule,
     DashboardCenterManagerModule,
     DashboardBiometricModule,
+    DashboardAuthorityModule,
     AnalyticsModule,
     FinanceModule,
     DepartmentsModule,

@@ -22,7 +22,12 @@ export class DashboardAuthorityService {
     filters: AuthorityApplicationFiltersDto,
     query: AuthorityApplicationQueryDto,
   ): Promise<AuthorityApplicationListDto> {
-    const { page = 1, limit = 20, sortBy = 'submittedAt', sortOrder = 'desc' } = query;
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'submittedAt',
+      sortOrder = 'desc',
+    } = query;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -32,29 +37,47 @@ export class DashboardAuthorityService {
       where.status = { in: filters.status };
     }
 
-    if (filters.countryId) {
-      where.form = { countryId: filters.countryId };
-    }
-
-    if (filters.formType) {
-      where.form = { ...where.form, name: { contains: filters.formType, mode: 'insensitive' } };
+    if (filters.countryId || filters.formType) {
+      where.form = {};
+      if (filters.countryId) {
+        where.form.countryId = filters.countryId;
+      }
+      if (filters.formType) {
+        where.form.name = { contains: filters.formType, mode: 'insensitive' };
+      }
     }
 
     if (filters.startDate || filters.endDate) {
       where.submittedAt = {};
       if (filters.startDate) {
-        where.submittedAt.gte = new Date(filters.startDate);
+        // Start of day for start date
+        const startDate = new Date(filters.startDate);
+        if (!isNaN(startDate.getTime())) {
+          startDate.setHours(0, 0, 0, 0);
+          where.submittedAt.gte = startDate;
+        }
       }
       if (filters.endDate) {
-        where.submittedAt.lte = new Date(filters.endDate);
+        // End of day for end date to include the entire day
+        const endDate = new Date(filters.endDate);
+        if (!isNaN(endDate.getTime())) {
+          endDate.setHours(23, 59, 59, 999);
+          where.submittedAt.lte = endDate;
+        }
       }
     }
 
     if (filters.search) {
       where.OR = [
         { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
-        { user: { firstName: { contains: filters.search, mode: 'insensitive' } } },
-        { user: { lastName: { contains: filters.search, mode: 'insensitive' } } },
+        {
+          user: {
+            firstName: { contains: filters.search, mode: 'insensitive' },
+          },
+        },
+        {
+          user: { lastName: { contains: filters.search, mode: 'insensitive' } },
+        },
         { user: { email: { contains: filters.search, mode: 'insensitive' } } },
       ];
     }
@@ -151,10 +174,10 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime: submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime: submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -324,10 +347,10 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime: submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime: submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -337,41 +360,41 @@ export class DashboardAuthorityService {
       formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
-            id: ninVerification.id,
-            nin: ninVerification.nin,
-            firstName: ninVerification.firstName,
-            lastName: ninVerification.lastName,
-            fullName: ninVerification.fullName,
-            dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-            gender: ninVerification.gender,
-            phoneNumber: ninVerification.phoneNumber,
-            photo: ninVerification.photo,
-            verificationStatus: ninVerification.verificationStatus,
-            verificationDate: ninVerification.verificationDate?.toISOString(),
-            address: {
-              line1: ninVerification.addressLine1,
-              city: ninVerification.city,
-              state: ninVerification.state,
-              lga: ninVerification.lga,
-              country: ninVerification.country,
-            },
-          }
+          id: ninVerification.id,
+          nin: ninVerification.nin,
+          firstName: ninVerification.firstName,
+          lastName: ninVerification.lastName,
+          fullName: ninVerification.fullName,
+          dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+          gender: ninVerification.gender,
+          phoneNumber: ninVerification.phoneNumber,
+          photo: ninVerification.photo,
+          verificationStatus: ninVerification.verificationStatus,
+          verificationDate: ninVerification.verificationDate?.toISOString(),
+          address: {
+            line1: ninVerification.addressLine1,
+            city: ninVerification.city,
+            state: ninVerification.state,
+            lga: ninVerification.lga,
+            country: ninVerification.country,
+          },
+        }
         : null,
       biometricData: submission.biometricData
         ? {
-            id: submission.biometricData.id,
-            photoUrl: submission.biometricData.photoUrl,
-            photoQualityScore: submission.biometricData.photoQualityScore,
-            isVerified: submission.biometricData.isVerified,
-            verificationStatus: submission.biometricData.verificationStatus,
-            capturedAt: submission.biometricData.capturedAt?.toISOString(),
-            capturedBy: submission.biometricData.capturedBy,
-            captureDevice: submission.biometricData.captureDevice,
-            fingerprintCount: submission.biometricData.fingerprintFingers?.length || 0,
-            fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
-              submission.biometricData.fingerprintFingers || [],
-            ),
-          }
+          id: submission.biometricData.id,
+          photoUrl: submission.biometricData.photoUrl,
+          photoQualityScore: submission.biometricData.photoQualityScore,
+          isVerified: submission.biometricData.isVerified,
+          verificationStatus: submission.biometricData.verificationStatus,
+          capturedAt: submission.biometricData.capturedAt?.toISOString(),
+          capturedBy: submission.biometricData.capturedBy,
+          captureDevice: submission.biometricData.captureDevice,
+          fingerprintCount: submission.biometricData.fingerprintFingers?.length || 0,
+          fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
+            submission.biometricData.fingerprintFingers || [],
+          ),
+        }
         : null,
       statusHistory: submission.statusLogs.map((log) => ({
         fromStatus: log.fromStatus,
