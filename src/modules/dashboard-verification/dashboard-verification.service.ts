@@ -367,6 +367,8 @@ export class DashboardVerificationService {
         const ninVerification = submission.user.ninVerifications?.[0];
         const biometricData = submission.biometricData;
 
+        // Resolve capturedBy user (best-effort; list endpoint keeps ID only to avoid N+1)
+        // For the list view we keep capturedBy as ID; detailed endpoint will expand
         return {
           referenceNumber: submission.referenceNumber,
           submissionId: submission.id,
@@ -439,6 +441,7 @@ export class DashboardVerificationService {
                   this.calculateFingerprintQualitySummary(
                     biometricData.fingerprintFingers || [],
                   ),
+                capturedByUser: null,
               }
             : null,
           userProfilePhoto: submission.user.avatar,
@@ -581,6 +584,21 @@ export class DashboardVerificationService {
       throw new Error('Biometric data not found for this application');
     }
 
+    // Optionally resolve capturedBy user info for detail view
+    let capturedByUser: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    } | null = null;
+    if (biometricData?.capturedBy) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: biometricData.capturedBy },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      });
+      capturedByUser = user ?? null;
+    }
+
     return {
       referenceNumber: submission.referenceNumber,
       submissionId: submission.id,
@@ -648,6 +666,7 @@ export class DashboardVerificationService {
         fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
           biometricData.fingerprintFingers || [],
         ),
+        capturedByUser,
       },
       userProfilePhoto: submission.user.avatar,
       appointment: submission.appointment

@@ -291,6 +291,12 @@ export class ApplicationReviewDto {
         acceptableFingers: 8,
         totalFingers: 10,
       },
+      capturedByUser: {
+        id: 'agent-001',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        email: 'jane.doe@example.com',
+      },
     },
   })
   biometricData: {
@@ -308,6 +314,12 @@ export class ApplicationReviewDto {
       acceptableFingers: number;
       totalFingers: number;
     };
+    capturedByUser?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    } | null;
   };
 
   @ApiPropertyOptional({ description: 'User profile photo' })
