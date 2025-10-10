@@ -3,7 +3,6 @@ import {
   IsOptional,
   IsBoolean,
   IsInt,
-  IsDecimal,
   IsNotEmpty,
   Length,
   Min,
@@ -246,7 +245,7 @@ export class UpdateCountryDto {
 
   @ApiPropertyOptional({ description: 'Application fee in USD', example: 150 })
   @IsOptional()
-  @IsDecimal({ decimal_digits: '0,2' })
+  @IsNumber()
   @Type(() => Number)
   applicationFee?: number;
 }
