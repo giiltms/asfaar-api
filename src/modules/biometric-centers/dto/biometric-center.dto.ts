@@ -219,7 +219,6 @@ export class CreateBiometricCenterDto {
   @IsArray()
   @IsString({ each: true })
   specialFacilities?: string[];
-
 }
 
 // DTO for updating a biometric center (all fields optional except ID)
@@ -367,7 +366,6 @@ export class BiometricCenterResponseDto {
 
   @ApiProperty({ description: 'Special facilities', type: [String] })
   specialFacilities: string[];
-
 
   @ApiProperty({ description: 'Creation timestamp' })
   createdAt: Date;

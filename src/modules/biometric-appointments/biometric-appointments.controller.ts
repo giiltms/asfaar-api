@@ -310,9 +310,19 @@ export class BiometricAppointmentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtUserPayload,
   ) {
+    const privilegedRoles: Roles[] = [
+      Roles.ADMIN,
+      Roles.CENTER_MANAGER,
+      Roles.SUPER_ADMIN,
+    ];
+
+    const isPrivileged =
+      user.roles?.some((role: Roles) => privilegedRoles.includes(role)) ??
+      false;
+
     const appointment = await this.appointmentsService.findAppointmentById(
       id,
-      user.roles?.includes('ADMIN') ? undefined : user.id,
+      isPrivileged ? undefined : user.id,
     );
 
     return {
