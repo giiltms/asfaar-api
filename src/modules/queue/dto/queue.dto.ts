@@ -214,6 +214,12 @@ export class QueueResponseDto {
   @ApiPropertyOptional()
   estimatedServiceTime?: number;
 
+  @ApiPropertyOptional({
+    description: 'Application reference number from form submission',
+    example: 'SA25001234',
+  })
+  referenceNumber?: string;
+
   // Computed properties
   @ApiProperty()
   statusDisplay: string;

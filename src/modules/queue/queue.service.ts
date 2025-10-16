@@ -105,6 +105,12 @@ export class QueueService {
                   email: true,
                 },
               },
+              submission: {
+                select: {
+                  id: true,
+                  referenceNumber: true,
+                },
+              },
             },
           },
           center: {
@@ -491,6 +497,12 @@ export class QueueService {
                 firstName: true,
                 lastName: true,
                 email: true,
+              },
+            },
+            submission: {
+              select: {
+                id: true,
+                referenceNumber: true,
               },
             },
           },

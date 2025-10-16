@@ -48,6 +48,11 @@ export class QueueEntity {
   @Expose()
   estimatedServiceTime?: number;
 
+  // Application reference number from form submission
+  @Expose()
+  @Transform(({ obj }) => obj?.appointment?.submission?.referenceNumber)
+  referenceNumber?: string;
+
   // Computed properties
   @Expose()
   get statusDisplay(): string {
