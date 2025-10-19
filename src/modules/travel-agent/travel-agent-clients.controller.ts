@@ -143,6 +143,51 @@ export class TravelAgentClientsController {
     description: 'Client ID',
     example: 'uuid-string',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Client profile retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        clientEmail: { type: 'string', example: 'john.doe@example.com' },
+        clientType: { type: 'string', example: 'INDIVIDUAL' },
+        industry: { type: 'string', example: 'Technology' },
+        preferredContactMethod: { type: 'string', example: 'EMAIL' },
+        preferredLanguage: { type: 'string', example: 'en' },
+        timezone: { type: 'string', example: 'UTC' },
+        status: { type: 'string', example: 'ACTIVE' },
+        acquisitionSource: { type: 'string', example: 'REFERRAL' },
+        lastContactDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        nextFollowUpDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-22T10:30:00Z',
+        },
+        kycStatus: { type: 'string', example: 'VERIFIED' },
+        kycVerifiedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-10T10:30:00Z',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-01T10:30:00Z',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
+  })
   @ApiOkBaseResponse({ dto: ClientProfileDto })
   @ApiDefaultResponse({ type: ClientProfileDto })
   async getClient(
@@ -166,6 +211,51 @@ export class TravelAgentClientsController {
     name: 'clientId',
     description: 'Client ID',
     example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Client profile created/updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        clientEmail: { type: 'string', example: 'john.doe@example.com' },
+        clientType: { type: 'string', example: 'INDIVIDUAL' },
+        industry: { type: 'string', example: 'Technology' },
+        preferredContactMethod: { type: 'string', example: 'EMAIL' },
+        preferredLanguage: { type: 'string', example: 'en' },
+        timezone: { type: 'string', example: 'UTC' },
+        status: { type: 'string', example: 'ACTIVE' },
+        acquisitionSource: { type: 'string', example: 'REFERRAL' },
+        lastContactDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        nextFollowUpDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-22T10:30:00Z',
+        },
+        kycStatus: { type: 'string', example: 'VERIFIED' },
+        kycVerifiedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-10T10:30:00Z',
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-01T10:30:00Z',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+      },
+    },
   })
   @ApiOkBaseResponse({ dto: ClientProfileDto })
   @ApiDefaultResponse({ type: ClientProfileDto })
@@ -194,6 +284,58 @@ export class TravelAgentClientsController {
     name: 'clientId',
     description: 'Client ID',
     example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Client analytics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        clientEmail: { type: 'string', example: 'john.doe@example.com' },
+        totalApplications: { type: 'number', example: 8 },
+        successfulApplications: { type: 'number', example: 7 },
+        pendingApplications: { type: 'number', example: 1 },
+        totalRevenue: { type: 'number', example: 3200.0 },
+        averageProcessingTime: { type: 'number', example: 6.5 },
+        successRate: { type: 'number', example: 87.5 },
+        lastApplicationDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        applicationTrends: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              month: { type: 'string', example: '2024-01' },
+              applications: { type: 'number', example: 3 },
+              successful: { type: 'number', example: 2 },
+              revenue: { type: 'number', example: 1200.0 },
+            },
+          },
+        },
+        recentApplications: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              referenceNumber: { type: 'string', example: 'APP-2024-001' },
+              formName: { type: 'string', example: 'Visa Application' },
+              status: { type: 'string', example: 'SUBMITTED' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2024-01-15T10:30:00Z',
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiOkBaseResponse({ dto: ClientAnalyticsDto })
   @ApiDefaultResponse({ type: ClientAnalyticsDto })

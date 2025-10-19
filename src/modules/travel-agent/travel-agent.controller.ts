@@ -139,6 +139,59 @@ export class TravelAgentController {
     summary: 'Get travel agent analytics',
     description: 'Retrieve comprehensive analytics data for the travel agent.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Agent analytics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        totalClients: { type: 'number', example: 45 },
+        activeClients: { type: 'number', example: 38 },
+        totalApplications: { type: 'number', example: 127 },
+        successfulApplications: { type: 'number', example: 98 },
+        pendingApplications: { type: 'number', example: 15 },
+        totalRevenue: { type: 'number', example: 45600.5 },
+        averageProcessingTime: { type: 'number', example: 7.2 },
+        successRate: { type: 'number', example: 77.2 },
+        monthlyGrowth: { type: 'number', example: 12.5 },
+        topPerformingClients: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              clientId: { type: 'string', example: 'uuid-string' },
+              clientName: { type: 'string', example: 'John Doe' },
+              clientEmail: { type: 'string', example: 'john.doe@example.com' },
+              totalApplications: { type: 'number', example: 8 },
+              successfulApplications: { type: 'number', example: 7 },
+              successRate: { type: 'number', example: 87.5 },
+              totalRevenue: { type: 'number', example: 3200.0 },
+            },
+          },
+        },
+        recentActivity: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', example: 'APPLICATION_CREATED' },
+              description: {
+                type: 'string',
+                example: 'New application submitted for John Doe',
+              },
+              timestamp: {
+                type: 'string',
+                format: 'date-time',
+                example: '2024-01-15T10:30:00Z',
+              },
+              clientId: { type: 'string', example: 'uuid-string' },
+              applicationId: { type: 'string', example: 'uuid-string' },
+            },
+          },
+        },
+      },
+    },
+  })
   @ApiOkBaseResponse({ dto: AgentAnalyticsDto })
   @ApiDefaultResponse({ type: AgentAnalyticsDto })
   async getAnalytics(
@@ -155,6 +208,34 @@ export class TravelAgentController {
   @ApiOperation({
     summary: 'Create application for client',
     description: 'Create a new application on behalf of a client.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Application created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid-string' },
+        referenceNumber: { type: 'string', example: 'APP-2024-001' },
+        formId: { type: 'string', example: 'uuid-string' },
+        formName: { type: 'string', example: 'Visa Application' },
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        status: { type: 'string', example: 'SUBMITTED' },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        paymentStatus: { type: 'string', example: 'PENDING' },
+        biometricStatus: { type: 'string', example: 'SCHEDULED' },
+      },
+    },
   })
   @ApiOkBaseResponse({ dto: ApplicationDto })
   @ApiDefaultResponse({ type: ApplicationDto })
@@ -182,6 +263,34 @@ export class TravelAgentController {
     name: 'id',
     description: 'Application ID',
     example: 'uuid-string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Application updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'uuid-string' },
+        referenceNumber: { type: 'string', example: 'APP-2024-001' },
+        formId: { type: 'string', example: 'uuid-string' },
+        formName: { type: 'string', example: 'Visa Application' },
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        status: { type: 'string', example: 'SUBMITTED' },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        paymentStatus: { type: 'string', example: 'PENDING' },
+        biometricStatus: { type: 'string', example: 'SCHEDULED' },
+      },
+    },
   })
   @ApiOkBaseResponse({ dto: ApplicationDto })
   @ApiDefaultResponse({ type: ApplicationDto })

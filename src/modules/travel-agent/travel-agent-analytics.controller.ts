@@ -47,6 +47,59 @@ export class TravelAgentAnalyticsController {
     summary: 'Get agent analytics overview',
     description: 'Retrieve comprehensive analytics data for the travel agent.',
   })
+  @ApiResponse({
+    status: 200,
+    description: 'Agent analytics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        totalClients: { type: 'number', example: 45 },
+        activeClients: { type: 'number', example: 38 },
+        totalApplications: { type: 'number', example: 127 },
+        successfulApplications: { type: 'number', example: 98 },
+        pendingApplications: { type: 'number', example: 15 },
+        totalRevenue: { type: 'number', example: 45600.5 },
+        averageProcessingTime: { type: 'number', example: 7.2 },
+        successRate: { type: 'number', example: 77.2 },
+        monthlyGrowth: { type: 'number', example: 12.5 },
+        topPerformingClients: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              clientId: { type: 'string', example: 'uuid-string' },
+              clientName: { type: 'string', example: 'John Doe' },
+              clientEmail: { type: 'string', example: 'john.doe@example.com' },
+              totalApplications: { type: 'number', example: 8 },
+              successfulApplications: { type: 'number', example: 7 },
+              successRate: { type: 'number', example: 87.5 },
+              totalRevenue: { type: 'number', example: 3200.0 },
+            },
+          },
+        },
+        recentActivity: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', example: 'APPLICATION_CREATED' },
+              description: {
+                type: 'string',
+                example: 'New application submitted for John Doe',
+              },
+              timestamp: {
+                type: 'string',
+                format: 'date-time',
+                example: '2024-01-15T10:30:00Z',
+              },
+              clientId: { type: 'string', example: 'uuid-string' },
+              applicationId: { type: 'string', example: 'uuid-string' },
+            },
+          },
+        },
+      },
+    },
+  })
   @ApiOkBaseResponse({ dto: AgentAnalyticsDto })
   @ApiDefaultResponse({ type: AgentAnalyticsDto })
   async getAgentAnalytics(
@@ -63,6 +116,58 @@ export class TravelAgentAnalyticsController {
   @ApiOperation({
     summary: 'Get client analytics',
     description: 'Retrieve analytics data for a specific client.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Client analytics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        clientId: { type: 'string', example: 'uuid-string' },
+        clientName: { type: 'string', example: 'John Doe' },
+        clientEmail: { type: 'string', example: 'john.doe@example.com' },
+        totalApplications: { type: 'number', example: 8 },
+        successfulApplications: { type: 'number', example: 7 },
+        pendingApplications: { type: 'number', example: 1 },
+        totalRevenue: { type: 'number', example: 3200.0 },
+        averageProcessingTime: { type: 'number', example: 6.5 },
+        successRate: { type: 'number', example: 87.5 },
+        lastApplicationDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2024-01-15T10:30:00Z',
+        },
+        applicationTrends: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              month: { type: 'string', example: '2024-01' },
+              applications: { type: 'number', example: 3 },
+              successful: { type: 'number', example: 2 },
+              revenue: { type: 'number', example: 1200.0 },
+            },
+          },
+        },
+        recentApplications: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              referenceNumber: { type: 'string', example: 'APP-2024-001' },
+              formName: { type: 'string', example: 'Visa Application' },
+              status: { type: 'string', example: 'SUBMITTED' },
+              createdAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2024-01-15T10:30:00Z',
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @ApiOkBaseResponse({ dto: ClientAnalyticsDto })
   @ApiDefaultResponse({ type: ClientAnalyticsDto })
