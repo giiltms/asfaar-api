@@ -63,6 +63,54 @@ export class TravelAgentController {
   @ApiResponse({
     status: 200,
     description: 'Dashboard data retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Dashboard data retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            analytics: {
+              type: 'object',
+              properties: {
+                totalClients: { type: 'number', example: 25 },
+                activeClients: { type: 'number', example: 18 },
+                totalApplications: { type: 'number', example: 45 },
+                successfulApplications: { type: 'number', example: 38 },
+                successRate: { type: 'number', example: 84.4 },
+                totalRevenue: { type: 'number', example: 12500.0 },
+                averageProcessingTime: { type: 'number', example: 7.2 },
+                applicationsThisMonth: { type: 'number', example: 8 },
+                revenueThisMonth: { type: 'number', example: 2400.0 },
+              },
+            },
+            recentApplications: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'uuid-string' },
+                  referenceNumber: { type: 'string', example: 'APP-2024-001' },
+                  formName: { type: 'string', example: 'Visa Application' },
+                  clientName: { type: 'string', example: 'John Doe' },
+                  status: { type: 'string', example: 'SUBMITTED' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+            recentCommunications: {
+              type: 'array',
+              items: { type: 'object' },
+              example: [],
+            },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -204,6 +252,43 @@ export class TravelAgentController {
   @ApiResponse({
     status: 200,
     description: 'Applications retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Applications retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'uuid-string' },
+                  referenceNumber: { type: 'string', example: 'APP-2024-001' },
+                  formId: { type: 'string', example: 'uuid-string' },
+                  formName: { type: 'string', example: 'Visa Application' },
+                  clientId: { type: 'string', example: 'uuid-string' },
+                  clientName: { type: 'string', example: 'John Doe' },
+                  status: { type: 'string', example: 'SUBMITTED' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
+                  paymentStatus: { type: 'string', example: 'COMPLETED' },
+                  biometricStatus: { type: 'string', example: 'SCHEDULED' },
+                },
+              },
+            },
+            total: { type: 'number', example: 45 },
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+          },
+        },
+      },
+    },
   })
   async getApplications(
     @CurrentUser() user: JwtUserPayload,
@@ -239,6 +324,32 @@ export class TravelAgentController {
   @ApiResponse({
     status: 200,
     description: 'Recent applications retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Recent applications retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'uuid-string' },
+              referenceNumber: { type: 'string', example: 'APP-2024-001' },
+              formId: { type: 'string', example: 'uuid-string' },
+              formName: { type: 'string', example: 'Visa Application' },
+              clientId: { type: 'string', example: 'uuid-string' },
+              clientName: { type: 'string', example: 'John Doe' },
+              status: { type: 'string', example: 'SUBMITTED' },
+              createdAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
+              paymentStatus: { type: 'string', example: 'COMPLETED' },
+              biometricStatus: { type: 'string', example: 'SCHEDULED' },
+            },
+          },
+        },
+      },
+    },
   })
   async getRecentApplications(
     @CurrentUser() user: JwtUserPayload,

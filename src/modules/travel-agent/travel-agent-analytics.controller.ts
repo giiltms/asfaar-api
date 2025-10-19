@@ -92,6 +92,29 @@ export class TravelAgentAnalyticsController {
   @ApiResponse({
     status: 200,
     description: 'Top performing clients retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Top performing clients retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              clientId: { type: 'string', example: 'uuid-string' },
+              clientName: { type: 'string', example: 'John Doe' },
+              totalApplications: { type: 'number', example: 5 },
+              successfulApplications: { type: 'number', example: 4 },
+              successRate: { type: 'number', example: 80.0 },
+              totalRevenue: { type: 'number', example: 2500.00 },
+              averageProcessingTime: { type: 'number', example: 6.5 },
+              lastApplicationDate: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
   })
   async getTopPerformingClients(
     @CurrentUser() user: JwtUserPayload,
@@ -128,6 +151,25 @@ export class TravelAgentAnalyticsController {
   @ApiResponse({
     status: 200,
     description: 'Application trends retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Application trends retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              month: { type: 'string', example: '2024-01' },
+              applications: { type: 'number', example: 8 },
+              successful: { type: 'number', example: 6 },
+              revenue: { type: 'number', example: 2400.00 },
+            },
+          },
+        },
+      },
+    },
   })
   async getApplicationTrends(
     @CurrentUser() user: JwtUserPayload,
@@ -158,6 +200,22 @@ export class TravelAgentAnalyticsController {
   @ApiResponse({
     status: 200,
     description: 'Revenue analytics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Revenue analytics retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            totalRevenue: { type: 'number', example: 12500.00 },
+            monthlyRevenue: { type: 'number', example: 2400.00 },
+            averageRevenuePerClient: { type: 'number', example: 500.00 },
+            revenueGrowth: { type: 'number', example: 15.5 },
+          },
+        },
+      },
+    },
   })
   async getRevenueAnalytics(@CurrentUser() user: JwtUserPayload) {
     const analytics = await this.analyticsService.getRevenueAnalytics(user.id);
@@ -181,6 +239,27 @@ export class TravelAgentAnalyticsController {
   @ApiResponse({
     status: 200,
     description: 'Performance metrics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Performance metrics retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            totalClients: { type: 'number', example: 25 },
+            activeClients: { type: 'number', example: 18 },
+            totalApplications: { type: 'number', example: 45 },
+            successfulApplications: { type: 'number', example: 38 },
+            successRate: { type: 'number', example: 84.4 },
+            averageProcessingTime: { type: 'number', example: 7.2 },
+            totalRevenue: { type: 'number', example: 12500.00 },
+            monthlyRevenue: { type: 'number', example: 2400.00 },
+            revenueGrowth: { type: 'number', example: 15.5 },
+          },
+        },
+      },
+    },
   })
   async getPerformanceMetrics(@CurrentUser() user: JwtUserPayload) {
     const [analytics, revenueAnalytics] = await Promise.all([

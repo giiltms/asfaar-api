@@ -79,6 +79,39 @@ export class TravelAgentClientsController {
   @ApiResponse({
     status: 200,
     description: 'Clients retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Clients retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'uuid-string' },
+                  email: { type: 'string', example: 'john.doe@example.com' },
+                  phone: { type: 'string', example: '+1234567890' },
+                  fullName: { type: 'string', example: 'John Doe' },
+                  avatar: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                  isVerified: { type: 'boolean', example: true },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  totalApplications: { type: 'number', example: 3 },
+                  successfulApplications: { type: 'number', example: 2 },
+                  lastApplicationDate: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+            total: { type: 'number', example: 25 },
+            page: { type: 'number', example: 1 },
+            limit: { type: 'number', example: 10 },
+          },
+        },
+      },
+    },
   })
   async getClients(
     @CurrentUser() user: JwtUserPayload,
