@@ -31,6 +31,7 @@ import { DepartmentsModule } from '../departments/departments.module';
 import { PassportsModule } from '../passports/passports.module';
 import { DashboardBiometricModule } from '../dashboard-biometric/dashboard-biometric.module';
 import { DashboardAuthorityModule } from '../dashboard-authority/dashboard-authority.module';
+import { TravelAgentModule } from '../travel-agent/travel-agent.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -65,6 +66,7 @@ import { DashboardAuthorityModule } from '../dashboard-authority/dashboard-autho
     DashboardCenterManagerModule,
     DashboardBiometricModule,
     DashboardAuthorityModule,
+    TravelAgentModule,
     AnalyticsModule,
     FinanceModule,
     DepartmentsModule,
