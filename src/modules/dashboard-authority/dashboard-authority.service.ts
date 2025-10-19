@@ -174,7 +174,8 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-          appointmentTime: submission.appointment.appointmentTime?.toISOString(),
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
           center: submission.appointment.center.name,
           status: submission.appointment.status,
         }
@@ -198,7 +199,9 @@ export class DashboardAuthorityService {
   /**
    * Get detailed application information
    */
-  async getApplicationDetail(submissionId: string): Promise<AuthorityApplicationDetailDto> {
+  async getApplicationDetail(
+    submissionId: string,
+  ): Promise<AuthorityApplicationDetailDto> {
     const submission = await this.prisma.formSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -347,7 +350,8 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-          appointmentTime: submission.appointment.appointmentTime?.toISOString(),
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
           center: submission.appointment.center.name,
           status: submission.appointment.status,
         }
@@ -390,7 +394,8 @@ export class DashboardAuthorityService {
           capturedAt: submission.biometricData.capturedAt?.toISOString(),
           capturedBy: submission.biometricData.capturedBy,
           captureDevice: submission.biometricData.captureDevice,
-          fingerprintCount: submission.biometricData.fingerprintFingers?.length || 0,
+          fingerprintCount:
+            submission.biometricData.fingerprintFingers?.length || 0,
           fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
             submission.biometricData.fingerprintFingers || [],
           ),
@@ -468,7 +473,14 @@ export class DashboardAuthorityService {
     }, {} as Record<string, number>);
   }
 
-  private async getApplicationsByCountry(): Promise<Array<{ country: string; countryCode: string; count: number; percentage: number }>> {
+  private async getApplicationsByCountry(): Promise<
+    Array<{
+      country: string;
+      countryCode: string;
+      count: number;
+      percentage: number;
+    }>
+  > {
     const results = await this.prisma.formSubmission.groupBy({
       by: ['formId'],
       _count: { formId: true },
@@ -502,7 +514,9 @@ export class DashboardAuthorityService {
     return countryStats.sort((a, b) => b.count - a.count);
   }
 
-  private async getApplicationsByVisaType(): Promise<Array<{ visaType: string; count: number; percentage: number }>> {
+  private async getApplicationsByVisaType(): Promise<
+    Array<{ visaType: string; count: number; percentage: number }>
+  > {
     const results = await this.prisma.formSubmission.groupBy({
       by: ['formId'],
       _count: { formId: true },
@@ -528,12 +542,16 @@ export class DashboardAuthorityService {
     return visaTypeStats.sort((a, b) => b.count - a.count);
   }
 
-  private async getApplicationsByYear(): Promise<Array<{ year: number; count: number; percentage: number }>> {
-    const results = await this.prisma.$queryRaw<Array<{ year: number; count: bigint }>>`
+  private async getApplicationsByYear(): Promise<
+    Array<{ year: number; count: number; percentage: number }>
+  > {
+    const results = await this.prisma.$queryRaw<
+      Array<{ year: number; count: bigint }>
+    >`
       SELECT 
         EXTRACT(YEAR FROM "submittedAt") as year,
         COUNT(*) as count
-      FROM "FormSubmission"
+      FROM "form_submissions"
       WHERE "submittedAt" IS NOT NULL
       GROUP BY EXTRACT(YEAR FROM "submittedAt")
       ORDER BY year DESC
@@ -548,13 +566,17 @@ export class DashboardAuthorityService {
     }));
   }
 
-  private async getApplicationsByMonth(): Promise<Array<{ month: string; monthNumber: number; count: number }>> {
+  private async getApplicationsByMonth(): Promise<
+    Array<{ month: string; monthNumber: number; count: number }>
+  > {
     const currentYear = new Date().getFullYear();
-    const results = await this.prisma.$queryRaw<Array<{ month: number; count: bigint }>>`
+    const results = await this.prisma.$queryRaw<
+      Array<{ month: number; count: bigint }>
+    >`
       SELECT 
         EXTRACT(MONTH FROM "submittedAt") as month,
         COUNT(*) as count
-      FROM "FormSubmission"
+      FROM "form_submissions"
       WHERE "submittedAt" IS NOT NULL
         AND EXTRACT(YEAR FROM "submittedAt") = ${currentYear}
       GROUP BY EXTRACT(MONTH FROM "submittedAt")
@@ -562,8 +584,18 @@ export class DashboardAuthorityService {
     `;
 
     const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
 
     return results.map((result) => ({
@@ -577,7 +609,12 @@ export class DashboardAuthorityService {
     totalRevenue: number;
     currency: string;
     averageApplicationValue: number;
-    revenueByCountry: Array<{ country: string; countryCode: string; revenue: number; percentage: number }>;
+    revenueByCountry: Array<{
+      country: string;
+      countryCode: string;
+      revenue: number;
+      percentage: number;
+    }>;
   }> {
     const paymentStats = await this.prisma.payment.aggregate({
       _sum: { amount: true },
@@ -589,19 +626,21 @@ export class DashboardAuthorityService {
     const averageApplicationValue = Number(paymentStats._avg.amount || 0);
 
     // Get revenue by country
-    const revenueByCountry = await this.prisma.$queryRaw<Array<{
-      country: string;
-      countryCode: string;
-      revenue: bigint;
-    }>>`
+    const revenueByCountry = await this.prisma.$queryRaw<
+      Array<{
+        country: string;
+        countryCode: string;
+        revenue: bigint;
+      }>
+    >`
       SELECT 
         c.name as country,
         c."isoCode2" as "countryCode",
         SUM(p.amount) as revenue
-      FROM "Payment" p
-      JOIN "FormSubmission" fs ON p."submissionId" = fs.id
-      JOIN "Form" f ON fs."formId" = f.id
-      JOIN "Country" c ON f."countryId" = c.id
+      FROM "payments" p
+      JOIN "form_submissions" fs ON p."submissionId" = fs.id
+      JOIN "dynamic_forms" f ON fs."formId" = f.id
+      JOIN "countries" c ON f."countryId" = c.id
       WHERE p.status = 'COMPLETED'
       GROUP BY c.id, c.name, c."isoCode2"
       ORDER BY revenue DESC
@@ -611,7 +650,10 @@ export class DashboardAuthorityService {
       country: item.country,
       countryCode: item.countryCode,
       revenue: Number(item.revenue),
-      percentage: totalRevenue > 0 ? Math.round((Number(item.revenue) / totalRevenue) * 100) : 0,
+      percentage:
+        totalRevenue > 0
+          ? Math.round((Number(item.revenue) / totalRevenue) * 100)
+          : 0,
     }));
 
     return {
@@ -644,8 +686,14 @@ export class DashboardAuthorityService {
 
     return {
       averageProcessingTime: 15, // Placeholder - would need more complex calculation
-      completionRate: totalApplications > 0 ? Math.round((completedApplications / totalApplications) * 100) : 0,
-      rejectionRate: totalApplications > 0 ? Math.round((rejectedApplications / totalApplications) * 100) : 0,
+      completionRate:
+        totalApplications > 0
+          ? Math.round((completedApplications / totalApplications) * 100)
+          : 0,
+      rejectionRate:
+        totalApplications > 0
+          ? Math.round((rejectedApplications / totalApplications) * 100)
+          : 0,
     };
   }
 
@@ -741,7 +789,9 @@ export class DashboardAuthorityService {
           .sort((a: any, b: any) => a.groupOrder - b.groupOrder)
           .map((group: any) => ({
             ...group,
-            fields: group.fields.sort((a: any, b: any) => a.displayOrder - b.displayOrder),
+            fields: group.fields.sort(
+              (a: any, b: any) => a.displayOrder - b.displayOrder,
+            ),
           })),
       }));
 
@@ -761,7 +811,9 @@ export class DashboardAuthorityService {
         totalFields: sectionFields,
         completedFields: sectionCompleted,
         completionPercentage:
-          sectionFields > 0 ? Math.round((sectionCompleted / sectionFields) * 100) : 0,
+          sectionFields > 0
+            ? Math.round((sectionCompleted / sectionFields) * 100)
+            : 0,
       };
     });
 
@@ -772,7 +824,10 @@ export class DashboardAuthorityService {
         completedFields,
         requiredFields,
         completedRequiredFields,
-        completionPercentage: totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0,
+        completionPercentage:
+          totalFields > 0
+            ? Math.round((completedFields / totalFields) * 100)
+            : 0,
         sections: sectionStats,
       },
     };
@@ -794,7 +849,9 @@ export class DashboardAuthorityService {
     return true;
   }
 
-  private getFieldValidationStatus(response: any): 'valid' | 'invalid' | 'missing' | 'optional' {
+  private getFieldValidationStatus(
+    response: any,
+  ): 'valid' | 'invalid' | 'missing' | 'optional' {
     const isCompleted = this.isFieldCompleted(response);
 
     if (!response.field.required) {
@@ -851,9 +908,14 @@ export class DashboardAuthorityService {
     }
 
     const totalFingers = fingerprintFingers.length;
-    const acceptableFingers = fingerprintFingers.filter((finger) => finger.isAcceptable).length;
+    const acceptableFingers = fingerprintFingers.filter(
+      (finger) => finger.isAcceptable,
+    ).length;
     const averageQuality =
-      fingerprintFingers.reduce((sum, finger) => sum + (finger.qualityScore || 0), 0) / totalFingers;
+      fingerprintFingers.reduce(
+        (sum, finger) => sum + (finger.qualityScore || 0),
+        0,
+      ) / totalFingers;
 
     return {
       averageQuality: Math.round(averageQuality),

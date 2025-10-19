@@ -68,15 +68,15 @@ async function sendEmbassySubmissionEmail(submissionId: string): Promise<void> {
     // Format submission date
     const submissionDate = submission.reviewedAt
       ? submission.reviewedAt.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
       : new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
 
     // Prepare email data
     const emailData = {
@@ -94,8 +94,7 @@ async function sendEmbassySubmissionEmail(submissionId: string): Promise<void> {
     );
   } catch (error) {
     logger.error(
-      `Failed to send embassy submission email for submission ${submissionId}: ${
-        (error as Error).message
+      `Failed to send embassy submission email for submission ${submissionId}: ${(error as Error).message
       }`,
     );
     // Don't throw - this is a non-critical side effect
@@ -145,8 +144,7 @@ export function embassySubmissionEmailMiddleware(): Prisma.Middleware {
           }
         } catch (error) {
           logger.error(
-            `Error in embassy submission email middleware: ${
-              (error as Error).message
+            `Error in embassy submission email middleware: ${(error as Error).message
             }`,
           );
           // Continue with normal flow even if email logic fails
