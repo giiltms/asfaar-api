@@ -950,8 +950,8 @@ export class FormSubmissionsService {
             const startOfDay = new Date(dateFrom);
             startOfDay.setHours(0, 0, 0, 0);
             return startOfDay;
-          })()
-        }
+          })(),
+        },
       }),
       ...(dateTo && {
         createdAt: {
@@ -959,8 +959,8 @@ export class FormSubmissionsService {
             const endOfDay = new Date(dateTo);
             endOfDay.setHours(23, 59, 59, 999);
             return endOfDay;
-          })()
-        }
+          })(),
+        },
       }),
     };
 
@@ -1314,6 +1314,97 @@ export class FormSubmissionsService {
     return await this.mapToSubmissionDto(restoredSubmission);
   }
 
+  /**
+   * Get submissions for a travel agent
+   */
+  async getTravelAgentSubmissions(
+    agentId: string,
+    queryDto: SubmissionQueryDto,
+  ): Promise<{
+    submissions: FormSubmissionDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      page,
+      limit,
+      formId,
+      userId,
+      status,
+      search,
+      dateFrom,
+      dateTo,
+      sortBy,
+      sortOrder,
+    } = queryDto;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.FormSubmissionWhereInput = {
+      travelAgentId: agentId, // Filter by travel agent
+      isCancelled: false, // Hide cancelled submissions
+      ...(formId && { formId }),
+      ...(userId && { userId }), // Filter by specific client if provided
+      ...(status && { status }),
+      ...(search && {
+        OR: [
+          { referenceNumber: { contains: search, mode: 'insensitive' } },
+          { form: { name: { contains: search, mode: 'insensitive' } } },
+          { form: { description: { contains: search, mode: 'insensitive' } } },
+          { user: { email: { contains: search, mode: 'insensitive' } } },
+          { user: { firstName: { contains: search, mode: 'insensitive' } } },
+          { user: { lastName: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
+      ...(dateFrom && {
+        createdAt: {
+          gte: (() => {
+            const startOfDay = new Date(dateFrom);
+            startOfDay.setHours(0, 0, 0, 0);
+            return startOfDay;
+          })(),
+        },
+      }),
+      ...(dateTo && {
+        createdAt: {
+          lte: (() => {
+            const endOfDay = new Date(dateTo);
+            endOfDay.setHours(23, 59, 59, 999);
+            return endOfDay;
+          })(),
+        },
+      }),
+    };
+
+    const orderBy = this.buildSubmissionOrderBy(sortBy, sortOrder);
+
+    const [submissions, total] = await Promise.all([
+      this.prisma.formSubmission.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: this.getSubmissionListInclude(),
+      }),
+      this.prisma.formSubmission.count({ where }),
+    ]);
+
+    const submissionsWithProgress = await Promise.all(
+      submissions.map(async (submission) => {
+        return await this.mapToSubmissionDto(submission);
+      }),
+    );
+
+    return {
+      submissions: submissionsWithProgress,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   // Admin Methods
   async getAllSubmissions(queryDto: SubmissionQueryDto): Promise<{
     submissions: FormSubmissionDto[];
@@ -1358,8 +1449,8 @@ export class FormSubmissionsService {
             const startOfDay = new Date(dateFrom);
             startOfDay.setHours(0, 0, 0, 0);
             return startOfDay;
-          })()
-        }
+          })(),
+        },
       }),
       ...(dateTo && {
         createdAt: {
@@ -1367,8 +1458,8 @@ export class FormSubmissionsService {
             const endOfDay = new Date(dateTo);
             endOfDay.setHours(23, 59, 59, 999);
             return endOfDay;
-          })()
-        }
+          })(),
+        },
       }),
     };
 
@@ -2394,7 +2485,6 @@ export class FormSubmissionsService {
         : 0;
       const minutesUntilAppointment = Math.round(timeDiffMs / (1000 * 60));
       const hasTimePassed = minutesUntilAppointment < 0;
-
 
       appointmentData = {
         id: submission.appointment.id,

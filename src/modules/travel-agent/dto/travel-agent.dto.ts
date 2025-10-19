@@ -219,6 +219,15 @@ export class ClientFiltersDto extends PaginationQueryDto {
 }
 
 export class ApplicationFiltersDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    description:
+      'Search by reference number, form name, or applicant details (name/email)',
+    example: 'john.doe@example.com',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
   @ApiPropertyOptional({ description: 'Filter by client ID' })
   @IsOptional()
   @IsUUID()

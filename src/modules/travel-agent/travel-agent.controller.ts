@@ -208,6 +208,13 @@ export class TravelAgentController {
       'Retrieve applications with optional filtering and pagination.',
   })
   @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Search by reference number, form name, or applicant details (name/email)',
+    example: 'john.doe@example.com',
+  })
+  @ApiQuery({
     name: 'clientId',
     required: false,
     description: 'Filter by client ID',
@@ -328,7 +335,10 @@ export class TravelAgentController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Recent applications retrieved successfully' },
+        message: {
+          type: 'string',
+          example: 'Recent applications retrieved successfully',
+        },
         data: {
           type: 'array',
           items: {

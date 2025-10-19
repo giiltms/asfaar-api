@@ -214,47 +214,32 @@ export class TravelAgentService {
     limit = 10,
   ): Promise<ApplicationDto[]> {
     try {
-      const applications = await this.prisma.formSubmission.findMany({
-        where: { travelAgentId: agentId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          form: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          payment: {
-            select: {
-              status: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      });
+      // Use the existing FormSubmissionsService method
+      const result =
+        await this.formSubmissionsService.getTravelAgentSubmissions(agentId, {
+          page: 1,
+          limit,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
 
-      return applications.map((app) => ({
-        id: app.id,
-        referenceNumber: app.referenceNumber,
-        formId: app.formId,
-        formName: app.form.name,
-        clientId: app.userId,
-        clientName:
-          `${app.user.firstName || ''} ${app.user.lastName || ''}`.trim() ||
-          app.user.email,
-        status: app.status,
-        createdAt: app.createdAt,
-        updatedAt: app.updatedAt,
-        paymentStatus: app.payment?.status,
-        biometricStatus: undefined, // TODO: Add biometric appointment relation
+      // Map FormSubmissionDto to ApplicationDto
+      return result.submissions.map((submission) => ({
+        id: submission.id,
+        referenceNumber: submission.referenceNumber,
+        formId: submission.formId,
+        formName: submission.form?.name || 'Unknown Form',
+        clientId: submission.userId,
+        clientName: submission.user
+          ? `${submission.user.firstName || ''} ${
+              submission.user.lastName || ''
+            }`.trim() || submission.user.email
+          : 'Unknown User',
+        status: submission.status,
+        createdAt: submission.createdAt,
+        updatedAt: submission.updatedAt,
+        paymentStatus: undefined, // TODO: Add payment status when available
+        biometricStatus: submission.biometricAppointment?.status,
       }));
     } catch (error) {
       this.logger.error(
@@ -433,88 +418,51 @@ export class TravelAgentService {
     limit: number;
   }> {
     try {
-      const where: any = {
-        travelAgentId: agentId,
+      // Convert ApplicationFiltersDto to SubmissionQueryDto format
+      const queryDto = {
+        page: filters.page || 1,
+        limit: filters.limit || 10,
+        userId: filters.clientId,
+        status: filters.status as any,
+        formId: filters.formId,
+        search: filters.search,
+        dateFrom: filters.startDate,
+        dateTo: filters.endDate,
+        sortBy: 'createdAt',
+        sortOrder: 'desc' as const,
       };
 
-      if (filters.clientId) {
-        where.userId = filters.clientId;
-      }
+      // Use the existing FormSubmissionsService method
+      const result =
+        await this.formSubmissionsService.getTravelAgentSubmissions(
+          agentId,
+          queryDto,
+        );
 
-      if (filters.status) {
-        where.status = filters.status;
-      }
-
-      if (filters.formId) {
-        where.formId = filters.formId;
-      }
-
-      if (filters.startDate || filters.endDate) {
-        where.createdAt = {};
-        if (filters.startDate) {
-          where.createdAt.gte = new Date(filters.startDate);
-        }
-        if (filters.endDate) {
-          where.createdAt.lte = new Date(filters.endDate);
-        }
-      }
-
-      const paginationOptions =
-        PaginationUtils.normalizePaginationOptions(filters);
-      const { skip, take } = PaginationUtils.getPrismaQuery(filters);
-
-      const [applications, total] = await Promise.all([
-        this.prisma.formSubmission.findMany({
-          where,
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            form: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            payment: {
-              select: {
-                status: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take,
-        }),
-        this.prisma.formSubmission.count({ where }),
-      ]);
-
-      const data = applications.map((app) => ({
-        id: app.id,
-        referenceNumber: app.referenceNumber,
-        formId: app.formId,
-        formName: app.form.name,
-        clientId: app.userId,
-        clientName:
-          `${app.user.firstName || ''} ${app.user.lastName || ''}`.trim() ||
-          app.user.email,
-        status: app.status,
-        createdAt: app.createdAt,
-        updatedAt: app.updatedAt,
-        paymentStatus: app.payment?.status,
-        biometricStatus: undefined, // TODO: Add biometric appointment relation
+      // Map FormSubmissionDto to ApplicationDto
+      const data = result.submissions.map((submission) => ({
+        id: submission.id,
+        referenceNumber: submission.referenceNumber,
+        formId: submission.formId,
+        formName: submission.form?.name || 'Unknown Form',
+        clientId: submission.userId,
+        clientName: submission.user
+          ? `${submission.user.firstName || ''} ${
+              submission.user.lastName || ''
+            }`.trim() || submission.user.email
+          : 'Unknown User',
+        status: submission.status,
+        createdAt: submission.createdAt,
+        updatedAt: submission.updatedAt,
+        paymentStatus: undefined, // TODO: Add payment status when available
+        biometricStatus: submission.biometricAppointment?.status,
       }));
 
       return {
         data,
-        total,
-        page: paginationOptions.page,
-        limit: paginationOptions.limit,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
       };
     } catch (error) {
       this.logger.error(
