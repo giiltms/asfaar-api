@@ -17,6 +17,7 @@ import paymentConfig from './configs/payment.config';
 // Global filters and interceptors
 import { AllExceptionsFilter } from '../filters/all-exception.filter';
 import { BadRequestExceptionFilter } from '../filters/bad-request-exception.filter';
+import { NotFoundExceptionFilter } from '../filters/not-found-exception.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 // Services
@@ -83,16 +84,20 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
         }),
     },
 
-    // Global exception filter (handles all other exceptions) - register FIRST for lower priority
+    // Specific exception filters (higher priority) - register FIRST
     {
       provide: APP_FILTER,
-      useClass: AllExceptionsFilter,
+      useClass: NotFoundExceptionFilter,
     },
-
-    // Specific validation error filter (handles ValidationPipe BadRequestException) - register LAST for higher priority
     {
       provide: APP_FILTER,
       useClass: BadRequestExceptionFilter,
+    },
+
+    // Global exception filter (handles all other exceptions) - register LAST for lower priority
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
     },
 
     // Global response transformation interceptor
