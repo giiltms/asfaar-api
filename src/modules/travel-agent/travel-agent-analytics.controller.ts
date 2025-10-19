@@ -96,7 +96,10 @@ export class TravelAgentAnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Top performing clients retrieved successfully' },
+        message: {
+          type: 'string',
+          example: 'Top performing clients retrieved successfully',
+        },
         data: {
           type: 'array',
           items: {
@@ -107,7 +110,7 @@ export class TravelAgentAnalyticsController {
               totalApplications: { type: 'number', example: 5 },
               successfulApplications: { type: 'number', example: 4 },
               successRate: { type: 'number', example: 80.0 },
-              totalRevenue: { type: 'number', example: 2500.00 },
+              totalRevenue: { type: 'number', example: 2500.0 },
               averageProcessingTime: { type: 'number', example: 6.5 },
               lastApplicationDate: { type: 'string', format: 'date-time' },
             },
@@ -155,7 +158,10 @@ export class TravelAgentAnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Application trends retrieved successfully' },
+        message: {
+          type: 'string',
+          example: 'Application trends retrieved successfully',
+        },
         data: {
           type: 'array',
           items: {
@@ -164,7 +170,7 @@ export class TravelAgentAnalyticsController {
               month: { type: 'string', example: '2024-01' },
               applications: { type: 'number', example: 8 },
               successful: { type: 'number', example: 6 },
-              revenue: { type: 'number', example: 2400.00 },
+              revenue: { type: 'number', example: 2400.0 },
             },
           },
         },
@@ -204,13 +210,16 @@ export class TravelAgentAnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Revenue analytics retrieved successfully' },
+        message: {
+          type: 'string',
+          example: 'Revenue analytics retrieved successfully',
+        },
         data: {
           type: 'object',
           properties: {
-            totalRevenue: { type: 'number', example: 12500.00 },
-            monthlyRevenue: { type: 'number', example: 2400.00 },
-            averageRevenuePerClient: { type: 'number', example: 500.00 },
+            totalRevenue: { type: 'number', example: 12500.0 },
+            monthlyRevenue: { type: 'number', example: 2400.0 },
+            averageRevenuePerClient: { type: 'number', example: 500.0 },
             revenueGrowth: { type: 'number', example: 15.5 },
           },
         },
@@ -243,7 +252,10 @@ export class TravelAgentAnalyticsController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Performance metrics retrieved successfully' },
+        message: {
+          type: 'string',
+          example: 'Performance metrics retrieved successfully',
+        },
         data: {
           type: 'object',
           properties: {
@@ -253,8 +265,8 @@ export class TravelAgentAnalyticsController {
             successfulApplications: { type: 'number', example: 38 },
             successRate: { type: 'number', example: 84.4 },
             averageProcessingTime: { type: 'number', example: 7.2 },
-            totalRevenue: { type: 'number', example: 12500.00 },
-            monthlyRevenue: { type: 'number', example: 2400.00 },
+            totalRevenue: { type: 'number', example: 12500.0 },
+            monthlyRevenue: { type: 'number', example: 2400.0 },
             revenueGrowth: { type: 'number', example: 15.5 },
           },
         },

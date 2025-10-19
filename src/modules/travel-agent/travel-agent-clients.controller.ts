@@ -96,7 +96,10 @@ export class TravelAgentClientsController {
                   email: { type: 'string', example: 'john.doe@example.com' },
                   phone: { type: 'string', example: '+1234567890' },
                   fullName: { type: 'string', example: 'John Doe' },
-                  avatar: { type: 'string', example: 'https://example.com/avatar.jpg' },
+                  avatar: {
+                    type: 'string',
+                    example: 'https://example.com/avatar.jpg',
+                  },
                   isVerified: { type: 'boolean', example: true },
                   createdAt: { type: 'string', format: 'date-time' },
                   totalApplications: { type: 'number', example: 3 },
