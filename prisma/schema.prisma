@@ -174,7 +174,8 @@ model User {
   subscriptions          Subscription[]
   wallets                Wallet[]
   payments               Payment[] // NEW: User's payments
-  FormSubmission         FormSubmission[]
+  formSubmissions        FormSubmission[]
+  travelAgentSubmissions FormSubmission[] @relation("TravelAgentSubmission")
   ninVerifications       NinVerification[]
   biometricCenters       BiometricCenter[]       @relation("CenterStaff")
   biometricAppointments  BiometricAppointment[]
@@ -186,8 +187,6 @@ model User {
   @@map("users")
 }
 
-// international passport for user
-// not all fields are required
 model InternationalPassport {
   id     String @id @default(uuid())
   userId String
@@ -785,6 +784,10 @@ model FormSubmission {
   formId          String
   userId          String // Changed from applicantId to userId for consistency
   user            User        @relation(fields: [userId], references: [id])
+
+  // Travel agent
+  travelAgentId String?
+  travelAgent   User? @relation("TravelAgentSubmission", fields: [travelAgentId], references: [id])
 
   // Enhanced Status Tracking
   status         SubmissionStatus  @default(DRAFT)
