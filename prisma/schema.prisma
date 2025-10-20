@@ -169,20 +169,24 @@ model User {
   countryId     String?
 
   // Payment relations
-  paymentMethods         PaymentMethod[]
-  transactions           Transaction[]
-  subscriptions          Subscription[]
-  wallets                Wallet[]
-  payments               Payment[] // NEW: User's payments
-  formSubmissions        FormSubmission[]
-  travelAgentSubmissions FormSubmission[] @relation("TravelAgentSubmission")
-  ninVerifications       NinVerification[]
-  biometricCenters       BiometricCenter[]       @relation("CenterStaff")
-  biometricAppointments  BiometricAppointment[]
-  booths                 Booth[]                 @relation("BoothAgent")
-  biometricSessions      BiometricSession[]      @relation("BiometricAgent")
-  biometricData          BiometricData[]
-  internationalPassports InternationalPassport[]
+  paymentMethods              PaymentMethod[]
+  transactions                Transaction[]
+  subscriptions               Subscription[]
+  wallets                     Wallet[]
+  payments                    Payment[] // NEW: User's payments
+  formSubmissions             FormSubmission[]
+  travelAgentSubmissions      FormSubmission[]                @relation("TravelAgentSubmission")
+  ninVerifications            NinVerification[]
+  biometricCenters            BiometricCenter[]               @relation("CenterStaff")
+  biometricAppointments       BiometricAppointment[]
+  booths                      Booth[]                         @relation("BoothAgent")
+  biometricSessions           BiometricSession[]              @relation("BiometricAgent")
+  biometricData               BiometricData[]
+  internationalPassports      InternationalPassport[]
+  // Travel Agent Upgrade & Licensing
+  upgradeApplication          TravelAgentUpgradeApplication?
+  reviewedUpgradeApplications TravelAgentUpgradeApplication[] @relation("UpgradeReviewer")
+  travelAgentLicense          TravelAgentLicense?
 
   @@map("users")
 }
@@ -787,7 +791,7 @@ model FormSubmission {
 
   // Travel agent
   travelAgentId String?
-  travelAgent   User? @relation("TravelAgentSubmission", fields: [travelAgentId], references: [id])
+  travelAgent   User?   @relation("TravelAgentSubmission", fields: [travelAgentId], references: [id])
 
   // Enhanced Status Tracking
   status         SubmissionStatus  @default(DRAFT)
@@ -1493,6 +1497,10 @@ model Payment {
   PaymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   paymentMethodId String?
 
+  // Back-relations
+  upgradeApplication TravelAgentUpgradeApplication?
+  licenseRenewal     TravelAgentLicenseRenewal?
+
   // Indexes for performance
   @@index([submissionId])
   @@index([userId])
@@ -1524,6 +1532,174 @@ model PaymentServiceFee {
   @@index([paymentId])
   @@index([serviceFeeId])
   @@map("payment_service_fees")
+}
+
+// Travel Agent Upgrade: Applications, Directors, Bank Details, Licensing, Renewals
+
+enum UpgradeApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model TravelAgentUpgradeApplication {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Status & Review
+  status      UpgradeApplicationStatus @default(PENDING)
+  submittedAt DateTime                 @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  reviewer    User?                    @relation("UpgradeReviewer", fields: [reviewedBy], references: [id])
+
+  // Business Contact
+  companyName  String
+  companyEmail String
+  companyPhone String
+
+  // Company Registration
+  cacNumber               String
+  cacDocumentUrl          String?
+  tinNumber               String
+  taxClearanceDocumentUrl String?
+
+  // License Information
+  nahconLicenseNumber String
+  nahconDocumentUrl   String?
+
+  // Security Clearances
+  dssClearanceNumber   String
+  efccScumlNumber      String
+  efccScumlDocumentUrl String?
+
+  // Industry Certifications
+  iataAccreditationNumber String?
+  iataDocumentUrl         String?
+  nantaMembershipNumber   String?
+
+  // Banking & People
+  bankDetails TravelAgentBankDetails?
+  directors   TravelAgentDirector[]
+
+  // Payment (initial upgrade fee)
+  paymentId String?  @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  // Review Notes
+  reviewNotes     String?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_upgrade_applications")
+}
+
+model TravelAgentDirector {
+  id            String                        @id @default(uuid())
+  applicationId String
+  application   TravelAgentUpgradeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  nin         String
+  dateOfBirth DateTime
+  firstName   String
+  lastName    String
+  middleName  String?
+  phoneNumber String?
+  email       String?
+
+  isVerified            Boolean   @default(false)
+  verifiedAt            DateTime?
+  verificationReference String?
+  ninApiResponse        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_directors")
+}
+
+model TravelAgentBankDetails {
+  id            String                        @id @default(uuid())
+  applicationId String                        @unique
+  application   TravelAgentUpgradeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  bankName      String
+  bankCode      String
+  accountNumber String
+  accountName   String
+
+  isVerified            Boolean   @default(false)
+  verifiedAt            DateTime?
+  verificationReference String?
+  bankApiResponse       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_bank_details")
+}
+
+// Licenseing & Renewals
+enum TravelAgentLicenseStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  SUSPENDED
+  PENDING_RENEWAL
+}
+
+model TravelAgentLicense {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  licenseNumber String                   @unique
+  issuedAt      DateTime
+  expiresAt     DateTime
+  status        TravelAgentLicenseStatus @default(ACTIVE)
+
+  renewals TravelAgentLicenseRenewal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, expiresAt])
+  @@map("travel_agent_licenses")
+}
+
+model TravelAgentLicenseRenewal {
+  id        String             @id @default(uuid())
+  licenseId String
+  license   TravelAgentLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  paymentId String?  @unique
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  renewedAt DateTime
+  newExpiry DateTime
+  reference String   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([licenseId, renewedAt])
+  @@map("travel_agent_license_renewals")
+}
+
+model TravelAgentLicenseCounter {
+  id      String @id @default(uuid())
+  yearKey String @unique
+  counter Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_license_counters")
 }
 
 model ApplicationType {
