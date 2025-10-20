@@ -130,6 +130,160 @@ export class TravelAgentUpgradeService {
     return { application };
   }
 
+  async getMyApplication(userId: string) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { userId },
+      include: { bankDetails: true, directors: true, payment: true },
+    });
+    return { application: app };
+  }
+
+  async updateMyApplication(
+    userId: string,
+    body: Partial<CreateUpgradeApplicationInput>,
+  ) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { userId },
+    });
+    if (!app) throw new NotFoundException('Application not found');
+    if (app.status !== UpgradeApplicationStatus.PENDING)
+      throw new BadRequestException('Only pending applications can be updated');
+
+    const data: any = {};
+    if (body.companyName) data.companyName = body.companyName;
+    if (body.companyEmail) data.companyEmail = body.companyEmail;
+    if (body.companyPhone) data.companyPhone = body.companyPhone;
+    if (body.cacNumber) data.cacNumber = body.cacNumber;
+    if (body.tinNumber) data.tinNumber = body.tinNumber;
+    if (body.nahconLicenseNumber) data.nahconLicenseNumber = body.nahconLicenseNumber;
+    if (body.dssClearanceNumber) data.dssClearanceNumber = body.dssClearanceNumber;
+    if (body.efccScumlNumber) data.efccScumlNumber = body.efccScumlNumber;
+    if (body.iataAccreditationNumber !== undefined)
+      data.iataAccreditationNumber = body.iataAccreditationNumber;
+    if (body.nantaMembershipNumber !== undefined)
+      data.nantaMembershipNumber = body.nantaMembershipNumber;
+
+    if (body.bankDetails) {
+      await this.prisma.travelAgentBankDetails.upsert({
+        where: { applicationId: app.id },
+        update: {
+          bankName: body.bankDetails.bankName,
+          bankCode: body.bankDetails.bankCode,
+          accountNumber: body.bankDetails.accountNumber,
+          accountName: body.bankDetails.accountName,
+        },
+        create: {
+          applicationId: app.id,
+          bankName: body.bankDetails.bankName,
+          bankCode: body.bankDetails.bankCode,
+          accountNumber: body.bankDetails.accountNumber,
+          accountName: body.bankDetails.accountName,
+        },
+      });
+    }
+
+    if (Object.keys(data).length) {
+      await this.prisma.travelAgentUpgradeApplication.update({ where: { id: app.id }, data });
+    }
+    return this.getMyApplication(userId);
+  }
+
+  async cancelMyApplication(userId: string) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { userId } });
+    if (!app) throw new NotFoundException('Application not found');
+    if (
+      app.status === UpgradeApplicationStatus.APPROVED ||
+      app.status === UpgradeApplicationStatus.REJECTED
+    )
+      throw new BadRequestException('Cannot cancel finalized application');
+    await this.prisma.travelAgentUpgradeApplication.update({
+      where: { id: app.id },
+      data: { status: UpgradeApplicationStatus.CANCELLED },
+    });
+    return { success: true };
+  }
+
+  async retryInitialPayment(userId: string, serviceFeeId: string) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { userId } });
+    if (!app) throw new NotFoundException('Application not found');
+    const fee = await this.prisma.serviceFee.findUnique({ where: { id: serviceFeeId } });
+    if (!fee || fee.feeType !== FeeType.UPGRADE)
+      throw new BadRequestException('Invalid upgrade fee');
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        userId,
+        amount: fee.amount,
+        currency: Currency.NGN,
+        status: PaymentStatus.PENDING,
+        description: `Travel Agent Upgrade Application - ${fee.name}`,
+        serviceFees: {
+          create: [
+            { serviceFeeId, amount: fee.amount, currency: 'NGN', feeType: FeeType.UPGRADE },
+          ],
+        },
+      },
+    });
+    await this.prisma.travelAgentUpgradeApplication.update({
+      where: { id: app.id },
+      data: { paymentId: payment.id },
+    });
+    return { paymentId: payment.id };
+  }
+
+  async listUpgradeFees() {
+    const fees = await this.prisma.serviceFee.findMany({
+      where: { feeType: FeeType.UPGRADE, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return { fees };
+  }
+
+  async listApplications(params: { status?: string; page: number; limit: number }) {
+    const where: any = {};
+    if (params.status) where.status = params.status as UpgradeApplicationStatus;
+    const skip = (params.page - 1) * params.limit;
+    const [items, total] = await Promise.all([
+      this.prisma.travelAgentUpgradeApplication.findMany({
+        where,
+        orderBy: { submittedAt: 'desc' },
+        skip,
+        take: params.limit,
+        include: { user: true },
+      }),
+      this.prisma.travelAgentUpgradeApplication.count({ where }),
+    ]);
+    return {
+      applications: items,
+      page: params.page,
+      limit: params.limit,
+      total,
+      totalPages: Math.ceil(total / params.limit),
+    };
+  }
+
+  async getApplicationById(id: string) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { id },
+      include: { user: true, bankDetails: true, directors: true, payment: true },
+    });
+    if (!app) throw new NotFoundException('Application not found');
+    return { application: app };
+  }
+
+  async markUnderReview(id: string, reviewerId: string, reviewNotes?: string) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { id } });
+    if (!app) throw new NotFoundException('Application not found');
+    const updated = await this.prisma.travelAgentUpgradeApplication.update({
+      where: { id },
+      data: {
+        status: UpgradeApplicationStatus.UNDER_REVIEW,
+        reviewedBy: reviewerId,
+        reviewNotes,
+      },
+    });
+    return { application: updated };
+  }
   async attachDocument(userId: string, dto: UploadUpgradeDocumentDto) {
     const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
       where: { userId },

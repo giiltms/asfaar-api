@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Delete } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -23,6 +23,42 @@ export class TravelAgentUpgradeController {
     @Body() body: CreateUpgradeApplicationDto,
   ) {
     return this.service.createUpgradeApplication(user.id, body);
+  }
+
+  @Get('application')
+  @ApiOperation({ summary: 'Get your upgrade application' })
+  async getApplication(@CurrentUser() user: JwtUserPayload) {
+    return this.service.getMyApplication(user.id);
+  }
+
+  @Put('application')
+  @ApiOperation({ summary: 'Update upgrade application while pending' })
+  async updateApplication(
+    @CurrentUser() user: JwtUserPayload,
+    @Body() body: Partial<CreateUpgradeApplicationDto>,
+  ) {
+    return this.service.updateMyApplication(user.id, body);
+  }
+
+  @Delete('application')
+  @ApiOperation({ summary: 'Cancel your upgrade application' })
+  async cancel(@CurrentUser() user: JwtUserPayload) {
+    return this.service.cancelMyApplication(user.id);
+  }
+
+  @Post('retry-payment')
+  @ApiOperation({ summary: 'Retry initial application payment' })
+  async retryPayment(
+    @CurrentUser() user: JwtUserPayload,
+    @Body() dto: { serviceFeeId: string },
+  ) {
+    return this.service.retryInitialPayment(user.id, dto.serviceFeeId);
+  }
+
+  @Get('fees')
+  @ApiOperation({ summary: 'List upgrade service fees' })
+  async fees() {
+    return this.service.listUpgradeFees();
   }
 
   @Post('renew')

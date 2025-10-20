@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
@@ -17,11 +17,12 @@ export class AdminTravelAgentUpgradeController {
 
   @Get('applications')
   @ApiOperation({ summary: 'List upgrade applications' })
-  async list() {
-    const apps = await this.service['prisma'].travelAgentUpgradeApplication.findMany({
-      orderBy: { submittedAt: 'desc' },
-    });
-    return { applications: apps };
+  async list(
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.service.listApplications({ status, page: Number(page), limit: Number(limit) });
   }
 
   @Post('applications/:id/approve')
@@ -47,5 +48,21 @@ export class AdminTravelAgentUpgradeController {
       body?.rejectionReason,
       body?.reviewNotes,
     );
+  }
+
+  @Get('applications/:id')
+  @ApiOperation({ summary: 'Get a single upgrade application' })
+  async getOne(@Param('id') id: string) {
+    return this.service.getApplicationById(id);
+  }
+
+  @Put('applications/:id/review')
+  @ApiOperation({ summary: 'Mark application as UNDER_REVIEW / assign reviewer' })
+  async toReview(
+    @Param('id') id: string,
+    @CurrentUser() reviewer: JwtUserPayload,
+    @Body() body: { reviewNotes?: string },
+  ) {
+    return this.service.markUnderReview(id, reviewer.id, body?.reviewNotes);
   }
 }
