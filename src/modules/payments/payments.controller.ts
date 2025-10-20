@@ -38,6 +38,7 @@ import {
   CreateServiceFeeDto,
   UpdateServiceFeeDto,
 } from './dto/payment.dto';
+import { ResolveAccountDto } from './dto/payments.dto';
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
@@ -890,5 +891,218 @@ export class PaymentsController {
         'Webhook support',
       ],
     };
+  }
+
+  /**
+   * Get list of Nigerian banks
+   */
+  @Get('banks')
+  @ApiOperation({
+    summary: 'Get list of Nigerian banks',
+    description:
+      'Retrieve all supported Nigerian banks with their codes for account verification',
+  })
+  @ApiQuery({
+    name: 'country',
+    required: false,
+    description: 'Country code (defaults to Nigeria)',
+    example: 'nigeria',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Banks retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Banks retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'Access Bank' },
+              code: { type: 'string', example: '044' },
+              country: { type: 'string', example: 'Nigeria' },
+            },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  async getBanks(@Query('country') country?: string) {
+    const banks = await this.paymentProviderService.getBanks(country);
+
+    return {
+      success: true,
+      message: 'Banks retrieved successfully',
+      data: banks,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Health check for bank verification service
+   */
+  @Get('banks/health')
+  @ApiOperation({
+    summary: 'Check bank verification service health',
+    description:
+      'Verify that the bank verification service is working properly',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Bank verification service is healthy',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Bank verification service is healthy',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            isHealthy: { type: 'boolean', example: true },
+            provider: { type: 'string', example: 'paystack' },
+            lastChecked: {
+              type: 'string',
+              example: '2025-01-20T10:30:00.000Z',
+            },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  async checkBankServiceHealth() {
+    try {
+      const isHealthy = await this.paymentProviderService.healthCheck();
+
+      return {
+        success: true,
+        message: 'Bank verification service is healthy',
+        data: {
+          isHealthy,
+          provider: 'paystack',
+          lastChecked: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Bank verification service is unhealthy',
+        data: {
+          isHealthy: false,
+          provider: 'paystack',
+          lastChecked: new Date().toISOString(),
+          error: error.message,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Resolve bank account name
+   */
+  @Post('resolve-account')
+  @ApiOperation({
+    summary: 'Resolve bank account name',
+    description:
+      'Verify bank account details and return the account holder name',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Account resolved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Account resolved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            accountName: { type: 'string', example: 'John Doe' },
+            accountNumber: { type: 'string', example: '0123456789' },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid account details or bank code',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Invalid account details' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 400000 },
+            message: {
+              type: 'string',
+              example: 'Account number must be exactly 10 digits',
+            },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    description: 'Account verification failed',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Account verification failed' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 422000 },
+            message: {
+              type: 'string',
+              example: 'Invalid account number or bank code',
+            },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  async resolveAccount(
+    @Body(ValidationPipe) resolveAccountDto: ResolveAccountDto,
+  ) {
+    try {
+      const result = await this.paymentProviderService.resolveAccountName(
+        resolveAccountDto.accountNumber,
+        resolveAccountDto.bankCode,
+      );
+
+      return {
+        success: true,
+        message: 'Account resolved successfully',
+        data: result,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new BadRequestException({
+        success: false,
+        message: 'Account verification failed',
+        error: {
+          code: 422000,
+          message: error.message || 'Invalid account number or bank code',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 }

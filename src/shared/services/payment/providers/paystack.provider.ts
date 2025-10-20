@@ -57,10 +57,10 @@ export class PaystackProvider implements PaymentProviderInterface {
         channels: data.paymentMethods,
         custom_fields: data.customFields
           ? Object.entries(data.customFields).map(([key, value]) => ({
-              display_name: key,
-              variable_name: key.toLowerCase().replace(/\s+/g, '_'),
-              value,
-            }))
+            display_name: key,
+            variable_name: key.toLowerCase().replace(/\s+/g, '_'),
+            value,
+          }))
           : undefined,
       };
 
@@ -114,10 +114,10 @@ export class PaystackProvider implements PaymentProviderInterface {
             data.status === 'success'
               ? 'success'
               : data.status === 'failed'
-              ? 'failed'
-              : data.status === 'abandoned'
-              ? 'abandoned'
-              : 'pending',
+                ? 'failed'
+                : data.status === 'abandoned'
+                  ? 'abandoned'
+                  : 'pending',
           gatewayResponse: data.gateway_response,
           paidAt: data.paid_at ? new Date(data.paid_at) : undefined,
           channel: data.channel,
@@ -258,10 +258,10 @@ export class PaystackProvider implements PaymentProviderInterface {
             response.data.status === 'success'
               ? 'success'
               : response.data.status === 'pending'
-              ? 'pending'
-              : response.data.status === 'reversed'
-              ? 'reversed'
-              : 'failed',
+                ? 'pending'
+                : response.data.status === 'reversed'
+                  ? 'reversed'
+                  : 'failed',
           providerData: response.data,
         };
       }
@@ -327,17 +327,23 @@ export class PaystackProvider implements PaymentProviderInterface {
         `/bank?country=${country}`,
       );
 
-      if (response.status && response.data) {
-        return response.data.map((bank: any) => ({
-          name: bank.name,
-          code: bank.code,
-          country: bank.country,
-        }));
+      if (response.status && response.data && Array.isArray(response.data)) {
+        return response.data
+          .filter((bank: any) => bank.name && bank.code) // Filter out invalid banks
+          .map((bank: any) => ({
+            name: bank.name,
+            code: bank.code,
+            country: bank.country || country,
+          }));
       }
 
+      this.logger.warn('No banks data received from Paystack');
       return [];
     } catch (error) {
-      this.logger.error('Failed to fetch banks from Paystack', error);
+      this.logger.error('Failed to fetch banks from Paystack', {
+        country,
+        error: error.message,
+      });
       return [];
     }
   }
@@ -347,22 +353,57 @@ export class PaystackProvider implements PaymentProviderInterface {
     bankCode: string,
   ): Promise<{ accountName: string; accountNumber: string }> {
     try {
+      // Validate inputs
+      if (!accountNumber || !bankCode) {
+        throw new Error('Account number and bank code are required');
+      }
+
+      if (!/^\d{10}$/.test(accountNumber)) {
+        throw new Error('Account number must be exactly 10 digits');
+      }
+
+      if (!/^\d{3}$/.test(bankCode)) {
+        throw new Error('Bank code must be exactly 3 digits');
+      }
+
       const response = await this.makeRequest(
         'GET',
         `/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`,
       );
 
       if (response.status && response.data) {
+        const { account_name, account_number } = response.data;
+
+        if (!account_name || !account_number) {
+          throw new Error('Invalid response from bank verification service');
+        }
+
         return {
-          accountName: response.data.account_name,
-          accountNumber: response.data.account_number,
+          accountName: account_name,
+          accountNumber: account_number,
         };
       }
 
-      throw new Error('Account resolution failed');
+      // Handle Paystack error response
+      const errorMessage = response.message || 'Account resolution failed';
+      throw new Error(errorMessage);
     } catch (error) {
-      this.logger.error('Paystack account resolution failed', error);
-      throw error;
+      this.logger.error('Paystack account resolution failed', {
+        accountNumber,
+        bankCode,
+        error: error.message,
+      });
+
+      // Re-throw with more specific error messages
+      if (error.message.includes('Account number')) {
+        throw new Error('Invalid account number format');
+      } else if (error.message.includes('Bank code')) {
+        throw new Error('Invalid bank code format');
+      } else if (error.message.includes('not found') || error.message.includes('invalid')) {
+        throw new Error('Account not found or invalid bank code');
+      } else {
+        throw new Error(error.message || 'Account verification failed');
+      }
     }
   }
 

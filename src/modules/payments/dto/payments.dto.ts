@@ -9,6 +9,8 @@ import {
   IsUUID,
   Min,
   Max,
+  Length,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -288,12 +290,26 @@ export class TransferResponseDto {
 }
 
 export class ResolveAccountDto {
-  @ApiProperty({ example: '0123456789' })
+  @ApiProperty({
+    example: '0123456789',
+    description: 'Bank account number to verify',
+    minLength: 10,
+    maxLength: 10,
+  })
   @IsString()
+  @Length(10, 10, { message: 'Account number must be exactly 10 digits' })
+  @Matches(/^\d{10}$/, { message: 'Account number must contain only digits' })
   accountNumber: string;
 
-  @ApiProperty({ example: '044' })
+  @ApiProperty({
+    example: '044',
+    description: 'Bank code from the list of banks',
+    minLength: 3,
+    maxLength: 3,
+  })
   @IsString()
+  @Length(3, 3, { message: 'Bank code must be exactly 3 characters' })
+  @Matches(/^\d{3}$/, { message: 'Bank code must contain only digits' })
   bankCode: string;
 }
 
