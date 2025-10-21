@@ -1537,7 +1537,10 @@ model PaymentServiceFee {
 // Travel Agent Upgrade: Applications, Directors, Bank Details, Licensing, Renewals
 
 enum UpgradeApplicationStatus {
+  DRAFT
   PENDING
+  PENDING_PAYMENT
+  PENDING_REVIEW
   UNDER_REVIEW
   APPROVED
   REJECTED

@@ -5,10 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
-import {
-  UploadUpgradeDocumentDto,
-  UpgradeDocumentType,
-} from './dto/upgrade.dto';
+import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
 import {
   FeeType,
   PaymentStatus,
@@ -17,6 +14,44 @@ import {
   Currency,
   TravelAgentLicenseStatus,
 } from '@prisma/client';
+
+export interface CreateDraftApplicationInput {
+  companyName: string;
+  companyEmail: string;
+  companyPhone: string;
+  cacNumber?: string;
+  tinNumber?: string;
+  nahconLicenseNumber?: string;
+  dssClearanceNumber?: string;
+  efccScumlNumber?: string;
+  iataAccreditationNumber?: string;
+  nantaMembershipNumber?: string;
+}
+
+export interface CompleteApplicationInput {
+  cacNumber: string;
+  tinNumber: string;
+  nahconLicenseNumber: string;
+  dssClearanceNumber: string;
+  efccScumlNumber: string;
+  iataAccreditationNumber?: string;
+  nantaMembershipNumber?: string;
+  bankDetails: {
+    bankName: string;
+    bankCode: string;
+    accountNumber: string;
+    accountName: string;
+  };
+  directors: Array<{
+    nin: string;
+    dateOfBirth: string;
+    firstName: string;
+    lastName: string;
+    middleName?: string;
+    phoneNumber?: string;
+    email?: string;
+  }>;
+}
 
 export interface CreateUpgradeApplicationInput {
   companyName: string;
@@ -54,6 +89,206 @@ export class TravelAgentUpgradeService {
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
   ) {}
+
+  async createDraftApplication(
+    userId: string,
+    input: CreateDraftApplicationInput,
+  ) {
+    // Check if user already has a draft or pending application
+    const existingApp =
+      await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: {
+          userId,
+          status: {
+            in: [
+              UpgradeApplicationStatus.DRAFT,
+              UpgradeApplicationStatus.PENDING,
+              UpgradeApplicationStatus.PENDING_PAYMENT,
+              UpgradeApplicationStatus.PENDING_REVIEW,
+              UpgradeApplicationStatus.UNDER_REVIEW,
+            ],
+          },
+        },
+      });
+
+    if (existingApp) {
+      throw new BadRequestException(
+        'You already have an active upgrade application',
+      );
+    }
+
+    const application = await this.prisma.travelAgentUpgradeApplication.create({
+      data: {
+        userId,
+        status: UpgradeApplicationStatus.DRAFT,
+        companyName: input.companyName,
+        companyEmail: input.companyEmail,
+        companyPhone: input.companyPhone,
+        cacNumber: input.cacNumber || '',
+        tinNumber: input.tinNumber || '',
+        nahconLicenseNumber: input.nahconLicenseNumber || '',
+        dssClearanceNumber: input.dssClearanceNumber || '',
+        efccScumlNumber: input.efccScumlNumber || '',
+        iataAccreditationNumber: input.iataAccreditationNumber,
+        nantaMembershipNumber: input.nantaMembershipNumber,
+      },
+    });
+
+    return { application };
+  }
+
+  async completeApplication(
+    userId: string,
+    applicationId: string,
+    input: CompleteApplicationInput,
+  ) {
+    // Verify user owns the application and it's in DRAFT status
+    const application =
+      await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: {
+          id: applicationId,
+          userId,
+          status: UpgradeApplicationStatus.DRAFT,
+        },
+      });
+
+    if (!application) {
+      throw new NotFoundException('Draft application not found');
+    }
+
+    // Validate required documents are uploaded
+    const uploadedDocuments =
+      await this.prisma.travelAgentUpgradeApplication.findUnique({
+        where: { id: applicationId },
+        select: {
+          cacDocumentUrl: true,
+          taxClearanceDocumentUrl: true,
+          nahconDocumentUrl: true,
+          efccScumlDocumentUrl: true,
+        },
+      });
+
+    const missingDocuments = [];
+    if (!uploadedDocuments.cacDocumentUrl)
+      missingDocuments.push('CAC Document');
+    if (!uploadedDocuments.taxClearanceDocumentUrl)
+      missingDocuments.push('Tax Clearance Certificate');
+    if (!uploadedDocuments.nahconDocumentUrl)
+      missingDocuments.push('NAHCON Document');
+    if (!uploadedDocuments.efccScumlDocumentUrl)
+      missingDocuments.push('EFCC SCUML Document');
+
+    if (missingDocuments.length > 0) {
+      throw new BadRequestException(
+        `Missing required documents: ${missingDocuments.join(', ')}`,
+      );
+    }
+
+    // Update application with complete information
+    const updatedApplication =
+      await this.prisma.travelAgentUpgradeApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: UpgradeApplicationStatus.PENDING,
+          cacNumber: input.cacNumber,
+          tinNumber: input.tinNumber,
+          nahconLicenseNumber: input.nahconLicenseNumber,
+          dssClearanceNumber: input.dssClearanceNumber,
+          efccScumlNumber: input.efccScumlNumber,
+          iataAccreditationNumber: input.iataAccreditationNumber,
+          nantaMembershipNumber: input.nantaMembershipNumber,
+          bankDetails: {
+            create: {
+              bankName: input.bankDetails.bankName,
+              bankCode: input.bankDetails.bankCode,
+              accountNumber: input.bankDetails.accountNumber,
+              accountName: input.bankDetails.accountName,
+            },
+          },
+          directors: {
+            createMany: {
+              data: input.directors.map((d) => ({
+                nin: d.nin,
+                dateOfBirth: new Date(d.dateOfBirth),
+                firstName: d.firstName,
+                lastName: d.lastName,
+                middleName: d.middleName,
+                phoneNumber: d.phoneNumber,
+                email: d.email,
+              })),
+            },
+          },
+        },
+        include: { bankDetails: true, directors: true },
+      });
+
+    return { application: updatedApplication };
+  }
+
+  async initiatePayment(
+    userId: string,
+    applicationId: string,
+    dto: { serviceFeeId: string; paymentMethodId: string },
+  ) {
+    // Verify user owns the application and it's in PENDING status
+    const application =
+      await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: {
+          id: applicationId,
+          userId,
+          status: UpgradeApplicationStatus.PENDING,
+        },
+      });
+
+    if (!application) {
+      throw new NotFoundException(
+        'Application not found or not ready for payment',
+      );
+    }
+
+    const serviceFee = await this.prisma.serviceFee.findUnique({
+      where: { id: dto.serviceFeeId },
+    });
+
+    if (!serviceFee || serviceFee.feeType !== FeeType.UPGRADE) {
+      throw new BadRequestException(
+        'Invalid service fee for travel agent upgrade',
+      );
+    }
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        userId,
+        amount: serviceFee.amount,
+        currency: Currency.NGN,
+        description: `Travel Agent Upgrade Application - ${serviceFee.name}`,
+        status: PaymentStatus.PENDING,
+        serviceFees: {
+          create: [
+            {
+              serviceFeeId: dto.serviceFeeId,
+              amount: serviceFee.amount,
+              currency: 'NGN',
+              feeType: FeeType.UPGRADE,
+            },
+          ],
+        },
+      },
+    });
+
+    // Update application with payment and status
+    const updatedApplication =
+      await this.prisma.travelAgentUpgradeApplication.update({
+        where: { id: applicationId },
+        data: {
+          paymentId: payment.id,
+          status: UpgradeApplicationStatus.PENDING_PAYMENT,
+        },
+        include: { payment: true },
+      });
+
+    return { application: updatedApplication, payment };
+  }
 
   async createUpgradeApplication(
     userId: string,
@@ -155,8 +390,10 @@ export class TravelAgentUpgradeService {
     if (body.companyPhone) data.companyPhone = body.companyPhone;
     if (body.cacNumber) data.cacNumber = body.cacNumber;
     if (body.tinNumber) data.tinNumber = body.tinNumber;
-    if (body.nahconLicenseNumber) data.nahconLicenseNumber = body.nahconLicenseNumber;
-    if (body.dssClearanceNumber) data.dssClearanceNumber = body.dssClearanceNumber;
+    if (body.nahconLicenseNumber)
+      data.nahconLicenseNumber = body.nahconLicenseNumber;
+    if (body.dssClearanceNumber)
+      data.dssClearanceNumber = body.dssClearanceNumber;
     if (body.efccScumlNumber) data.efccScumlNumber = body.efccScumlNumber;
     if (body.iataAccreditationNumber !== undefined)
       data.iataAccreditationNumber = body.iataAccreditationNumber;
@@ -183,13 +420,18 @@ export class TravelAgentUpgradeService {
     }
 
     if (Object.keys(data).length) {
-      await this.prisma.travelAgentUpgradeApplication.update({ where: { id: app.id }, data });
+      await this.prisma.travelAgentUpgradeApplication.update({
+        where: { id: app.id },
+        data,
+      });
     }
     return this.getMyApplication(userId);
   }
 
   async cancelMyApplication(userId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { userId } });
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { userId },
+    });
     if (!app) throw new NotFoundException('Application not found');
     if (
       app.status === UpgradeApplicationStatus.APPROVED ||
@@ -204,9 +446,13 @@ export class TravelAgentUpgradeService {
   }
 
   async retryInitialPayment(userId: string, serviceFeeId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { userId } });
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { userId },
+    });
     if (!app) throw new NotFoundException('Application not found');
-    const fee = await this.prisma.serviceFee.findUnique({ where: { id: serviceFeeId } });
+    const fee = await this.prisma.serviceFee.findUnique({
+      where: { id: serviceFeeId },
+    });
     if (!fee || fee.feeType !== FeeType.UPGRADE)
       throw new BadRequestException('Invalid upgrade fee');
 
@@ -219,7 +465,12 @@ export class TravelAgentUpgradeService {
         description: `Travel Agent Upgrade Application - ${fee.name}`,
         serviceFees: {
           create: [
-            { serviceFeeId, amount: fee.amount, currency: 'NGN', feeType: FeeType.UPGRADE },
+            {
+              serviceFeeId,
+              amount: fee.amount,
+              currency: 'NGN',
+              feeType: FeeType.UPGRADE,
+            },
           ],
         },
       },
@@ -239,7 +490,11 @@ export class TravelAgentUpgradeService {
     return { fees };
   }
 
-  async listApplications(params: { status?: string; page: number; limit: number }) {
+  async listApplications(params: {
+    status?: string;
+    page: number;
+    limit: number;
+  }) {
     const where: any = {};
     if (params.status) where.status = params.status as UpgradeApplicationStatus;
     const skip = (params.page - 1) * params.limit;
@@ -265,14 +520,21 @@ export class TravelAgentUpgradeService {
   async getApplicationById(id: string) {
     const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
       where: { id },
-      include: { user: true, bankDetails: true, directors: true, payment: true },
+      include: {
+        user: true,
+        bankDetails: true,
+        directors: true,
+        payment: true,
+      },
     });
     if (!app) throw new NotFoundException('Application not found');
     return { application: app };
   }
 
   async markUnderReview(id: string, reviewerId: string, reviewNotes?: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({ where: { id } });
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { id },
+    });
     if (!app) throw new NotFoundException('Application not found');
     const updated = await this.prisma.travelAgentUpgradeApplication.update({
       where: { id },
@@ -284,11 +546,119 @@ export class TravelAgentUpgradeService {
     });
     return { application: updated };
   }
-  async attachDocument(userId: string, dto: UploadUpgradeDocumentDto) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
-      where: { userId },
+  async uploadDocumentFile(
+    userId: string,
+    applicationId: string,
+    documentType: string,
+    file: Express.Multer.File,
+  ) {
+    // Verify user owns the application
+    const app = await this.prisma.travelAgentUpgradeApplication.findFirst({
+      where: { id: applicationId, userId },
     });
     if (!app) throw new NotFoundException('Upgrade application not found');
+
+    // Verify application is in DRAFT status (can upload documents)
+    if (app.status !== UpgradeApplicationStatus.DRAFT) {
+      throw new BadRequestException(
+        'Documents can only be uploaded for draft applications',
+      );
+    }
+
+    // Validate document type
+    const allowedDocumentTypes = [
+      'CAC_DOCUMENT',
+      'TAX_CLEARANCE_CERTIFICATE',
+      'NAHCON_DOCUMENT',
+      'EFCC_SCUML_DOCUMENT',
+      'IATA_DOCUMENT',
+    ];
+    if (!allowedDocumentTypes.includes(documentType)) {
+      throw new BadRequestException(
+        'Invalid document type. Allowed types: CAC_DOCUMENT, TAX_CLEARANCE_CERTIFICATE, NAHCON_DOCUMENT, EFCC_SCUML_DOCUMENT, IATA_DOCUMENT',
+      );
+    }
+
+    // Validate file type
+    const allowedMimeTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+    ];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only PDF, JPEG, and PNG files are allowed',
+      );
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        'File size too large. Maximum size is 10MB',
+      );
+    }
+
+    // Use the same file storage pattern as FormSubmissionsService
+    const fileUrl = await this.saveFileToStorage(
+      file,
+      userId,
+      `travel-agent-${documentType.toLowerCase()}`,
+    );
+
+    // Update application with document URL
+    const data: Record<string, any> = {};
+    switch (documentType) {
+      case 'CAC_DOCUMENT':
+        data.cacDocumentUrl = fileUrl;
+        break;
+      case 'TAX_CLEARANCE_CERTIFICATE':
+        data.taxClearanceDocumentUrl = fileUrl;
+        break;
+      case 'NAHCON_DOCUMENT':
+        data.nahconDocumentUrl = fileUrl;
+        break;
+      case 'EFCC_SCUML_DOCUMENT':
+        data.efccScumlDocumentUrl = fileUrl;
+        break;
+      case 'IATA_DOCUMENT':
+        data.iataDocumentUrl = fileUrl;
+        break;
+      default:
+        throw new BadRequestException('Unsupported document type');
+    }
+
+    await this.prisma.travelAgentUpgradeApplication.update({
+      where: { id: applicationId },
+      data,
+    });
+
+    return {
+      success: true,
+      message: 'Document uploaded successfully',
+      data: {
+        documentType,
+        fileName: file.originalname,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        fileUrl,
+      },
+    };
+  }
+
+  async attachDocument(applicationId: string, dto: UploadUpgradeDocumentDto) {
+    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+      where: { id: applicationId },
+    });
+    if (!app) throw new NotFoundException('Upgrade application not found');
+
+    // Verify application is in DRAFT status (can upload documents)
+    if (app.status !== UpgradeApplicationStatus.DRAFT) {
+      throw new BadRequestException(
+        'Documents can only be uploaded for draft applications',
+      );
+    }
 
     const data: Record<string, any> = {};
     switch (dto.documentType) {
@@ -312,7 +682,7 @@ export class TravelAgentUpgradeService {
     }
 
     await this.prisma.travelAgentUpgradeApplication.update({
-      where: { id: app.id },
+      where: { id: applicationId },
       data,
     });
     return { success: true };
@@ -496,5 +866,43 @@ export class TravelAgentUpgradeService {
     });
     const padded = counter.toString().padStart(6, '0');
     return `AGT-${yearKey}-${padded}`;
+  }
+
+  /**
+   * Save file to storage (same pattern as FormSubmissionsService)
+   */
+  private async saveFileToStorage(
+    file: Express.Multer.File,
+    userId: string,
+    fieldId: string,
+  ): Promise<string> {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Create uploads directory if it doesn't exist
+    // Use /app/uploads for Docker containers, fallback to local uploads
+    const uploadsDir =
+      process.env.NODE_ENV === 'production'
+        ? '/app/uploads'
+        : path.join(process.cwd(), 'uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+
+    // Create user-specific directory
+    const userDir = path.join(uploadsDir, userId);
+    fs.mkdirSync(userDir, { recursive: true });
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `${fieldId}_${timestamp}_${sanitizedFileName}`;
+
+    // Full path for the file
+    const filePath = path.join(userDir, fileName);
+
+    // Move the file from temp location to permanent location
+    fs.writeFileSync(filePath, file.buffer as unknown as Uint8Array);
+
+    // Return the URL that will be served by static middleware
+    return `/uploads/${userId}/${fileName}`;
   }
 }
