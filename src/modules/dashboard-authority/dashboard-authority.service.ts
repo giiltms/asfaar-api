@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
+import { PrivacyService } from '@common/services/privacy.service';
 import {
   AuthorityApplicationListDto,
   AuthorityApplicationDetailDto,
@@ -33,24 +34,10 @@ export class DashboardAuthorityService {
     // Build where clause
     const where: any = {};
 
-    // CRITICAL: Always exclude private statuses for privacy
+    // CRITICAL: Apply privacy protection - exclude private statuses
     // Authorities should never see draft, pending payment, or cancelled applications
-    const privateStatuses: SubmissionStatus[] = [
-      SubmissionStatus.DRAFT,
-      SubmissionStatus.PENDING_PAYMENT,
-      SubmissionStatus.CANCELLED,
-    ];
-
-    if (filters.status && filters.status.length > 0) {
-      // If status filter is provided, exclude private statuses
-      const filteredStatuses = filters.status.filter(
-        (status) => !privateStatuses.includes(status),
-      );
-      where.status = { in: filteredStatuses };
-    } else {
-      // Default: exclude all private statuses (privacy protection)
-      where.status = { notIn: privateStatuses };
-    }
+    const privacyWhere = PrivacyService.createPrivacyProtectedWhereClause(filters.status);
+    Object.assign(where, privacyWhere);
 
     if (filters.countryId || filters.formType) {
       where.form = {};
@@ -189,11 +176,11 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime:
-              submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -365,11 +352,11 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime:
-              submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -379,42 +366,42 @@ export class DashboardAuthorityService {
       formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
-            id: ninVerification.id,
-            nin: ninVerification.nin,
-            firstName: ninVerification.firstName,
-            lastName: ninVerification.lastName,
-            fullName: ninVerification.fullName,
-            dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-            gender: ninVerification.gender,
-            phoneNumber: ninVerification.phoneNumber,
-            photo: ninVerification.photo,
-            verificationStatus: ninVerification.verificationStatus,
-            verificationDate: ninVerification.verificationDate?.toISOString(),
-            address: {
-              line1: ninVerification.addressLine1,
-              city: ninVerification.city,
-              state: ninVerification.state,
-              lga: ninVerification.lga,
-              country: ninVerification.country,
-            },
-          }
+          id: ninVerification.id,
+          nin: ninVerification.nin,
+          firstName: ninVerification.firstName,
+          lastName: ninVerification.lastName,
+          fullName: ninVerification.fullName,
+          dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+          gender: ninVerification.gender,
+          phoneNumber: ninVerification.phoneNumber,
+          photo: ninVerification.photo,
+          verificationStatus: ninVerification.verificationStatus,
+          verificationDate: ninVerification.verificationDate?.toISOString(),
+          address: {
+            line1: ninVerification.addressLine1,
+            city: ninVerification.city,
+            state: ninVerification.state,
+            lga: ninVerification.lga,
+            country: ninVerification.country,
+          },
+        }
         : null,
       biometricData: submission.biometricData
         ? {
-            id: submission.biometricData.id,
-            photoUrl: submission.biometricData.photoUrl,
-            photoQualityScore: submission.biometricData.photoQualityScore,
-            isVerified: submission.biometricData.isVerified,
-            verificationStatus: submission.biometricData.verificationStatus,
-            capturedAt: submission.biometricData.capturedAt?.toISOString(),
-            capturedBy: submission.biometricData.capturedBy,
-            captureDevice: submission.biometricData.captureDevice,
-            fingerprintCount:
-              submission.biometricData.fingerprintFingers?.length || 0,
-            fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
-              submission.biometricData.fingerprintFingers || [],
-            ),
-          }
+          id: submission.biometricData.id,
+          photoUrl: submission.biometricData.photoUrl,
+          photoQualityScore: submission.biometricData.photoQualityScore,
+          isVerified: submission.biometricData.isVerified,
+          verificationStatus: submission.biometricData.verificationStatus,
+          capturedAt: submission.biometricData.capturedAt?.toISOString(),
+          capturedBy: submission.biometricData.capturedBy,
+          captureDevice: submission.biometricData.captureDevice,
+          fingerprintCount:
+            submission.biometricData.fingerprintFingers?.length || 0,
+          fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
+            submission.biometricData.fingerprintFingers || [],
+          ),
+        }
         : null,
       statusHistory: submission.statusLogs.map((log) => ({
         fromStatus: log.fromStatus,
