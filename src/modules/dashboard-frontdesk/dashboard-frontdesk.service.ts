@@ -6,6 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma';
+import { SubmissionStatus } from '@prisma/client';
 import {
   FrontDeskDashboardStatsDto,
   QueueStatsDto,
@@ -17,7 +18,6 @@ import {
   ApplicantListFiltersDto,
   ApplicantDetailDto,
 } from './dto/dashboard-stats.dto';
-import { SubmissionStatus } from '@prisma/client';
 
 @Injectable()
 export class DashboardFrontdeskService {
@@ -105,9 +105,8 @@ export class DashboardFrontdeskService {
         agentStats,
         lastUpdated: new Date().toISOString(),
         stationId: null, // No single station
-        stationName: `${userCenterIds.length} Center${
-          userCenterIds.length > 1 ? 's' : ''
-        }`,
+        stationName: `${userCenterIds.length} Center${userCenterIds.length > 1 ? 's' : ''
+          }`,
         userCenters: userCenters.biometricCenters,
       };
     } catch (error) {
@@ -435,9 +434,25 @@ export class DashboardFrontdeskService {
         },
       };
 
-      // Apply filters
+      // CRITICAL: Always exclude private statuses for privacy
+      // Frontdesk should never see draft, pending payment, or cancelled applications
+      const privateStatuses: SubmissionStatus[] = [
+        SubmissionStatus.DRAFT,
+        SubmissionStatus.PENDING_PAYMENT,
+        SubmissionStatus.CANCELLED,
+      ];
+
       if (filters.status) {
-        where.status = filters.status;
+        // If status filter is provided, exclude private statuses
+        if (!privateStatuses.includes(filters.status as SubmissionStatus)) {
+          where.status = filters.status;
+        } else {
+          // If private status is explicitly requested, return empty results for privacy
+          where.status = 'NONEXISTENT_STATUS';
+        }
+      } else {
+        // Default: exclude all private statuses (privacy protection)
+        where.status = { notIn: privateStatuses };
       }
 
       if (filters.search) {
@@ -758,24 +773,24 @@ export class DashboardFrontdeskService {
         formData,
         biometricAppointment: submission.appointment
           ? {
-              appointmentTime: submission.appointment.appointmentTime,
-              status: submission.appointment.status,
-              centerName: submission.appointment.center?.name,
-            }
+            appointmentTime: submission.appointment.appointmentTime,
+            status: submission.appointment.status,
+            centerName: submission.appointment.center?.name,
+          }
           : undefined,
         paymentDetails: submission.payment
           ? {
-              amount: submission.payment.amount,
-              currency: submission.payment.currency,
-              paymentMethod: submission.payment.processor,
-              transactionId: submission.payment.processorId,
-            }
+            amount: submission.payment.amount,
+            currency: submission.payment.currency,
+            paymentMethod: submission.payment.processor,
+            transactionId: submission.payment.processorId,
+          }
           : {
-              amount: 0,
-              currency: 'NGN',
-              paymentMethod: 'N/A',
-              transactionId: 'N/A',
-            },
+            amount: 0,
+            currency: 'NGN',
+            paymentMethod: 'N/A',
+            transactionId: 'N/A',
+          },
         timeline,
       };
     } catch (error) {
