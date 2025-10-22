@@ -137,24 +137,6 @@ export class TravelAgentUpgradeController {
     return this.service.initiatePayment(user.id, applicationId, dto);
   }
 
-  @Post('apply')
-  @ApiOperation({
-    summary: 'Submit upgrade application and create payment (legacy endpoint)',
-  })
-  async apply(
-    @CurrentUser() user: JwtUserPayload,
-    @Body() body: CreateUpgradeApplicationDto,
-  ) {
-    // Convert to new format for backward compatibility
-    // TODO: Remove hardcoded values - these should come from frontend
-    const input = {
-      ...body,
-      serviceFeeId: 'default-upgrade-fee', // TODO: Get from frontend
-      paymentMethodId: 'paystack', // TODO: Get from frontend
-    };
-    return this.service.createUpgradeApplication(user.id, input);
-  }
-
   @Get('application')
   @ApiOperation({ summary: 'Get your upgrade application' })
   async getApplication(@CurrentUser() user: JwtUserPayload) {
@@ -203,10 +185,7 @@ export class TravelAgentUpgradeController {
   @Get('license')
   @ApiOperation({ summary: 'Get current license info' })
   async license(@CurrentUser() user: JwtUserPayload) {
-    const license = await this.service['prisma'].travelAgentLicense.findUnique({
-      where: { userId: user.id },
-    });
-    return { license };
+    return this.service.getLicenseInfo(user.id);
   }
 
   @Post('documents/upload')

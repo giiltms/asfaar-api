@@ -490,6 +490,13 @@ export class TravelAgentUpgradeService {
     return { fees };
   }
 
+  async getLicenseInfo(userId: string) {
+    const license = await this.prisma.travelAgentLicense.findUnique({
+      where: { userId },
+    });
+    return { license };
+  }
+
   async listApplications(params: {
     status?: string;
     page: number;
