@@ -1053,7 +1053,7 @@ export class PaymentsController {
   @ApiOperation({
     summary: 'Resolve bank account name',
     description:
-      'Verify bank account details and return the account holder name',
+      'Verify bank account details and return the account holder name, bank name, and bank code',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -1068,6 +1068,8 @@ export class PaymentsController {
           properties: {
             accountName: { type: 'string', example: 'John Doe' },
             accountNumber: { type: 'string', example: '0123456789' },
+            bankName: { type: 'string', example: 'Access Bank' },
+            bankCode: { type: 'string', example: '044' },
           },
         },
         timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },

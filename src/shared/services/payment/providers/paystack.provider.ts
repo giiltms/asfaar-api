@@ -351,7 +351,7 @@ export class PaystackProvider implements PaymentProviderInterface {
   async resolveAccountName(
     accountNumber: string,
     bankCode: string,
-  ): Promise<{ accountName: string; accountNumber: string }> {
+  ): Promise<{ accountName: string; accountNumber: string; bankName: string; bankCode: string }> {
     try {
       // Validate inputs
       if (!accountNumber || !bankCode) {
@@ -378,9 +378,16 @@ export class PaystackProvider implements PaymentProviderInterface {
           throw new Error('Invalid response from bank verification service');
         }
 
+        // Get bank name from the banks list
+        const banks = await this.getBanks();
+        const bank = banks.find(b => b.code === bankCode);
+        const bankName = bank ? bank.name : 'Unknown Bank';
+
         return {
           accountName: account_name,
           accountNumber: account_number,
+          bankName: bankName,
+          bankCode: bankCode,
         };
       }
 
