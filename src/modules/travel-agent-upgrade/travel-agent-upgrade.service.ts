@@ -97,11 +97,20 @@ export class TravelAgentUpgradeService {
     userId: string,
     input: CreateDraftApplicationInput,
   ) {
-    // Check if user already has ANY application (due to unique constraint on userId)
-    const existingApp =
+    // Check if user has any active applications (DRAFT, PENDING, PENDING_PAYMENT, PENDING_REVIEW, UNDER_REVIEW)
+    const activeStatuses = [
+      UpgradeApplicationStatus.DRAFT,
+      UpgradeApplicationStatus.PENDING,
+      UpgradeApplicationStatus.PENDING_PAYMENT,
+      UpgradeApplicationStatus.PENDING_REVIEW,
+      UpgradeApplicationStatus.UNDER_REVIEW,
+    ];
+
+    const existingActiveApp =
       await this.prisma.travelAgentUpgradeApplication.findFirst({
         where: {
           userId,
+          status: { in: activeStatuses },
         },
         include: {
           bankDetails: true,
@@ -110,37 +119,13 @@ export class TravelAgentUpgradeService {
         },
       });
 
-    if (existingApp) {
-      // Check if the existing application is in a state that allows continuation
-      const continuableStatuses = [
-        UpgradeApplicationStatus.DRAFT,
-        UpgradeApplicationStatus.PENDING,
-        UpgradeApplicationStatus.PENDING_PAYMENT,
-        UpgradeApplicationStatus.PENDING_REVIEW,
-        UpgradeApplicationStatus.UNDER_REVIEW,
-      ];
-      const canContinue = continuableStatuses.includes(
-        existingApp.status as any,
-      );
-
-      if (canContinue) {
-        // Return existing application for continuation
-        return {
-          application: existingApp,
-          isExisting: true,
-          message: 'Existing application retrieved',
-        };
-      } else {
-        // Application is in final state (APPROVED, REJECTED, etc.)
-        const statusMessage =
-          existingApp.status === 'APPROVED'
-            ? 'Your application has already been approved. You cannot create a new application.'
-            : existingApp.status === 'REJECTED'
-              ? 'Your previous application was rejected. Please contact support if you believe this is an error.'
-              : `You already have an application with status: ${existingApp.status}. Please contact support if you need assistance.`;
-
-        throw new BadRequestException(statusMessage);
-      }
+    if (existingActiveApp) {
+      // Return existing active application for continuation
+      return {
+        application: existingActiveApp,
+        isExisting: true,
+        message: 'Existing active application retrieved',
+      };
     }
 
     const application = await this.prisma.travelAgentUpgradeApplication.create({
@@ -397,20 +382,43 @@ export class TravelAgentUpgradeService {
     return { application };
   }
 
-  async getMyApplication(userId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+  async getMyApplication(userId: string, applicationId?: string) {
+    let app;
+
+    if (applicationId) {
+      // Get specific application
+      app = await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: { id: applicationId, userId },
+        include: { bankDetails: true, directors: true, payment: true },
+      });
+    } else {
+      // Get the most recent application
+      app = await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: { userId },
+        include: { bankDetails: true, directors: true, payment: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    return { application: app };
+  }
+
+  async getMyApplications(userId: string) {
+    const applications = await this.prisma.travelAgentUpgradeApplication.findMany({
       where: { userId },
       include: { bankDetails: true, directors: true, payment: true },
+      orderBy: { createdAt: 'desc' },
     });
-    return { application: app };
+    return { applications };
   }
 
   async updateMyApplication(
     userId: string,
     body: Partial<CreateUpgradeApplicationInput>,
   ) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+    const app = await this.prisma.travelAgentUpgradeApplication.findFirst({
       where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
     if (!app) throw new NotFoundException('Application not found');
     if (app.status !== UpgradeApplicationStatus.PENDING)
@@ -460,10 +468,33 @@ export class TravelAgentUpgradeService {
     return this.getMyApplication(userId);
   }
 
-  async cancelMyApplication(userId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
-      where: { userId },
-    });
+  async cancelMyApplication(userId: string, applicationId?: string) {
+    let app;
+
+    if (applicationId) {
+      // Cancel specific application
+      app = await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: { id: applicationId, userId },
+      });
+    } else {
+      // Cancel the most recent active application
+      app = await this.prisma.travelAgentUpgradeApplication.findFirst({
+        where: {
+          userId,
+          status: {
+            in: [
+              UpgradeApplicationStatus.DRAFT,
+              UpgradeApplicationStatus.PENDING,
+              UpgradeApplicationStatus.PENDING_PAYMENT,
+              UpgradeApplicationStatus.PENDING_REVIEW,
+              UpgradeApplicationStatus.UNDER_REVIEW,
+            ],
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
     if (!app) throw new NotFoundException('Application not found');
     if (
       app.status === UpgradeApplicationStatus.APPROVED ||
@@ -481,8 +512,9 @@ export class TravelAgentUpgradeService {
   }
 
   async retryInitialPayment(userId: string, serviceFeeId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findUnique({
+    const app = await this.prisma.travelAgentUpgradeApplication.findFirst({
       where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
     if (!app) throw new NotFoundException('Application not found');
     const fee = await this.prisma.serviceFee.findUnique({

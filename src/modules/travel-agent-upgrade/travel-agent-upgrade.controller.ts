@@ -180,9 +180,24 @@ export class TravelAgentUpgradeController {
   }
 
   @Get('application')
-  @ApiOperation({ summary: 'Get your upgrade application' })
+  @ApiOperation({ summary: 'Get your most recent upgrade application' })
   async getApplication(@CurrentUser() user: JwtUserPayload) {
     return this.service.getMyApplication(user.id);
+  }
+
+  @Get('application/:id')
+  @ApiOperation({ summary: 'Get specific upgrade application by ID' })
+  async getApplicationById(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id') applicationId: string,
+  ) {
+    return this.service.getMyApplication(user.id, applicationId);
+  }
+
+  @Get('applications')
+  @ApiOperation({ summary: 'Get all your upgrade applications' })
+  async getApplications(@CurrentUser() user: JwtUserPayload) {
+    return this.service.getMyApplications(user.id);
   }
 
   @Put('application')
@@ -196,8 +211,8 @@ export class TravelAgentUpgradeController {
 
   @Delete('application')
   @ApiOperation({ 
-    summary: 'Cancel and delete your upgrade application',
-    description: 'Permanently deletes your upgrade application, allowing you to create a new one. Cannot be undone.'
+    summary: 'Cancel and delete your most recent upgrade application',
+    description: 'Permanently deletes your most recent upgrade application, allowing you to create a new one. Cannot be undone.'
   })
   @ApiResponse({
     status: 200,
@@ -233,6 +248,50 @@ export class TravelAgentUpgradeController {
   })
   async cancel(@CurrentUser() user: JwtUserPayload) {
     return this.service.cancelMyApplication(user.id);
+  }
+
+  @Delete('application/:id')
+  @ApiOperation({ 
+    summary: 'Cancel and delete specific upgrade application by ID',
+    description: 'Permanently deletes the specified upgrade application. Cannot be undone.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Application deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Application not found',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Application not found' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot cancel finalized application',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Cannot cancel finalized application' }
+      }
+    }
+  })
+  async cancelById(
+    @CurrentUser() user: JwtUserPayload,
+    @Param('id') applicationId: string,
+  ) {
+    return this.service.cancelMyApplication(user.id, applicationId);
   }
 
   @Post('retry-payment')

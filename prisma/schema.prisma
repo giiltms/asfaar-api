@@ -184,7 +184,7 @@ model User {
   biometricData               BiometricData[]
   internationalPassports      InternationalPassport[]
   // Travel Agent Upgrade & Licensing
-  upgradeApplication          TravelAgentUpgradeApplication?
+  upgradeApplications         TravelAgentUpgradeApplication[]
   reviewedUpgradeApplications TravelAgentUpgradeApplication[] @relation("UpgradeReviewer")
   travelAgentLicense          TravelAgentLicense?
 
@@ -1554,7 +1554,7 @@ enum TravelAgentApplicationType {
 
 model TravelAgentUpgradeApplication {
   id     String @id @default(uuid())
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Status & Review
