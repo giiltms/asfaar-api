@@ -6,8 +6,9 @@ import {
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
-import { 
+import {
   UpgradeApplicationStatus,
+  TravelAgentApplicationType,
   FeeType,
   PaymentStatus,
   Roles,
@@ -16,9 +17,10 @@ import {
 } from '@prisma/client';
 
 export interface CreateDraftApplicationInput {
-  companyName: string;
-  companyEmail: string;
-  companyPhone: string;
+  applicationType: TravelAgentApplicationType;
+  companyName?: string;
+  companyEmail?: string;
+  companyPhone?: string;
   cacNumber?: string;
   tinNumber?: string;
   nahconLicenseNumber?: string;
@@ -54,6 +56,7 @@ export interface CompleteApplicationInput {
 }
 
 export interface CreateUpgradeApplicationInput {
+  applicationType: TravelAgentApplicationType;
   companyName: string;
   companyEmail: string;
   companyPhone: string;
@@ -116,23 +119,26 @@ export class TravelAgentUpgradeService {
         UpgradeApplicationStatus.PENDING_REVIEW,
         UpgradeApplicationStatus.UNDER_REVIEW,
       ];
-      const canContinue = continuableStatuses.includes(existingApp.status as any);
+      const canContinue = continuableStatuses.includes(
+        existingApp.status as any,
+      );
 
       if (canContinue) {
         // Return existing application for continuation
-        return { 
+        return {
           application: existingApp,
           isExisting: true,
-          message: 'Existing application retrieved'
+          message: 'Existing application retrieved',
         };
       } else {
         // Application is in final state (APPROVED, REJECTED, etc.)
-        const statusMessage = existingApp.status === 'APPROVED' 
-          ? 'Your application has already been approved. You cannot create a new application.'
-          : existingApp.status === 'REJECTED'
-          ? 'Your previous application was rejected. Please contact support if you believe this is an error.'
-          : `You already have an application with status: ${existingApp.status}. Please contact support if you need assistance.`;
-          
+        const statusMessage =
+          existingApp.status === 'APPROVED'
+            ? 'Your application has already been approved. You cannot create a new application.'
+            : existingApp.status === 'REJECTED'
+              ? 'Your previous application was rejected. Please contact support if you believe this is an error.'
+              : `You already have an application with status: ${existingApp.status}. Please contact support if you need assistance.`;
+
         throw new BadRequestException(statusMessage);
       }
     }
@@ -141,9 +147,10 @@ export class TravelAgentUpgradeService {
       data: {
         userId,
         status: UpgradeApplicationStatus.DRAFT,
-        companyName: input.companyName,
-        companyEmail: input.companyEmail,
-        companyPhone: input.companyPhone,
+        applicationType: input.applicationType,
+        companyName: input.companyName || '',
+        companyEmail: input.companyEmail || '',
+        companyPhone: input.companyPhone || '',
         cacNumber: input.cacNumber || '',
         tinNumber: input.tinNumber || '',
         nahconLicenseNumber: input.nahconLicenseNumber || '',
@@ -154,10 +161,10 @@ export class TravelAgentUpgradeService {
       },
     });
 
-    return { 
+    return {
       application,
       isExisting: false,
-      message: 'Draft application created successfully'
+      message: 'Draft application created successfully',
     };
   }
 
@@ -351,6 +358,7 @@ export class TravelAgentUpgradeService {
       data: {
         userId,
         paymentId: payment.id,
+        applicationType: input.applicationType,
         companyName: input.companyName,
         companyEmail: input.companyEmail,
         companyPhone: input.companyPhone,
@@ -462,13 +470,13 @@ export class TravelAgentUpgradeService {
       app.status === UpgradeApplicationStatus.REJECTED
     )
       throw new BadRequestException('Cannot cancel finalized application');
-    
+
     // Delete the application to allow user to reapply
     // This will cascade delete related bank details and directors
     await this.prisma.travelAgentUpgradeApplication.delete({
       where: { id: app.id },
     });
-    
+
     return { success: true };
   }
 

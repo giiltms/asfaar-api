@@ -9,6 +9,7 @@ import {
   Length,
   ValidateNested,
 } from 'class-validator';
+import { TravelAgentApplicationType } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateDirectorDto {
@@ -96,17 +97,28 @@ export class UploadUpgradeDocumentDto {
 }
 
 export class CreateDraftApplicationDto {
-  @ApiProperty()
-  @IsString()
-  companyName: string;
+  @ApiProperty({
+    enum: TravelAgentApplicationType,
+    description: 'Type of travel agent application',
+    example: 'REGULAR_TRAVEL_AGENT',
+  })
+  @IsEnum(TravelAgentApplicationType)
+  applicationType: TravelAgentApplicationType;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsEmail()
-  companyEmail: string;
+  companyEmail?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  companyPhone: string;
+  companyPhone?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -188,6 +200,14 @@ export class CompleteUpgradeApplicationDto {
 }
 
 export class CreateUpgradeApplicationDto {
+  @ApiProperty({
+    enum: TravelAgentApplicationType,
+    description: 'Type of travel agent application',
+    example: 'REGULAR_TRAVEL_AGENT'
+  })
+  @IsEnum(TravelAgentApplicationType)
+  applicationType: TravelAgentApplicationType;
+
   @ApiProperty()
   @IsString()
   companyName: string;

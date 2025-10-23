@@ -1547,6 +1547,11 @@ enum UpgradeApplicationStatus {
   CANCELLED
 }
 
+enum TravelAgentApplicationType {
+  REGULAR_TRAVEL_AGENT
+  NAHCON_REGISTERED_AGENT
+}
+
 model TravelAgentUpgradeApplication {
   id     String @id @default(uuid())
   userId String @unique
@@ -1558,6 +1563,9 @@ model TravelAgentUpgradeApplication {
   reviewedAt  DateTime?
   reviewedBy  String?
   reviewer    User?                    @relation("UpgradeReviewer", fields: [reviewedBy], references: [id])
+
+  // Application Type
+  applicationType TravelAgentApplicationType @default(REGULAR_TRAVEL_AGENT)
 
   // Business Contact
   companyName  String
