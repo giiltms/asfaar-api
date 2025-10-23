@@ -8,6 +8,7 @@ import {
   IsString,
   Length,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { TravelAgentApplicationType } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -157,6 +158,14 @@ export class CreateDraftApplicationDto {
 }
 
 export class CompleteUpgradeApplicationDto {
+  @ApiProperty({
+    enum: TravelAgentApplicationType,
+    description: 'Type of travel agent application',
+    example: 'REGULAR_TRAVEL_AGENT',
+  })
+  @IsEnum(TravelAgentApplicationType)
+  applicationType: TravelAgentApplicationType;
+
   @ApiProperty()
   @IsString()
   cacNumber: string;
@@ -165,9 +174,13 @@ export class CompleteUpgradeApplicationDto {
   @IsString()
   tinNumber: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @ValidateIf(
+    (o) =>
+      o.applicationType === TravelAgentApplicationType.NAHCON_REGISTERED_AGENT,
+  )
   @IsString()
-  nahconLicenseNumber: string;
+  nahconLicenseNumber?: string;
 
   @ApiProperty()
   @IsString()
@@ -203,7 +216,7 @@ export class CreateUpgradeApplicationDto {
   @ApiProperty({
     enum: TravelAgentApplicationType,
     description: 'Type of travel agent application',
-    example: 'REGULAR_TRAVEL_AGENT'
+    example: 'REGULAR_TRAVEL_AGENT',
   })
   @IsEnum(TravelAgentApplicationType)
   applicationType: TravelAgentApplicationType;

@@ -31,9 +31,10 @@ export interface CreateDraftApplicationInput {
 }
 
 export interface CompleteApplicationInput {
+  applicationType: TravelAgentApplicationType;
   cacNumber: string;
   tinNumber: string;
-  nahconLicenseNumber: string;
+  nahconLicenseNumber?: string;
   dssClearanceNumber: string;
   efccScumlNumber: string;
   iataAccreditationNumber?: string;
@@ -125,7 +126,9 @@ export class TravelAgentUpgradeService {
       return {
         application: existingActiveApp,
         isExisting: true,
-        message: `Existing ${input.applicationType.toLowerCase().replace('_', ' ')} application retrieved`,
+        message: `Existing ${input.applicationType
+          .toLowerCase()
+          .replace('_', ' ')} application retrieved`,
       };
     }
 
@@ -173,6 +176,17 @@ export class TravelAgentUpgradeService {
       throw new NotFoundException('Draft application not found');
     }
 
+    // Validate NAHCON license number is provided for NAHCON applications
+    if (
+      input.applicationType ===
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      !input.nahconLicenseNumber
+    ) {
+      throw new BadRequestException(
+        'NAHCON license number is required for NAHCON registered agent applications',
+      );
+    }
+
     // Validate required documents are uploaded
     const uploadedDocuments =
       await this.prisma.travelAgentUpgradeApplication.findUnique({
@@ -190,8 +204,15 @@ export class TravelAgentUpgradeService {
       missingDocuments.push('CAC Document');
     if (!uploadedDocuments.taxClearanceDocumentUrl)
       missingDocuments.push('Tax Clearance Certificate');
-    if (!uploadedDocuments.nahconDocumentUrl)
+
+    // NAHCON document only required for NAHCON registered agents
+    if (
+      input.applicationType ===
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      !uploadedDocuments.nahconDocumentUrl
+    )
       missingDocuments.push('NAHCON Document');
+
     if (!uploadedDocuments.efccScumlDocumentUrl)
       missingDocuments.push('EFCC SCUML Document');
 
@@ -207,9 +228,10 @@ export class TravelAgentUpgradeService {
         where: { id: applicationId },
         data: {
           status: UpgradeApplicationStatus.PENDING,
+          applicationType: input.applicationType,
           cacNumber: input.cacNumber,
           tinNumber: input.tinNumber,
-          nahconLicenseNumber: input.nahconLicenseNumber,
+          nahconLicenseNumber: input.nahconLicenseNumber || '',
           dssClearanceNumber: input.dssClearanceNumber,
           efccScumlNumber: input.efccScumlNumber,
           iataAccreditationNumber: input.iataAccreditationNumber,
@@ -405,11 +427,12 @@ export class TravelAgentUpgradeService {
   }
 
   async getMyApplications(userId: string) {
-    const applications = await this.prisma.travelAgentUpgradeApplication.findMany({
-      where: { userId },
-      include: { bankDetails: true, directors: true, payment: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const applications =
+      await this.prisma.travelAgentUpgradeApplication.findMany({
+        where: { userId },
+        include: { bankDetails: true, directors: true, payment: true },
+        orderBy: { createdAt: 'desc' },
+      });
     return { applications };
   }
 
@@ -511,7 +534,6 @@ export class TravelAgentUpgradeService {
 
     return { success: true };
   }
-
 
   async listUpgradeFees() {
     const fees = await this.prisma.serviceFee.findMany({
