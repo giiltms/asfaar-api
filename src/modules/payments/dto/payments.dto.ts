@@ -321,16 +321,6 @@ export class ResolveAccountResponseDto {
   accountNumber: string;
 }
 
-export class BankDto {
-  @ApiProperty({ example: 'Access Bank' })
-  name: string;
-
-  @ApiProperty({ example: '044' })
-  code: string;
-
-  @ApiPropertyOptional({ example: 'Nigeria' })
-  country?: string;
-}
 
 export class TransactionDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
