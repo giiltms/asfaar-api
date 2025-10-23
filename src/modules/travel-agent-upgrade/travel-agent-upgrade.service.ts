@@ -94,20 +94,11 @@ export class TravelAgentUpgradeService {
     userId: string,
     input: CreateDraftApplicationInput,
   ) {
-    // Check if user already has a draft or pending application
+    // Check if user already has ANY application (due to unique constraint on userId)
     const existingApp =
       await this.prisma.travelAgentUpgradeApplication.findFirst({
         where: {
           userId,
-          status: {
-            in: [
-              UpgradeApplicationStatus.DRAFT,
-              UpgradeApplicationStatus.PENDING,
-              UpgradeApplicationStatus.PENDING_PAYMENT,
-              UpgradeApplicationStatus.PENDING_REVIEW,
-              UpgradeApplicationStatus.UNDER_REVIEW,
-            ],
-          },
         },
         include: {
           bankDetails: true,
@@ -117,12 +108,32 @@ export class TravelAgentUpgradeService {
       });
 
     if (existingApp) {
-      // Return existing application instead of throwing error
-      return { 
-        application: existingApp,
-        isExisting: true,
-        message: 'Existing application retrieved'
-      };
+      // Check if the existing application is in a state that allows continuation
+      const canContinue = [
+        UpgradeApplicationStatus.DRAFT,
+        UpgradeApplicationStatus.PENDING,
+        UpgradeApplicationStatus.PENDING_PAYMENT,
+        UpgradeApplicationStatus.PENDING_REVIEW,
+        UpgradeApplicationStatus.UNDER_REVIEW,
+      ].includes(existingApp.status);
+
+      if (canContinue) {
+        // Return existing application for continuation
+        return { 
+          application: existingApp,
+          isExisting: true,
+          message: 'Existing application retrieved'
+        };
+      } else {
+        // Application is in final state (APPROVED, REJECTED, etc.)
+        const statusMessage = existingApp.status === 'APPROVED' 
+          ? 'Your application has already been approved. You cannot create a new application.'
+          : existingApp.status === 'REJECTED'
+          ? 'Your previous application was rejected. Please contact support if you believe this is an error.'
+          : `You already have an application with status: ${existingApp.status}. Please contact support if you need assistance.`;
+          
+        throw new BadRequestException(statusMessage);
+      }
     }
 
     const application = await this.prisma.travelAgentUpgradeApplication.create({

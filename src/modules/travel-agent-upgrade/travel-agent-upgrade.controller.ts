@@ -44,7 +44,7 @@ export class TravelAgentUpgradeController {
   @ApiOperation({
     summary: 'Create or get existing draft upgrade application',
     description:
-      'Create a draft travel agent upgrade application or return existing draft/pending application. This allows users to start the application process and upload documents before completing the application.',
+      'Create a draft travel agent upgrade application or return existing draft/pending application. If user has an existing application in a continuable state (DRAFT, PENDING, PENDING_PAYMENT, PENDING_REVIEW, UNDER_REVIEW), it will be returned. If the existing application is in a final state (APPROVED, REJECTED, etc.), an error will be thrown.',
   })
   @ApiResponse({
     status: 201,
@@ -122,6 +122,30 @@ export class TravelAgentUpgradeController {
             message: {
               type: 'string',
               example: 'Invalid input data',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User already has an application in final state',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'You already have an application with status: APPROVED. Please contact support if you need assistance.',
+        },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 400001 },
+            message: {
+              type: 'string',
+              example: 'Application already exists in final state',
             },
           },
         },
