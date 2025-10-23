@@ -56,7 +56,8 @@ export class TravelAgentUpgradeController {
         message: {
           type: 'string',
           example: 'Draft application created successfully',
-          description: 'Will be "Draft application created successfully" for new applications or "Existing application retrieved" for existing applications'
+          description:
+            'Will be "Draft application created successfully" for new applications or "Existing application retrieved" for existing applications',
         },
         data: {
           type: 'object',
@@ -86,18 +87,21 @@ export class TravelAgentUpgradeController {
                 },
                 directors: {
                   type: 'array',
-                  description: 'Director information if application is completed',
+                  description:
+                    'Director information if application is completed',
                 },
                 payment: {
                   type: 'object',
                   nullable: true,
-                  description: 'Payment information if payment has been initiated',
+                  description:
+                    'Payment information if payment has been initiated',
                 },
               },
             },
             isExisting: {
               type: 'boolean',
-              description: 'True if returning existing application, false if creating new one'
+              description:
+                'True if returning existing application, false if creating new one',
             },
           },
         },
@@ -137,7 +141,8 @@ export class TravelAgentUpgradeController {
         success: { type: 'boolean', example: false },
         message: {
           type: 'string',
-          example: 'You already have an application with status: APPROVED. Please contact support if you need assistance.',
+          example:
+            'You already have an application with status: APPROVED. Please contact support if you need assistance.',
         },
         error: {
           type: 'object',
@@ -210,9 +215,10 @@ export class TravelAgentUpgradeController {
   }
 
   @Delete('application')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Cancel and delete your most recent upgrade application',
-    description: 'Permanently deletes your most recent upgrade application, allowing you to create a new one. Cannot be undone.'
+    description:
+      'Permanently deletes your most recent upgrade application, allowing you to create a new one. Cannot be undone.',
   })
   @ApiResponse({
     status: 200,
@@ -220,9 +226,9 @@ export class TravelAgentUpgradeController {
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true }
-      }
-    }
+        success: { type: 'boolean', example: true },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -231,9 +237,9 @@ export class TravelAgentUpgradeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Application not found' }
-      }
-    }
+        message: { type: 'string', example: 'Application not found' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -242,18 +248,22 @@ export class TravelAgentUpgradeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Cannot cancel finalized application' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'Cannot cancel finalized application',
+        },
+      },
+    },
   })
   async cancel(@CurrentUser() user: JwtUserPayload) {
     return this.service.cancelMyApplication(user.id);
   }
 
   @Delete('application/:id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Cancel and delete specific upgrade application by ID',
-    description: 'Permanently deletes the specified upgrade application. Cannot be undone.'
+    description:
+      'Permanently deletes the specified upgrade application. Cannot be undone.',
   })
   @ApiResponse({
     status: 200,
@@ -261,9 +271,9 @@ export class TravelAgentUpgradeController {
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true }
-      }
-    }
+        success: { type: 'boolean', example: true },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -272,9 +282,9 @@ export class TravelAgentUpgradeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Application not found' }
-      }
-    }
+        message: { type: 'string', example: 'Application not found' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -283,24 +293,18 @@ export class TravelAgentUpgradeController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Cannot cancel finalized application' }
-      }
-    }
+        message: {
+          type: 'string',
+          example: 'Cannot cancel finalized application',
+        },
+      },
+    },
   })
   async cancelById(
     @CurrentUser() user: JwtUserPayload,
     @Param('id') applicationId: string,
   ) {
     return this.service.cancelMyApplication(user.id, applicationId);
-  }
-
-  @Post('retry-payment')
-  @ApiOperation({ summary: 'Retry initial application payment' })
-  async retryPayment(
-    @CurrentUser() user: JwtUserPayload,
-    @Body() dto: { serviceFeeId: string },
-  ) {
-    return this.service.retryInitialPayment(user.id, dto.serviceFeeId);
   }
 
   @Get('fees')

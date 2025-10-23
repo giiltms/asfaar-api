@@ -97,7 +97,7 @@ export class TravelAgentUpgradeService {
     userId: string,
     input: CreateDraftApplicationInput,
   ) {
-    // Check if user has any active applications (DRAFT, PENDING, PENDING_PAYMENT, PENDING_REVIEW, UNDER_REVIEW)
+    // Check if user has an active application with the same application type
     const activeStatuses = [
       UpgradeApplicationStatus.DRAFT,
       UpgradeApplicationStatus.PENDING,
@@ -110,6 +110,7 @@ export class TravelAgentUpgradeService {
       await this.prisma.travelAgentUpgradeApplication.findFirst({
         where: {
           userId,
+          applicationType: input.applicationType,
           status: { in: activeStatuses },
         },
         include: {
@@ -120,11 +121,11 @@ export class TravelAgentUpgradeService {
       });
 
     if (existingActiveApp) {
-      // Return existing active application for continuation
+      // Return existing active application of the same type for continuation
       return {
         application: existingActiveApp,
         isExisting: true,
-        message: 'Existing active application retrieved',
+        message: `Existing ${input.applicationType.toLowerCase().replace('_', ' ')} application retrieved`,
       };
     }
 
@@ -511,43 +512,6 @@ export class TravelAgentUpgradeService {
     return { success: true };
   }
 
-  async retryInitialPayment(userId: string, serviceFeeId: string) {
-    const app = await this.prisma.travelAgentUpgradeApplication.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!app) throw new NotFoundException('Application not found');
-    const fee = await this.prisma.serviceFee.findUnique({
-      where: { id: serviceFeeId },
-    });
-    if (!fee || fee.feeType !== FeeType.UPGRADE)
-      throw new BadRequestException('Invalid upgrade fee');
-
-    const payment = await this.prisma.payment.create({
-      data: {
-        userId,
-        amount: fee.amount,
-        currency: Currency.NGN,
-        status: PaymentStatus.PENDING,
-        description: `Travel Agent Upgrade Application - ${fee.name}`,
-        serviceFees: {
-          create: [
-            {
-              serviceFeeId,
-              amount: fee.amount,
-              currency: 'NGN',
-              feeType: FeeType.UPGRADE,
-            },
-          ],
-        },
-      },
-    });
-    await this.prisma.travelAgentUpgradeApplication.update({
-      where: { id: app.id },
-      data: { paymentId: payment.id },
-    });
-    return { paymentId: payment.id };
-  }
 
   async listUpgradeFees() {
     const fees = await this.prisma.serviceFee.findMany({
