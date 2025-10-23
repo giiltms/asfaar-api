@@ -6,11 +6,11 @@ import {
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
-import {
+import { 
+  UpgradeApplicationStatus,
   FeeType,
   PaymentStatus,
   Roles,
-  UpgradeApplicationStatus,
   Currency,
   TravelAgentLicenseStatus,
 } from '@prisma/client';
@@ -109,13 +109,14 @@ export class TravelAgentUpgradeService {
 
     if (existingApp) {
       // Check if the existing application is in a state that allows continuation
-      const canContinue = [
+      const continuableStatuses = [
         UpgradeApplicationStatus.DRAFT,
         UpgradeApplicationStatus.PENDING,
         UpgradeApplicationStatus.PENDING_PAYMENT,
         UpgradeApplicationStatus.PENDING_REVIEW,
         UpgradeApplicationStatus.UNDER_REVIEW,
-      ].includes(existingApp.status);
+      ];
+      const canContinue = continuableStatuses.includes(existingApp.status as any);
 
       if (canContinue) {
         // Return existing application for continuation
