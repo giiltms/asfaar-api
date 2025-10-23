@@ -73,6 +73,8 @@ export enum UpgradeDocumentType {
   NAHCON_DOCUMENT = 'NAHCON_DOCUMENT',
   EFCC_SCUML_DOCUMENT = 'EFCC_SCUML_DOCUMENT',
   IATA_DOCUMENT = 'IATA_DOCUMENT',
+  DSS_DOCUMENT = 'DSS_DOCUMENT',
+  NANTA_DOCUMENT = 'NANTA_DOCUMENT',
 }
 
 export class UploadUpgradeDocumentDto {

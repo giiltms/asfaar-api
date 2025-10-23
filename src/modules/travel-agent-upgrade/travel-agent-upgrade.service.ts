@@ -632,10 +632,12 @@ export class TravelAgentUpgradeService {
       'NAHCON_DOCUMENT',
       'EFCC_SCUML_DOCUMENT',
       'IATA_DOCUMENT',
+      'DSS_DOCUMENT',
+      'NANTA_DOCUMENT',
     ];
     if (!allowedDocumentTypes.includes(documentType)) {
       throw new BadRequestException(
-        'Invalid document type. Allowed types: CAC_DOCUMENT, TAX_CLEARANCE_CERTIFICATE, NAHCON_DOCUMENT, EFCC_SCUML_DOCUMENT, IATA_DOCUMENT',
+        'Invalid document type. Allowed types: CAC_DOCUMENT, TAX_CLEARANCE_CERTIFICATE, NAHCON_DOCUMENT, EFCC_SCUML_DOCUMENT, IATA_DOCUMENT, DSS_DOCUMENT, NANTA_DOCUMENT',
       );
     }
 
@@ -684,6 +686,12 @@ export class TravelAgentUpgradeService {
         break;
       case 'IATA_DOCUMENT':
         data.iataDocumentUrl = fileUrl;
+        break;
+      case 'DSS_DOCUMENT':
+        data.dssDocumentUrl = fileUrl;
+        break;
+      case 'NANTA_DOCUMENT':
+        data.nantaDocumentUrl = fileUrl;
         break;
       default:
         throw new BadRequestException('Unsupported document type');
@@ -736,6 +744,12 @@ export class TravelAgentUpgradeService {
         break;
       case 'IATA_DOCUMENT':
         data.iataDocumentUrl = dto.fileUrl;
+        break;
+      case 'DSS_DOCUMENT':
+        data.dssDocumentUrl = dto.fileUrl;
+        break;
+      case 'NANTA_DOCUMENT':
+        data.nantaDocumentUrl = dto.fileUrl;
         break;
       default:
         throw new BadRequestException('Unsupported document type');

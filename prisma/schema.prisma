@@ -1584,6 +1584,7 @@ model TravelAgentUpgradeApplication {
 
   // Security Clearances
   dssClearanceNumber   String
+  dssDocumentUrl       String?
   efccScumlNumber      String
   efccScumlDocumentUrl String?
 
@@ -1591,6 +1592,7 @@ model TravelAgentUpgradeApplication {
   iataAccreditationNumber String?
   iataDocumentUrl         String?
   nantaMembershipNumber   String?
+  nantaDocumentUrl        String?
 
   // Banking & People
   bankDetails TravelAgentBankDetails?
