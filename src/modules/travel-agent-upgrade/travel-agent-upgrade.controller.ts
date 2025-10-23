@@ -56,6 +56,7 @@ export class TravelAgentUpgradeController {
         message: {
           type: 'string',
           example: 'Draft application created successfully',
+          description: 'Will be "Draft application created successfully" for new applications or "Existing application retrieved" for existing applications'
         },
         data: {
           type: 'object',
@@ -93,6 +94,10 @@ export class TravelAgentUpgradeController {
                   description: 'Payment information if payment has been initiated',
                 },
               },
+            },
+            isExisting: {
+              type: 'boolean',
+              description: 'True if returning existing application, false if creating new one'
             },
           },
         },

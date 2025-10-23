@@ -118,7 +118,11 @@ export class TravelAgentUpgradeService {
 
     if (existingApp) {
       // Return existing application instead of throwing error
-      return { application: existingApp };
+      return { 
+        application: existingApp,
+        isExisting: true,
+        message: 'Existing application retrieved'
+      };
     }
 
     const application = await this.prisma.travelAgentUpgradeApplication.create({
@@ -138,7 +142,11 @@ export class TravelAgentUpgradeService {
       },
     });
 
-    return { application };
+    return { 
+      application,
+      isExisting: false,
+      message: 'Draft application created successfully'
+    };
   }
 
   async completeApplication(
