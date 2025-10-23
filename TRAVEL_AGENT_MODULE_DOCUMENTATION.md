@@ -216,6 +216,8 @@ graph TD
     H --> J[User Becomes Travel Agent]
 ```
 
+**Note**: The legacy `/apply` endpoint has been removed. Use the proper workflow endpoints listed below.
+
 ### Status Transitions
 
 ```

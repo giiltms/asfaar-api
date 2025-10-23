@@ -899,13 +899,123 @@ export class PaymentsController {
   @Get('banks')
   @ApiOperation({
     summary: 'Get list of banks by country',
-    description:
-      'Retrieve all supported banks with their codes for account verification. Supports multiple African countries.',
+    description: `
+      Retrieve all supported banks with their codes for account verification. 
+      Supports multiple African countries including Nigeria, Ghana, Kenya, and South Africa.
+      
+      **Examples:**
+      - \`GET /payments/banks\` - Returns Nigerian banks (default)
+      - \`GET /payments/banks?country=nigeria\` - Returns Nigerian banks
+      - \`GET /payments/banks?country=ghana\` - Returns Ghanaian banks
+      - \`GET /payments/banks?country=kenya\` - Returns Kenyan banks
+      - \`GET /payments/banks?country=south-africa\` - Returns South African banks
+    `,
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Banks retrieved successfully',
     type: GetBanksResponseDto,
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Banks retrieved successfully' },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'Access Bank' },
+              code: { type: 'string', example: '044' },
+              country: { type: 'string', example: 'Nigeria' },
+            },
+          },
+          example: [
+            {
+              name: 'Access Bank',
+              code: '044',
+              country: 'Nigeria',
+            },
+            {
+              name: 'First Bank of Nigeria',
+              code: '011',
+              country: 'Nigeria',
+            },
+            {
+              name: 'Guaranty Trust Bank',
+              code: '058',
+              country: 'Nigeria',
+            },
+            {
+              name: 'Zenith Bank',
+              code: '057',
+              country: 'Nigeria',
+            },
+            {
+              name: 'United Bank for Africa',
+              code: '033',
+              country: 'Nigeria',
+            },
+            {
+              name: 'Polaris Bank',
+              code: '076',
+              country: 'Nigeria',
+            },
+            {
+              name: 'Fidelity Bank',
+              code: '070',
+              country: 'Nigeria',
+            },
+            {
+              name: 'Union Bank of Nigeria',
+              code: '032',
+              country: 'Nigeria',
+            },
+          ],
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid country parameter',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Validation failed' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 400000 },
+            message: { type: 'string', example: 'Country must be one of: nigeria, ghana, kenya, south-africa' },
+            details: { type: 'string', example: 'Invalid country parameter provided' },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to retrieve banks from payment provider',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Failed to retrieve banks' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 500000 },
+            message: { type: 'string', example: 'Payment provider service unavailable' },
+            details: { type: 'string', example: 'Unable to connect to Paystack API' },
+          },
+        },
+        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+      },
+    },
   })
   async getBanks(@Query() query: GetBanksQueryDto): Promise<GetBanksResponseDto> {
     const banks = await this.paymentProviderService.getBanks(query.country);
