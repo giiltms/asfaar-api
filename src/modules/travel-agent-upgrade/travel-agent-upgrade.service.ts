@@ -109,12 +109,16 @@ export class TravelAgentUpgradeService {
             ],
           },
         },
+        include: {
+          bankDetails: true,
+          directors: true,
+          payment: true,
+        },
       });
 
     if (existingApp) {
-      throw new BadRequestException(
-        'You already have an active upgrade application',
-      );
+      // Return existing application instead of throwing error
+      return { application: existingApp };
     }
 
     const application = await this.prisma.travelAgentUpgradeApplication.create({

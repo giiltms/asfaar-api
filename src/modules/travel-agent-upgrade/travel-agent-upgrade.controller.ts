@@ -42,13 +42,13 @@ export class TravelAgentUpgradeController {
 
   @Post('draft')
   @ApiOperation({
-    summary: 'Create draft upgrade application',
+    summary: 'Create or get existing draft upgrade application',
     description:
-      'Create a draft travel agent upgrade application. This allows users to start the application process and upload documents before completing the application.',
+      'Create a draft travel agent upgrade application or return existing draft/pending application. This allows users to start the application process and upload documents before completing the application.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Draft application created successfully',
+    description: 'Draft application created or existing application returned',
     schema: {
       type: 'object',
       properties: {
@@ -78,6 +78,20 @@ export class TravelAgentUpgradeController {
                   type: 'string',
                   example: '2025-01-20T10:30:00.000Z',
                 },
+                bankDetails: {
+                  type: 'object',
+                  nullable: true,
+                  description: 'Bank details if application is completed',
+                },
+                directors: {
+                  type: 'array',
+                  description: 'Director information if application is completed',
+                },
+                payment: {
+                  type: 'object',
+                  nullable: true,
+                  description: 'Payment information if payment has been initiated',
+                },
               },
             },
           },
@@ -87,15 +101,14 @@ export class TravelAgentUpgradeController {
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Bad request - validation error or user already has active application',
+    description: 'Bad request - validation error',
     schema: {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
         message: {
           type: 'string',
-          example: 'You already have an active upgrade application',
+          example: 'Validation failed',
         },
         error: {
           type: 'object',
@@ -103,7 +116,7 @@ export class TravelAgentUpgradeController {
             code: { type: 'number', example: 400000 },
             message: {
               type: 'string',
-              example: 'You already have an active upgrade application',
+              example: 'Invalid input data',
             },
           },
         },
