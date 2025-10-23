@@ -38,7 +38,7 @@ import {
   CreateServiceFeeDto,
   UpdateServiceFeeDto,
 } from './dto/payment.dto';
-import { ResolveAccountDto } from './dto/payments.dto';
+import { ResolveAccountDto, GetBanksQueryDto, GetBanksResponseDto } from './dto/payments.dto';
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
@@ -894,45 +894,21 @@ export class PaymentsController {
   }
 
   /**
-   * Get list of Nigerian banks
+   * Get list of banks by country
    */
   @Get('banks')
   @ApiOperation({
-    summary: 'Get list of Nigerian banks',
+    summary: 'Get list of banks by country',
     description:
-      'Retrieve all supported Nigerian banks with their codes for account verification',
-  })
-  @ApiQuery({
-    name: 'country',
-    required: false,
-    description: 'Country code (defaults to Nigeria)',
-    example: 'nigeria',
+      'Retrieve all supported banks with their codes for account verification. Supports multiple African countries.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Banks retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Banks retrieved successfully' },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', example: 'Access Bank' },
-              code: { type: 'string', example: '044' },
-              country: { type: 'string', example: 'Nigeria' },
-            },
-          },
-        },
-        timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
-      },
-    },
+    type: GetBanksResponseDto,
   })
-  async getBanks(@Query('country') country?: string) {
-    const banks = await this.paymentProviderService.getBanks(country);
+  async getBanks(@Query() query: GetBanksQueryDto): Promise<GetBanksResponseDto> {
+    const banks = await this.paymentProviderService.getBanks(query.country);
 
     return {
       success: true,

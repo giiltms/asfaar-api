@@ -400,6 +400,66 @@ export class PaymentSummaryDto {
   currency: string;
 }
 
+export class GetBanksQueryDto {
+  @ApiPropertyOptional({
+    description: 'Country code to filter banks (defaults to Nigeria)',
+    example: 'nigeria',
+    enum: ['nigeria', 'ghana', 'kenya', 'south-africa'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsEnum(['nigeria', 'ghana', 'kenya', 'south-africa'], {
+    message: 'Country must be one of: nigeria, ghana, kenya, south-africa',
+  })
+  country?: string;
+}
+
+export class BankDto {
+  @ApiProperty({
+    description: 'Bank name',
+    example: 'Access Bank',
+  })
+  name: string;
+
+  @ApiProperty({
+    description: 'Bank code',
+    example: '044',
+  })
+  code: string;
+
+  @ApiPropertyOptional({
+    description: 'Country where the bank operates',
+    example: 'Nigeria',
+  })
+  country?: string;
+}
+
+export class GetBanksResponseDto {
+  @ApiProperty({
+    description: 'Success status',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Response message',
+    example: 'Banks retrieved successfully',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'List of banks',
+    type: [BankDto],
+  })
+  data: BankDto[];
+
+  @ApiProperty({
+    description: 'Response timestamp',
+    example: '2025-01-20T10:30:00.000Z',
+  })
+  timestamp: string;
+}
+
 export class WebhookDto {
   @ApiProperty({ example: 'charge.success' })
   event: string;
