@@ -31,6 +31,7 @@ import {
   CreateDraftApplicationDto,
   CompleteUpgradeApplicationDto,
   UploadUpgradeDocumentDto,
+  InitiatePaymentDto,
 } from './dto/upgrade.dto';
 
 @ApiTags('Travel Agent Upgrade')
@@ -175,11 +176,104 @@ export class TravelAgentUpgradeController {
   }
 
   @Post('application/:id/payment')
-  @ApiOperation({ summary: 'Initiate payment for upgrade application' })
+  @ApiOperation({
+    summary: 'Initiate payment for upgrade application',
+    description:
+      'Create a payment for the travel agent upgrade application. Requires a valid service fee ID and payment method.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment initiated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Payment initiated successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            application: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  example: '123e4567-e89b-12d3-a456-426614174000',
+                },
+                status: { type: 'string', example: 'PENDING_PAYMENT' },
+                paymentId: {
+                  type: 'string',
+                  example: 'pay-123e4567-e89b-12d3-a456-426614174000',
+                },
+              },
+            },
+            payment: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  example: 'pay-123e4567-e89b-12d3-a456-426614174000',
+                },
+                amount: { type: 'number', example: 50000 },
+                currency: { type: 'string', example: 'NGN' },
+                status: { type: 'string', example: 'PENDING' },
+                reference: {
+                  type: 'string',
+                  example: 'pay-123e4567-e89b-12d3-a456-426614174000',
+                },
+              },
+            },
+            paymentUrl: {
+              type: 'string',
+              example:
+                'https://checkout.paystack.co/authorization/access_code/1234567890',
+              description: 'URL to redirect user for payment completion',
+            },
+            reference: {
+              type: 'string',
+              example: 'pay-123e4567-e89b-12d3-a456-426614174000',
+              description: 'Payment reference for tracking',
+            },
+            accessCode: {
+              type: 'string',
+              example: '1234567890',
+              description: 'Payment access code',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid service fee or application not ready for payment',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'Invalid service fee for travel agent upgrade',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Application not found',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'Application not found or not ready for payment',
+        },
+      },
+    },
+  })
   async initiatePayment(
     @CurrentUser() user: JwtUserPayload,
     @Param('id') applicationId: string,
-    @Body() dto: { serviceFeeId: string; paymentMethodId: string },
+    @Body() dto: InitiatePaymentDto,
   ) {
     return this.service.initiatePayment(user.id, applicationId, dto);
   }

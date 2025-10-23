@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
+import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
 import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
 import {
   UpgradeApplicationStatus,
@@ -92,6 +93,7 @@ export class TravelAgentUpgradeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    private readonly paymentProviderService: PaymentProviderService,
   ) {}
 
   async createDraftApplication(
@@ -295,6 +297,16 @@ export class TravelAgentUpgradeService {
       );
     }
 
+    // Get user details for payment
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create payment record first
     const payment = await this.prisma.payment.create({
       data: {
         userId,
@@ -315,6 +327,30 @@ export class TravelAgentUpgradeService {
       },
     });
 
+    // Initiate payment with payment provider
+    const paymentData = {
+      email: user.email,
+      amount: serviceFee.amount,
+      currency: Currency.NGN,
+      reference: payment.id,
+      callbackUrl: `${
+        process.env.PAYMENT_CALLBACK_URL ||
+        'http://localhost:3000/payments/callback'
+      }?paymentType=upgrade&applicationType=travel-agent-upgrade`,
+      metadata: {
+        applicationId: applicationId,
+        serviceFeeId: dto.serviceFeeId,
+        paymentType: 'TRAVEL_AGENT_UPGRADE',
+      },
+      customerName:
+        `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+        user.email.split('@')[0],
+    };
+
+    const paymentResponse = await this.paymentProviderService.initiatePayment(
+      paymentData,
+    );
+
     // Update application with payment and status
     const updatedApplication =
       await this.prisma.travelAgentUpgradeApplication.update({
@@ -326,7 +362,22 @@ export class TravelAgentUpgradeService {
         include: { payment: true },
       });
 
-    return { application: updatedApplication, payment };
+    return {
+      message: 'Payment initiated successfully',
+      data: {
+        application: updatedApplication,
+        payment: {
+          id: payment.id,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: payment.status,
+          reference: payment.id,
+        },
+        paymentUrl: paymentResponse.authorizationUrl,
+        reference: paymentResponse.reference,
+        accessCode: paymentResponse.accessCode,
+      },
+    };
   }
 
   async createUpgradeApplication(

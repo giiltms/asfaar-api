@@ -159,6 +159,22 @@ export class CreateDraftApplicationDto {
   nantaMembershipNumber?: string;
 }
 
+export class InitiatePaymentDto {
+  @ApiProperty({
+    description: 'Service fee ID for the upgrade application',
+    example: 'fee-123e4567-e89b-12d3-a456-426614174000'
+  })
+  @IsString()
+  serviceFeeId: string;
+
+  @ApiProperty({
+    description: 'Payment method ID',
+    example: 'paystack'
+  })
+  @IsString()
+  paymentMethodId: string;
+}
+
 export class CompleteUpgradeApplicationDto {
   @ApiProperty({
     enum: TravelAgentApplicationType,
