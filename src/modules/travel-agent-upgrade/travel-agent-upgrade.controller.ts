@@ -153,7 +153,42 @@ export class TravelAgentUpgradeController {
   }
 
   @Delete('application')
-  @ApiOperation({ summary: 'Cancel your upgrade application' })
+  @ApiOperation({ 
+    summary: 'Cancel and delete your upgrade application',
+    description: 'Permanently deletes your upgrade application, allowing you to create a new one. Cannot be undone.'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Application deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Application not found',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Application not found' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot cancel finalized application',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Cannot cancel finalized application' }
+      }
+    }
+  })
   async cancel(@CurrentUser() user: JwtUserPayload) {
     return this.service.cancelMyApplication(user.id);
   }

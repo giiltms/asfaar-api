@@ -438,10 +438,13 @@ export class TravelAgentUpgradeService {
       app.status === UpgradeApplicationStatus.REJECTED
     )
       throw new BadRequestException('Cannot cancel finalized application');
-    await this.prisma.travelAgentUpgradeApplication.update({
+    
+    // Delete the application to allow user to reapply
+    // This will cascade delete related bank details and directors
+    await this.prisma.travelAgentUpgradeApplication.delete({
       where: { id: app.id },
-      data: { status: UpgradeApplicationStatus.CANCELLED },
     });
+    
     return { success: true };
   }
 
