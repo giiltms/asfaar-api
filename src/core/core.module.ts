@@ -12,8 +12,9 @@ import {
   setMailServiceForEmbassyMiddleware,
   biometricCaptureEmailMiddleware,
   setMailServiceForBiometricMiddleware,
+  setMailServiceForTravelAgentUpgradeMiddleware,
+  setMailServiceForTravelAgentUpgradeDecisionMiddleware,
 } from '@providers/prisma';
-import { setMailServiceForTravelAgentUpgradeMiddleware } from '@providers/prisma/middlewares/travel-agent-upgrade-payment-email.middleware';
 import { MailModule } from '@modules/mail/mail.module';
 import { MailService } from '@modules/mail/services/mail.service';
 
@@ -65,5 +66,6 @@ export class CoreModule implements OnModuleInit {
     setMailServiceForEmbassyMiddleware(this.mailService);
     setMailServiceForBiometricMiddleware(this.mailService);
     setMailServiceForTravelAgentUpgradeMiddleware(this.mailService);
+    setMailServiceForTravelAgentUpgradeDecisionMiddleware(this.mailService);
   }
 }

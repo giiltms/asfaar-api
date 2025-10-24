@@ -66,6 +66,21 @@ export interface TravelAgentUpgradePaymentData {
   platformName: string;
 }
 
+export interface TravelAgentUpgradeDecisionData {
+  userEmail: string;
+  userFullName: string;
+  applicationId: string;
+  applicationType: string;
+  companyName: string;
+  decision: 'APPROVED' | 'REJECTED';
+  decisionDate: string;
+  reason?: string;
+  licenseNumber?: string;
+  licenseExpiryDate?: string;
+  supportEmail: string;
+  platformName: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -363,6 +378,46 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send travel agent upgrade payment confirmation to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendTravelAgentUpgradeDecisionNotification(
+    data: TravelAgentUpgradeDecisionData,
+  ): Promise<void> {
+    try {
+      const subject =
+        data.decision === 'APPROVED'
+          ? 'Travel Agent Upgrade Application Approved - {{platformName}}'
+          : 'Travel Agent Upgrade Application Decision - {{platformName}}';
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: subject.replace('{{platformName}}', data.platformName),
+        template: 'travel-agent-upgrade-decision',
+        context: {
+          userFullName: data.userFullName,
+          applicationId: data.applicationId,
+          applicationType: data.applicationType,
+          companyName: data.companyName,
+          decision: data.decision,
+          decisionDate: data.decisionDate,
+          reason: data.reason,
+          licenseNumber: data.licenseNumber,
+          licenseExpiryDate: data.licenseExpiryDate,
+          supportEmail: data.supportEmail,
+          platformName: data.platformName,
+        },
+      });
+
+      this.logger.log(
+        `Travel agent upgrade decision notification (${data.decision}) sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send travel agent upgrade decision notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;

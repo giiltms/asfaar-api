@@ -1,0 +1,183 @@
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Travel Agent Upgrade Application Decision - {{platformName}}</title>
+    <link
+      href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      body { font-family: 'Inter', sans-serif; background-color: #f9f9f9;
+      margin: 0; padding: 0; color: #333; } .container { background-color:
+      #ffffff; max-width: 700px; margin: 40px auto; border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border-top:
+      5px solid #2e7d32; } .header { background: linear-gradient(90deg, #2e7d32
+      0%, #388e3c 100%); padding: 30px; text-align: center; color: white; }
+      .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+      .section { padding: 30px; line-height: 1.6; } .section h2 { color:
+      #2e7d32; font-size: 20px; } .decision-box { margin: 20px 0; padding: 20px;
+      border-radius: 6px; background-color: #f0fdf4; border: 1px solid #16a34a;
+      color: #16a34a; font-weight: bold; text-align: center; font-size: 18px; }
+      .rejected { background-color: #fef2f2; border: 1px solid #f87171; color:
+      #dc2626; } .license-box { margin: 20px 0; padding: 20px; border-radius:
+      6px; background-color: #eff6ff; border: 1px solid #3b82f6; color: #1e40af;
+      font-weight: 600; text-align: center; font-size: 16px; }
+      .application-details { background-color: #f9fafb; border: 1px solid
+      #e5e7eb; border-radius: 6px; padding: 20px; margin: 20px 0; } .detail-row
+      { padding: 8px 0; } .detail-label { color: #6b7280; font-size: 12px;
+      font-weight: 500; margin: 0 0 4px; text-transform: uppercase; }
+      .detail-value { color: #1f2937; font-size: 14px; font-weight: 600; margin:
+      0; font-family: monospace; } .divider { border-top: 1px solid #e5e7eb;
+      margin: 12px 0; } .button { background-color: #2e7d32; border-radius: 6px;
+      color: white; display: inline-block; font-size: 14px; font-weight: 600;
+      padding: 12px 24px; text-align: center; text-decoration: none; margin:
+      20px 0; } .footer { font-size: 12px; color: #777; text-align: center;
+      padding: 25px; background-color: #f1f8f2; } .footer a { color: #2e7d32;
+      text-decoration: none; } .greeting { font-size: 16px; font-weight: 500;
+      margin-bottom: 16px; } .paragraph { margin-bottom: 16px; font-size: 14px;
+      } .section-header { color: #1a1a1a; font-size: 16px; font-weight: 600;
+      margin: 24px 0 12px; } .signature { margin-top: 24px; font-size: 14px; }
+      .next-steps { margin-bottom: 16px; font-size: 14px; } .next-steps li {
+      margin-bottom: 8px; } .license-details { background-color: #f0f9ff;
+      border: 1px solid #0ea5e9; border-radius: 6px; padding: 20px; margin: 20px
+      0; } .license-header { color: #0c4a6e; font-weight: 600; font-size: 16px;
+      margin-bottom: 12px; } .license-text { color: #0c4a6e; font-size: 14px;
+      margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>{{platformName}}</h1>
+      </div>
+
+      <div class='section'>
+        <h2 class='greeting'>Hello {{userFullName}},</h2>
+
+        {{#if (eq decision 'APPROVED')}}
+          <!-- APPROVED Version -->
+          <div class='decision-box'>
+            Congratulations! Your Travel Agent Upgrade Application has been
+            Approved
+          </div>
+
+          {{#if licenseNumber}}
+            <div class='license-details'>
+              <div class='license-header'>Your Travel Agent License</div>
+              <p class='license-text'>
+                <strong>License Number:</strong>
+                {{licenseNumber}}<br />
+                <strong>Valid Until:</strong>
+                {{licenseExpiryDate}}
+              </p>
+            </div>
+          {{/if}}
+
+          <p class='paragraph'>
+            We are pleased to inform you that your travel agent upgrade
+            application has been approved. You are now officially registered as
+            a travel agent on our platform and can start processing visa
+            applications for your clients.
+          </p>
+
+          <h3 class='section-header'>What You Can Do Now</h3>
+          <ul class='next-steps'>
+            <li><strong>Access Agent Dashboard:</strong>
+              Log in to your account to access the travel agent dashboard</li>
+            <li><strong>Process Applications:</strong>
+              Start accepting and processing visa applications for your clients</li>
+            <li><strong>Commission Earnings:</strong>
+              Earn commissions on successful visa applications</li>
+            <li><strong>Client Management:</strong>
+              Manage your client database and track application progress</li>
+          </ul>
+
+        {{else}}
+          <!-- REJECTED Version -->
+          <div class='decision-box rejected'>
+            Travel Agent Upgrade Application Decision
+          </div>
+
+          <p class='paragraph'>
+            After careful review of your application, we regret to inform you
+            that your travel agent upgrade application has not been approved at
+            this time.
+          </p>
+
+          {{#if reason}}
+            <p class='paragraph'>
+              <strong>Reason:</strong>
+              {{reason}}
+            </p>
+          {{/if}}
+
+          <h3 class='section-header'>Next Steps</h3>
+          <ul class='next-steps'>
+            <li><strong>Review Requirements:</strong>
+              Please review the travel agent requirements and ensure all
+              criteria are met</li>
+            <li><strong>Gather Documentation:</strong>
+              Collect any missing or updated documentation</li>
+            <li><strong>Reapply:</strong>
+              You may submit a new application after addressing the concerns
+              raised</li>
+            <li><strong>Contact Support:</strong>
+              Reach out to our support team for guidance on improving your
+              application</li>
+          </ul>
+        {{/if}}
+
+        <div class='application-details'>
+          <h3 class='section-header'>Application Details</h3>
+          <div class='divider'></div>
+
+          <div class='detail-row'>
+            <div class='detail-label'>Application ID:</div>
+            <div class='detail-value'>{{applicationId}}</div>
+          </div>
+
+          <div class='detail-row'>
+            <div class='detail-label'>Application Type:</div>
+            <div class='detail-value'>{{applicationType}}</div>
+          </div>
+
+          <div class='detail-row'>
+            <div class='detail-label'>Company Name:</div>
+            <div class='detail-value'>{{companyName}}</div>
+          </div>
+
+          <div class='detail-row'>
+            <div class='detail-label'>Decision Date:</div>
+            <div class='detail-value'>{{decisionDate}}</div>
+          </div>
+        </div>
+
+        <p class='paragraph'>
+          <strong>Important:</strong>
+          Please keep this email as your official notification. If you have any
+          questions about your application or need assistance, please contact
+          our support team.
+        </p>
+
+        <p class='signature'>
+          Best regards,<br />
+          The
+          {{platformName}}
+          Travel Agent Team
+        </p>
+      </div>
+
+      <div class='footer'>
+        <p>For inquiries:
+          <a href='mailto:{{supportEmail}}'>{{supportEmail}}</a>
+          | Visit:
+          <a href='https://www.asfaar.com'>www.asfaar.com</a>
+        </p>
+        <p><strong>Hotline:</strong>
+          +234 700 700 4001 |
+          <strong>Open Hours:</strong>
+          Mon-Fri 08:00 - 18:00</p>
+      </div>
+    </div>
+  </body>
+</html>
