@@ -15,6 +15,7 @@ import { embassySubmissionEmailMiddleware } from './middlewares/embassy-submissi
 import { paymentEmailMiddleware } from './middlewares/payment-email.middleware';
 import { biometricCaptureEmailMiddleware } from './middlewares/biometric-capture-email.middleware';
 import { referenceNumberMiddleware } from './middlewares/reference-number.middleware';
+import { travelAgentUpgradePaymentEmailMiddleware } from './middlewares/travel-agent-upgrade-payment-email.middleware';
 
 @Injectable()
 export class PrismaService
@@ -42,6 +43,7 @@ export class PrismaService
     this.$use(paymentEmailMiddleware());
     this.$use(biometricCaptureEmailMiddleware());
     this.$use(referenceNumberMiddleware());
+    this.$use(travelAgentUpgradePaymentEmailMiddleware());
   }
 
   async onModuleInit() {
