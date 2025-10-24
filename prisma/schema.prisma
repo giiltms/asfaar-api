@@ -1628,6 +1628,9 @@ model TravelAgentDirector {
   phoneNumber String?
   email       String?
 
+  // Identification Document
+  identificationDocument String?
+
   isVerified            Boolean   @default(false)
   verifiedAt            DateTime?
   verificationReference String?
