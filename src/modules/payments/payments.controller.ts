@@ -38,7 +38,11 @@ import {
   CreateServiceFeeDto,
   UpdateServiceFeeDto,
 } from './dto/payment.dto';
-import { ResolveAccountDto, GetBanksQueryDto, GetBanksResponseDto } from './dto/payments.dto';
+import {
+  ResolveAccountDto,
+  GetBanksQueryDto,
+  GetBanksResponseDto,
+} from './dto/payments.dto';
 import { PaymentEntity } from './entities/payment.entity';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { PaginationQueryDto } from '@common/dtos';
@@ -556,7 +560,8 @@ export class PaymentsController {
   @Get('banks')
   @ApiOperation({
     summary: 'Get list of banks by country',
-    description: 'Retrieve all supported banks with their codes for account verification. Supports Nigeria, Ghana, Kenya, and South Africa.',
+    description:
+      'Retrieve all supported banks with their codes for account verification. Supports Nigeria, Ghana, Kenya, and South Africa.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -600,8 +605,15 @@ export class PaymentsController {
           type: 'object',
           properties: {
             code: { type: 'number', example: 400000 },
-            message: { type: 'string', example: 'Country must be one of: nigeria, ghana, kenya, south-africa' },
-            details: { type: 'string', example: 'Invalid country parameter provided' },
+            message: {
+              type: 'string',
+              example:
+                'Country must be one of: nigeria, ghana, kenya, south-africa',
+            },
+            details: {
+              type: 'string',
+              example: 'Invalid country parameter provided',
+            },
           },
         },
         timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
@@ -620,15 +632,23 @@ export class PaymentsController {
           type: 'object',
           properties: {
             code: { type: 'number', example: 500000 },
-            message: { type: 'string', example: 'Payment provider service unavailable' },
-            details: { type: 'string', example: 'Unable to connect to Paystack API' },
+            message: {
+              type: 'string',
+              example: 'Payment provider service unavailable',
+            },
+            details: {
+              type: 'string',
+              example: 'Unable to connect to Paystack API',
+            },
           },
         },
         timestamp: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
       },
     },
   })
-  async getBanks(@Query() query: GetBanksQueryDto): Promise<GetBanksResponseDto> {
+  async getBanks(
+    @Query() query: GetBanksQueryDto,
+  ): Promise<GetBanksResponseDto> {
     const banks = await this.paymentProviderService.getBanks(query.country);
 
     return {

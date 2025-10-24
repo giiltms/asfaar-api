@@ -4,7 +4,7 @@ import { SubmissionStatus } from '@prisma/client';
 /**
  * Centralized privacy service for application status filtering
  * Ensures consistent privacy protection across dashboard services
- * 
+ *
  * PRIVACY SCOPE:
  * - AUTHORITY: Cannot see private statuses (DRAFT, PENDING_PAYMENT, CANCELLED)
  * - FRONTDESK: Cannot see private statuses (DRAFT, PENDING_PAYMENT, CANCELLED)

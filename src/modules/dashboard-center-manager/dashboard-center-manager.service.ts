@@ -341,7 +341,7 @@ export class DashboardCenterManagerService {
       const centers = await this.getUserCenters(userId);
       const centerIds = filters.centerId
         ? [filters.centerId]
-        : centers.map(center => center.id);
+        : centers.map((center) => center.id);
 
       if (centerIds.length === 0) {
         throw new NotFoundException('No centers assigned to this user');
@@ -381,7 +381,9 @@ export class DashboardCenterManagerService {
             gte: startDate,
             lte: endDate,
           },
-          ...(filters.appointmentClass && { appointmentClass: filters.appointmentClass as any }),
+          ...(filters.appointmentClass && {
+            appointmentClass: filters.appointmentClass as any,
+          }),
           ...(filters.status && { status: filters.status as any }),
         },
         include: {
@@ -444,9 +446,10 @@ export class DashboardCenterManagerService {
           const centerSlots = this.generateTimeSlotsForDate(
             currentDate,
             center,
-            appointments.filter(apt =>
-              apt.centerId === center.id &&
-              apt.appointmentTime?.toISOString().split('T')[0] === dateStr
+            appointments.filter(
+              (apt) =>
+                apt.centerId === center.id &&
+                apt.appointmentTime?.toISOString().split('T')[0] === dateStr,
             ),
           );
           slots.push(...centerSlots);
@@ -457,8 +460,12 @@ export class DashboardCenterManagerService {
 
       // Calculate statistics
       const totalSlots = slots.length;
-      const availableSlots = slots.filter(slot => slot.status === 'AVAILABLE').length;
-      const bookedSlots = slots.filter(slot => slot.status === 'BOOKED').length;
+      const availableSlots = slots.filter(
+        (slot) => slot.status === 'AVAILABLE',
+      ).length;
+      const bookedSlots = slots.filter(
+        (slot) => slot.status === 'BOOKED',
+      ).length;
 
       return {
         slots,
@@ -506,7 +513,7 @@ export class DashboardCenterManagerService {
     const endTime = new Date(date);
     endTime.setHours(closeHour, closeMinute, 0, 0);
 
-    let currentTime = new Date(startTime);
+    const currentTime = new Date(startTime);
 
     while (currentTime < endTime) {
       const slotEndTime = new Date(currentTime);
@@ -518,7 +525,7 @@ export class DashboardCenterManagerService {
         const dateStr = date.toISOString().split('T')[0];
 
         // Check if this slot is booked
-        const bookedAppointment = appointments.find(apt => {
+        const bookedAppointment = appointments.find((apt) => {
           const aptTime = new Date(apt.appointmentTime);
           return aptTime.getTime() === currentTime.getTime();
         });
@@ -529,21 +536,28 @@ export class DashboardCenterManagerService {
           endTime: endTimeStr,
           date: dateStr,
           status: bookedAppointment ? 'BOOKED' : 'AVAILABLE',
-          appointment: bookedAppointment ? {
-            id: bookedAppointment.id,
-            referenceNumber: bookedAppointment.submission.referenceNumber || bookedAppointment.id,
-            applicantName: `${bookedAppointment.user.firstName || ''} ${bookedAppointment.user.lastName || ''}`.trim(),
-            country: bookedAppointment.submission.form.country.name,
-            formType: bookedAppointment.submission.form.name,
-            appointmentClass: bookedAppointment.appointmentClass,
-            boothNumber: bookedAppointment.queueEntry?.booth?.boothNumber || 'TBD',
-            agentName: bookedAppointment.queueEntry?.booth?.agent
-              ? `${bookedAppointment.queueEntry.booth.agent.firstName} ${bookedAppointment.queueEntry.booth.agent.lastName}`.trim()
-              : 'Unassigned',
-            status: bookedAppointment.status,
-            appointmentId: bookedAppointment.id,
-            submissionId: bookedAppointment.submission.id,
-          } : undefined,
+          appointment: bookedAppointment
+            ? {
+                id: bookedAppointment.id,
+                referenceNumber:
+                  bookedAppointment.submission.referenceNumber ||
+                  bookedAppointment.id,
+                applicantName: `${bookedAppointment.user.firstName || ''} ${
+                  bookedAppointment.user.lastName || ''
+                }`.trim(),
+                country: bookedAppointment.submission.form.country.name,
+                formType: bookedAppointment.submission.form.name,
+                appointmentClass: bookedAppointment.appointmentClass,
+                boothNumber:
+                  bookedAppointment.queueEntry?.booth?.boothNumber || 'TBD',
+                agentName: bookedAppointment.queueEntry?.booth?.agent
+                  ? `${bookedAppointment.queueEntry.booth.agent.firstName} ${bookedAppointment.queueEntry.booth.agent.lastName}`.trim()
+                  : 'Unassigned',
+                status: bookedAppointment.status,
+                appointmentId: bookedAppointment.id,
+                submissionId: bookedAppointment.submission.id,
+              }
+            : undefined,
         };
 
         slots.push(slot);

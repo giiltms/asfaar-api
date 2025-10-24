@@ -57,10 +57,10 @@ export class PaystackProvider implements PaymentProviderInterface {
         channels: data.paymentMethods,
         custom_fields: data.customFields
           ? Object.entries(data.customFields).map(([key, value]) => ({
-            display_name: key,
-            variable_name: key.toLowerCase().replace(/\s+/g, '_'),
-            value,
-          }))
+              display_name: key,
+              variable_name: key.toLowerCase().replace(/\s+/g, '_'),
+              value,
+            }))
           : undefined,
       };
 
@@ -114,10 +114,10 @@ export class PaystackProvider implements PaymentProviderInterface {
             data.status === 'success'
               ? 'success'
               : data.status === 'failed'
-                ? 'failed'
-                : data.status === 'abandoned'
-                  ? 'abandoned'
-                  : 'pending',
+              ? 'failed'
+              : data.status === 'abandoned'
+              ? 'abandoned'
+              : 'pending',
           gatewayResponse: data.gateway_response,
           paidAt: data.paid_at ? new Date(data.paid_at) : undefined,
           channel: data.channel,
@@ -258,10 +258,10 @@ export class PaystackProvider implements PaymentProviderInterface {
             response.data.status === 'success'
               ? 'success'
               : response.data.status === 'pending'
-                ? 'pending'
-                : response.data.status === 'reversed'
-                  ? 'reversed'
-                  : 'failed',
+              ? 'pending'
+              : response.data.status === 'reversed'
+              ? 'reversed'
+              : 'failed',
           providerData: response.data,
         };
       }
@@ -351,7 +351,12 @@ export class PaystackProvider implements PaymentProviderInterface {
   async resolveAccountName(
     accountNumber: string,
     bankCode: string,
-  ): Promise<{ accountName: string; accountNumber: string; bankName: string; bankCode: string }> {
+  ): Promise<{
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    bankCode: string;
+  }> {
     try {
       // Validate inputs
       if (!accountNumber || !bankCode) {
@@ -380,7 +385,7 @@ export class PaystackProvider implements PaymentProviderInterface {
 
         // Get bank name from the banks list
         const banks = await this.getBanks();
-        const bank = banks.find(b => b.code === bankCode);
+        const bank = banks.find((b) => b.code === bankCode);
         const bankName = bank ? bank.name : 'Unknown Bank';
 
         return {
@@ -406,7 +411,10 @@ export class PaystackProvider implements PaymentProviderInterface {
         throw new Error('Invalid account number format');
       } else if (error.message.includes('Bank code')) {
         throw new Error('Invalid bank code format');
-      } else if (error.message.includes('not found') || error.message.includes('invalid')) {
+      } else if (
+        error.message.includes('not found') ||
+        error.message.includes('invalid')
+      ) {
         throw new Error('Account not found or invalid bank code');
       } else {
         throw new Error(error.message || 'Account verification failed');
