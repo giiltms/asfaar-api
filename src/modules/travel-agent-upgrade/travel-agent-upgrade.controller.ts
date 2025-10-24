@@ -353,7 +353,8 @@ export class TravelAgentUpgradeController {
             'DSS_DOCUMENT',
             'NANTA_DOCUMENT',
           ],
-          description: 'Type of document being uploaded',
+          description:
+            'Type of document being uploaded. Note: For director identification documents, provide the URL directly with director information when completing the application.',
           example: 'CAC_DOCUMENT',
         },
       },

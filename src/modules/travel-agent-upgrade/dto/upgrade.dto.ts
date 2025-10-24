@@ -45,6 +45,13 @@ export class CreateDirectorDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL of the director identification document',
+  })
+  @IsOptional()
+  @IsString()
+  identificationDocument?: string;
 }
 
 export class CreateBankDetailsDto {
@@ -75,6 +82,7 @@ export enum UpgradeDocumentType {
   IATA_DOCUMENT = 'IATA_DOCUMENT',
   DSS_DOCUMENT = 'DSS_DOCUMENT',
   NANTA_DOCUMENT = 'NANTA_DOCUMENT',
+  DIRECTOR_IDENTIFICATION = 'DIRECTOR_IDENTIFICATION',
 }
 
 export class UploadUpgradeDocumentDto {
@@ -85,6 +93,14 @@ export class UploadUpgradeDocumentDto {
   @ApiProperty({ enum: UpgradeDocumentType })
   @IsEnum(UpgradeDocumentType)
   documentType: UpgradeDocumentType;
+
+  @ApiPropertyOptional({
+    description:
+      'Director ID (required for DIRECTOR_IDENTIFICATION document type)',
+  })
+  @IsOptional()
+  @IsString()
+  directorId?: string;
 
   @ApiProperty({ description: 'URL of the uploaded file' })
   @IsString()
