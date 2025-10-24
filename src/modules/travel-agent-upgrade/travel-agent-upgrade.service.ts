@@ -178,7 +178,7 @@ export class TravelAgentUpgradeService {
     // Validate NAHCON license number is provided for NAHCON applications
     if (
       input.applicationType ===
-      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !input.nahconLicenseNumber
     ) {
       throw new BadRequestException(
@@ -207,7 +207,7 @@ export class TravelAgentUpgradeService {
     // NAHCON document only required for NAHCON registered agents
     if (
       input.applicationType ===
-      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !uploadedDocuments.nahconDocumentUrl
     )
       missingDocuments.push('NAHCON Document');
