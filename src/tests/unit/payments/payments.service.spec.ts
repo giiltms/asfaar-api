@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsService } from '../../../modules/payments/payments.service';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentService } from '@shared/services/payment/payment.service';
+import { TravelAgentUpgradeService } from '../../../modules/travel-agent-upgrade/travel-agent-upgrade.service';
 import {
   NotFoundException,
   ConflictException,
@@ -113,6 +114,11 @@ class MockPaymentService {
   getPaymentStats = jest.fn();
 }
 
+class MockTravelAgentUpgradeService {
+  // Add any methods that might be called by PaymentsService
+  // For now, we'll add empty mocks
+}
+
 describe('PaymentsService', () => {
   let service: PaymentsService;
   let prismaService: MockPrismaService;
@@ -129,6 +135,10 @@ describe('PaymentsService', () => {
         {
           provide: PaymentService,
           useClass: MockPaymentService,
+        },
+        {
+          provide: TravelAgentUpgradeService,
+          useClass: MockTravelAgentUpgradeService,
         },
       ],
     }).compile();
