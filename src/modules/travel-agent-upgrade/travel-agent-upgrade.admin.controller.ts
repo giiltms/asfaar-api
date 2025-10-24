@@ -276,12 +276,7 @@ export class AdminTravelAgentUpgradeController {
     @CurrentUser() admin: JwtUserPayload,
     @Body() body: { rejectionReason?: string; reviewNotes?: string },
   ) {
-    return this.service.rejectApplication(
-      admin.id,
-      id,
-      body?.rejectionReason,
-      body?.reviewNotes,
-    );
+    return this.service.rejectApplication(admin.id, id, body?.rejectionReason);
   }
 
   @Get('applications/:id')

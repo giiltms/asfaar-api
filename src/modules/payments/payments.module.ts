@@ -3,8 +3,8 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
-import { UserService } from '@modules/user/user.service';
 import { UserModule } from '@modules/user/user.module';
+import { TravelAgentUpgradeModule } from '@modules/travel-agent-upgrade/travel-agent-upgrade.module';
 
 /**
  * PaymentsModule
@@ -17,6 +17,7 @@ import { UserModule } from '@modules/user/user.module';
     PrismaModule, // For database operations
     AuthModule, // For authentication guards
     UserModule,
+    TravelAgentUpgradeModule, // For travel agent upgrade webhook handling
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

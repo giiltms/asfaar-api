@@ -162,14 +162,14 @@ export class CreateDraftApplicationDto {
 export class InitiatePaymentDto {
   @ApiProperty({
     description: 'Service fee ID for the upgrade application',
-    example: 'fee-123e4567-e89b-12d3-a456-426614174000'
+    example: 'fee-123e4567-e89b-12d3-a456-426614174000',
   })
   @IsString()
   serviceFeeId: string;
 
   @ApiProperty({
     description: 'Payment method ID',
-    example: 'paystack'
+    example: 'paystack',
   })
   @IsString()
   paymentMethodId: string;

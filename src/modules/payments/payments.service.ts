@@ -28,6 +28,7 @@ import {
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
 import { PaymentService as PaymentProviderService } from '@shared/services/payment/payment.service';
+import { TravelAgentUpgradeService } from '@modules/travel-agent-upgrade/travel-agent-upgrade.service';
 
 /**
  * Service for managing payments
@@ -40,6 +41,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentProviderService: PaymentProviderService,
+    private readonly travelAgentUpgradeService: TravelAgentUpgradeService,
   ) {}
 
   /**
@@ -51,28 +53,6 @@ export class PaymentsService {
     reference?: string,
   ): Promise<Payment> {
     try {
-      // // Check if submission exists
-      // const submission = await this.prisma.formSubmission.findUnique({
-      //   where: { id: createDto.submissionId },
-      // });
-
-      // if (!submission) {
-      //   throw new NotFoundException(
-      //     `Form submission with ID "${createDto.submissionId}" not found`,
-      //   );
-      // }
-
-      // // Check if payment already exists for this submission
-      // const existingPayment = await this.prisma.payment.findUnique({
-      //   where: { submissionId: createDto.submissionId },
-      // });
-
-      // if (existingPayment) {
-      //   throw new ConflictException(
-      //     `Payment already exists for submission "${createDto.submissionId}"`,
-      //   );
-      // }
-
       // Generate invoice number
       const invoiceNumber = await this.generateInvoiceNumber();
       const processor = createDto.paymentProvider.toUpperCase();
@@ -164,28 +144,6 @@ export class PaymentsService {
     userId: string,
   ): Promise<Payment> {
     try {
-      // Check if submission exists
-      // const submission = await this.prisma.formSubmission.findUnique({
-      //   where: { id: initiatePaymentDto.submissionId },
-      // });
-
-      // if (!submission) {
-      //   throw new NotFoundException(
-      //     `Form submission with ID "${initiatePaymentDto.submissionId}" not found`,
-      //   );
-      // }
-
-      // // Check if payment already exists for this submission
-      // const existingPayment = await this.prisma.payment.findUnique({
-      //   where: { submissionId: initiatePaymentDto.submissionId },
-      // });
-
-      // if (existingPayment) {
-      //   throw new ConflictException(
-      //     `Payment already exists for submission "${initiatePaymentDto.submissionId}"`,
-      //   );
-      // }
-
       // Validate we have service fees to process
       if (!initiatePaymentDto?.serviceFees?.length) {
         throw new BadRequestException('At least one service fee is required');
@@ -1279,11 +1237,58 @@ export class PaymentsService {
     try {
       this.logger.log(`Upgrade payment completed for user ${user.id}`);
 
-      // TODO: Implement upgrade-specific logic
-      // e.g., upgrade user plan, unlock premium features, etc.
+      // Get the payment to extract metadata
+      const payment = await this.prisma.payment.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+        include: { serviceFees: { include: { serviceFee: true } } },
+      });
+
+      if (
+        payment &&
+        payment.serviceFees.some((sf) => sf.serviceFee.feeType === 'UPGRADE')
+      ) {
+        // Check if this is a travel agent upgrade payment by looking at metadata
+        const metadata = (payment as any).metadata || {};
+        if (
+          metadata.applicationType === 'TRAVEL_AGENT_UPGRADE' ||
+          metadata.upgradeApplicationId
+        ) {
+          // Handle travel agent upgrade payment
+          await this.handleTravelAgentUpgradePayment(payment.id, metadata);
+        }
+
+        this.logger.log(`Upgrade payment processed for user ${user.id}`);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to handle upgrade payment for user ${user.id}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle travel agent upgrade payment completion
+   * Calls the travel agent upgrade service to update application status
+   */
+  private async handleTravelAgentUpgradePayment(
+    paymentId: string,
+    metadata: any,
+  ): Promise<void> {
+    try {
+      // Call the travel agent upgrade webhook handler
+      await this.travelAgentUpgradeService.handlePaymentWebhook(
+        paymentId,
+        PaymentStatus.COMPLETED,
+        metadata,
+      );
+
+      this.logger.log(
+        `Travel agent upgrade payment ${paymentId} processed successfully`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle travel agent upgrade payment ${paymentId}: ${error.message}`,
       );
     }
   }

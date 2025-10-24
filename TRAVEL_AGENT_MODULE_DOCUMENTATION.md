@@ -230,18 +230,28 @@ DRAFT → PENDING → PENDING_PAYMENT → PENDING_REVIEW → UNDER_REVIEW → AP
 
 ### User Endpoints (Travel Agent Upgrade)
 
+#### Application Types
+
+The system supports two types of travel agent applications:
+
+- **`REGULAR_TRAVEL_AGENT`**: Standard travel agent application
+- **`NAHCON_REGISTERED_AGENT`**: NAHCON registered travel agent application
+
+The application type determines the specific requirements and processing workflow for each application.
+
 #### 1. Create Draft Application
 
 ```http
 POST /travel-agent/upgrade/draft
 ```
 
-**Description**: Create a draft travel agent upgrade application
+**Description**: Create a draft travel agent upgrade application. Users can have multiple applications of different types (e.g., one REGULAR_TRAVEL_AGENT and one NAHCON_REGISTERED_AGENT), but only one active application per type.
 **Authentication**: Required
 **Request Body**:
 
 ```json
 {
+  "applicationType": "REGULAR_TRAVEL_AGENT",
   "companyName": "ABC Travel Agency",
   "companyEmail": "contact@abctravel.com",
   "companyPhone": "+2348012345678",
@@ -252,6 +262,22 @@ POST /travel-agent/upgrade/draft
   "efccScumlNumber": "SCUML345678",
   "iataAccreditationNumber": "IATA901234",
   "nantaMembershipNumber": "NANTA567890"
+}
+```
+
+**Note**: Only `applicationType` is required. All other fields are optional and can be provided later when completing the application.
+
+**Behavior**:
+
+- If user already has an active application of the same type, it will be returned instead of creating a new one
+- Users can have multiple applications of different types (e.g., one REGULAR_TRAVEL_AGENT and one NAHCON_REGISTERED_AGENT)
+- Only one active application per application type is allowed
+
+**Minimal Request Example**:
+
+```json
+{
+  "applicationType": "REGULAR_TRAVEL_AGENT"
 }
 ```
 
@@ -389,48 +415,91 @@ PUT /travel-agent/upgrade/application/:id/complete
 }
 ```
 
-#### 4. Initiate Payment
+#### 4. Initiate Payment (Use Main Payments Endpoint)
+
+**✅ RECOMMENDED APPROACH**: Use the main payments endpoint for consistency.
 
 ```http
-POST /travel-agent/upgrade/application/:id/payment
+POST /payments/initiate
 ```
 
-**Description**: Initiate payment for upgrade application
+**Description**: Use the main payments endpoint for travel agent upgrade payments
 **Authentication**: Required
-**Path Parameters**:
-
-- `id` (string): Application ID
-
 **Request Body**:
 
 ```json
 {
-  "serviceFeeId": "upgrade-fee-123",
-  "paymentMethodId": "paystack"
+  "serviceFees": ["fee-123e4567-e89b-12d3-a456-426614174000"],
+  "description": "Travel Agent Upgrade Application - Upgrade Fee",
+  "metadata": {
+    "applicationId": "123e4567-e89b-12d3-a456-426614174000",
+    "applicationType": "TRAVEL_AGENT_UPGRADE",
+    "upgradeApplicationId": "123e4567-e89b-12d3-a456-426614174000"
+  }
 }
 ```
 
-**Response**:
+**Response** (Same as other payments):
 
 ```json
 {
-  "success": true,
   "message": "Payment initiated successfully",
   "data": {
-    "application": {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "status": "PENDING_PAYMENT",
-      "paymentId": "payment-123"
-    },
-    "payment": {
-      "id": "payment-123",
-      "amount": 50000,
-      "currency": "NGN",
-      "status": "PENDING",
-      "description": "Travel Agent Upgrade Application - Upgrade Fee"
-    }
+    "id": "pay-123e4567-e89b-12d3-a456-426614174000",
+    "amount": 50000,
+    "currency": "NGN",
+    "status": "PENDING",
+    "reference": "pay-123e4567-e89b-12d3-a456-426614174000",
+    "authorizationUrl": "https://checkout.paystack.co/authorization/access_code/1234567890",
+    "accessCode": "1234567890"
   }
 }
+```
+
+**Payment Webhook Handling**:
+
+The travel agent upgrade module is fully integrated with the main payments system:
+
+- ✅ **Automatic Processing**: When a travel agent upgrade payment is completed, the main payments service automatically calls `TravelAgentUpgradeService.handlePaymentWebhook()`
+- ✅ **Status Updates**: Application status automatically transitions from `PENDING` → `PENDING_REVIEW` on successful payment
+- ✅ **Error Handling**: Failed payments allow users to retry by keeping status as `PENDING`
+- ✅ **Metadata Integration**: Payment metadata includes `applicationType: 'TRAVEL_AGENT_UPGRADE'` and `upgradeApplicationId` for proper identification
+- ✅ **Seamless Integration**: No additional endpoints needed - everything handled via webhooks
+
+**Benefits of Using Main Payments Endpoint**:
+
+- ✅ **Consistent**: Same payment flow as visa applications and onboarding
+- ✅ **Maintained**: All payment logic in one place
+- ✅ **Tested**: Already proven to work for other payment types
+- ✅ **Features**: Gets all existing payment features (webhooks, verification, etc.)
+- ✅ **Callbacks**: Uses the same callback URL pattern
+- ✅ **Webhook Integration**: Automatic status updates via payment webhooks
+
+### Complete Payment Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant PaymentsAPI
+    participant TravelAgentAPI
+    participant Webhook
+
+    User->>Frontend: Complete application
+    Frontend->>TravelAgentAPI: POST /travel-agent/upgrade/application/:id/complete
+    TravelAgentAPI-->>Frontend: Application status: PENDING
+
+    User->>Frontend: Initiate payment
+    Frontend->>PaymentsAPI: POST /payments/initiate
+    Note over PaymentsAPI: Includes metadata:<br/>applicationType: 'TRAVEL_AGENT_UPGRADE'<br/>upgradeApplicationId: 'app-id'
+    PaymentsAPI-->>Frontend: Payment URL & reference
+
+    User->>PaymentsAPI: Complete payment
+    PaymentsAPI->>Webhook: Payment webhook triggered
+    Webhook->>TravelAgentAPI: handlePaymentWebhook()
+    Note over TravelAgentAPI: Updates application status<br/>PENDING → PENDING_REVIEW
+    TravelAgentAPI-->>Webhook: Status updated
+    Webhook-->>PaymentsAPI: Webhook processed
 ```
 
 #### 5. Get Application Status
@@ -439,7 +508,25 @@ POST /travel-agent/upgrade/application/:id/payment
 GET /travel-agent/upgrade/application
 ```
 
-**Description**: Get current user's upgrade application
+**Description**: Get current user's most recent upgrade application
+**Authentication**: Required
+
+#### 5a. Get Specific Application
+
+```http
+GET /travel-agent/upgrade/application/:id
+```
+
+**Description**: Get a specific upgrade application by ID
+**Authentication**: Required
+
+#### 5b. Get All Applications
+
+```http
+GET /travel-agent/upgrade/applications
+```
+
+**Description**: Get all your upgrade applications (for renewals, re-applications, etc.)
 **Authentication**: Required
 
 **Response**:
@@ -737,8 +824,10 @@ PUT /admin/travel-agent/upgrade/applications/:id/review
 2. Required documents:
    - CAC Registration Certificate
    - Tax Clearance Certificate
-   - NAHCON License Document
+   - NAHCON License Document (for NAHCON applications only)
    - EFCC SCUML Certificate
+   - DSS Clearance Document
+   - NANTA Membership Document
    - IATA Accreditation (optional)
 3. Documents are validated and stored securely
 
@@ -805,11 +894,13 @@ APPROVED/REJECTED
 The system implements strict privacy controls to protect user data:
 
 #### 🔒 **Private Statuses (Not Visible to Authorities)**
+
 - **`DRAFT`** - User is still working on application
 - **`PENDING_PAYMENT`** - User submitted but payment not confirmed
 - **`CANCELLED`** - User cancelled their own application
 
 #### 🌐 **Public Statuses (Visible to Authorities)**
+
 - **`SUBMITTED`** - Application is ready for processing
 - **`UNDER_REVIEW`** - Being reviewed by verification officers
 - **`FLAGGED`** - Flagged for security review
@@ -822,16 +913,19 @@ The system implements strict privacy controls to protect user data:
 ### Privacy Protection Implementation
 
 #### Authority Dashboard
+
 - **Automatic Filtering**: Private statuses are automatically excluded
 - **No Override**: Authorities cannot access private applications even with explicit filters
 - **User Protection**: Users can work on applications privately without oversight
 
 #### Frontdesk Dashboard
+
 - **Same Protection**: Frontdesk staff cannot see private applications
 - **Appointment Filtering**: Only applications with confirmed appointments are visible
 - **Status Validation**: Private statuses return empty results
 
 #### User Dashboard
+
 - **Full Access**: Users can see all their own applications regardless of status
 - **Ownership Validation**: Users can only access their own applications
 - **Status Transparency**: Users see the true status of their applications
@@ -839,11 +933,13 @@ The system implements strict privacy controls to protect user data:
 ### Security Considerations
 
 #### Data Protection
+
 - **Status-Based Access**: Access control based on application status
 - **Role-Based Filtering**: Different roles see different application sets
 - **Audit Trail**: All access attempts are logged for security monitoring
 
 #### Privacy Compliance
+
 - **User Consent**: Users understand which statuses are private
 - **Data Minimization**: Only necessary data is exposed to authorities
 - **Transparency**: Clear documentation of privacy controls
