@@ -156,7 +156,7 @@ export class TravelAgentLicenseService {
   /**
    * Renew an expired license
    */
-  async renewLicense(userId: string, renewedBy: string): Promise<any> {
+  async renewLicense(userId: string): Promise<any> {
     const existingLicense = await this.getLicenseByUserId(userId);
 
     if (existingLicense.status !== TravelAgentLicenseStatus.EXPIRED) {
@@ -340,5 +340,81 @@ export class TravelAgentLicenseService {
       revoked,
       suspended,
     };
+  }
+
+  /**
+   * Get license by ID
+   */
+  async getLicenseById(licenseId: string): Promise<any> {
+    const license = await this.prisma.travelAgentLicense.findUnique({
+      where: { id: licenseId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        application: {
+          select: {
+            id: true,
+            applicationType: true,
+            companyName: true,
+          },
+        },
+      },
+    });
+
+    if (!license) {
+      throw new NotFoundException('License not found');
+    }
+
+    return license;
+  }
+
+  /**
+   * Suspend a license
+   */
+  async suspendLicense(
+    licenseId: string,
+    suspendedBy: string,
+    reason: string,
+  ): Promise<any> {
+    const license = await this.prisma.travelAgentLicense.findUnique({
+      where: { id: licenseId },
+    });
+
+    if (!license) {
+      throw new NotFoundException('License not found');
+    }
+
+    if (license.status !== 'ACTIVE') {
+      throw new BadRequestException('Only active licenses can be suspended');
+    }
+
+    const updatedLicense = await this.prisma.travelAgentLicense.update({
+      where: { id: licenseId },
+      data: {
+        status: 'SUSPENDED',
+        suspendedAt: new Date(),
+        suspendedBy,
+        suspendedReason: reason,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(`License ${licenseId} suspended by ${suspendedBy}`);
+    return updatedLicense;
   }
 }

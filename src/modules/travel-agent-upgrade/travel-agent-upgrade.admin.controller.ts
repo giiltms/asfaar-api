@@ -26,6 +26,7 @@ import {
   JwtUserPayload,
 } from '@common/decorators/current-user.decorator';
 import { TravelAgentUpgradeService } from './travel-agent-upgrade.service';
+import { TravelAgentLicenseService } from './travel-agent-license.service';
 
 @ApiTags('Admin - Travel Agent Upgrade')
 @ApiBearerAuth()
@@ -33,7 +34,10 @@ import { TravelAgentUpgradeService } from './travel-agent-upgrade.service';
 @Roles(UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
 @Controller('admin/travel-agent/upgrade')
 export class AdminTravelAgentUpgradeController {
-  constructor(private readonly service: TravelAgentUpgradeService) {}
+  constructor(
+    private readonly service: TravelAgentUpgradeService,
+    private readonly licenseService: TravelAgentLicenseService,
+  ) {}
 
   @Get('applications')
   @ApiOperation({
@@ -295,5 +299,371 @@ export class AdminTravelAgentUpgradeController {
     @Body() body: { reviewNotes?: string },
   ) {
     return this.service.markUnderReview(id, reviewer.id, body?.reviewNotes);
+  }
+
+  // ===== LICENSE MANAGEMENT ENDPOINTS =====
+
+  @Get('licenses')
+  @ApiOperation({
+    summary: 'List all travel agent licenses',
+    description:
+      'Get a paginated list of all travel agent licenses with optional status filtering.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter licenses by status',
+    enum: ['ACTIVE', 'EXPIRED', 'REVOKED', 'SUSPENDED'],
+    example: 'ACTIVE',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of licenses per page',
+    example: 20,
+    type: 'number',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Licenses retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Licenses retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            licenses: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'license123' },
+                  licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+                  status: { type: 'string', example: 'ACTIVE' },
+                  issuedAt: {
+                    type: 'string',
+                    example: '2025-01-20T10:30:00.000Z',
+                  },
+                  expiresAt: {
+                    type: 'string',
+                    example: '2026-01-20T10:30:00.000Z',
+                  },
+                  user: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'user123' },
+                      firstName: { type: 'string', example: 'John' },
+                      lastName: { type: 'string', example: 'Doe' },
+                      email: {
+                        type: 'string',
+                        example: 'john.doe@example.com',
+                      },
+                    },
+                  },
+                  application: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string', example: 'app123' },
+                      applicationType: {
+                        type: 'string',
+                        example: 'NAHCON_REGISTERED_AGENT',
+                      },
+                      companyName: {
+                        type: 'string',
+                        example: 'ABC Travel Agency',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            pagination: {
+              type: 'object',
+              properties: {
+                page: { type: 'number', example: 1 },
+                limit: { type: 'number', example: 20 },
+                total: { type: 'number', example: 50 },
+                totalPages: { type: 'number', example: 3 },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async listLicenses(
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.licenseService.getAllLicenses(
+      Number(page),
+      Number(limit),
+      status as any,
+    );
+  }
+
+  @Get('licenses/:id')
+  @ApiOperation({
+    summary: 'Get a specific license',
+    description:
+      'Get detailed information about a specific travel agent license.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'License ID',
+    example: 'license123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'License retrieved successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'license123' },
+            licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+            status: { type: 'string', example: 'ACTIVE' },
+            issuedAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            expiresAt: { type: 'string', example: '2026-01-20T10:30:00.000Z' },
+            revokedAt: { type: 'string', example: null },
+            revokedBy: { type: 'string', example: null },
+            revokedReason: { type: 'string', example: null },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', example: 'user123' },
+                firstName: { type: 'string', example: 'John' },
+                lastName: { type: 'string', example: 'Doe' },
+                email: { type: 'string', example: 'john.doe@example.com' },
+              },
+            },
+            application: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', example: 'app123' },
+                applicationType: {
+                  type: 'string',
+                  example: 'NAHCON_REGISTERED_AGENT',
+                },
+                companyName: { type: 'string', example: 'ABC Travel Agency' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'License not found',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'License not found' },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 404000 },
+            message: { type: 'string', example: 'License not found' },
+          },
+        },
+      },
+    },
+  })
+  async getLicense(@Param('id') id: string) {
+    return this.licenseService.getLicenseById(id);
+  }
+
+  @Put('licenses/:id/revoke')
+  @ApiOperation({
+    summary: 'Revoke a travel agent license',
+    description:
+      'Permanently revoke a travel agent license. This action cannot be undone.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'License ID to revoke',
+    example: 'license123',
+  })
+  @ApiBody({
+    description: 'Revocation details',
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'Reason for revoking the license',
+          example: 'Violation of terms and conditions',
+        },
+      },
+      required: ['reason'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License revoked successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'License revoked successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'license123' },
+            licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+            status: { type: 'string', example: 'REVOKED' },
+            revokedAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            revokedBy: { type: 'string', example: 'admin123' },
+            revokedReason: {
+              type: 'string',
+              example: 'Violation of terms and conditions',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'License not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'License cannot be revoked',
+  })
+  async revokeLicense(
+    @Param('id') id: string,
+    @CurrentUser() admin: JwtUserPayload,
+    @Body() body: { reason: string },
+  ) {
+    return this.licenseService.revokeLicense(id, admin.id, body.reason);
+  }
+
+  @Put('licenses/:id/suspend')
+  @ApiOperation({
+    summary: 'Suspend a travel agent license',
+    description:
+      'Temporarily suspend a travel agent license. The license can be reactivated later.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'License ID to suspend',
+    example: 'license123',
+  })
+  @ApiBody({
+    description: 'Suspension details',
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'Reason for suspending the license',
+          example: 'Pending investigation',
+        },
+      },
+      required: ['reason'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License suspended successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'License suspended successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'license123' },
+            licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+            status: { type: 'string', example: 'SUSPENDED' },
+            suspendedAt: {
+              type: 'string',
+              example: '2025-01-20T10:30:00.000Z',
+            },
+            suspendedBy: { type: 'string', example: 'admin123' },
+            suspendedReason: {
+              type: 'string',
+              example: 'Pending investigation',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'License not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'License cannot be suspended',
+  })
+  async suspendLicense(
+    @Param('id') id: string,
+    @CurrentUser() admin: JwtUserPayload,
+    @Body() body: { reason: string },
+  ) {
+    return this.licenseService.suspendLicense(id, admin.id, body.reason);
+  }
+
+  @Get('licenses/statistics')
+  @ApiOperation({
+    summary: 'Get license statistics',
+    description: 'Get comprehensive statistics about travel agent licenses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 150 },
+            active: { type: 'number', example: 120 },
+            expired: { type: 'number', example: 20 },
+            revoked: { type: 'number', example: 5 },
+            suspended: { type: 'number', example: 5 },
+            expiringSoon: {
+              type: 'number',
+              example: 10,
+              description: 'Licenses expiring within 30 days',
+            },
+            recentlyIssued: {
+              type: 'number',
+              example: 15,
+              description: 'Licenses issued in the last 30 days',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getLicenseStatistics() {
+    return this.licenseService.getLicenseStatistics();
   }
 }

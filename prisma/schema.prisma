@@ -1692,6 +1692,11 @@ model TravelAgentLicense {
   revokedBy    String?
   revokeReason String?
 
+  // Suspension Information
+  suspendedAt     DateTime?
+  suspendedBy     String?
+  suspendedReason String?
+
   renewals TravelAgentLicenseRenewal[]
 
   createdAt DateTime @default(now())
