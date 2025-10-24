@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
+import { LicenseNumberService } from '@common/services/license-number.service';
+import { TravelAgentLicenseService } from './travel-agent-license.service';
 import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
 import {
   UpgradeApplicationStatus,
@@ -176,7 +178,7 @@ export class TravelAgentUpgradeService {
     // Validate NAHCON license number is provided for NAHCON applications
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !input.nahconLicenseNumber
     ) {
       throw new BadRequestException(
@@ -205,7 +207,7 @@ export class TravelAgentUpgradeService {
     // NAHCON document only required for NAHCON registered agents
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !uploadedDocuments.nahconDocumentUrl
     )
       missingDocuments.push('NAHCON Document');

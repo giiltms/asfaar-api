@@ -1606,6 +1606,9 @@ model TravelAgentUpgradeApplication {
   reviewNotes     String?
   rejectionReason String?
 
+  // License relation (created when application is approved)
+  licenses TravelAgentLicense[] @relation("ApplicationLicenses")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1676,12 +1679,23 @@ model TravelAgentLicense {
   expiresAt     DateTime
   status        TravelAgentLicenseStatus @default(ACTIVE)
 
+  // Application that generated this license
+  applicationId String?
+  application   TravelAgentUpgradeApplication? @relation("ApplicationLicenses", fields: [applicationId], references: [id])
+
+  // Admin Information (stored as IDs only, not relations)
+  issuedBy     String?
+  revokedAt    DateTime?
+  revokedBy    String?
+  revokeReason String?
+
   renewals TravelAgentLicenseRenewal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, expiresAt])
+  @@index([applicationId])
   @@map("travel_agent_licenses")
 }
 
