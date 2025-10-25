@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TravelAgentLicenseService } from '../modules/travel-agent-upgrade/travel-agent-license.service';
+import { TravelAgentLicenseNotificationsService } from '../notifications/travel-agent-license-notifications.service';
 
 @Injectable()
 export class TravelAgentLicenseSchedulerService {
   private readonly logger = new Logger(TravelAgentLicenseSchedulerService.name);
 
-  constructor(private readonly licenseService: TravelAgentLicenseService) {}
+  constructor(
+    private readonly licenseService: TravelAgentLicenseService,
+    private readonly notificationService: TravelAgentLicenseNotificationsService,
+  ) {}
 
   /**
    * Process expired licenses daily at midnight
@@ -39,21 +43,26 @@ export class TravelAgentLicenseSchedulerService {
     this.logger.log('Checking for licenses expiring in 30 days...');
 
     try {
-      const expiringLicenses =
-        await this.licenseService.getLicensesExpiringSoon(30);
+      const result = await this.notificationService.sendExpirationNotifications(
+        30,
+      );
 
-      if (expiringLicenses.length > 0) {
+      if (result.sent > 0) {
         this.logger.log(
-          `Found ${expiringLicenses.length} licenses expiring in 30 days`,
+          `Sent ${result.sent} expiration notifications for licenses expiring in 30 days`,
         );
-
-        // TODO: Send notifications to users
-        // await this.sendExpirationNotifications(expiringLicenses, 30);
+      } else if (result.failed > 0) {
+        this.logger.warn(
+          `Failed to send ${result.failed} expiration notifications for licenses expiring in 30 days`,
+        );
       } else {
         this.logger.log('No licenses expiring in 30 days');
       }
     } catch (error) {
-      this.logger.error('Error checking licenses expiring in 30 days:', error);
+      this.logger.error(
+        'Error sending expiration notifications for 30 days:',
+        error,
+      );
     }
   }
 
@@ -65,21 +74,26 @@ export class TravelAgentLicenseSchedulerService {
     this.logger.log('Checking for licenses expiring in 7 days...');
 
     try {
-      const expiringLicenses =
-        await this.licenseService.getLicensesExpiringSoon(7);
+      const result = await this.notificationService.sendExpirationNotifications(
+        7,
+      );
 
-      if (expiringLicenses.length > 0) {
+      if (result.sent > 0) {
         this.logger.log(
-          `Found ${expiringLicenses.length} licenses expiring in 7 days`,
+          `Sent ${result.sent} urgent expiration notifications for licenses expiring in 7 days`,
         );
-
-        // TODO: Send urgent notifications to users
-        // await this.sendExpirationNotifications(expiringLicenses, 7);
+      } else if (result.failed > 0) {
+        this.logger.warn(
+          `Failed to send ${result.failed} urgent expiration notifications for licenses expiring in 7 days`,
+        );
       } else {
         this.logger.log('No licenses expiring in 7 days');
       }
     } catch (error) {
-      this.logger.error('Error checking licenses expiring in 7 days:', error);
+      this.logger.error(
+        'Error sending urgent expiration notifications for 7 days:',
+        error,
+      );
     }
   }
 
@@ -91,45 +105,25 @@ export class TravelAgentLicenseSchedulerService {
     this.logger.log('Checking for licenses expiring in 1 day...');
 
     try {
-      const expiringLicenses =
-        await this.licenseService.getLicensesExpiringSoon(1);
+      const result = await this.notificationService.sendExpirationNotifications(
+        1,
+      );
 
-      if (expiringLicenses.length > 0) {
+      if (result.sent > 0) {
         this.logger.log(
-          `Found ${expiringLicenses.length} licenses expiring in 1 day`,
+          `Sent ${result.sent} final warning notifications for licenses expiring in 1 day`,
         );
-
-        // TODO: Send final warning notifications to users
-        // await this.sendExpirationNotifications(expiringLicenses, 1);
+      } else if (result.failed > 0) {
+        this.logger.warn(
+          `Failed to send ${result.failed} final warning notifications for licenses expiring in 1 day`,
+        );
       } else {
         this.logger.log('No licenses expiring in 1 day');
       }
     } catch (error) {
-      this.logger.error('Error checking licenses expiring in 1 day:', error);
-    }
-  }
-
-  /**
-   * Send expiration notifications (placeholder for future implementation)
-   */
-  private async sendExpirationNotifications(
-    licenses: any[],
-    daysUntilExpiry: number,
-  ): Promise<void> {
-    // TODO: Implement notification service
-    // This could include:
-    // - Email notifications
-    // - SMS notifications
-    // - In-app notifications
-    // - Push notifications
-
-    this.logger.log(
-      `Would send ${daysUntilExpiry}-day expiration notifications to ${licenses.length} users`,
-    );
-
-    for (const license of licenses) {
-      this.logger.log(
-        `Notification for license ${license.licenseNumber} (${license.user.email}) - expires in ${daysUntilExpiry} days`,
+      this.logger.error(
+        'Error sending final warning notifications for 1 day:',
+        error,
       );
     }
   }

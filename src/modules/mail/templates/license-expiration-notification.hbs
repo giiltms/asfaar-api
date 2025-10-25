@@ -1,0 +1,168 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>{{subject}}</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding:
+      20px; background-color: #f4f4f4; } .container { background-color: #ffffff;
+      border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow:
+      hidden; } .header { background-color:
+      {{#if (eq urgency 'URGENT')}}#dc3545{{else if
+        (eq urgency 'WARNING')
+      }}#fd7e14{{else}}#007bff{{/if}}; color: white; padding: 20px; text-align:
+      center; } .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+      .content { padding: 30px; } .alert-box { background-color:
+      {{#if (eq urgency 'URGENT')}}#f8d7da{{else if
+        (eq urgency 'WARNING')
+      }}#fff3cd{{else}}#d1ecf1{{/if}}; border: 1px solid
+      {{#if (eq urgency 'URGENT')}}#f5c6cb{{else if
+        (eq urgency 'WARNING')
+      }}#ffeaa7{{else}}#bee5eb{{/if}}; border-radius: 4px; padding: 15px;
+      margin: 20px 0; } .license-info { background-color: #f8f9fa; border-left:
+      4px solid #007bff; padding: 15px; margin: 20px 0; } .license-info h3 {
+      margin-top: 0; color: #007bff; } .info-row { display: flex;
+      justify-content: space-between; margin: 10px 0; padding: 5px 0;
+      border-bottom: 1px solid #e9ecef; } .info-label { font-weight: bold;
+      color: #6c757d; } .info-value { color: #495057; } .cta-button { display:
+      inline-block; background-color: #007bff; color: white; padding: 12px 24px;
+      text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px
+      0; } .cta-button:hover { background-color: #0056b3; } .footer {
+      background-color: #f8f9fa; padding: 20px; text-align: center; color:
+      #6c757d; font-size: 14px; } .urgency-badge { display: inline-block;
+      padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;
+      text-transform: uppercase; margin-bottom: 10px; } .urgency-urgent {
+      background-color: #dc3545; color: white; } .urgency-warning {
+      background-color: #fd7e14; color: white; } .urgency-reminder {
+      background-color: #007bff; color: white; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>Travel Agent License Notification</h1>
+        <div class='urgency-badge urgency-{{urgency}}'>{{urgency}}</div>
+      </div>
+
+      <div class='content'>
+        <h2>Dear {{userName}},</h2>
+
+        <div class='alert-box'>
+          {{#if (eq urgency 'URGENT')}}
+            <strong>URGENT NOTICE:</strong>
+            Your travel agent license expires
+            <strong>TOMORROW</strong>! Immediate action is required to avoid
+            service interruption.
+          {{else if (eq urgency 'WARNING')}}
+            <strong>WARNING:</strong>
+            Your travel agent license will expire in
+            <strong>{{daysUntilExpiry}} days</strong>. Please renew your license
+            soon to avoid service interruption.
+          {{else}}
+            <strong>REMINDER:</strong>
+            Your travel agent license will expire in
+            <strong>{{daysUntilExpiry}} days</strong>. Consider renewing your
+            license to maintain uninterrupted service.
+          {{/if}}
+        </div>
+
+        <div class='license-info'>
+          <h3>License Information</h3>
+          <div class='info-row'>
+            <span class='info-label'>License Number:</span>
+            <span class='info-value'><strong>{{licenseNumber}}</strong></span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Company Name:</span>
+            <span class='info-value'>{{companyName}}</span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Expiry Date:</span>
+            <span class='info-value'><strong>{{expiryDate}}</strong></span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Days Remaining:</span>
+            <span class='info-value'><strong>{{daysUntilExpiry}}
+                day{{#unless
+                  (eq daysUntilExpiry 1)
+                }}s{{/unless}}</strong></span>
+          </div>
+        </div>
+
+        <p>
+          {{#if (eq urgency 'URGENT')}}
+            <strong>Immediate action required:</strong>
+            Your travel agent license expires tomorrow. Please contact our
+            support team immediately to renew your license and avoid any service
+            disruption.
+          {{else if (eq urgency 'WARNING')}}
+            <strong>Action needed:</strong>
+            Your travel agent license expires in
+            {{daysUntilExpiry}}
+            days. We recommend renewing your license as soon as possible to
+            ensure uninterrupted service.
+          {{else}}
+            <strong>Planning ahead:</strong>
+            Your travel agent license expires in
+            {{daysUntilExpiry}}
+            days. Consider starting the renewal process to ensure a smooth
+            transition.
+          {{/if}}
+        </p>
+
+        <p>
+          To renew your license, please:
+        </p>
+        <ul>
+          <li>Log into your travel agent dashboard</li>
+          <li>Navigate to the license renewal section</li>
+          <li>Complete the renewal application process</li>
+          <li>Submit any required documentation</li>
+        </ul>
+
+        <div style='text-align: center; margin: 30px 0;'>
+          <a href='{{dashboardUrl}}/travel-agent/license' class='cta-button'>
+            {{#if (eq urgency 'URGENT')}}
+              RENEW LICENSE NOW
+            {{else}}
+              Renew License
+            {{/if}}
+          </a>
+        </div>
+
+        <p>
+          If you have any questions or need assistance with the renewal process,
+          please don't hesitate to contact our support team at
+          <strong>{{supportEmail}}</strong>.
+        </p>
+
+        <p>
+          Thank you for being a valued travel agent with
+          {{platformName}}.
+        </p>
+
+        <p>
+          Best regards,<br />
+          The
+          {{platformName}}
+          Team
+        </p>
+      </div>
+
+      <div class='footer'>
+        <p>
+          This is an automated notification. Please do not reply to this email.<br
+          />
+          For support, contact us at
+          {{supportEmail}}
+        </p>
+        <p>
+          ©
+          {{platformName}}
+          - All rights reserved
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -81,6 +81,17 @@ export interface TravelAgentUpgradeDecisionData {
   platformName: string;
 }
 
+export interface LicenseExpirationNotificationData {
+  userEmail: string;
+  userName: string;
+  licenseNumber: string;
+  companyName: string;
+  daysUntilExpiry: number;
+  expiryDate: string;
+  urgency: 'URGENT' | 'WARNING' | 'REMINDER';
+  subject: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -418,6 +429,52 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send travel agent upgrade decision notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendLicenseExpirationNotification(
+    data: LicenseExpirationNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'license-expiration-notification',
+        context: {
+          userName: data.userName,
+          licenseNumber: data.licenseNumber,
+          companyName: data.companyName,
+          daysUntilExpiry: data.daysUntilExpiry,
+          expiryDate: data.expiryDate,
+          urgency: data.urgency,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `License expiration notification (${data.urgency}) sent successfully to: ${data.userEmail} for license ${data.licenseNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license expiration notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;

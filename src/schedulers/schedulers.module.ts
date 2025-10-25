@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TravelAgentLicenseSchedulerService } from './travel-agent-license-scheduler.service';
 import { TravelAgentUpgradeModule } from '../modules/travel-agent-upgrade/travel-agent-upgrade.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TravelAgentUpgradeModule],
+  imports: [TravelAgentUpgradeModule, NotificationsModule],
   providers: [TravelAgentLicenseSchedulerService],
   exports: [TravelAgentLicenseSchedulerService],
 })

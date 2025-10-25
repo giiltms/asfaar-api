@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TravelAgentLicenseService } from '../modules/travel-agent-upgrade/travel-agent-license.service';
+import { MailService } from '../modules/mail/services/mail.service';
 
 export interface LicenseExpirationNotification {
   licenseId: string;
@@ -18,7 +19,10 @@ export class TravelAgentLicenseNotificationsService {
     TravelAgentLicenseNotificationsService.name,
   );
 
-  constructor(private readonly licenseService: TravelAgentLicenseService) {}
+  constructor(
+    private readonly licenseService: TravelAgentLicenseService,
+    private readonly mailService: MailService,
+  ) {}
 
   /**
    * Send expiration notifications for licenses expiring within specified days
@@ -164,25 +168,58 @@ export class TravelAgentLicenseNotificationsService {
   }
 
   /**
-   * Send individual notification (placeholder for actual implementation)
+   * Send individual notification via email
    */
   private async sendNotification(
     notification: LicenseExpirationNotification,
   ): Promise<void> {
-    // TODO: Implement actual notification sending
-    // This could include:
-    // - Email service integration
-    // - SMS service integration
-    // - Push notification service
-    // - In-app notification system
+    try {
+      const { userEmail, userName, licenseNumber, companyName, daysUntilExpiry, expiresAt } = notification;
 
-    const message = this.buildNotificationMessage(notification);
+      // Determine email subject and urgency based on days until expiry
+      let subject: string;
+      let urgency: 'URGENT' | 'WARNING' | 'REMINDER';
 
-    // For now, just log the notification
-    this.logger.log(`NOTIFICATION: ${message}`);
+      if (daysUntilExpiry === 1) {
+        subject = `URGENT: Your Travel Agent License Expires Tomorrow - ${licenseNumber}`;
+        urgency = 'URGENT';
+      } else if (daysUntilExpiry <= 7) {
+        subject = `WARNING: Your Travel Agent License Expires in ${daysUntilExpiry} Days - ${licenseNumber}`;
+        urgency = 'WARNING';
+      } else {
+        subject = `REMINDER: Your Travel Agent License Expires in ${daysUntilExpiry} Days - ${licenseNumber}`;
+        urgency = 'REMINDER';
+      }
 
-    // Simulate async operation
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      // Format expiry date
+      const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Send email using the existing mail service
+      await this.mailService.sendLicenseExpirationNotification({
+        userEmail,
+        userName,
+        licenseNumber,
+        companyName,
+        daysUntilExpiry,
+        expiryDate,
+        urgency,
+        subject,
+      });
+
+      this.logger.log(
+        `License expiration notification sent to ${userEmail} for license ${licenseNumber} (${daysUntilExpiry} days remaining)`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license expiration notification to ${notification.userEmail}:`,
+        error,
+      );
+      throw error;
+    }
   }
 
   /**
