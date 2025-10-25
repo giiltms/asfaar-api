@@ -618,10 +618,11 @@ export class TravelAgentUpgradeService {
       'IATA_DOCUMENT',
       'DSS_DOCUMENT',
       'NANTA_DOCUMENT',
+      'DIRECTOR_IDENTIFICATION',
     ];
     if (!allowedDocumentTypes.includes(documentType)) {
       throw new BadRequestException(
-        'Invalid document type. Allowed types: CAC_DOCUMENT, TAX_CLEARANCE_CERTIFICATE, NAHCON_DOCUMENT, EFCC_SCUML_DOCUMENT, IATA_DOCUMENT, DSS_DOCUMENT, NANTA_DOCUMENT. For director identification documents, provide the URL directly with director information when completing the application.',
+        'Invalid document type. Allowed types: CAC_DOCUMENT, TAX_CLEARANCE_CERTIFICATE, NAHCON_DOCUMENT, EFCC_SCUML_DOCUMENT, IATA_DOCUMENT, DSS_DOCUMENT, NANTA_DOCUMENT, DIRECTOR_IDENTIFICATION.',
       );
     }
 
