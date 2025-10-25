@@ -178,7 +178,7 @@ export class TravelAgentUpgradeService {
     // Validate NAHCON license number is provided for NAHCON applications
     if (
       input.applicationType ===
-      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !input.nahconLicenseNumber
     ) {
       throw new BadRequestException(
@@ -207,7 +207,7 @@ export class TravelAgentUpgradeService {
     // NAHCON document only required for NAHCON registered agents
     if (
       input.applicationType ===
-      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !uploadedDocuments.nahconDocumentUrl
     )
       missingDocuments.push('NAHCON Document');
@@ -546,10 +546,13 @@ export class TravelAgentUpgradeService {
     });
     if (!app) throw new NotFoundException('Upgrade application not found');
 
-    // Verify application is in DRAFT status (can upload documents)
-    if (app.status !== UpgradeApplicationStatus.DRAFT) {
+    // Verify application is in DRAFT or PENDING status (can upload documents)
+    if (
+      app.status !== UpgradeApplicationStatus.DRAFT &&
+      app.status !== UpgradeApplicationStatus.PENDING
+    ) {
       throw new BadRequestException(
-        'Documents can only be uploaded for draft applications',
+        'Documents can only be uploaded for draft or pending applications',
       );
     }
 
@@ -601,10 +604,13 @@ export class TravelAgentUpgradeService {
     });
     if (!app) throw new NotFoundException('Upgrade application not found');
 
-    // Verify application is in DRAFT status (can upload documents)
-    if (app.status !== UpgradeApplicationStatus.DRAFT) {
+    // Verify application is in DRAFT or PENDING status (can upload documents)
+    if (
+      app.status !== UpgradeApplicationStatus.DRAFT &&
+      app.status !== UpgradeApplicationStatus.PENDING
+    ) {
       throw new BadRequestException(
-        'Documents can only be uploaded for draft applications',
+        'Documents can only be uploaded for draft or pending applications',
       );
     }
 
