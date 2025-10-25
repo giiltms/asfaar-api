@@ -24,7 +24,8 @@ export class TravelAgentLicenseSchedulerService {
 
       if (result.processed > 0) {
         this.logger.log(
-          `Successfully processed ${result.processed
+          `Successfully processed ${
+            result.processed
           } expired licenses: ${result.expired.join(', ')}`,
         );
       } else {
