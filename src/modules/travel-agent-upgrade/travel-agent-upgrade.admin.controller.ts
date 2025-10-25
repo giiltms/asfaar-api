@@ -960,4 +960,164 @@ export class AdminTravelAgentUpgradeController {
   async getNotificationStatistics() {
     return this.notificationService.getNotificationStatistics();
   }
+
+  // ===== LICENSE DURATION CONFIGURATION ENDPOINTS =====
+
+  @Get('licenses/duration-config')
+  @ApiOperation({
+    summary: 'Get license duration configuration',
+    description:
+      'Get the current license duration configuration for new licenses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License duration configuration retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'License duration configuration retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'config123' },
+            durationDays: { type: 'number', example: 365 },
+            isActive: { type: 'boolean', example: true },
+            setBy: { type: 'string', example: 'admin123' },
+            setAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            notes: {
+              type: 'string',
+              example: 'Standard 1-year license duration',
+            },
+            createdAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            updatedAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No license duration configuration found',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'No license duration configuration found',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            durationDays: { type: 'number', example: 365 },
+            isDefault: { type: 'boolean', example: true },
+            message: {
+              type: 'string',
+              example: 'Using default 1-year duration (365 days)',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getLicenseDurationConfig() {
+    return this.licenseService.getLicenseDurationConfig();
+  }
+
+  @Put('licenses/duration-config')
+  @ApiOperation({
+    summary: 'Update license duration configuration',
+    description:
+      'Set the license duration for all new licenses. This affects only new licenses issued after this configuration is set.',
+  })
+  @ApiBody({
+    description: 'License duration configuration',
+    schema: {
+      type: 'object',
+      properties: {
+        durationDays: {
+          type: 'number',
+          description: 'Number of days the license should be valid',
+          example: 365,
+          minimum: 1,
+          maximum: 3650, // 10 years max
+        },
+        notes: {
+          type: 'string',
+          description: 'Optional notes about this configuration',
+          example:
+            'Updated to 2-year license duration for better agent retention',
+        },
+      },
+      required: ['durationDays'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License duration configuration updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'License duration configuration updated successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'config123' },
+            durationDays: { type: 'number', example: 730 },
+            isActive: { type: 'boolean', example: true },
+            setBy: { type: 'string', example: 'admin123' },
+            setAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            notes: {
+              type: 'string',
+              example: 'Updated to 2-year license duration',
+            },
+            createdAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+            updatedAt: { type: 'string', example: '2025-01-20T10:30:00.000Z' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid duration configuration',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'Invalid duration configuration',
+        },
+        error: {
+          type: 'object',
+          properties: {
+            code: { type: 'number', example: 400000 },
+            message: {
+              type: 'string',
+              example: 'Duration must be between 1 and 3650 days',
+            },
+          },
+        },
+      },
+    },
+  })
+  async updateLicenseDurationConfig(
+    @CurrentUser() admin: JwtUserPayload,
+    @Body() body: { durationDays: number; notes?: string },
+  ) {
+    return this.licenseService.updateLicenseDurationConfig(
+      admin.id,
+      body.durationDays,
+      body.notes,
+    );
+  }
 }

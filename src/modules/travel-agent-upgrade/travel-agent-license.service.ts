@@ -29,7 +29,11 @@ export class TravelAgentLicenseService {
       // Generate license number
       const licenseNumber =
         await this.licenseNumberService.generateTravelAgentLicenseNumber();
-      const expiresAt = this.licenseNumberService.calculateLicenseExpiryDate();
+
+      // Get configured license duration
+      const durationDays = await this.getConfiguredLicenseDuration();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + durationDays);
 
       // Create the license
       const license = await this.prisma.travelAgentLicense.create({
@@ -168,7 +172,11 @@ export class TravelAgentLicenseService {
     // Generate new license number
     const newLicenseNumber =
       await this.licenseNumberService.generateTravelAgentLicenseNumber();
-    const newExpiresAt = this.licenseNumberService.calculateLicenseExpiryDate();
+
+    // Get configured license duration for renewal
+    const durationDays = await this.getConfiguredLicenseDuration();
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
     // Mark old license as expired
     await this.prisma.travelAgentLicense.update({
@@ -468,8 +476,7 @@ export class TravelAgentLicenseService {
     });
 
     this.logger.log(
-      `License ${licenseId} reactivated by ${reactivatedBy}${
-        reason ? ` - Reason: ${reason}` : ''
+      `License ${licenseId} reactivated by ${reactivatedBy}${reason ? ` - Reason: ${reason}` : ''
       }`,
     );
     return updatedLicense;
@@ -519,8 +526,7 @@ export class TravelAgentLicenseService {
     );
 
     this.logger.log(
-      `Processed ${
-        expiredLicenses.length
+      `Processed ${expiredLicenses.length
       } expired licenses: ${expiredLicenseNumbers.join(', ')}`,
     );
 
@@ -648,5 +654,110 @@ export class TravelAgentLicenseService {
       recentlyRenewed,
       renewalRate: total > 0 ? (recentlyRenewed / total) * 100 : 0,
     };
+  }
+
+  /**
+   * Get current license duration configuration
+   */
+  async getLicenseDurationConfig(): Promise<any> {
+    try {
+      const config =
+        await this.prisma.travelAgentLicenseDurationConfig.findFirst({
+          where: { isActive: true },
+          orderBy: { setAt: 'desc' },
+        });
+
+      if (!config) {
+        return {
+          success: true,
+          message: 'No license duration configuration found',
+          data: {
+            durationDays: 365, // Default 1 year
+            isDefault: true,
+            message: 'Using default 1-year duration (365 days)',
+          },
+        };
+      }
+
+      return {
+        success: true,
+        message: 'License duration configuration retrieved successfully',
+        data: config,
+      };
+    } catch (error) {
+      this.logger.error('Error getting license duration configuration:', error);
+      throw new Error('Failed to get license duration configuration');
+    }
+  }
+
+  /**
+   * Update license duration configuration
+   */
+  async updateLicenseDurationConfig(
+    adminId: string,
+    durationDays: number,
+    notes?: string,
+  ): Promise<any> {
+    try {
+      // Validate duration
+      if (durationDays < 1 || durationDays > 3650) {
+        throw new BadRequestException(
+          'Duration must be between 1 and 3650 days (10 years)',
+        );
+      }
+
+      // Deactivate any existing active configuration
+      await this.prisma.travelAgentLicenseDurationConfig.updateMany({
+        where: { isActive: true },
+        data: { isActive: false },
+      });
+
+      // Create new configuration
+      const config = await this.prisma.travelAgentLicenseDurationConfig.create({
+        data: {
+          durationDays,
+          isActive: true,
+          setBy: adminId,
+          notes,
+        },
+      });
+
+      this.logger.log(
+        `License duration configuration updated by admin ${adminId}: ${durationDays} days`,
+      );
+
+      return {
+        success: true,
+        message: 'License duration configuration updated successfully',
+        data: config,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error updating license duration configuration:',
+        error,
+      );
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new Error('Failed to update license duration configuration');
+    }
+  }
+
+  /**
+   * Get configured license duration in days
+   */
+  async getConfiguredLicenseDuration(): Promise<number> {
+    try {
+      const config =
+        await this.prisma.travelAgentLicenseDurationConfig.findFirst({
+          where: { isActive: true },
+          orderBy: { setAt: 'desc' },
+        });
+
+      return config?.durationDays || 365; // Default to 1 year if no config
+    } catch (error) {
+      this.logger.error('Error getting configured license duration:', error);
+      return 365; // Default to 1 year on error
+    }
   }
 }

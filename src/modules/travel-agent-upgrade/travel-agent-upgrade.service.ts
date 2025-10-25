@@ -4,8 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { PaymentsService } from '@modules/payments/payments.service';
-import { LicenseNumberService } from '@common/services/license-number.service';
 import { TravelAgentLicenseService } from './travel-agent-license.service';
 import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
 import {
@@ -14,7 +12,6 @@ import {
   FeeType,
   PaymentStatus,
   Roles,
-  Currency,
   TravelAgentLicenseStatus,
 } from '@prisma/client';
 
@@ -91,7 +88,10 @@ export interface CreateUpgradeApplicationInput {
 
 @Injectable()
 export class TravelAgentUpgradeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly licenseService: TravelAgentLicenseService,
+  ) {}
 
   async createDraftApplication(
     userId: string,
@@ -178,7 +178,7 @@ export class TravelAgentUpgradeService {
     // Validate NAHCON license number is provided for NAHCON applications
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !input.nahconLicenseNumber
     ) {
       throw new BadRequestException(
@@ -207,7 +207,7 @@ export class TravelAgentUpgradeService {
     // NAHCON document only required for NAHCON registered agents
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !uploadedDocuments.nahconDocumentUrl
     )
       missingDocuments.push('NAHCON Document');
@@ -411,19 +411,12 @@ export class TravelAgentUpgradeService {
       throw new BadRequestException('Application is not under review');
     }
 
-    // Generate unique license number
-    const licenseNumber = await this.generateLicenseNumber();
-
-    // Create travel agent license
-    const license = await this.prisma.travelAgentLicense.create({
-      data: {
-        userId: application.userId,
-        licenseNumber,
-        status: TravelAgentLicenseStatus.ACTIVE,
-        issuedAt: new Date(),
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-      },
-    });
+    // Create travel agent license using the license service (which handles configurable duration)
+    const license = await this.licenseService.createLicense(
+      applicationId,
+      application.userId,
+      reviewerId,
+    );
 
     // Update user role to AGENCY
     await this.prisma.user.update({
@@ -500,12 +493,18 @@ export class TravelAgentUpgradeService {
       throw new BadRequestException('Invalid service fee for license renewal');
     }
 
+    // Get configured license duration
+    const durationDays =
+      await this.licenseService.getConfiguredLicenseDuration();
+    const newExpiry = new Date();
+    newExpiry.setDate(newExpiry.getDate() + durationDays);
+
     // Create renewal record
     const renewal = await this.prisma.travelAgentLicenseRenewal.create({
       data: {
         licenseId: license.id,
         renewedAt: new Date(),
-        newExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        newExpiry,
         reference: `REN-${Date.now()}`,
       },
     });

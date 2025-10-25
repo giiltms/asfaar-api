@@ -1737,6 +1737,22 @@ model TravelAgentLicenseCounter {
   @@map("travel_agent_license_counters")
 }
 
+model TravelAgentLicenseDurationConfig {
+  id           String  @id @default(uuid())
+  durationDays Int     @default(365) // Default to 1 year (365 days)
+  isActive     Boolean @default(true)
+
+  // Admin tracking
+  setBy String? // Admin user ID who set this configuration
+  setAt DateTime @default(now())
+  notes String? // Optional notes about the configuration
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_license_duration_configs")
+}
+
 model ApplicationType {
   id          String   @id @default(uuid())
   name        String   @unique
