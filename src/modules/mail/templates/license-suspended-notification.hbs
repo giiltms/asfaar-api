@@ -1,0 +1,142 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>{{subject}}</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding:
+      20px; background-color: #f4f4f4; } .container { background-color: #ffffff;
+      border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow:
+      hidden; } .header { background-color: #f59e0b; color: white; padding:
+      20px; text-align: center; } .header h1 { margin: 0; font-size: 24px;
+      font-weight: bold; } .content { padding: 30px; } .warning-box {
+      background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px;
+      padding: 15px; margin: 20px 0; } .license-info { background-color:
+      #f8f9fa; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+      .license-info h3 { margin-top: 0; color: #f59e0b; } .info-row { display:
+      flex; justify-content: space-between; margin: 10px 0; padding: 5px 0;
+      border-bottom: 1px solid #e9ecef; } .info-label { font-weight: bold;
+      color: #6c757d; } .info-value { color: #495057; } .cta-button { display:
+      inline-block; background-color: #f59e0b; color: white; padding: 12px 24px;
+      text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px
+      0; } .cta-button:hover { background-color: #d97706; } .footer {
+      background-color: #f8f9fa; padding: 20px; text-align: center; color:
+      #6c757d; font-size: 14px; } .warning-badge { display: inline-block;
+      padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;
+      text-transform: uppercase; margin-bottom: 10px; background-color: #f59e0b;
+      color: white; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>Travel Agent License Suspended</h1>
+        <div class='warning-badge'>SUSPENDED</div>
+      </div>
+
+      <div class='content'>
+        <h2>Dear {{userName}},</h2>
+
+        <div class='warning-box'>
+          <strong>IMPORTANT NOTICE:</strong>
+          Your travel agent license has been suspended. This means you cannot
+          currently operate as a travel agent on our platform until the
+          suspension is lifted.
+        </div>
+
+        <div class='license-info'>
+          <h3>License Information</h3>
+          <div class='info-row'>
+            <span class='info-label'>License Number:</span>
+            <span class='info-value'><strong>{{licenseNumber}}</strong></span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Company Name:</span>
+            <span class='info-value'>{{companyName}}</span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Suspended Date:</span>
+            <span class='info-value'><strong>{{suspendedDate}}</strong></span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Status:</span>
+            <span class='info-value'><strong
+                style='color: #f59e0b;'
+              >SUSPENDED</strong></span>
+          </div>
+        </div>
+
+        <div class='license-info'>
+          <h3>Suspension Details</h3>
+          <div class='info-row'>
+            <span class='info-label'>Reason:</span>
+            <span class='info-value'>{{suspensionReason}}</span>
+          </div>
+          <div class='info-row'>
+            <span class='info-label'>Suspended By:</span>
+            <span class='info-value'>{{suspendedBy}}</span>
+          </div>
+        </div>
+
+        <p>
+          <strong>What This Means:</strong>
+        </p>
+        <ul>
+          <li>You cannot submit new applications for clients</li>
+          <li>Existing applications may be affected</li>
+          <li>You cannot access travel agent dashboard features</li>
+          <li>Your license privileges are temporarily revoked</li>
+        </ul>
+
+        <p>
+          <strong>Next Steps:</strong>
+        </p>
+        <ul>
+          <li>Review the suspension reason carefully</li>
+          <li>Take necessary corrective actions if applicable</li>
+          <li>Contact our support team for clarification</li>
+          <li>Submit an appeal if you believe the suspension is unwarranted</li>
+        </ul>
+
+        <div style='text-align: center; margin: 30px 0;'>
+          <a href='{{dashboardUrl}}/travel-agent/license' class='cta-button'>
+            View License Details
+          </a>
+        </div>
+
+        <p>
+          If you have any questions about this suspension or need assistance
+          understanding the next steps, please contact our support team at
+          <strong>{{supportEmail}}</strong>.
+        </p>
+
+        <p>
+          We hope to resolve this matter quickly and restore your license
+          privileges.
+        </p>
+
+        <p>
+          Best regards,<br />
+          The
+          {{platformName}}
+          Team
+        </p>
+      </div>
+
+      <div class='footer'>
+        <p>
+          This is an automated notification. Please do not reply to this email.<br
+          />
+          For support, contact us at
+          {{supportEmail}}
+        </p>
+        <p>
+          ©
+          {{platformName}}
+          - All rights reserved
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

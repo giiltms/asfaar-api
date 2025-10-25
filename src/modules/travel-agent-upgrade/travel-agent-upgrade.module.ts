@@ -7,9 +7,10 @@ import { TravelAgentUpgradeController } from './travel-agent-upgrade.controller'
 import { AdminTravelAgentUpgradeController } from './travel-agent-upgrade.admin.controller';
 import { LicenseNumberService } from '@common/services/license-number.service';
 import { NotificationsModule } from '../../notifications/notifications.module';
+import { MailModule } from '@modules/mail/mail.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, forwardRef(() => NotificationsModule)],
+  imports: [PrismaModule, AuthModule, forwardRef(() => NotificationsModule), MailModule],
   controllers: [
     TravelAgentUpgradeController,
     AdminTravelAgentUpgradeController,

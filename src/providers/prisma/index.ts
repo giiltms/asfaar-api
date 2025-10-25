@@ -10,6 +10,7 @@ export * from './middlewares/embassy-submission-email.middleware';
 export * from './middlewares/biometric-capture-email.middleware';
 export * from './middlewares/travel-agent-upgrade-payment-email.middleware';
 export * from './middlewares/travel-agent-upgrade-decision-email.middleware';
+export * from './middlewares/license-status-change-email.middleware';
 export * from './prisma-client-exception.filter';
 export * from './interfaces';
 export * from './prisma.constants';

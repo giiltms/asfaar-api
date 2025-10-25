@@ -92,6 +92,49 @@ export interface LicenseExpirationNotificationData {
   subject: string;
 }
 
+export interface LicenseIssuedNotificationData {
+  userEmail: string;
+  userName: string;
+  licenseNumber: string;
+  companyName: string;
+  issuedDate: string;
+  expiryDate: string;
+  subject: string;
+}
+
+export interface LicenseSuspendedNotificationData {
+  userEmail: string;
+  userName: string;
+  licenseNumber: string;
+  companyName: string;
+  suspendedDate: string;
+  suspensionReason: string;
+  suspendedBy: string;
+  subject: string;
+}
+
+export interface LicenseRevokedNotificationData {
+  userEmail: string;
+  userName: string;
+  licenseNumber: string;
+  companyName: string;
+  revokedDate: string;
+  revocationReason: string;
+  revokedBy: string;
+  subject: string;
+}
+
+export interface LicenseReactivatedNotificationData {
+  userEmail: string;
+  userName: string;
+  licenseNumber: string;
+  companyName: string;
+  reactivatedDate: string;
+  reactivationReason: string;
+  reactivatedBy: string;
+  subject: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -475,6 +518,189 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send license expiration notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendLicenseIssuedNotification(
+    data: LicenseIssuedNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'license-issued-notification',
+        context: {
+          userName: data.userName,
+          licenseNumber: data.licenseNumber,
+          companyName: data.companyName,
+          issuedDate: data.issuedDate,
+          expiryDate: data.expiryDate,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `License issued notification sent successfully to: ${data.userEmail} for license ${data.licenseNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license issued notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendLicenseSuspendedNotification(
+    data: LicenseSuspendedNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'license-suspended-notification',
+        context: {
+          userName: data.userName,
+          licenseNumber: data.licenseNumber,
+          companyName: data.companyName,
+          suspendedDate: data.suspendedDate,
+          suspensionReason: data.suspensionReason,
+          suspendedBy: data.suspendedBy,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `License suspended notification sent successfully to: ${data.userEmail} for license ${data.licenseNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license suspended notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendLicenseRevokedNotification(
+    data: LicenseRevokedNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'license-revoked-notification',
+        context: {
+          userName: data.userName,
+          licenseNumber: data.licenseNumber,
+          companyName: data.companyName,
+          revokedDate: data.revokedDate,
+          revocationReason: data.revocationReason,
+          revokedBy: data.revokedBy,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `License revoked notification sent successfully to: ${data.userEmail} for license ${data.licenseNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license revoked notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendLicenseReactivatedNotification(
+    data: LicenseReactivatedNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'license-reactivated-notification',
+        context: {
+          userName: data.userName,
+          licenseNumber: data.licenseNumber,
+          companyName: data.companyName,
+          reactivatedDate: data.reactivatedDate,
+          reactivationReason: data.reactivationReason,
+          reactivatedBy: data.reactivatedBy,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `License reactivated notification sent successfully to: ${data.userEmail} for license ${data.licenseNumber}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send license reactivated notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;
