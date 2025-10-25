@@ -352,6 +352,7 @@ export class TravelAgentUpgradeController {
             'IATA_DOCUMENT',
             'DSS_DOCUMENT',
             'NANTA_DOCUMENT',
+            'DIRECTOR_IDENTIFICATION',
           ],
           description:
             'Type of document being uploaded. Note: For director identification documents, provide the URL directly with director information when completing the application.',
