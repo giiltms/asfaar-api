@@ -417,4 +417,234 @@ export class TravelAgentLicenseService {
     this.logger.log(`License ${licenseId} suspended by ${suspendedBy}`);
     return updatedLicense;
   }
+
+  /**
+   * Reactivate a suspended license
+   */
+  async reactivateLicense(
+    licenseId: string,
+    reactivatedBy: string,
+    reason?: string,
+  ): Promise<any> {
+    const license = await this.prisma.travelAgentLicense.findUnique({
+      where: { id: licenseId },
+    });
+
+    if (!license) {
+      throw new NotFoundException('License not found');
+    }
+
+    if (license.status !== 'SUSPENDED') {
+      throw new BadRequestException(
+        'Only suspended licenses can be reactivated',
+      );
+    }
+
+    const updatedLicense = await this.prisma.travelAgentLicense.update({
+      where: { id: licenseId },
+      data: {
+        status: 'ACTIVE',
+        suspendedAt: null,
+        suspendedBy: null,
+        suspendedReason: null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        application: {
+          select: {
+            id: true,
+            applicationType: true,
+            companyName: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(
+      `License ${licenseId} reactivated by ${reactivatedBy}${reason ? ` - Reason: ${reason}` : ''
+      }`,
+    );
+    return updatedLicense;
+  }
+
+  /**
+   * Process expired licenses (mark as EXPIRED)
+   */
+  async processExpiredLicenses(): Promise<{
+    processed: number;
+    expired: string[];
+  }> {
+    const now = new Date();
+    const expiredLicenses = await this.prisma.travelAgentLicense.findMany({
+      where: {
+        status: 'ACTIVE',
+        expiresAt: {
+          lt: now,
+        },
+      },
+      select: {
+        id: true,
+        licenseNumber: true,
+        userId: true,
+      },
+    });
+
+    if (expiredLicenses.length === 0) {
+      return { processed: 0, expired: [] };
+    }
+
+    const licenseIds = expiredLicenses.map((license) => license.id);
+
+    await this.prisma.travelAgentLicense.updateMany({
+      where: {
+        id: {
+          in: licenseIds,
+        },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+
+    const expiredLicenseNumbers = expiredLicenses.map(
+      (license) => license.licenseNumber,
+    );
+
+    this.logger.log(
+      `Processed ${expiredLicenses.length
+      } expired licenses: ${expiredLicenseNumbers.join(', ')}`,
+    );
+
+    return {
+      processed: expiredLicenses.length,
+      expired: expiredLicenseNumbers,
+    };
+  }
+
+  /**
+   * Get licenses expiring soon (within specified days)
+   */
+  async getLicensesExpiringSoon(days = 30): Promise<any[]> {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + days);
+
+    const expiringLicenses = await this.prisma.travelAgentLicense.findMany({
+      where: {
+        status: 'ACTIVE',
+        expiresAt: {
+          lte: futureDate,
+          gte: new Date(),
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        application: {
+          select: {
+            companyName: true,
+          },
+        },
+      },
+      orderBy: {
+        expiresAt: 'asc',
+      },
+    });
+
+    return expiringLicenses;
+  }
+
+  /**
+   * Enhanced license statistics
+   */
+  async getEnhancedLicenseStatistics(): Promise<any> {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    const [
+      total,
+      active,
+      expired,
+      revoked,
+      suspended,
+      expiringIn30Days,
+      expiringIn7Days,
+      recentlyIssued,
+      recentlyRenewed,
+    ] = await Promise.all([
+      this.prisma.travelAgentLicense.count(),
+      this.prisma.travelAgentLicense.count({
+        where: { status: TravelAgentLicenseStatus.ACTIVE },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: { status: TravelAgentLicenseStatus.EXPIRED },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: { status: TravelAgentLicenseStatus.REVOKED },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: { status: TravelAgentLicenseStatus.SUSPENDED },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: {
+          status: TravelAgentLicenseStatus.ACTIVE,
+          expiresAt: {
+            lte: thirtyDaysFromNow,
+            gte: now,
+          },
+        },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: {
+          status: TravelAgentLicenseStatus.ACTIVE,
+          expiresAt: {
+            lte: sevenDaysFromNow,
+            gte: now,
+          },
+        },
+      }),
+      this.prisma.travelAgentLicense.count({
+        where: {
+          issuedAt: {
+            gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          },
+        },
+      }),
+      this.prisma.travelAgentLicenseRenewal.count({
+        where: {
+          renewedAt: {
+            gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      active,
+      expired,
+      revoked,
+      suspended,
+      expiringIn30Days,
+      expiringIn7Days,
+      recentlyIssued,
+      recentlyRenewed,
+      renewalRate: total > 0 ? (recentlyRenewed / total) * 100 : 0,
+    };
+  }
 }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonModule } from '../../common';
@@ -33,6 +33,8 @@ import { DashboardBiometricModule } from '../dashboard-biometric/dashboard-biome
 import { DashboardAuthorityModule } from '../dashboard-authority/dashboard-authority.module';
 import { TravelAgentModule } from '../travel-agent/travel-agent.module';
 import { TravelAgentUpgradeModule } from '../travel-agent-upgrade/travel-agent-upgrade.module';
+import { SchedulersModule } from '../../schedulers/schedulers.module';
+import { NotificationsModule } from '../../notifications/notifications.module';
 
 // Commenting out modules that don't exist yet
 // import { HealthModule } from '../health/health.module';
@@ -41,6 +43,7 @@ import { TravelAgentUpgradeModule } from '../travel-agent-upgrade/travel-agent-u
 @Module({
   imports: [
     // Global modules for configuration, core services, and shared utilities
+    ScheduleModule.forRoot(),
     CommonModule,
     CoreModule,
     SharedModule,
@@ -69,6 +72,8 @@ import { TravelAgentUpgradeModule } from '../travel-agent-upgrade/travel-agent-u
     DashboardAuthorityModule,
     TravelAgentModule,
     TravelAgentUpgradeModule,
+    SchedulersModule,
+    NotificationsModule,
     AnalyticsModule,
     FinanceModule,
     DepartmentsModule,

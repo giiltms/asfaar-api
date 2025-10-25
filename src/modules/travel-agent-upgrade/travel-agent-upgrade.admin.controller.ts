@@ -27,6 +27,7 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { TravelAgentUpgradeService } from './travel-agent-upgrade.service';
 import { TravelAgentLicenseService } from './travel-agent-license.service';
+import { TravelAgentLicenseNotificationsService } from '../../notifications/travel-agent-license-notifications.service';
 
 @ApiTags('Admin - Travel Agent Upgrade')
 @ApiBearerAuth()
@@ -37,6 +38,7 @@ export class AdminTravelAgentUpgradeController {
   constructor(
     private readonly service: TravelAgentUpgradeService,
     private readonly licenseService: TravelAgentLicenseService,
+    private readonly notificationService: TravelAgentLicenseNotificationsService,
   ) {}
 
   @Get('applications')
@@ -664,6 +666,298 @@ export class AdminTravelAgentUpgradeController {
     },
   })
   async getLicenseStatistics() {
-    return this.licenseService.getLicenseStatistics();
+    return this.licenseService.getEnhancedLicenseStatistics();
+  }
+
+  @Put('licenses/:id/reactivate')
+  @ApiOperation({
+    summary: 'Reactivate a suspended license',
+    description:
+      'Reactivate a suspended travel agent license. This action restores the license to active status.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'License ID to reactivate',
+    example: 'license123',
+  })
+  @ApiBody({
+    description: 'Reactivation details',
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'Optional reason for reactivation',
+          example: 'Investigation completed, no violations found',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'License reactivated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'License reactivated successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'license123' },
+            licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+            status: { type: 'string', example: 'ACTIVE' },
+            reactivatedAt: {
+              type: 'string',
+              example: '2025-01-20T10:30:00.000Z',
+            },
+            reactivatedBy: { type: 'string', example: 'admin123' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'License not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'License cannot be reactivated',
+  })
+  async reactivateLicense(
+    @Param('id') id: string,
+    @CurrentUser() admin: JwtUserPayload,
+    @Body() body: { reason?: string },
+  ) {
+    return this.licenseService.reactivateLicense(id, admin.id, body?.reason);
+  }
+
+  @Post('licenses/process-expired')
+  @ApiOperation({
+    summary: 'Process expired licenses',
+    description:
+      'Manually trigger processing of expired licenses. This marks active licenses that have passed their expiration date as EXPIRED.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Expired licenses processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Expired licenses processed successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            processed: { type: 'number', example: 5 },
+            expired: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['AGT-2024-000001', 'AGT-2024-000002'],
+            },
+          },
+        },
+      },
+    },
+  })
+  async processExpiredLicenses() {
+    return this.licenseService.processExpiredLicenses();
+  }
+
+  @Get('licenses/expiring-soon')
+  @ApiOperation({
+    summary: 'Get licenses expiring soon',
+    description:
+      'Get a list of licenses that are expiring within the specified number of days.',
+  })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Number of days to look ahead for expiring licenses',
+    example: 30,
+    type: 'number',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Expiring licenses retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Expiring licenses retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'license123' },
+              licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+              expiresAt: {
+                type: 'string',
+                example: '2025-02-20T10:30:00.000Z',
+              },
+              daysUntilExpiry: { type: 'number', example: 15 },
+              user: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'user123' },
+                  firstName: { type: 'string', example: 'John' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  email: { type: 'string', example: 'john.doe@example.com' },
+                },
+              },
+              application: {
+                type: 'object',
+                properties: {
+                  companyName: { type: 'string', example: 'ABC Travel Agency' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getExpiringLicenses(@Query('days') days = '30') {
+    const expiringLicenses = await this.licenseService.getLicensesExpiringSoon(
+      Number(days),
+    );
+
+    // Add days until expiry calculation
+    const licensesWithDaysUntilExpiry = expiringLicenses.map((license) => {
+      const now = new Date();
+      const expiryDate = new Date(license.expiresAt);
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      return {
+        ...license,
+        daysUntilExpiry,
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Expiring licenses retrieved successfully',
+      data: licensesWithDaysUntilExpiry,
+    };
+  }
+
+  // ===== NOTIFICATION MANAGEMENT ENDPOINTS =====
+
+  @Post('licenses/send-expiration-notifications')
+  @ApiOperation({
+    summary: 'Send expiration notifications',
+    description:
+      'Manually trigger sending expiration notifications for licenses expiring within specified days.',
+  })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Number of days to look ahead for expiring licenses',
+    example: 30,
+    type: 'number',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Expiration notifications sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Expiration notifications sent successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            sent: { type: 'number', example: 5 },
+            failed: { type: 'number', example: 0 },
+            total: { type: 'number', example: 5 },
+          },
+        },
+      },
+    },
+  })
+  async sendExpirationNotifications(@Query('days') days = '30') {
+    return this.notificationService.sendExpirationNotifications(Number(days));
+  }
+
+  @Post('licenses/send-renewal-reminders')
+  @ApiOperation({
+    summary: 'Send renewal reminders',
+    description:
+      'Manually trigger sending renewal reminder notifications for all expiring licenses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Renewal reminders sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Renewal reminders sent successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            sent: { type: 'number', example: 8 },
+            failed: { type: 'number', example: 0 },
+            total: { type: 'number', example: 8 },
+          },
+        },
+      },
+    },
+  })
+  async sendRenewalReminders() {
+    return this.notificationService.sendRenewalReminders();
+  }
+
+  @Get('licenses/notification-statistics')
+  @ApiOperation({
+    summary: 'Get notification statistics',
+    description:
+      'Get statistics about license expiration notifications and reminders.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Notification statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            totalNotifications: { type: 'number', example: 15 },
+            expiringIn30Days: { type: 'number', example: 10 },
+            expiringIn7Days: { type: 'number', example: 3 },
+            expiringIn1Day: { type: 'number', example: 1 },
+            overdue: { type: 'number', example: 1 },
+          },
+        },
+      },
+    },
+  })
+  async getNotificationStatistics() {
+    return this.notificationService.getNotificationStatistics();
   }
 }
