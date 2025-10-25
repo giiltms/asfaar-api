@@ -579,6 +579,18 @@ export class TravelAgentUpgradeService {
       case 'NANTA_DOCUMENT':
         data.nantaDocumentUrl = dto.fileUrl;
         break;
+      case 'DIRECTOR_IDENTIFICATION':
+        // For director identification, just return the URL
+        // The URL will be provided when creating the director
+        return {
+          success: true,
+          message: 'Director identification document uploaded successfully',
+          data: {
+            documentType: dto.documentType,
+            fileUrl: dto.fileUrl,
+            message: 'Use this URL when creating director information',
+          },
+        };
       default:
         throw new BadRequestException(
           'Unsupported document type. For director identification documents, provide the URL directly with director information when completing the application.',
@@ -683,6 +695,18 @@ export class TravelAgentUpgradeService {
       case 'NANTA_DOCUMENT':
         data.nantaDocumentUrl = fileUrl;
         break;
+      case 'DIRECTOR_IDENTIFICATION':
+        // For director identification, just return the URL
+        // The URL will be provided when creating the director
+        return {
+          success: true,
+          message: 'Director identification document uploaded successfully',
+          data: {
+            documentType,
+            fileUrl,
+            message: 'Use this URL when creating director information',
+          },
+        };
       default:
         throw new BadRequestException('Unsupported document type');
     }
