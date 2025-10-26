@@ -26,6 +26,17 @@ export class TravelAgentLicenseService {
     issuedBy: string,
   ): Promise<any> {
     try {
+      // Get application to determine license type
+      const application =
+        await this.prisma.travelAgentUpgradeApplication.findUnique({
+          where: { id: applicationId },
+          select: { applicationType: true },
+        });
+
+      if (!application) {
+        throw new Error(`Application ${applicationId} not found`);
+      }
+
       // Generate license number
       const licenseNumber =
         await this.licenseNumberService.generateTravelAgentLicenseNumber();
@@ -40,6 +51,7 @@ export class TravelAgentLicenseService {
         data: {
           userId,
           licenseNumber,
+          licenseType: application.applicationType,
           status: TravelAgentLicenseStatus.ACTIVE,
           issuedAt: new Date(),
           expiresAt,

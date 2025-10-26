@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
-import { SubmissionStatus } from '@prisma/client';
+import { SubmissionStatus, TravelAgentLicenseStatus, TravelAgentApplicationType } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
 import {
   AuthorityApplicationListDto,
@@ -939,23 +939,19 @@ export class DashboardAuthorityService {
     regularTravelAgent: number;
     total: number;
   }> {
-    // Count NAHCON registered agents (users with active licenses and NAHCON application type)
+    // Count NAHCON registered agents (users with active licenses and NAHCON license type)
     const nahconRegistered = await this.prisma.travelAgentLicense.count({
       where: {
-        status: 'ACTIVE',
-        application: {
-          applicationType: 'NAHCON_REGISTERED_AGENT',
-        },
+        status: TravelAgentLicenseStatus.ACTIVE,
+        licenseType: TravelAgentApplicationType.NAHCON_REGISTERED_AGENT,
       },
     });
 
-    // Count regular travel agents (users with active licenses and regular application type)
+    // Count regular travel agents (users with active licenses and regular license type)
     const regularTravelAgent = await this.prisma.travelAgentLicense.count({
       where: {
-        status: 'ACTIVE',
-        application: {
-          applicationType: 'REGULAR_TRAVEL_AGENT',
-        },
+        status: TravelAgentLicenseStatus.ACTIVE,
+        licenseType: TravelAgentApplicationType.REGULAR_TRAVEL_AGENT,
       },
     });
 

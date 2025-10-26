@@ -1677,10 +1677,11 @@ model TravelAgentLicense {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  licenseNumber String                   @unique
+  licenseNumber String                     @unique
+  licenseType   TravelAgentApplicationType @default(REGULAR_TRAVEL_AGENT)
   issuedAt      DateTime
   expiresAt     DateTime
-  status        TravelAgentLicenseStatus @default(ACTIVE)
+  status        TravelAgentLicenseStatus   @default(ACTIVE)
 
   // Application that generated this license
   applicationId String?
