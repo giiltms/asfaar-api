@@ -10,7 +10,12 @@ import { NotificationsModule } from '../../notifications/notifications.module';
 import { MailModule } from '@modules/mail/mail.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, forwardRef(() => NotificationsModule), MailModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    forwardRef(() => NotificationsModule),
+    MailModule,
+  ],
   controllers: [
     TravelAgentUpgradeController,
     AdminTravelAgentUpgradeController,

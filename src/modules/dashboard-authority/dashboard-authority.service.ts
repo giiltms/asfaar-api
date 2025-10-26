@@ -178,11 +178,11 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime:
-              submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -354,11 +354,11 @@ export class DashboardAuthorityService {
       },
       appointment: submission.appointment
         ? {
-            appointmentTime:
-              submission.appointment.appointmentTime?.toISOString(),
-            center: submission.appointment.center.name,
-            status: submission.appointment.status,
-          }
+          appointmentTime:
+            submission.appointment.appointmentTime?.toISOString(),
+          center: submission.appointment.center.name,
+          status: submission.appointment.status,
+        }
         : null,
       biometrics: {
         captured: !!submission.biometricData,
@@ -368,42 +368,42 @@ export class DashboardAuthorityService {
       formResponses: this.transformFormResponses(submission.responses || []),
       ninVerification: ninVerification
         ? {
-            id: ninVerification.id,
-            nin: ninVerification.nin,
-            firstName: ninVerification.firstName,
-            lastName: ninVerification.lastName,
-            fullName: ninVerification.fullName,
-            dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
-            gender: ninVerification.gender,
-            phoneNumber: ninVerification.phoneNumber,
-            photo: ninVerification.photo,
-            verificationStatus: ninVerification.verificationStatus,
-            verificationDate: ninVerification.verificationDate?.toISOString(),
-            address: {
-              line1: ninVerification.addressLine1,
-              city: ninVerification.city,
-              state: ninVerification.state,
-              lga: ninVerification.lga,
-              country: ninVerification.country,
-            },
-          }
+          id: ninVerification.id,
+          nin: ninVerification.nin,
+          firstName: ninVerification.firstName,
+          lastName: ninVerification.lastName,
+          fullName: ninVerification.fullName,
+          dateOfBirth: ninVerification.dateOfBirth?.toISOString(),
+          gender: ninVerification.gender,
+          phoneNumber: ninVerification.phoneNumber,
+          photo: ninVerification.photo,
+          verificationStatus: ninVerification.verificationStatus,
+          verificationDate: ninVerification.verificationDate?.toISOString(),
+          address: {
+            line1: ninVerification.addressLine1,
+            city: ninVerification.city,
+            state: ninVerification.state,
+            lga: ninVerification.lga,
+            country: ninVerification.country,
+          },
+        }
         : null,
       biometricData: submission.biometricData
         ? {
-            id: submission.biometricData.id,
-            photoUrl: submission.biometricData.photoUrl,
-            photoQualityScore: submission.biometricData.photoQualityScore,
-            isVerified: submission.biometricData.isVerified,
-            verificationStatus: submission.biometricData.verificationStatus,
-            capturedAt: submission.biometricData.capturedAt?.toISOString(),
-            capturedBy: submission.biometricData.capturedBy,
-            captureDevice: submission.biometricData.captureDevice,
-            fingerprintCount:
-              submission.biometricData.fingerprintFingers?.length || 0,
-            fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
-              submission.biometricData.fingerprintFingers || [],
-            ),
-          }
+          id: submission.biometricData.id,
+          photoUrl: submission.biometricData.photoUrl,
+          photoQualityScore: submission.biometricData.photoQualityScore,
+          isVerified: submission.biometricData.isVerified,
+          verificationStatus: submission.biometricData.verificationStatus,
+          capturedAt: submission.biometricData.capturedAt?.toISOString(),
+          capturedBy: submission.biometricData.capturedBy,
+          captureDevice: submission.biometricData.captureDevice,
+          fingerprintCount:
+            submission.biometricData.fingerprintFingers?.length || 0,
+          fingerprintQualitySummary: this.calculateFingerprintQualitySummary(
+            submission.biometricData.fingerprintFingers || [],
+          ),
+        }
         : null,
       statusHistory: submission.statusLogs.map((log) => ({
         fromStatus: log.fromStatus,
@@ -438,6 +438,7 @@ export class DashboardAuthorityService {
       applicationsByMonth,
       revenueStats,
       processingStats,
+      travelAgentStats,
     ] = await Promise.all([
       this.getTotalApplications(),
       this.getApplicationsByStatus(),
@@ -447,6 +448,7 @@ export class DashboardAuthorityService {
       this.getApplicationsByMonth(),
       this.getRevenueStats(),
       this.getProcessingStats(),
+      this.getTravelAgentStats(),
     ]);
 
     return {
@@ -458,6 +460,7 @@ export class DashboardAuthorityService {
       applicationsByMonth,
       revenue: revenueStats,
       processing: processingStats,
+      travelAgents: travelAgentStats,
     };
   }
 
@@ -925,6 +928,41 @@ export class DashboardAuthorityService {
       averageQuality: Math.round(averageQuality),
       acceptableFingers,
       totalFingers,
+    };
+  }
+
+  /**
+   * Get travel agent statistics
+   */
+  private async getTravelAgentStats(): Promise<{
+    nahconRegistered: number;
+    regularTravelAgent: number;
+    total: number;
+  }> {
+    // Count NAHCON registered agents (users with active licenses and NAHCON application type)
+    const nahconRegistered = await this.prisma.travelAgentLicense.count({
+      where: {
+        status: 'ACTIVE',
+        application: {
+          applicationType: 'NAHCON_REGISTERED_AGENT',
+        },
+      },
+    });
+
+    // Count regular travel agents (users with active licenses and regular application type)
+    const regularTravelAgent = await this.prisma.travelAgentLicense.count({
+      where: {
+        status: 'ACTIVE',
+        application: {
+          applicationType: 'REGULAR_TRAVEL_AGENT',
+        },
+      },
+    });
+
+    return {
+      nahconRegistered,
+      regularTravelAgent,
+      total: nahconRegistered + regularTravelAgent,
     };
   }
 }

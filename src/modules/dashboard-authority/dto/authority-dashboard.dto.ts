@@ -199,6 +199,13 @@ export class AuthorityStatsDto {
     completionRate: number; // percentage
     rejectionRate: number; // percentage
   };
+
+  @ApiProperty({ description: 'Travel agent statistics' })
+  travelAgents: {
+    nahconRegistered: number;
+    regularTravelAgent: number;
+    total: number;
+  };
 }
 
 // DTO for detailed application view
