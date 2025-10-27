@@ -1253,11 +1253,13 @@ model Booth {
   updatedAt      DateTime @updatedAt
   createdBy      String?
   lastModifiedBy String?
+  isDeleted      Boolean  @default(false)
 
   @@unique([centerId, boothNumber])
   @@index([centerId])
   @@index([appointmentClass])
   @@index([isActive, isOccupied])
+  @@index([isDeleted])
   @@map("booths")
 }
 

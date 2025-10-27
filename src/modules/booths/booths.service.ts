@@ -53,6 +53,7 @@ export class BoothsService {
         where: {
           centerId: createDto.centerId,
           boothNumber: createDto.boothNumber,
+          isDeleted: false,
         },
       });
 
@@ -113,7 +114,9 @@ export class BoothsService {
     pagination: PaginationQueryDto = { page: 1, limit: 10 },
   ) {
     try {
-      const where: any = {};
+      const where: any = {
+        isDeleted: false, // Exclude deleted booths
+      };
 
       // Apply filters
       if (filters.centerId) {
@@ -277,6 +280,7 @@ export class BoothsService {
             centerId: existingBooth.centerId,
             boothNumber: updateDto.boothNumber,
             id: { not: id },
+            isDeleted: false,
           },
         });
 
@@ -366,8 +370,8 @@ export class BoothsService {
         hasData._count.queueEntries > 0 ||
         hasData._count.biometricSessions > 0
       ) {
-        // Soft delete by deactivating
-        return this.updateBooth(id, { isActive: false }, lastModifiedBy);
+        // Soft delete by marking as deleted
+        return this.updateBooth(id, { isDeleted: true }, lastModifiedBy);
       }
 
       // Hard delete if no data
@@ -381,6 +385,59 @@ export class BoothsService {
     } catch (error) {
       this.logger.error(
         `Failed to delete booth ${id}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Restore a deleted booth
+   */
+  async restoreBooth(id: string, lastModifiedBy?: string): Promise<Booth> {
+    try {
+      const booth = await this.prisma.booth.findUnique({
+        where: { id },
+        include: {
+          center: {
+            select: { name: true },
+          },
+        },
+      });
+
+      if (!booth) {
+        throw new NotFoundException('Booth not found');
+      }
+
+      if (!booth.isDeleted) {
+        throw new BadRequestException('Booth is not deleted');
+      }
+
+      // Check for booth number conflicts
+      const conflictingBooth = await this.prisma.booth.findFirst({
+        where: {
+          centerId: booth.centerId,
+          boothNumber: booth.boothNumber,
+          isDeleted: false,
+          id: { not: id },
+        },
+      });
+
+      if (conflictingBooth) {
+        throw new ConflictException(
+          `Booth "${booth.boothNumber}" already exists in center "${booth.center.name}". Please rename the booth before restoring.`,
+        );
+      }
+
+      // Restore the booth
+      const restoredBooth = await this.updateBooth(id, { isDeleted: false }, lastModifiedBy);
+
+      this.logger.log(`Restored booth: ${booth.boothNumber}`);
+
+      return restoredBooth;
+    } catch (error) {
+      this.logger.error(
+        `Failed to restore booth ${id}: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -410,6 +467,7 @@ export class BoothsService {
         where: {
           agentId: assignDto.agentId,
           isActive: true,
+          isDeleted: false,
           id: { not: boothId },
         },
         include: {
@@ -569,6 +627,7 @@ export class BoothsService {
           appointmentClass,
           isActive: true,
           isOccupied: false,
+          isDeleted: false,
           agentId: { not: null }, // Must have an agent assigned
         },
         include: {
@@ -600,7 +659,7 @@ export class BoothsService {
    */
   async getBoothStats(centerId?: string): Promise<BoothStatsDto> {
     try {
-      const where = centerId ? { centerId } : {};
+      const where = centerId ? { centerId, isDeleted: false } : { isDeleted: false };
 
       const [total, active, occupied, withAgent] = await Promise.all([
         this.prisma.booth.count({ where }),

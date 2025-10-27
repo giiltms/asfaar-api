@@ -139,6 +139,14 @@ export class UpdateBoothDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   hasSignaturePad?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether booth is deleted (soft delete)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isDeleted?: boolean;
 }
 
 export class AssignAgentDto {

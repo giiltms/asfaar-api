@@ -106,9 +106,8 @@ export class DashboardFrontdeskService {
         agentStats,
         lastUpdated: new Date().toISOString(),
         stationId: null, // No single station
-        stationName: `${userCenterIds.length} Center${
-          userCenterIds.length > 1 ? 's' : ''
-        }`,
+        stationName: `${userCenterIds.length} Center${userCenterIds.length > 1 ? 's' : ''
+          }`,
         userCenters: userCenters.biometricCenters,
       };
     } catch (error) {
@@ -174,6 +173,7 @@ export class DashboardFrontdeskService {
         where: {
           centerId: { in: centerIds },
           isActive: true,
+          isDeleted: false,
         },
       }),
 
@@ -183,6 +183,7 @@ export class DashboardFrontdeskService {
           centerId: { in: centerIds },
           isActive: true,
           isOccupied: true,
+          isDeleted: false,
         },
       }),
     ]);
@@ -761,24 +762,24 @@ export class DashboardFrontdeskService {
         formData,
         biometricAppointment: submission.appointment
           ? {
-              appointmentTime: submission.appointment.appointmentTime,
-              status: submission.appointment.status,
-              centerName: submission.appointment.center?.name,
-            }
+            appointmentTime: submission.appointment.appointmentTime,
+            status: submission.appointment.status,
+            centerName: submission.appointment.center?.name,
+          }
           : undefined,
         paymentDetails: submission.payment
           ? {
-              amount: submission.payment.amount,
-              currency: submission.payment.currency,
-              paymentMethod: submission.payment.processor,
-              transactionId: submission.payment.processorId,
-            }
+            amount: submission.payment.amount,
+            currency: submission.payment.currency,
+            paymentMethod: submission.payment.processor,
+            transactionId: submission.payment.processorId,
+          }
           : {
-              amount: 0,
-              currency: 'NGN',
-              paymentMethod: 'N/A',
-              transactionId: 'N/A',
-            },
+            amount: 0,
+            currency: 'NGN',
+            paymentMethod: 'N/A',
+            transactionId: 'N/A',
+          },
         timeline,
       };
     } catch (error) {

@@ -37,6 +37,7 @@ import {
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { AppointmentClass } from '@prisma/client';
+import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
 
 @ApiTags('Booths')
 @ApiBearerAuth()
@@ -242,6 +243,43 @@ export class BoothsController {
     return {
       success: true,
       message: 'Booth deleted successfully',
+      data: boothEntity,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Put(':id/restore')
+  @ApiOperation({ summary: 'Restore deleted booth' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Booth restored successfully',
+    type: BoothResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Booth not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Booth is not deleted',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Booth number conflict',
+  })
+  async restoreBooth(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<BaseResponseDto<BoothEntity>> {
+    const lastModifiedBy = user.id;
+
+    const booth = await this.boothsService.restoreBooth(id, lastModifiedBy);
+    const boothEntity = new BoothEntity(booth);
+
+    return {
+      success: true,
+      message: 'Booth restored successfully',
       data: boothEntity,
       timestamp: new Date().toISOString(),
     };
