@@ -22,6 +22,9 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { Roles } from '@common/decorators/roles.decorator';
+import { Roles as UserRoles } from '@common/constants/roles.constants';
 import { BoothsService } from './booths.service';
 import { BoothEntity } from './entities/booth.entity';
 import {
@@ -29,24 +32,26 @@ import {
   UpdateBoothDto,
   AssignAgentDto,
   UnassignAgentDto,
-  BoothFiltersDto,
   BoothQueryDto,
   BoothResponseDto,
   BoothStatsDto,
 } from './dto/booth.dto';
-import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { AppointmentClass } from '@prisma/client';
-import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 
 @ApiTags('Booths')
 @ApiBearerAuth()
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('booths')
 export class BoothsController {
   constructor(private readonly boothsService: BoothsService) {}
 
   @Post()
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new booth' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -63,9 +68,9 @@ export class BoothsController {
   })
   async createBooth(
     @Body(ValidationPipe) createDto: CreateBoothDto,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<BoothEntity>> {
-    // TODO: Extract user ID from JWT token
-    const createdBy = 'placeholder-admin-id';
+    const createdBy = user.id;
 
     const booth = await this.boothsService.createBooth(createDto, createdBy);
     const boothEntity = new BoothEntity(booth);
@@ -79,6 +84,13 @@ export class BoothsController {
   }
 
   @Get()
+  @Roles(
+    UserRoles.CENTER_MANAGER,
+    UserRoles.RECEPTIONIST,
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Get all booths with pagination and filtering' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -111,6 +123,13 @@ export class BoothsController {
   }
 
   @Get('stats')
+  @Roles(
+    UserRoles.CENTER_MANAGER,
+    UserRoles.RECEPTIONIST,
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Get booth statistics' })
   @ApiQuery({ name: 'centerId', required: false, type: String })
   @ApiResponse({
@@ -132,6 +151,13 @@ export class BoothsController {
   }
 
   @Get('available/:centerId/:appointmentClass')
+  @Roles(
+    UserRoles.CENTER_MANAGER,
+    UserRoles.RECEPTIONIST,
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Get available booths for appointment class' })
   @ApiParam({ name: 'centerId', type: String })
   @ApiParam({ name: 'appointmentClass', enum: AppointmentClass })
@@ -157,6 +183,13 @@ export class BoothsController {
   }
 
   @Get(':id')
+  @Roles(
+    UserRoles.CENTER_MANAGER,
+    UserRoles.RECEPTIONIST,
+    UserRoles.BIOMETRIC_AGENT,
+    UserRoles.ADMIN,
+    UserRoles.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Get booth by ID' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({
@@ -183,6 +216,7 @@ export class BoothsController {
   }
 
   @Put(':id')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update booth' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({
@@ -201,9 +235,9 @@ export class BoothsController {
   async updateBooth(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(ValidationPipe) updateDto: UpdateBoothDto,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<BoothEntity>> {
-    // TODO: Extract user ID from JWT token
-    const lastModifiedBy = 'placeholder-admin-id';
+    const lastModifiedBy = user.id;
 
     const booth = await this.boothsService.updateBooth(
       id,
@@ -221,6 +255,7 @@ export class BoothsController {
   }
 
   @Delete(':id')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete booth' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({
@@ -233,9 +268,9 @@ export class BoothsController {
   })
   async deleteBooth(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<BoothEntity>> {
-    // TODO: Extract user ID from JWT token
-    const lastModifiedBy = 'placeholder-admin-id';
+    const lastModifiedBy = user.id;
 
     const booth = await this.boothsService.deleteBooth(id, lastModifiedBy);
     const boothEntity = new BoothEntity(booth);
@@ -249,6 +284,7 @@ export class BoothsController {
   }
 
   @Put(':id/restore')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Restore deleted booth' })
   @ApiParam({ name: 'id', type: String })
   @ApiResponse({
@@ -286,6 +322,7 @@ export class BoothsController {
   }
 
   @Put(':id/assign-agent')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Assign agent to booth' })
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: AssignAgentDto })
@@ -305,9 +342,9 @@ export class BoothsController {
   async assignAgent(
     @Param('id', ParseUUIDPipe) boothId: string,
     @Body(ValidationPipe) assignDto: AssignAgentDto,
+    @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<BoothEntity>> {
-    // TODO: Extract user ID from JWT token
-    const assignedBy = 'placeholder-admin-id';
+    const assignedBy = user.id;
 
     const booth = await this.boothsService.assignAgent(
       boothId,
@@ -325,6 +362,7 @@ export class BoothsController {
   }
 
   @Put(':id/unassign-agent')
+  @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({ summary: 'Unassign agent from booth' })
   @ApiParam({ name: 'id', type: String })
   @ApiBody({ type: UnassignAgentDto, required: false })
@@ -343,10 +381,10 @@ export class BoothsController {
   })
   async unassignAgent(
     @Param('id', ParseUUIDPipe) boothId: string,
+    @CurrentUser() user: JwtUserPayload,
     @Body(ValidationPipe) unassignDto?: UnassignAgentDto,
   ): Promise<BaseResponseDto<BoothEntity>> {
-    // TODO: Extract user ID from JWT token
-    const unassignedBy = 'placeholder-admin-id';
+    const unassignedBy = user.id;
 
     const booth = await this.boothsService.unassignAgent(
       boothId,
