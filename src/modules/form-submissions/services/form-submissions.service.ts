@@ -1780,9 +1780,12 @@ export class FormSubmissionsService {
         );
 
       case FieldType.DATE:
+      case FieldType.DATETIME:
+      case FieldType.TIME:
         return typeof value === 'string' && value.trim().length > 0;
 
       case FieldType.SELECT:
+      case FieldType.RADIO:
         return typeof value === 'string' && value.trim().length > 0;
 
       case FieldType.MULTISELECT:
@@ -1954,9 +1957,17 @@ export class FormSubmissionsService {
         }
         break;
       case FieldType.DATE:
+      case FieldType.DATETIME:
         if (!this.isValidDate(value)) {
           throw new BadRequestException(
             `Field '${field.label}' must be a valid date`,
+          );
+        }
+        break;
+      case FieldType.TIME:
+        if (!this.isValidTime(value)) {
+          throw new BadRequestException(
+            `Field '${field.label}' must be a valid time`,
           );
         }
         break;
@@ -1969,6 +1980,7 @@ export class FormSubmissionsService {
         }
         break;
       case FieldType.SELECT:
+      case FieldType.RADIO:
       case FieldType.MULTISELECT:
         // Skip validation for select fields with empty options (frontend handles them)
         if (field.options && field.options.length > 0) {
@@ -1993,6 +2005,13 @@ export class FormSubmissionsService {
           );
         }
         break;
+      case FieldType.PASSWORD:
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          throw new BadRequestException(
+            `Field '${field.label}' must be a valid password`,
+          );
+        }
+        break;
       case FieldType.INFO:
       case FieldType.AGREEMENT:
         // These are display-only fields, no validation needed
@@ -2008,6 +2027,13 @@ export class FormSubmissionsService {
   private isValidDate(value: any): boolean {
     const date = new Date(value);
     return date instanceof Date && !isNaN(date.getTime());
+  }
+
+  private isValidTime(value: any): boolean {
+    if (typeof value !== 'string') return false;
+    // Basic time validation - accepts HH:MM or HH:MM:SS format
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/;
+    return timeRegex.test(value.trim());
   }
 
   private isValidEmail(value: any): boolean {
