@@ -272,7 +272,7 @@ export class AdminTravelAgentUpgradeController {
     @CurrentUser() admin: JwtUserPayload,
     @Body() body: { reviewNotes?: string },
   ) {
-    return this.service.approveApplication(admin.id, id, body?.reviewNotes);
+    return this.service.approveApplication(id, admin.id, body?.reviewNotes);
   }
 
   @Post('applications/:id/reject')
@@ -282,7 +282,11 @@ export class AdminTravelAgentUpgradeController {
     @CurrentUser() admin: JwtUserPayload,
     @Body() body: { rejectionReason?: string; reviewNotes?: string },
   ) {
-    return this.service.rejectApplication(admin.id, id, body?.rejectionReason);
+    return this.service.rejectApplication(
+      id,
+      admin.id,
+      body?.rejectionReason || '',
+    );
   }
 
   @Get('applications/:id')
