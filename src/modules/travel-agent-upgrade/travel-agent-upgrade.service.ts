@@ -915,7 +915,19 @@ export class TravelAgentUpgradeService {
     limit: number;
   }) {
     const where: any = {};
-    if (params.status) where.status = params.status as UpgradeApplicationStatus;
+    if (params.status) {
+      // Validate that status is a valid UpgradeApplicationStatus enum value
+      const validStatuses = Object.values(UpgradeApplicationStatus);
+      if (validStatuses.includes(params.status as UpgradeApplicationStatus)) {
+        where.status = params.status as UpgradeApplicationStatus;
+      } else {
+        throw new BadRequestException(
+          `Invalid status: ${
+            params.status
+          }. Valid statuses are: ${validStatuses.join(', ')}`,
+        );
+      }
+    }
     const skip = (params.page - 1) * params.limit;
     const [items, total] = await Promise.all([
       this.prisma.travelAgentUpgradeApplication.findMany({
