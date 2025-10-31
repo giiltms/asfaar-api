@@ -202,10 +202,12 @@ export class BiometricAppointmentsService {
       });
 
       this.logger.log(
-        `Created biometric appointment: ${result.id} for submission: ${createDto.submissionId
-        }${result.submission.referenceNumber
-          ? ` with reference: ${result.submission.referenceNumber}`
-          : ''
+        `Created biometric appointment: ${result.id} for submission: ${
+          createDto.submissionId
+        }${
+          result.submission.referenceNumber
+            ? ` with reference: ${result.submission.referenceNumber}`
+            : ''
         }`,
       );
 
@@ -701,14 +703,57 @@ export class BiometricAppointmentsService {
           `Can only complete biometric capture for appointments at booth or in queue. Current status: ${appointment.status}`,
         );
       }
+
+      // Validate that both photo and fingerprints are captured before allowing completion
+      const biometricSession = await this.prisma.biometricSession.findUnique({
+        where: { appointmentId: id },
+        select: {
+          id: true,
+          photoCaptured: true,
+          fingerprintsCaptured: true,
+          startedAt: true,
+        },
+      });
+
+      if (!biometricSession) {
+        throw new BadRequestException(
+          'Biometric session not found. Cannot complete capture.',
+        );
+      }
+
+      const missingItems: string[] = [];
+      if (!biometricSession.photoCaptured) {
+        missingItems.push('photo');
+      }
+      if (!biometricSession.fingerprintsCaptured) {
+        missingItems.push('fingerprints');
+      }
+
+      if (missingItems.length > 0) {
+        throw new BadRequestException(
+          `Cannot complete capture: Missing ${missingItems.join(
+            ' and ',
+          )}. Please ensure both photo and fingerprints are captured before completing.`,
+        );
+      }
+
       const result = await this.prisma.$transaction(async (tx) => {
+        const completionTime = new Date();
+        const sessionDuration = biometricSession.startedAt
+          ? Math.round(
+              (completionTime.getTime() -
+                biometricSession.startedAt.getTime()) /
+                1000,
+            )
+          : null;
+
         // 1) Update appointment to COMPLETED
         const updatedAppointment = await tx.biometricAppointment.update({
           where: { id },
           data: {
             status: AppointmentStatus.COMPLETED,
             biometricsCaptured: true,
-            capturedAt: new Date(),
+            capturedAt: completionTime,
             capturedBy,
             captureQuality: captureDto.captureQuality,
             adminNotes: captureDto.adminNotes,
@@ -721,7 +766,16 @@ export class BiometricAppointmentsService {
           },
         });
 
-        // 2) Mark submission as biometric completed and move to UNDER_REVIEW with status log
+        // 2) Update biometric session completion timestamp and duration
+        await tx.biometricSession.update({
+          where: { appointmentId: id },
+          data: {
+            completedAt: completionTime,
+            ...(sessionDuration !== null && { duration: sessionDuration }),
+          },
+        });
+
+        // 3) Mark submission as biometric completed and move to UNDER_REVIEW with status log
         if (appointment.submissionId) {
           const fromStatus = updatedAppointment.submission?.status;
           await tx.formSubmission.update({
@@ -729,7 +783,7 @@ export class BiometricAppointmentsService {
             data: {
               status: SubmissionStatus.UNDER_REVIEW,
               biometricCompleted: true,
-              biometricCompletedAt: new Date(),
+              biometricCompletedAt: completionTime,
               statusLogs: {
                 create: {
                   fromStatus: fromStatus || undefined,
@@ -743,7 +797,7 @@ export class BiometricAppointmentsService {
           });
         }
 
-        // 3) Update queue entry to COMPLETED
+        // 4) Update queue entry to COMPLETED
         const queueEntry = await tx.queueEntry.findFirst({
           where: { appointmentId: id },
         });
@@ -752,7 +806,7 @@ export class BiometricAppointmentsService {
             where: { id: queueEntry.id },
             data: {
               status: 'COMPLETED',
-              completedAt: new Date(),
+              completedAt: completionTime,
             },
           });
         }
