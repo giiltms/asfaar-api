@@ -4,6 +4,33 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailService } from './services/mail.service';
 import { join } from 'path';
+import * as Handlebars from 'handlebars';
+
+// Register Handlebars helpers
+Handlebars.registerHelper('eq', (a: any, b: any) => a === b);
+Handlebars.registerHelper('ne', (a: any, b: any) => a !== b);
+Handlebars.registerHelper('lt', (a: any, b: any) => a < b);
+Handlebars.registerHelper('gt', (a: any, b: any) => a > b);
+Handlebars.registerHelper('lte', (a: any, b: any) => a <= b);
+Handlebars.registerHelper('gte', (a: any, b: any) => a >= b);
+Handlebars.registerHelper('and', (...args: any[]) =>
+  args.slice(0, -1).every(Boolean),
+);
+Handlebars.registerHelper('or', (...args: any[]) =>
+  args.slice(0, -1).some(Boolean),
+);
+Handlebars.registerHelper('not', (v: any) => !v);
+Handlebars.registerHelper('formatDate', (date: any) => {
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    } as Intl.DateTimeFormatOptions);
+  } catch {
+    return String(date ?? '');
+  }
+});
 
 @Module({
   imports: [
@@ -39,7 +66,9 @@ import { join } from 'path';
           },
           template: {
             dir: join(__dirname, 'templates'),
-            adapter: new HandlebarsAdapter(),
+            adapter: new HandlebarsAdapter(undefined, {
+              inlineCssEnabled: true,
+            }),
             options: {
               strict: true,
             },
