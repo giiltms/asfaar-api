@@ -254,6 +254,42 @@ export class BiometricCaptureService {
         },
       });
 
+      // Update biometric session fingerprints capture status
+      try {
+        if (request.submissionId) {
+          const appointment = await this.prisma.biometricAppointment.findUnique(
+            {
+              where: { submissionId: request.submissionId },
+              select: { id: true },
+            },
+          );
+
+          if (appointment && overallSuccess) {
+            await this.prisma.biometricSession.updateMany({
+              where: { appointmentId: appointment.id },
+              data: {
+                fingerprintsCaptured: true,
+                fingerprintQualityScore: Math.round(
+                  validationResults.reduce(
+                    (sum, v) => sum + (v.qualityScore || 0),
+                    0,
+                  ) / validationResults.length,
+                ),
+              },
+            });
+
+            this.logger.log(
+              `Biometric session fingerprint capture status updated for appointment ${appointment.id}`,
+            );
+          }
+        }
+      } catch (error) {
+        // Don't fail fingerprint capture if session update fails
+        this.logger.warn(
+          `Failed to update biometric session for fingerprint capture: ${error.message}`,
+        );
+      }
+
       // Workflow transitions are handled by the appointment completion endpoint.
 
       this.logger.log(
@@ -677,6 +713,34 @@ export class BiometricCaptureService {
         encryptionAlgorithm: 'AES-256-GCM',
       },
     });
+
+    // Update biometric session photo capture status
+    try {
+      const appointment = await this.prisma.biometricAppointment.findUnique({
+        where: { submissionId: submission.id },
+        select: { id: true },
+      });
+
+      if (appointment) {
+        await this.prisma.biometricSession.updateMany({
+          where: { appointmentId: appointment.id },
+          data: {
+            photoCaptured: true,
+            photoUrl,
+            photoQualityScore,
+          },
+        });
+
+        this.logger.log(
+          `Biometric session photo capture status updated for appointment ${appointment.id}`,
+        );
+      }
+    } catch (error) {
+      // Don't fail photo upload if session update fails
+      this.logger.warn(
+        `Failed to update biometric session for photo upload: ${error.message}`,
+      );
+    }
 
     this.logger.log(
       `Photo uploaded successfully for submission ${submissionId}, biometric data ID: ${biometricData.id}`,
