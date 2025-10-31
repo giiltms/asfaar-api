@@ -239,11 +239,17 @@ export class TravelAgentLicenseService {
    * Revoke a license
    */
   async revokeLicense(
-    userId: string,
+    licenseId: string,
     revokedBy: string,
     reason: string,
   ): Promise<any> {
-    const license = await this.getLicenseByUserId(userId);
+    const license = await this.prisma.travelAgentLicense.findUnique({
+      where: { id: licenseId },
+    });
+
+    if (!license) {
+      throw new NotFoundException('License not found');
+    }
 
     if (license.status !== TravelAgentLicenseStatus.ACTIVE) {
       throw new BadRequestException(
@@ -252,7 +258,7 @@ export class TravelAgentLicenseService {
     }
 
     const updatedLicense = await this.prisma.travelAgentLicense.update({
-      where: { id: license.id },
+      where: { id: licenseId },
       data: {
         status: TravelAgentLicenseStatus.REVOKED,
         revokedAt: new Date(),
@@ -279,7 +285,7 @@ export class TravelAgentLicenseService {
     });
 
     this.logger.log(
-      `Revoked license ${license.licenseNumber} for user ${userId}`,
+      `Revoked license ${license.licenseNumber} (ID: ${licenseId}) for user ${license.userId}`,
     );
     return updatedLicense;
   }
@@ -488,8 +494,7 @@ export class TravelAgentLicenseService {
     });
 
     this.logger.log(
-      `License ${licenseId} reactivated by ${reactivatedBy}${
-        reason ? ` - Reason: ${reason}` : ''
+      `License ${licenseId} reactivated by ${reactivatedBy}${reason ? ` - Reason: ${reason}` : ''
       }`,
     );
     return updatedLicense;
@@ -539,8 +544,7 @@ export class TravelAgentLicenseService {
     );
 
     this.logger.log(
-      `Processed ${
-        expiredLicenses.length
+      `Processed ${expiredLicenses.length
       } expired licenses: ${expiredLicenseNumbers.join(', ')}`,
     );
 
