@@ -5,6 +5,7 @@ import {
   PaymentStatus,
   PaymentProvider,
   SubmissionStatus,
+  UpgradeApplicationStatus,
 } from '@prisma/client';
 import {
   WebhookEvent,
@@ -111,10 +112,15 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         return;
       }
 
+      // Get upgradeApplicationId - it's a scalar field, so we need to access it directly
+      const upgradeApplicationId = payment.upgradeApplicationId;
+
       this.logger.log(
         `Found payment ${payment.id} with status: ${
           payment.status
-        }, submissionId: ${payment.submissionId || 'None'}`,
+        }, submissionId: ${
+          payment.submissionId || 'None'
+        }, upgradeApplicationId: ${upgradeApplicationId || 'None'}`,
       );
 
       // Update payment status to completed
@@ -178,9 +184,57 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           );
           // do not throw; payment status already updated
         }
+      } else if (upgradeApplicationId) {
+        // If payment is linked to a travel agent upgrade application,
+        // update the application status to PENDING_REVIEW
+        this.logger.log(
+          `Processing travel agent upgrade application update for payment ${payment.id}, upgradeApplicationId: ${upgradeApplicationId}`,
+        );
+
+        try {
+          const currentApplication =
+            await this.prisma.travelAgentUpgradeApplication.findUnique({
+              where: { id: upgradeApplicationId },
+              select: {
+                id: true,
+                status: true,
+              },
+            });
+
+          if (!currentApplication) {
+            this.logger.error(
+              `Travel agent upgrade application ${upgradeApplicationId} not found`,
+            );
+            return;
+          }
+
+          this.logger.log(
+            `Current application status: ${currentApplication.status}`,
+          );
+
+          // Update application status
+          // Note: Payment is already linked via Payment.upgradeApplicationId during payment creation
+          const updated =
+            await this.prisma.travelAgentUpgradeApplication.update({
+              where: { id: upgradeApplicationId },
+              data: {
+                status: UpgradeApplicationStatus.PENDING_REVIEW, // Status: PENDING_REVIEW after payment
+              },
+            });
+
+          this.logger.log(
+            `✅ Travel agent upgrade application ${updated.id} successfully updated from ${currentApplication.status} to ${updated.status} after successful payment ${payment.id}`,
+          );
+        } catch (e) {
+          this.logger.error(
+            `❌ Failed to update travel agent upgrade application for payment ${payment.id}: ${e.message}`,
+            e.stack,
+          );
+          // do not throw; payment status already updated
+        }
       } else {
         this.logger.warn(
-          `Payment ${payment.id} has no associated submissionId`,
+          `Payment ${payment.id} has no associated submissionId or upgradeApplicationId`,
         );
       }
     } catch (error) {
@@ -329,8 +383,24 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
           { invoiceNumber: reference },
         ],
       },
-      include: {
-        submission: true,
+      select: {
+        id: true,
+        submissionId: true,
+        upgradeApplicationId: true,
+        status: true,
+        reference: true,
+        processorId: true,
+        invoiceNumber: true,
+        userId: true,
+        amount: true,
+        currency: true,
+        submission: {
+          select: {
+            id: true,
+            status: true,
+            referenceNumber: true,
+          },
+        },
       },
     });
 
