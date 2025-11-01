@@ -24,7 +24,6 @@ import {
 } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import {
-  CreatePaymentDto,
   UpdatePaymentStatusDto,
   RefundPaymentDto,
   PaymentFiltersDto,
@@ -68,45 +67,6 @@ export class PaymentsController {
     private readonly paymentProviderService: PaymentProviderService,
     private readonly configService: ConfigService,
   ) {}
-
-  /**
-   * Create a new payment
-   */
-  @Post()
-  @ApiOperation({
-    summary: 'Create a new payment',
-    description: 'Create a new payment for a form submission',
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Payment created successfully',
-    type: PaymentEntity,
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid input data',
-  })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
-    description: 'Payment already exists for this submission',
-  })
-  async createPayment(
-    @Request() req: any,
-    @Body(ValidationPipe) createDto: CreatePaymentDto,
-    // TODO: Extract user ID from JWT token when user context is available
-    // @CurrentUser() user: User,
-  ) {
-    const payment = await this.paymentsService.createPayment(
-      createDto,
-      req.user?.id, // userId
-      undefined, // reference
-    );
-
-    return {
-      message: 'Payment created successfully',
-      data: payment,
-    };
-  }
 
   /**
    * Get all service fees
@@ -377,7 +337,8 @@ export class PaymentsController {
   @Post('initiate')
   @ApiOperation({
     summary: 'Initiate a new payment',
-    description: 'Initiate a new payment for a form submission',
+    description:
+      'Initiate a new payment. For visa applications, provide submissionId. For travel agent upgrades, provide upgradeApplicationId.',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -475,19 +436,25 @@ export class PaymentsController {
         user.email.split('@')[0],
     };
 
-    const payment = await this.paymentProviderService.initiatePayment(
-      paymentData,
-    );
+    const paymentProviderResponse =
+      await this.paymentProviderService.initiatePayment(paymentData);
 
-    await this.paymentsService.createPayment(
+    const createdPayment = await this.paymentsService.createPayment(
       paymentData,
       user.id, // userId
-      payment.reference, // reference
+      paymentProviderResponse.reference, // reference
     );
+
+    // Map the created payment to PaymentEntity for proper serialization
+    const paymentEntity = Object.assign(new PaymentEntity(), createdPayment);
 
     return {
       message: 'Payment initiated successfully',
-      data: payment,
+      data: {
+        ...paymentProviderResponse,
+        // Include our payment entity data with submissionId/upgradeApplicationId
+        payment: paymentEntity,
+      },
     };
   }
 

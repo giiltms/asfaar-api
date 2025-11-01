@@ -24,13 +24,21 @@ import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
 // Base DTO for creating a payment
 export class CreatePaymentDto {
-  @ApiProperty({
-    description: 'Form submission ID that this payment is for',
+  @ApiPropertyOptional({
+    description: 'Form submission ID (for visa applications)',
     example: 'uuid-string',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsUUID()
   submissionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Travel agent upgrade application ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  upgradeApplicationId?: string;
 
   @ApiProperty({
     description: 'Payment amount',
@@ -74,12 +82,21 @@ export class CreatePaymentDto {
 
 //DTO for initiating a payment
 export class InitiatePaymentDto {
-  @ApiProperty({
-    description: 'Form submission ID that this payment is for',
+  @ApiPropertyOptional({
+    description: 'Form submission ID (for visa applications)',
+    example: 'uuid-string',
   })
-  @IsUUID()
   @IsOptional()
+  @IsUUID()
   submissionId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Travel agent upgrade application ID',
+    example: 'uuid-string',
+  })
+  @IsOptional()
+  @IsUUID()
+  upgradeApplicationId?: string;
 
   @ApiProperty({
     description: 'User email',
@@ -429,8 +446,13 @@ export class PaymentResponseDto {
   @ApiProperty({ description: 'Unique identifier' })
   id: string;
 
-  @ApiProperty({ description: 'Form submission ID' })
-  submissionId: string;
+  @ApiPropertyOptional({
+    description: 'Form submission ID (for visa applications)',
+  })
+  submissionId?: string;
+
+  @ApiPropertyOptional({ description: 'Travel agent upgrade application ID' })
+  upgradeApplicationId?: string;
 
   @ApiProperty({ description: 'Payment amount' })
   amount: number;

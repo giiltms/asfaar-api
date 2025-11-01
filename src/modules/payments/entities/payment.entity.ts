@@ -11,9 +11,15 @@ export class PaymentEntity {
   @Expose()
   id: string;
 
-  @ApiProperty({ description: 'Form submission ID' })
+  @ApiPropertyOptional({
+    description: 'Form submission ID (for visa applications)',
+  })
   @Expose()
-  submissionId: string;
+  submissionId?: string;
+
+  @ApiPropertyOptional({ description: 'Travel agent upgrade application ID' })
+  @Expose()
+  upgradeApplicationId?: string;
 
   @ApiProperty({ description: 'Payment amount' })
   @Expose()

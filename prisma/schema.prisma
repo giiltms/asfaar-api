@@ -1464,6 +1464,10 @@ model Payment {
   submissionId String?         @unique // One payment per form submission (optional for onboarding)
   submission   FormSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
+  // Travel Agent Upgrade Application relation
+  upgradeApplicationId String?                        @unique
+  upgradeApplication   TravelAgentUpgradeApplication? @relation("UpgradeApplicationPayments", fields: [upgradeApplicationId], references: [id])
+
   // User who made the payment (REQUIRED for onboarding payments)
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1505,11 +1509,12 @@ model Payment {
   paymentMethodId String?
 
   // Back-relations
-  upgradeApplication TravelAgentUpgradeApplication?
-  licenseRenewal     TravelAgentLicenseRenewal?
+  licenseRenewal                TravelAgentLicenseRenewal?
+  TravelAgentUpgradeApplication TravelAgentUpgradeApplication?
 
   // Indexes for performance
   @@index([submissionId])
+  @@index([upgradeApplicationId])
   @@index([userId])
   @@index([status])
   @@index([amount])
@@ -1605,9 +1610,13 @@ model TravelAgentUpgradeApplication {
   bankDetails TravelAgentBankDetails?
   directors   TravelAgentDirector[]
 
-  // Payment (initial upgrade fee)
+  // Payment (initial upgrade fee) - deprecated, use Payment.upgradeApplicationId instead
+  // Keeping for backward compatibility but will be removed in future migration
   paymentId String?  @unique
   payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  // Payments linked to this application (via Payment.upgradeApplicationId)
+  payments Payment[] @relation("UpgradeApplicationPayments")
 
   // Review Notes
   reviewNotes     String?

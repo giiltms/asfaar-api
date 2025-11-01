@@ -178,7 +178,7 @@ export class TravelAgentUpgradeService {
     // Validate NAHCON license number is provided for NAHCON applications
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !input.nahconLicenseNumber
     ) {
       throw new BadRequestException(
@@ -207,7 +207,7 @@ export class TravelAgentUpgradeService {
     // NAHCON document only required for NAHCON registered agents
     if (
       input.applicationType ===
-        TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
       !uploadedDocuments.nahconDocumentUrl
     )
       missingDocuments.push('NAHCON Document');
@@ -308,12 +308,14 @@ export class TravelAgentUpgradeService {
         newStatus = UpgradeApplicationStatus.PENDING_PAYMENT;
     }
 
-    // Update application with payment ID and status
+    // Update application status
+    // Note: Payment link is now established via Payment.upgradeApplicationId at payment creation
+    // We still update paymentId here for backward compatibility
     const updatedApplication =
       await this.prisma.travelAgentUpgradeApplication.update({
         where: { id: applicationId },
         data: {
-          paymentId: paymentId,
+          paymentId: paymentId, // Keep for backward compatibility
           status: newStatus,
         },
         include: {
@@ -922,8 +924,7 @@ export class TravelAgentUpgradeService {
         where.status = params.status as UpgradeApplicationStatus;
       } else {
         throw new BadRequestException(
-          `Invalid status: ${
-            params.status
+          `Invalid status: ${params.status
           }. Valid statuses are: ${validStatuses.join(', ')}`,
         );
       }

@@ -14,7 +14,6 @@ import {
   PaymentProvider,
 } from '@prisma/client';
 import {
-  CreatePaymentDto,
   UpdatePaymentStatusDto,
   RefundPaymentDto,
   PaymentFiltersDto,
@@ -68,10 +67,18 @@ export class PaymentsService {
         user: {
           connect: { id: userId },
         },
-        // connect submission if provided
-        submission: createDto.submissionId && {
-          connect: { id: createDto.submissionId },
-        },
+        // Connect submission if provided (for visa applications)
+        submission: createDto.submissionId
+          ? {
+              connect: { id: createDto.submissionId },
+            }
+          : undefined,
+        // Connect upgrade application if provided
+        upgradeApplication: createDto.upgradeApplicationId
+          ? {
+              connect: { id: createDto.upgradeApplicationId },
+            }
+          : undefined,
       };
 
       const payment = await this.prisma.payment.create({
@@ -123,7 +130,9 @@ export class PaymentsService {
       }
 
       this.logger.log(
-        `Created payment: ${payment.id} for submission: ${createDto.submissionId}`,
+        `Created payment: ${payment.id} (submissionId: ${
+          createDto.submissionId || 'N/A'
+        }, upgradeApplicationId: ${createDto.upgradeApplicationId || 'N/A'})`,
       );
 
       return payment;
@@ -180,19 +189,31 @@ export class PaymentsService {
         user: {
           connect: { id: userId },
         },
-        // if submissionId is provided, connect the payment to the submission
+        // Connect to submission if provided (for visa applications)
         submission: initiatePaymentDto.submissionId
           ? {
-              connect: { id: initiatePaymentDto.submissionId },
+              connect: {
+                id: initiatePaymentDto.submissionId,
+              },
+            }
+          : undefined,
+        // Connect to upgrade application if provided
+        upgradeApplication: initiatePaymentDto.upgradeApplicationId
+          ? {
+              connect: {
+                id: initiatePaymentDto.upgradeApplicationId,
+              },
             }
           : undefined,
       };
 
       // Debug logging
       this.logger.log(
-        `Creating payment with submissionId: ${
-          initiatePaymentDto.submissionId || 'NULL'
-        }`,
+        `Creating payment (submissionId: ${
+          initiatePaymentDto.submissionId || 'N/A'
+        }, upgradeApplicationId: ${
+          initiatePaymentDto.upgradeApplicationId || 'N/A'
+        })`,
       );
 
       const payment = await this.prisma.payment.create({
@@ -200,7 +221,11 @@ export class PaymentsService {
       });
 
       this.logger.log(
-        `Created payment: ${payment.id} for submission: ${initiatePaymentDto.submissionId}`,
+        `Created payment: ${payment.id} (submissionId: ${
+          initiatePaymentDto.submissionId || 'N/A'
+        }, upgradeApplicationId: ${
+          initiatePaymentDto.upgradeApplicationId || 'N/A'
+        })`,
       );
 
       return payment;
@@ -921,10 +946,18 @@ export class PaymentsService {
     try {
       await this.findPaymentById(id);
 
+      // Extract only fields that can be updated on Payment model
+      // Exclude submissionId and upgradeApplicationId as they're relation fields, not directly updatable
+      const {
+        submissionId: _submissionId,
+        upgradeApplicationId: _upgradeApplicationId,
+        ...paymentUpdateData
+      } = updateDto;
+
       const updatedPayment = await this.prisma.payment.update({
         where: { id },
         data: {
-          ...updateDto,
+          ...paymentUpdateData,
           lastModifiedBy,
         },
       });
