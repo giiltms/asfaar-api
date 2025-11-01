@@ -704,13 +704,15 @@ export class BiometricAppointmentsService {
         );
       }
       const result = await this.prisma.$transaction(async (tx) => {
+        const completionTime = new Date();
+
         // 1) Update appointment to COMPLETED
         const updatedAppointment = await tx.biometricAppointment.update({
           where: { id },
           data: {
             status: AppointmentStatus.COMPLETED,
             biometricsCaptured: true,
-            capturedAt: new Date(),
+            capturedAt: completionTime,
             capturedBy,
             captureQuality: captureDto.captureQuality,
             adminNotes: captureDto.adminNotes,
@@ -731,7 +733,7 @@ export class BiometricAppointmentsService {
             data: {
               status: SubmissionStatus.UNDER_REVIEW,
               biometricCompleted: true,
-              biometricCompletedAt: new Date(),
+              biometricCompletedAt: completionTime,
               statusLogs: {
                 create: {
                   fromStatus: fromStatus || undefined,
