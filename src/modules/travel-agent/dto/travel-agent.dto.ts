@@ -25,6 +25,26 @@ export class TravelAgentBaseDto {
 }
 
 // Client Management DTOs
+export class CreateClientByNinDto {
+  @ApiProperty({
+    description: 'Client NIN (National Identity Number)',
+    example: '12345678901',
+  })
+  @IsNotEmpty()
+  @IsString()
+  nin: string;
+
+  @ApiProperty({ description: 'Client date of birth', example: '1990-01-15' })
+  @IsNotEmpty()
+  @IsDateString()
+  dateOfBirth: string;
+
+  @ApiPropertyOptional({ description: 'Optional notes about the client' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
 export class CreateClientDto {
   @ApiProperty({ description: 'Client email address' })
   @IsNotEmpty()

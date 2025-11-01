@@ -16,6 +16,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
@@ -29,6 +30,7 @@ import {
 import { TravelAgentClientsService } from './travel-agent-clients.service';
 import {
   CreateClientDto,
+  CreateClientByNinDto,
   ClientProfileDto,
   ClientAnalyticsDto,
   ClientFiltersDto,
@@ -47,6 +49,71 @@ import { ApiDefaultResponse } from '@common/decorators/api-default-response.deco
 @ApiBearerAuth()
 export class TravelAgentClientsController {
   constructor(private readonly clientsService: TravelAgentClientsService) {}
+
+  /**
+   * Create a new client by NIN and date of birth
+   */
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a new client',
+    description:
+      'Create a new client by providing their NIN and date of birth. If the client already exists, they will be added to your client list. If not, an account will be created for them after NIN verification.',
+  })
+  @ApiBody({ type: CreateClientByNinDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Client created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Client created successfully' },
+        data: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'uuid-string' },
+            email: { type: 'string', example: 'john.doe@example.com' },
+            phone: { type: 'string', example: '+1234567890' },
+            fullName: { type: 'string', example: 'John Doe' },
+            avatar: {
+              type: 'string',
+              example: 'https://example.com/avatar.jpg',
+            },
+            isVerified: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            totalApplications: { type: 'number', example: 0 },
+            successfulApplications: { type: 'number', example: 0 },
+            lastApplicationDate: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid NIN or date of birth',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Client already in your client list',
+  })
+  async createClient(
+    @CurrentUser() user: JwtUserPayload,
+    @Body(ValidationPipe) createDto: CreateClientByNinDto,
+  ) {
+    const client = await this.clientsService.createClient(user.id, createDto);
+
+    return {
+      success: true,
+      message: 'Client created successfully',
+      data: client,
+    };
+  }
 
   /**
    * Get all clients for travel agent

@@ -187,6 +187,9 @@ model User {
   upgradeApplications         TravelAgentUpgradeApplication[]
   reviewedUpgradeApplications TravelAgentUpgradeApplication[] @relation("UpgradeReviewer")
   travelAgentLicense          TravelAgentLicense?
+  // Travel Agent Client Relations
+  managedClients              TravelAgentClient[]             @relation("AgentClients")
+  managingAgents              TravelAgentClient[]             @relation("ClientUsers")
 
   @@map("users")
 }
@@ -1768,6 +1771,28 @@ model TravelAgentLicenseDurationConfig {
   updatedAt DateTime @updatedAt
 
   @@map("travel_agent_license_duration_configs")
+}
+
+model TravelAgentClient {
+  id       String @id @default(uuid())
+  agentId  String
+  agent    User   @relation("AgentClients", fields: [agentId], references: [id], onDelete: Cascade)
+  clientId String
+  client   User   @relation("ClientUsers", fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  addedAt DateTime @default(now())
+  addedBy String? // Agent ID who added this client (usually same as agentId, but allows for delegation)
+  notes   String? // Optional notes about the client relationship
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentId, clientId]) // One relationship per agent-client pair
+  @@index([agentId])
+  @@index([clientId])
+  @@index([addedAt])
+  @@map("travel_agent_clients")
 }
 
 model ApplicationType {

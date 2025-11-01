@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@providers/prisma/prisma.module';
 import { AuthModule } from '@modules/auth/auth.module';
+import { UserModule } from '@modules/user/user.module';
 import { FormSubmissionsModule } from '@modules/form-submissions/form-submissions.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { BiometricAppointmentsModule } from '@modules/biometric-appointments/biometric-appointments.module';
+import { SharedModule } from '@shared/shared.module';
 import { TravelAgentController } from './travel-agent.controller';
 import { TravelAgentService } from './travel-agent.service';
 import { TravelAgentClientsController } from './travel-agent-clients.controller';
@@ -26,6 +28,8 @@ import { TravelAgentAnalyticsService } from './travel-agent-analytics.service';
   imports: [
     PrismaModule, // For database operations
     AuthModule, // For authentication guards
+    UserModule, // For user creation and management
+    SharedModule, // For NIN verification service
     FormSubmissionsModule, // For form submission management
     PaymentsModule, // For payment processing
     BiometricAppointmentsModule, // For appointment scheduling
