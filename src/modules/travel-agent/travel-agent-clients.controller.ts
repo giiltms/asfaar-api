@@ -8,7 +8,6 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -104,7 +103,7 @@ export class TravelAgentClientsController {
   })
   async createClient(
     @CurrentUser() user: JwtUserPayload,
-    @Body(ValidationPipe) createDto: CreateClientByNinDto,
+    @Body() createDto: CreateClientByNinDto,
   ) {
     const client = await this.clientsService.createClient(user.id, createDto);
 
@@ -185,7 +184,7 @@ export class TravelAgentClientsController {
   })
   async getClients(
     @CurrentUser() user: JwtUserPayload,
-    @Query(ValidationPipe) filters: ClientFiltersDto,
+    @Query() filters: ClientFiltersDto,
   ) {
     const result = await this.clientsService.getClients(user.id, filters);
 
@@ -329,7 +328,7 @@ export class TravelAgentClientsController {
   async createOrUpdateClientProfile(
     @CurrentUser() user: JwtUserPayload,
     @Param('clientId') clientId: string,
-    @Body(ValidationPipe) createDto: CreateClientDto,
+    @Body() createDto: CreateClientDto,
   ): Promise<ClientProfileDto> {
     return this.clientsService.createOrUpdateClientProfile(
       user.id,
