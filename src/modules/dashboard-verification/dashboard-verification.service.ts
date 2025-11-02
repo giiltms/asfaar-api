@@ -12,6 +12,10 @@ import {
   ProcessApplicationDto,
   VerificationReviewListDto,
   VerificationStatsDto,
+  VerificationHistoryDto,
+  VerificationHistoryQueryDto,
+  VerificationHistoryItemDto,
+  VerificationAction,
 } from './dto/verification-review.dto';
 
 @Injectable()
@@ -878,8 +882,8 @@ export class DashboardVerificationService {
                 toStatus: SubmissionStatus.QUERIED,
                 reason: 'Application queried for additional information',
                 notes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-                    ? ` - Required documents: ${requiredDocuments.join(', ')}`
-                    : ''
+                  ? ` - Required documents: ${requiredDocuments.join(', ')}`
+                  : ''
                   }`,
                 changedBy: reviewerId,
               },
@@ -898,8 +902,8 @@ export class DashboardVerificationService {
             data: {
               verificationStatus: 'NEEDS_REVIEW',
               verificationNotes: `Query: ${queryMessage}${requiredDocuments && requiredDocuments.length > 0
-                  ? ` - Required: ${requiredDocuments.join(', ')}`
-                  : ''
+                ? ` - Required: ${requiredDocuments.join(', ')}`
+                : ''
                 }`,
               lastModifiedBy: reviewerId,
             },
@@ -1157,5 +1161,150 @@ export class DashboardVerificationService {
       acceptableFingers,
       totalFingers,
     };
+  }
+
+  /**
+   * Get verification history for a verification officer
+   * Returns applications that the officer has flagged, queried, or processed
+   */
+  async getVerificationHistory(
+    officerId: string,
+    query: VerificationHistoryQueryDto,
+  ): Promise<VerificationHistoryDto> {
+    try {
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const skip = (page - 1) * limit;
+
+      // Build where clause - applications where this officer took action
+      const where: any = {
+        OR: [
+          { reviewedBy: officerId },
+          { flaggedBy: officerId },
+          { queriedBy: officerId },
+        ],
+      };
+
+      // Apply status filter
+      if (query.status) {
+        where.status = query.status;
+      }
+
+      // Apply date range filter if provided
+      // We'll filter by any of the action dates (flaggedAt, queriedAt, reviewedAt)
+      if (query.fromDate || query.toDate) {
+        const dateFilter: any = {};
+        if (query.fromDate) {
+          dateFilter.gte = new Date(query.fromDate);
+        }
+        if (query.toDate) {
+          const endDate = new Date(query.toDate);
+          endDate.setHours(23, 59, 59, 999);
+          dateFilter.lte = endDate;
+        }
+
+        where.AND = [
+          {
+            OR: [
+              { reviewedAt: dateFilter },
+              { flaggedAt: dateFilter },
+              { queriedAt: dateFilter },
+            ],
+          },
+        ];
+      }
+
+      // Note: Action filter is applied after fetching to determine which action was taken
+      // since an application might have multiple actions, we filter in the mapping step
+
+      // Get applications
+      const [submissions, total] = await Promise.all([
+        this.prisma.formSubmission.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            form: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { reviewedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.formSubmission.count({ where }),
+      ]);
+
+      // Map to history items
+      const items: VerificationHistoryItemDto[] = [];
+
+      for (const submission of submissions) {
+        // Determine action and action date (prioritize most recent action)
+        let action: VerificationAction;
+        let actionDate: Date;
+
+        // Check which action this officer took, prioritizing flagged > queried > reviewed
+        if (submission.flaggedBy === officerId && submission.flaggedAt) {
+          action = VerificationAction.FLAGGED;
+          actionDate = submission.flaggedAt;
+        } else if (submission.queriedBy === officerId && submission.queriedAt) {
+          action = VerificationAction.QUERIED;
+          actionDate = submission.queriedAt;
+        } else if (
+          submission.reviewedBy === officerId &&
+          submission.reviewedAt
+        ) {
+          action = VerificationAction.PROCESSING;
+          actionDate = submission.reviewedAt;
+        } else {
+          // Skip if officer didn't take any action
+          continue;
+        }
+
+        // Filter by action if specified
+        if (query.action && action !== query.action) {
+          continue;
+        }
+
+        items.push({
+          id: submission.id,
+          referenceNumber: submission.referenceNumber,
+          applicantName: submission.user
+            ? `${submission.user.firstName || ''} ${submission.user.lastName || ''
+              }`.trim() || submission.user.email
+            : 'Unknown',
+          applicantEmail: submission.user?.email || 'N/A',
+          formName: submission.form?.name || 'Unknown',
+          status: submission.status,
+          action: action,
+          actionDate: actionDate,
+          reviewNotes: submission.reviewNotes,
+          flagReason: submission.flagReason,
+          queryMessage: submission.queryMessage,
+        });
+      }
+
+      return {
+        items,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get verification history for officer ${officerId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

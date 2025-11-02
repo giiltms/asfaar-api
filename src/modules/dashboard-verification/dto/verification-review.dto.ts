@@ -6,6 +6,7 @@ import {
   IsUUID,
   IsArray,
   IsNumber,
+  IsDateString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -401,4 +402,92 @@ export class VerificationReviewQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+}
+
+export class VerificationHistoryItemDto {
+  @ApiProperty({ description: 'Application submission ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Reference number' })
+  referenceNumber?: string;
+
+  @ApiProperty({ description: 'Applicant name' })
+  applicantName: string;
+
+  @ApiProperty({ description: 'Applicant email' })
+  applicantEmail: string;
+
+  @ApiProperty({ description: 'Form name' })
+  formName: string;
+
+  @ApiProperty({ description: 'Application status' })
+  status: string;
+
+  @ApiProperty({ description: 'Action taken (FLAGGED, QUERIED, PROCESSING)' })
+  action: string;
+
+  @ApiProperty({ description: 'Date when action was taken' })
+  actionDate: Date;
+
+  @ApiPropertyOptional({ description: 'Review notes' })
+  reviewNotes?: string;
+
+  @ApiPropertyOptional({ description: 'Flag reason (if flagged)' })
+  flagReason?: string;
+
+  @ApiPropertyOptional({ description: 'Query message (if queried)' })
+  queryMessage?: string;
+}
+
+export class VerificationHistoryDto {
+  @ApiProperty({
+    description: 'List of verification history items',
+    type: [VerificationHistoryItemDto],
+  })
+  items: VerificationHistoryItemDto[];
+
+  @ApiProperty({ description: 'Total count' })
+  total: number;
+
+  @ApiProperty({ description: 'Page number' })
+  page: number;
+
+  @ApiProperty({ description: 'Items per page' })
+  limit: number;
+}
+
+export class VerificationHistoryQueryDto {
+  @ApiPropertyOptional({ description: 'Page number' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ description: 'Filter by status' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by action (FLAGGED, QUERIED, PROCESSING)',
+  })
+  @IsOptional()
+  @IsEnum(VerificationAction)
+  action?: VerificationAction;
+
+  @ApiPropertyOptional({ description: 'Filter from date (ISO 8601)' })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: 'Filter to date (ISO 8601)' })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }

@@ -32,6 +32,8 @@ import {
   VerificationReviewListDto,
   VerificationStatsDto,
   VerificationReviewQueryDto,
+  VerificationHistoryDto,
+  VerificationHistoryQueryDto,
 } from './dto/verification-review.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 
@@ -272,6 +274,78 @@ export class DashboardVerificationController {
     return {
       success: true,
       message: 'Verification statistics retrieved successfully',
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('history')
+  @ApiOperation({
+    summary: 'Get verification history',
+    description:
+      'Retrieve applications that the verification officer has attended to (flagged, queried, or processed)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Verification history retrieved successfully',
+    type: VerificationHistoryDto,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by application status',
+    example: 'PROCESSING',
+  })
+  @ApiQuery({
+    name: 'action',
+    required: false,
+    enum: ['FLAGGED', 'QUERIED', 'PROCESSING'],
+    description: 'Filter by action taken',
+    example: 'FLAGGED',
+  })
+  @ApiQuery({
+    name: 'fromDate',
+    required: false,
+    type: String,
+    description: 'Filter from date (ISO 8601)',
+    example: '2024-01-01T00:00:00Z',
+  })
+  @ApiQuery({
+    name: 'toDate',
+    required: false,
+    type: String,
+    description: 'Filter to date (ISO 8601)',
+    example: '2024-12-31T23:59:59Z',
+  })
+  async getVerificationHistory(
+    @CurrentUser() user: JwtUserPayload,
+    @Query(new ValidationPipe({ transform: true }))
+    query: VerificationHistoryQueryDto,
+  ): Promise<BaseResponseDto<VerificationHistoryDto>> {
+    const result =
+      await this.dashboardVerificationService.getVerificationHistory(
+        user.id,
+        query,
+      );
+
+    return {
+      success: true,
+      message: 'Verification history retrieved successfully',
       data: result,
       timestamp: new Date().toISOString(),
     };
