@@ -524,6 +524,7 @@ export class DashboardFrontdeskService {
               appointmentTime: true,
               queueEntry: {
                 select: {
+                  id: true,
                   queueNumber: true,
                   status: true,
                   estimatedWaitTime: true,
@@ -566,6 +567,7 @@ export class DashboardFrontdeskService {
             status: submission.status,
             applicationType: submission.form.applicationType?.code || 'UNKNOWN',
             submittedAt: submission.submittedAt,
+            queueEntryId: queueEntry?.id,
             queuePosition: queueEntry?.queueNumber,
             estimatedWaitTime: queueEntry?.estimatedWaitTime,
             currentStation: queueEntry?.booth?.boothNumber,

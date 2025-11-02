@@ -285,6 +285,13 @@ export class ApplicantListItemDto {
   submittedAt: Date;
 
   @ApiProperty({
+    description: 'Queue entry ID (if in queue)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    required: false,
+  })
+  queueEntryId?: string;
+
+  @ApiProperty({
     description: 'Queue position (if in queue)',
     example: 5,
     required: false,
