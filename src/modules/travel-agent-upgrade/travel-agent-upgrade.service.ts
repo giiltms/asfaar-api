@@ -420,10 +420,10 @@ export class TravelAgentUpgradeService {
       reviewerId,
     );
 
-    // Update user role to AGENCY
+    // Replace user roles with AGENCY role only
     await this.prisma.user.update({
       where: { id: application.userId },
-      data: { roles: { push: Roles.AGENCY } },
+      data: { roles: [Roles.AGENCY] },
     });
 
     // Update application status
