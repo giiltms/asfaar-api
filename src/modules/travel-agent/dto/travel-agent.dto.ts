@@ -12,7 +12,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 
@@ -43,8 +43,15 @@ export class CreateClientByNinDto {
     description: 'Client email address',
     example: 'john.doe@example.com',
   })
-  @IsNotEmpty()
-  @IsEmail()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsNotEmpty({ message: 'Email is required' })
+  @IsString({ message: 'Email must be a string' })
+  @IsEmail(
+    { allow_display_name: false, require_tld: true },
+    { message: 'Email must be a valid email address' },
+  )
   email: string;
 
   @ApiPropertyOptional({ description: 'Optional notes about the client' })
