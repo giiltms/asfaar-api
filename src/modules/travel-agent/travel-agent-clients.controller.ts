@@ -58,7 +58,7 @@ export class TravelAgentClientsController {
   @ApiOperation({
     summary: 'Create a new client',
     description:
-      'Create a new client by providing their NIN and date of birth. If the client already exists, they will be added to your client list. If not, an account will be created for them after NIN verification.',
+      'Create a new client by providing their NIN, date of birth, and email. If the client already exists, they will be added to your client list. If not, an account will be created for them after NIN verification.',
   })
   @ApiBody({ type: CreateClientByNinDto })
   @ApiResponse({

@@ -62,6 +62,7 @@ export class TravelAgentClientsService {
           lastName: true,
           avatar: true,
           isVerified: true,
+          dateOfBirth: true, // Added for validation
           createdAt: true,
         },
       });
@@ -69,9 +70,25 @@ export class TravelAgentClientsService {
       let clientId: string;
 
       if (existingUser) {
-        // User already exists, use their ID
+        // User already exists - validate date of birth matches before proceeding
+        // Date of birth is always stored in NIN data, so we can safely validate
+        const existingDob = new Date(existingUser.dateOfBirth)
+          .toISOString()
+          .split('T')[0];
+        const providedDob = new Date(createDto.dateOfBirth)
+          .toISOString()
+          .split('T')[0];
+
+        if (existingDob !== providedDob) {
+          throw new BadRequestException(
+            'Date of birth does not match the existing user record',
+          );
+        }
+
+        // NIN exists and DOB is correct - just add to agent's list
+        // Skip NIN verification as per requirement
         this.logger.log(
-          `User with NIN ${normalizedNin} already exists: ${existingUser.id}`,
+          `User with NIN ${normalizedNin} already exists: ${existingUser.id}. Adding to agent's client list.`,
         );
         clientId = existingUser.id;
       } else {
@@ -94,42 +111,71 @@ export class TravelAgentClientsService {
 
         const verifiedData = verificationResult.data;
 
-        // Generate a temporary email if none provided (use NIN-based email)
-        const tempEmail = `${normalizedNin}@temp.asfaar.local`;
         // Generate a random password for the user (they'll need to set it later)
         const tempPassword = await bcrypt.hash(
           `Temp${normalizedNin}${Date.now()}`,
           10,
         );
 
-        // Create user account with verified NIN data
-        const newUser = await this.userService.createUser({
-          email: tempEmail,
-          nin: normalizedNin,
-          ninVerified: true,
-          firstName: verifiedData.firstName,
-          middleName: verifiedData.middleName,
-          lastName: verifiedData.lastName,
-          phone: verifiedData.phoneNumber,
-          password: tempPassword,
-          dateOfBirth: verifiedData.dateOfBirth
-            ? new Date(verifiedData.dateOfBirth)
-            : new Date(createDto.dateOfBirth),
-          gender: verifiedData.gender
-            ? (verifiedData.gender.toUpperCase() as Gender)
-            : undefined,
-          state: verifiedData.address?.state,
-          lga: verifiedData.address?.lga,
-          avatar: verifiedData.photo,
-          roles: [Roles.APPLICANT],
-          isVerified: false, // Will need to verify email later
-          isActive: true,
-        });
+        // Parse date of birth
+        let dateOfBirthValue: Date;
+        if (verifiedData.dateOfBirth) {
+          dateOfBirthValue = new Date(verifiedData.dateOfBirth);
+        } else {
+          dateOfBirthValue = new Date(createDto.dateOfBirth);
+        }
 
-        clientId = newUser.id;
-        this.logger.log(
-          `Created new user account for NIN ${normalizedNin}: ${clientId}`,
-        );
+        // Create user account with verified NIN data
+        try {
+          const newUser = await this.userService.createUser({
+            email: createDto.email,
+            nin: normalizedNin,
+            ninVerified: true,
+            firstName: verifiedData.firstName || '',
+            middleName: verifiedData.middleName,
+            lastName: verifiedData.lastName || '',
+            phone: verifiedData.phoneNumber,
+            password: tempPassword,
+            dateOfBirth: dateOfBirthValue,
+            gender: verifiedData.gender
+              ? (verifiedData.gender.toUpperCase() as Gender)
+              : undefined,
+            state: verifiedData.address?.state,
+            lga: verifiedData.address?.lga,
+            avatar: verifiedData.photo,
+            roles: [Roles.APPLICANT],
+            isVerified: false, // Will need to verify email later
+            isActive: true,
+          });
+
+          clientId = newUser.id;
+          this.logger.log(
+            `Created new user account for NIN ${normalizedNin}: ${clientId}`,
+          );
+        } catch (error: any) {
+          // Handle unique constraint violations (email, phone, etc.)
+          if (error.code === 'P2002') {
+            const field = error.meta?.target?.[0] || 'data';
+            let message = '';
+
+            switch (field) {
+              case 'email':
+                message = 'Email address is already in use';
+                break;
+              case 'phone':
+                message = 'Phone number is already in use';
+                break;
+              case 'nin':
+                message = 'NIN is already registered';
+                break;
+              default:
+                message = 'User could not be created due to data conflict';
+            }
+
+            throw new ConflictException(message);
+          }
+          throw error;
+        }
       }
 
       // Check if client is already in agent's client list
@@ -455,19 +501,18 @@ export class TravelAgentClientsService {
       const averageProcessingTime =
         approvedSubmissions.length > 0
           ? approvedSubmissions.reduce((sum, submission) => {
-              const days = Math.ceil(
-                (submission.updatedAt.getTime() -
-                  submission.submittedAt.getTime()) /
-                  (1000 * 60 * 60 * 24),
-              );
-              return sum + days;
-            }, 0) / approvedSubmissions.length
+            const days = Math.ceil(
+              (submission.updatedAt.getTime() -
+                submission.submittedAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+            );
+            return sum + days;
+          }, 0) / approvedSubmissions.length
           : 0;
 
       const clientName =
-        `${clientRelationship.client.firstName || ''} ${
-          clientRelationship.client.lastName || ''
-        }`.trim() || clientRelationship.client.email;
+        `${clientRelationship.client.firstName || ''} ${clientRelationship.client.lastName || ''
+          }`.trim() || clientRelationship.client.email;
 
       return {
         clientId,

@@ -39,6 +39,14 @@ export class CreateClientByNinDto {
   @IsDateString()
   dateOfBirth: string;
 
+  @ApiProperty({
+    description: 'Client email address',
+    example: 'john.doe@example.com',
+  })
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
   @ApiPropertyOptional({ description: 'Optional notes about the client' })
   @IsOptional()
   @IsString()
