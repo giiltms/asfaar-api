@@ -39,10 +39,6 @@ export class CreateClientByNinDto {
   @IsDateString()
   dateOfBirth: string;
 
-  @ApiProperty({
-    description: 'Client email address',
-    example: 'john.doe@example.com',
-  })
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
@@ -52,6 +48,10 @@ export class CreateClientByNinDto {
     { allow_display_name: false, require_tld: true },
     { message: 'Email must be a valid email address' },
   )
+  @ApiProperty({
+    description: 'Client email address',
+    example: 'john.doe@example.com',
+  })
   email: string;
 
   @ApiPropertyOptional({ description: 'Optional notes about the client' })
