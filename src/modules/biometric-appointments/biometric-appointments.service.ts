@@ -487,6 +487,17 @@ export class BiometricAppointmentsService {
                 instanceIndex: true,
               },
             },
+            biometricData: {
+              select: {
+                id: true,
+                photoUrl: true,
+                fingerprintFingers: {
+                  select: {
+                    fingerPosition: true,
+                  },
+                },
+              },
+            },
           },
         },
         center: {
@@ -549,21 +560,29 @@ export class BiometricAppointmentsService {
         !!appointment.biometricSession ||
         !!appointment.queueEntry?.boothId,
 
-      // Capture status - check both formal session and direct capture
+      // Capture status - check biometric session first, then BiometricData, then appointment level
       photoCaptured:
-        appointment.biometricSession?.photoCaptured ??
-        (appointment.biometricsCaptured && appointment.capturedAt
-          ? true
-          : false),
+        appointment.biometricSession?.photoCaptured !== undefined
+          ? appointment.biometricSession.photoCaptured
+          : !!appointment.submission?.biometricData?.photoUrl ||
+            (appointment.biometricsCaptured && appointment.capturedAt
+              ? true
+              : false),
 
       fingerprintsCaptured:
-        appointment.biometricSession?.fingerprintsCaptured ??
-        (appointment.biometricsCaptured && appointment.capturedAt
-          ? true
-          : false),
+        appointment.biometricSession?.fingerprintsCaptured !== undefined
+          ? appointment.biometricSession.fingerprintsCaptured
+          : (appointment.submission?.biometricData?.fingerprintFingers &&
+              appointment.submission.biometricData.fingerprintFingers.length >
+                0) ||
+            (appointment.biometricsCaptured && appointment.capturedAt
+              ? true
+              : false),
 
       signatureCaptured:
-        appointment.biometricSession?.signatureCaptured ?? false,
+        appointment.biometricSession?.signatureCaptured !== undefined
+          ? appointment.biometricSession.signatureCaptured
+          : false,
     };
 
     return appointmentWithStatus;
