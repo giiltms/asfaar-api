@@ -131,26 +131,7 @@ export class ClientProfileDto {
   lastApplicationDate?: Date;
 }
 
-// Application Management DTOs
-export class CreateApplicationForClientDto {
-  @ApiProperty({ description: 'Form ID to submit' })
-  @IsNotEmpty()
-  @IsUUID()
-  formId: string;
-
-  @ApiProperty({ description: 'Client ID' })
-  @IsNotEmpty()
-  @IsUUID()
-  clientId: string;
-
-  @ApiPropertyOptional({ description: 'Form responses data' })
-  @IsOptional()
-  responses?: any;
-}
-
-export class UpdateApplicationDto {
-  // Currently no fields to update - will be expanded when schema supports agent notes
-}
+// Application Management DTOs (deprecated - use POST /submissions with optional clientId)
 
 export class ApplicationDto {
   @ApiProperty({ description: 'Application ID' })

@@ -1,31 +1,14 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { FormSubmissionsService } from '@modules/form-submissions/services/form-submissions.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { BiometricAppointmentsService } from '@modules/biometric-appointments/biometric-appointments.service';
 import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientProfileDto,
-  CreateApplicationForClientDto,
-  UpdateApplicationDto,
   ApplicationDto,
   AgentAnalyticsDto,
-  ClientAnalyticsDto,
-  ClientFiltersDto,
   ApplicationFiltersDto,
 } from './dto/travel-agent.dto';
-import { PaginationUtils } from '@common/utils/pagination.utils';
-import {
-  SubmissionStatus,
-  PaymentStatus,
-  AppointmentStatus,
-} from '@prisma/client';
+import { SubmissionStatus, PaymentStatus } from '@prisma/client';
 
 /**
  * Service for managing travel agent operations
@@ -252,81 +235,7 @@ export class TravelAgentService {
 
   // Communication methods - TODO: Implement when ClientCommunication model is added to schema
 
-  /**
-   * Create application for client
-   */
-  async createApplicationForClient(
-    agentId: string,
-    createDto: CreateApplicationForClientDto,
-  ): Promise<ApplicationDto> {
-    try {
-      // Verify client exists
-      const client = await this.prisma.user.findUnique({
-        where: { id: createDto.clientId },
-      });
-
-      if (!client) {
-        throw new NotFoundException(
-          `Client with ID ${createDto.clientId} not found`,
-        );
-      }
-
-      // Create form submission
-      const submission = await this.formSubmissionsService.createSubmission(
-        createDto.clientId,
-        {
-          formId: createDto.formId,
-          responses: createDto.responses,
-        },
-      );
-
-      // Update submission with agent information
-      const updatedSubmission = await this.prisma.formSubmission.update({
-        where: { id: submission.id },
-        data: {
-          travelAgentId: agentId,
-          // TODO: Add agentNotes and priority fields to schema
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          form: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      });
-
-      return {
-        id: updatedSubmission.id,
-        referenceNumber: updatedSubmission.referenceNumber,
-        formId: updatedSubmission.formId,
-        formName: updatedSubmission.form.name,
-        clientId: updatedSubmission.userId,
-        clientName:
-          `${updatedSubmission.user.firstName || ''} ${
-            updatedSubmission.user.lastName || ''
-          }`.trim() || updatedSubmission.user.email,
-        status: updatedSubmission.status,
-        createdAt: updatedSubmission.createdAt,
-        updatedAt: updatedSubmission.updatedAt,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to create application for client: ${error.message}`,
-        error.stack,
-      );
-      throw error;
-    }
-  }
+  // Note: Creating applications for clients is now handled via POST /submissions with optional clientId
 
   /**
    * Update application
@@ -334,7 +243,8 @@ export class TravelAgentService {
   async updateApplication(
     agentId: string,
     applicationId: string,
-    updateDto: UpdateApplicationDto,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    updateDto: any,
   ): Promise<ApplicationDto> {
     try {
       // Verify application belongs to agent

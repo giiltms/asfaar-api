@@ -1,7 +1,7 @@
 import {
   Controller,
   Get,
-  Post,
+  // Post,
   Put,
   Body,
   Param,
@@ -29,8 +29,6 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { TravelAgentService } from './travel-agent.service';
 import {
-  CreateApplicationForClientDto,
-  UpdateApplicationDto,
   ApplicationDto,
   ApplicationFiltersDto,
   AgentAnalyticsDto,
@@ -200,54 +198,7 @@ export class TravelAgentController {
     return this.travelAgentService.getAgentAnalytics(user.id);
   }
 
-  /**
-   * Create application for client
-   */
-  @Post('applications')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create application for client',
-    description: 'Create a new application on behalf of a client.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Application created successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', example: 'uuid-string' },
-        referenceNumber: { type: 'string', example: 'APP-2024-001' },
-        formId: { type: 'string', example: 'uuid-string' },
-        formName: { type: 'string', example: 'Visa Application' },
-        clientId: { type: 'string', example: 'uuid-string' },
-        clientName: { type: 'string', example: 'John Doe' },
-        status: { type: 'string', example: 'SUBMITTED' },
-        createdAt: {
-          type: 'string',
-          format: 'date-time',
-          example: '2024-01-15T10:30:00Z',
-        },
-        updatedAt: {
-          type: 'string',
-          format: 'date-time',
-          example: '2024-01-15T10:30:00Z',
-        },
-        paymentStatus: { type: 'string', example: 'PENDING' },
-        biometricStatus: { type: 'string', example: 'SCHEDULED' },
-      },
-    },
-  })
-  @ApiOkBaseResponse({ dto: ApplicationDto })
-  @ApiDefaultResponse({ type: ApplicationDto })
-  async createApplicationForClient(
-    @CurrentUser() user: JwtUserPayload,
-    @Body(ValidationPipe) createDto: CreateApplicationForClientDto,
-  ): Promise<ApplicationDto> {
-    return this.travelAgentService.createApplicationForClient(
-      user.id,
-      createDto,
-    );
-  }
+  // Note: Creating applications for clients is now handled via POST /submissions with optional clientId
 
   /**
    * Update application
@@ -297,7 +248,7 @@ export class TravelAgentController {
   async updateApplication(
     @CurrentUser() user: JwtUserPayload,
     @Param('id') applicationId: string,
-    @Body(ValidationPipe) updateDto: UpdateApplicationDto,
+    @Body(ValidationPipe) updateDto: any,
   ): Promise<ApplicationDto> {
     return this.travelAgentService.updateApplication(
       user.id,

@@ -299,7 +299,8 @@ export class FormSubmissionsService {
     userId: string,
     createSubmissionDto: CreateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    const { formId, responses, status, metadata } = createSubmissionDto;
+    const { formId, responses, status, metadata, clientId } =
+      createSubmissionDto;
 
     // Verify form exists
     const form = await this.prisma.dynamicForm.findUnique({
@@ -310,10 +311,46 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_NOT_FOUND);
     }
 
-    // Check if user already has a draft for this form
+    // Determine target user for submission (agent on behalf of client or self)
+    let targetUserId: string = userId;
+    let travelAgentId: string | undefined = undefined;
+
+    if (clientId) {
+      // Validate that the requester is an agent and manages this client
+      const requester = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { roles: true },
+      });
+
+      if (!requester || !requester.roles?.includes('AGENCY' as any)) {
+        throw new BadRequestException(
+          'Only travel agents can create applications for clients',
+        );
+      }
+
+      const relationship = await this.prisma.travelAgentClient.findUnique({
+        where: {
+          agentId_clientId: {
+            agentId: userId,
+            clientId,
+          },
+        },
+      });
+
+      if (!relationship) {
+        throw new BadRequestException(
+          'Client is not in your managed client list',
+        );
+      }
+
+      targetUserId = clientId;
+      travelAgentId = userId;
+    }
+
+    // Check if target user already has a draft for this form
     const existingDraft = await this.prisma.formSubmission.findFirst({
       where: {
-        userId,
+        userId: targetUserId,
         formId,
         status: SubmissionStatus.DRAFT,
       },
@@ -322,7 +359,7 @@ export class FormSubmissionsService {
     if (existingDraft) {
       // Update existing draft instead of creating new one
       return this.updateSubmission(
-        userId,
+        targetUserId,
         existingDraft.id,
         createSubmissionDto,
       );
@@ -330,10 +367,11 @@ export class FormSubmissionsService {
 
     const submission = await this.prisma.formSubmission.create({
       data: {
-        userId,
+        userId: targetUserId,
         formId,
         status: status || SubmissionStatus.DRAFT,
         metadata,
+        ...(travelAgentId && { travelAgentId }),
         responses: responses
           ? {
               create: responses.map((response) => ({

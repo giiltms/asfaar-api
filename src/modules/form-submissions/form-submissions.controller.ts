@@ -259,7 +259,8 @@ export class FormSubmissionsController {
   @Post()
   @ApiOperation({
     summary: 'Create new form submission (draft)',
-    description: 'Create a new draft submission for a form',
+    description:
+      'Create a new draft submission for a form. Travel agents can create on behalf of a client by providing optional clientId.',
   })
   @ApiOkBaseResponse({ dto: FormSubmissionDto })
   @ApiDefaultResponse({ type: FormSubmissionDto })

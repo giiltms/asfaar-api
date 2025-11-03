@@ -273,6 +273,15 @@ export class CreateFormSubmissionDto {
   formId: string;
 
   @ApiPropertyOptional({
+    description:
+      'Client ID (for travel agents creating on behalf of a client). If provided, the authenticated user must have AGENCY role and the client must be in their client list.',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
+
+  @ApiPropertyOptional({
     description: 'Field responses',
     type: [CreateFieldResponseDto],
   })
