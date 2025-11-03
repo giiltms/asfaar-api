@@ -738,6 +738,7 @@ export class MailService {
         subject: data.subject,
         template: 'client-added-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           agentName: data.agentName,
           companyName: data.companyName,
