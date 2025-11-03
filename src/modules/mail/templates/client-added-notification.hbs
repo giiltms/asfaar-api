@@ -1,0 +1,82 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>{{subject}}</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333;
+      max-width: 600px; margin: 0 auto; padding: 20px; background-color:
+      #f4f4f4; } .container { background-color: #ffffff; border-radius: 8px;
+      padding: 30px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); } .header {
+      text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 20px; } .header h1 { color: #2c3e50; margin: 0; font-size:
+      24px; } .content { margin-bottom: 30px; } .content p { margin-bottom:
+      15px; color: #555; } .highlight-box { background-color: #f8f9fa;
+      border-left: 4px solid #007bff; padding: 15px; margin: 20px 0;
+      border-radius: 4px; } .info-item { margin: 10px 0; padding: 10px;
+      background-color: #f8f9fa; border-radius: 4px; } .info-label {
+      font-weight: 600; color: #2c3e50; display: inline-block; min-width: 120px;
+      } .footer { text-align: center; margin-top: 30px; padding-top: 20px;
+      border-top: 2px solid #e0e0e0; color: #777; font-size: 14px; } .button {
+      display: inline-block; padding: 12px 24px; background-color: #007bff;
+      color: #ffffff; text-decoration: none; border-radius: 5px; margin-top:
+      20px; font-weight: 600; } .button:hover { background-color: #0056b3; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>Welcome to {{companyName}}</h1>
+      </div>
+
+      <div class='content'>
+        <p>Dear {{userName}},</p>
+
+        <p>We are pleased to inform you that you have been added to
+          <strong>{{companyName}}</strong>'s client list as a travel services
+          client.</p>
+
+        <div class='highlight-box'>
+          <p style='margin: 0;'><strong>What this means for you:</strong></p>
+          <ul style='margin: 10px 0 0 20px; padding: 0;'>
+            <li>You can now work with
+              {{agentName}}
+              from
+              {{companyName}}
+              to manage your visa applications and travel services</li>
+            <li>Your travel agent will be able to create and manage applications
+              on your behalf</li>
+            <li>You'll receive updates and notifications about your applications
+              through this platform</li>
+          </ul>
+        </div>
+
+        <div class='info-item'>
+          <span class='info-label'>Travel Agent:</span>
+          <span>{{agentName}}</span>
+        </div>
+        <div class='info-item'>
+          <span class='info-label'>Company:</span>
+          <span>{{companyName}}</span>
+        </div>
+        <div class='info-item'>
+          <span class='info-label'>Date Added:</span>
+          <span>{{addedDate}}</span>
+        </div>
+
+        <p>If you have any questions or concerns about this relationship, please
+          don't hesitate to contact us or your travel agent directly.</p>
+
+        <p>Thank you for choosing Asfaar Visa Services.</p>
+      </div>
+
+      <div class='footer'>
+        <p>Best regards,<br />The Asfaar Visa Services Team</p>
+        <p style='margin-top: 15px; font-size: 12px;'>
+          This is an automated notification. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

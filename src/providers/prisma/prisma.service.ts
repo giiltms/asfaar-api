@@ -18,6 +18,7 @@ import { referenceNumberMiddleware } from './middlewares/reference-number.middle
 import { travelAgentUpgradePaymentEmailMiddleware } from './middlewares/travel-agent-upgrade-payment-email.middleware';
 import { travelAgentUpgradeDecisionEmailMiddleware } from './middlewares/travel-agent-upgrade-decision-email.middleware';
 import { licenseStatusChangeEmailMiddleware } from './middlewares/license-status-change-email.middleware';
+import { clientAddedNotificationMiddleware } from './middlewares/client-added-notification.middleware';
 
 @Injectable()
 export class PrismaService
@@ -49,6 +50,7 @@ export class PrismaService
     this.$use(travelAgentUpgradePaymentEmailMiddleware());
     this.$use(travelAgentUpgradeDecisionEmailMiddleware());
     this.$use(licenseStatusChangeEmailMiddleware());
+    this.$use(clientAddedNotificationMiddleware());
   }
 
   async onModuleInit() {

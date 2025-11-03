@@ -135,6 +135,15 @@ export interface LicenseReactivatedNotificationData {
   subject: string;
 }
 
+export interface ClientAddedNotificationData {
+  userEmail: string;
+  userName: string;
+  agentName: string;
+  companyName: string;
+  addedDate: string;
+  subject: string;
+}
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -701,6 +710,50 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send license reactivated notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  async sendClientAddedNotification(
+    data: ClientAddedNotificationData,
+  ): Promise<void> {
+    try {
+      const supportEmail = this.configService.get(
+        'mail.MAIL_FROM_EMAIL',
+        'support@asfaarvisaservices.com',
+      );
+      const platformName = this.configService.get(
+        'app.APP_NAME',
+        'Asfaar Visa Services',
+      );
+      const dashboardUrl = this.configService.get(
+        'app.SITE_URL',
+        'http://localhost:3000',
+      );
+
+      await this.mailerService.sendMail({
+        to: data.userEmail,
+        subject: data.subject,
+        template: 'client-added-notification',
+        context: {
+          userName: data.userName,
+          agentName: data.agentName,
+          companyName: data.companyName,
+          addedDate: data.addedDate,
+          supportEmail,
+          platformName,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `Client added notification sent successfully to: ${data.userEmail}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send client added notification to ${data.userEmail}:`,
         error.message,
       );
       throw error;
