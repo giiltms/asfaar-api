@@ -15,7 +15,13 @@ import {
   ClientFiltersDto,
 } from './dto/travel-agent.dto';
 import { PaginationUtils } from '@common/utils/pagination.utils';
-import { SubmissionStatus, PaymentStatus, Gender, Roles } from '@prisma/client';
+import {
+  SubmissionStatus,
+  PaymentStatus,
+  Gender,
+  Roles,
+  VerificationStatus,
+} from '@prisma/client';
 import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
 import { UserService } from '@modules/user/user.service';
 import * as bcrypt from 'bcrypt';
@@ -348,20 +354,97 @@ export class TravelAgentClientsService {
     clientId: string,
   ): Promise<ClientProfileDto> {
     try {
-      // Verify client is in agent's client list
-      const clientRelationship = await this.prisma.travelAgentClient.findUnique(
-        {
-          where: {
-            agentId_clientId: {
-              agentId,
-              clientId,
+      // Verify client is in agent's client list and fetch client data with optimized queries
+      const [clientRelationship, submissionStats, lastApplication] =
+        await Promise.all([
+          this.prisma.travelAgentClient.findUnique({
+            where: {
+              agentId_clientId: {
+                agentId,
+                clientId,
+              },
             },
-          },
-          include: {
-            client: true,
-          },
-        },
-      );
+            include: {
+              client: {
+                select: {
+                  id: true,
+                  email: true,
+                  phone: true,
+                  firstName: true,
+                  middleName: true,
+                  lastName: true,
+                  avatar: true,
+                  isVerified: true,
+                  nin: true,
+                  ninVerified: true,
+                  dateOfBirth: true,
+                  gender: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  ninVerifications: {
+                    where: {
+                      verificationStatus: VerificationStatus.VERIFIED,
+                    },
+                    orderBy: {
+                      verificationDate: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                      id: true,
+                      nin: true,
+                      firstName: true,
+                      middleName: true,
+                      lastName: true,
+                      fullName: true,
+                      dateOfBirth: true,
+                      gender: true,
+                      phoneNumber: true,
+                      verifiedPhoneNumber: true,
+                      photo: true,
+                      addressLine1: true,
+                      addressLine2: true,
+                      city: true,
+                      state: true,
+                      lga: true,
+                      postalCode: true,
+                      country: true,
+                      birthState: true,
+                      birthLga: true,
+                      verificationStatus: true,
+                      verificationDate: true,
+                      createdAt: true,
+                      updatedAt: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          // Get submission statistics using aggregation (more efficient)
+          this.prisma.formSubmission.groupBy({
+            by: ['status'],
+            where: {
+              userId: clientId,
+              travelAgentId: agentId,
+            },
+            _count: {
+              id: true,
+            },
+          }),
+          // Get last application date (only fetch the most recent one)
+          this.prisma.formSubmission.findFirst({
+            where: {
+              userId: clientId,
+              travelAgentId: agentId,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            select: {
+              createdAt: true,
+            },
+          }),
+        ]);
 
       if (!clientRelationship) {
         throw new NotFoundException(
@@ -371,34 +454,42 @@ export class TravelAgentClientsService {
 
       const client = clientRelationship.client;
 
-      // Get client statistics
-      const clientSubmissions = await this.prisma.formSubmission.findMany({
-        where: {
-          userId: clientId,
-          travelAgentId: agentId,
-        },
-      });
+      // Calculate statistics from aggregated data
+      const totalApplications = submissionStats.reduce(
+        (sum, stat) => sum + stat._count.id,
+        0,
+      );
+      const successfulApplications =
+        submissionStats.find(
+          (stat) => stat.status === SubmissionStatus.APPROVED,
+        )?._count.id || 0;
 
-      const totalApplications = clientSubmissions.length;
-      const successfulApplications = clientSubmissions.filter(
-        (app) => app.status === SubmissionStatus.APPROVED,
-      ).length;
+      // Compute fullName to match UserEntity format
+      const fullName =
+        `${client.firstName || ''} ${client.lastName || ''}`.trim() ||
+        client.email;
 
-      // Get last application date
-      const lastApplication = clientSubmissions.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-      )[0];
-
+      // Format response to match /me endpoint structure
       return {
         id: client.id,
         email: client.email,
         phone: client.phone,
-        fullName:
-          `${client.firstName || ''} ${client.lastName || ''}`.trim() ||
-          client.email,
+        firstName: client.firstName,
+        middleName: client.middleName,
+        lastName: client.lastName,
+        fullName, // Computed property like UserEntity
         avatar: client.avatar,
         isVerified: client.isVerified,
+        dateOfBirth: client.dateOfBirth,
+        gender: client.gender,
         createdAt: client.createdAt,
+        updatedAt: client.updatedAt,
+        nin: client.nin,
+        ninVerified: client.ninVerified,
+        currentNinVerification: client.ninVerifications?.[0] || null,
+        // Agent-specific fields
+        addedAt: clientRelationship.addedAt,
+        relationshipNotes: clientRelationship.notes,
         totalApplications,
         successfulApplications,
         lastApplicationDate: lastApplication?.createdAt,

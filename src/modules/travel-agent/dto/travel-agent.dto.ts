@@ -112,14 +112,35 @@ export class ClientProfileDto {
   @ApiProperty({ description: 'Client full name' })
   fullName: string;
 
+  @ApiPropertyOptional({ description: 'Client first name' })
+  firstName?: string;
+
+  @ApiPropertyOptional({ description: 'Client last name' })
+  lastName?: string;
+
+  @ApiPropertyOptional({ description: 'Client middle name' })
+  middleName?: string;
+
   @ApiPropertyOptional({ description: 'Client avatar' })
   avatar?: string;
 
   @ApiProperty({ description: 'Client verification status' })
   isVerified: boolean;
 
+  @ApiPropertyOptional({ description: 'Client date of birth' })
+  dateOfBirth?: Date;
+
+  @ApiPropertyOptional({
+    description: 'Client gender',
+    enum: ['MALE', 'FEMALE', 'OTHER'],
+  })
+  gender?: string;
+
   @ApiProperty({ description: 'Client creation date' })
   createdAt: Date;
+
+  @ApiPropertyOptional({ description: 'Client last update date' })
+  updatedAt?: Date;
 
   @ApiProperty({ description: 'Total applications' })
   totalApplications: number;
@@ -129,6 +150,25 @@ export class ClientProfileDto {
 
   @ApiProperty({ description: 'Last application date' })
   lastApplicationDate?: Date;
+
+  @ApiPropertyOptional({ description: 'National Identity Number' })
+  nin?: string;
+
+  @ApiPropertyOptional({ description: 'NIN verification status' })
+  ninVerified?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Current/latest verified NIN verification details',
+    type: 'object',
+  })
+  currentNinVerification?: any;
+
+  // Agent-specific fields (not in /me endpoint)
+  @ApiPropertyOptional({ description: 'When client was added to agent list' })
+  addedAt?: Date;
+
+  @ApiPropertyOptional({ description: 'Notes about the client relationship' })
+  relationshipNotes?: string;
 }
 
 // Application Management DTOs (deprecated - use POST /submissions with optional clientId)
