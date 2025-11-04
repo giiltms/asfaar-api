@@ -974,7 +974,7 @@ export class FormSubmissionsService {
 
     // Check if user is a travel agent
     const isAgent = userRoles?.includes(Roles.AGENCY);
-    const effectiveScope = isAgent ? scope || 'all' : 'personal';
+    const effectiveScope = isAgent ? scope : 'personal';
 
     // Build base where clause
     const baseWhere: Prisma.FormSubmissionWhereInput = {
