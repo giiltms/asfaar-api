@@ -307,7 +307,8 @@ export class FormSubmissionsController {
   @Get('my')
   @ApiOperation({
     summary: 'Get my form submissions',
-    description: 'Get all submissions for the authenticated user',
+    description:
+      'Get all submissions for the authenticated user. For travel agents, use the "scope" parameter to filter between personal applications, managed client applications, or both.',
   })
   @ApiQuery({
     name: 'formId',
@@ -325,6 +326,14 @@ export class FormSubmissionsController {
     description:
       'Search term (searches reference number, form name, and description)',
     example: 'SA25000001',
+  })
+  @ApiQuery({
+    name: 'scope',
+    required: false,
+    description:
+      'For travel agents: filter scope. "personal" (only personal applications), "managed" (only client applications), "all" (both). Default: "all" for agents, "personal" for regular users',
+    enum: ['personal', 'managed', 'all'],
+    example: 'all',
   })
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
@@ -356,7 +365,11 @@ export class FormSubmissionsController {
     @CurrentUser() user: JwtUserPayload,
     @Query() queryDto: SubmissionQueryDto,
   ) {
-    return this.submissionsService.getUserSubmissions(user.id, queryDto);
+    return this.submissionsService.getUserSubmissions(
+      user.id,
+      queryDto,
+      user.roles,
+    );
   }
 
   @Get('queried')

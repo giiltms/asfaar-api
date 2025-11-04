@@ -848,6 +848,17 @@ export class SubmissionQueryDto {
 
   @ApiPropertyOptional({
     description:
+      'For travel agents: filter scope. "personal" (only personal applications), "managed" (only client applications), "all" (both personal and managed). Default: "all"',
+    enum: ['personal', 'managed', 'all'],
+    example: 'all',
+    default: 'all',
+  })
+  @IsOptional()
+  @IsIn(['personal', 'managed', 'all'])
+  scope?: 'personal' | 'managed' | 'all' = 'all';
+
+  @ApiPropertyOptional({
+    description:
       'Filter by cancellation status (admin only - hidden from user queries)',
     example: false,
   })
