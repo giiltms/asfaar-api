@@ -299,8 +299,7 @@ export class FormSubmissionsService {
     userId: string,
     createSubmissionDto: CreateFormSubmissionDto,
   ): Promise<FormSubmissionDto> {
-    const { formId, responses, status, metadata, clientId } =
-      createSubmissionDto;
+    const { formId, responses, metadata, clientId } = createSubmissionDto;
 
     // Verify form exists
     const form = await this.prisma.dynamicForm.findUnique({
@@ -369,7 +368,7 @@ export class FormSubmissionsService {
       data: {
         userId: targetUserId,
         formId,
-        status: status || SubmissionStatus.DRAFT,
+        status: SubmissionStatus.DRAFT, // Always create as DRAFT - status is managed internally
         metadata,
         ...(travelAgentId && { travelAgentId }),
         responses: responses

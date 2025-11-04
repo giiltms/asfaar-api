@@ -1,4 +1,9 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+  OmitType,
+} from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
 import {
   IsString,
@@ -292,16 +297,6 @@ export class CreateFormSubmissionDto {
   responses?: CreateFieldResponseDto[];
 
   @ApiPropertyOptional({
-    description: 'Submission status',
-    enum: SubmissionStatus,
-    example: SubmissionStatus.DRAFT,
-    default: SubmissionStatus.DRAFT,
-  })
-  @IsOptional()
-  @IsEnum(SubmissionStatus)
-  status?: SubmissionStatus = SubmissionStatus.DRAFT;
-
-  @ApiPropertyOptional({
     description: 'Additional submission metadata',
     example: {
       userAgent: 'Mozilla/5.0...',
@@ -312,11 +307,17 @@ export class CreateFormSubmissionDto {
   @IsOptional()
   @IsObject()
   metadata?: any;
+
+  // Note: status is intentionally excluded - it's managed internally by the system
+  // Submissions are created as DRAFT and status changes are controlled by business logic
 }
 
 export class UpdateFormSubmissionDto extends PartialType(
-  CreateFormSubmissionDto,
-) {}
+  OmitType(CreateFormSubmissionDto, ['formId', 'clientId'] as const),
+) {
+  // This DTO includes: responses, metadata
+  // Excluded: formId, clientId (immutable), status (managed internally)
+}
 
 export class SubmitFormDto {
   @ApiProperty({
