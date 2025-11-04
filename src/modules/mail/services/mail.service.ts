@@ -740,7 +740,6 @@ export class MailService {
         context: {
           subject: data.subject,
           userName: data.userName,
-          agentName: data.agentName,
           companyName: data.companyName,
           addedDate: data.addedDate,
           supportEmail,
