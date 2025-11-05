@@ -578,6 +578,166 @@ export class AdminTravelAgentUpgradeController {
     );
   }
 
+  @Get('licenses/statistics')
+  @ApiOperation({
+    summary: 'Get license statistics',
+    description: 'Get comprehensive statistics about travel agent licenses.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 150 },
+            active: { type: 'number', example: 120 },
+            expired: { type: 'number', example: 20 },
+            revoked: { type: 'number', example: 5 },
+            suspended: { type: 'number', example: 5 },
+            expiringSoon: {
+              type: 'number',
+              example: 10,
+              description: 'Licenses expiring within 30 days',
+            },
+            recentlyIssued: {
+              type: 'number',
+              example: 15,
+              description: 'Licenses issued in the last 30 days',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getLicenseStatistics() {
+    return this.licenseService.getEnhancedLicenseStatistics();
+  }
+
+  @Get('licenses/expiring-soon')
+  @ApiOperation({
+    summary: 'Get licenses expiring soon',
+    description:
+      'Get a list of licenses that are expiring within the specified number of days.',
+  })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Number of days to look ahead for expiring licenses',
+    example: 30,
+    type: 'number',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Expiring licenses retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Expiring licenses retrieved successfully',
+        },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'license123' },
+              licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
+              expiresAt: {
+                type: 'string',
+                example: '2025-02-20T10:30:00.000Z',
+              },
+              daysUntilExpiry: { type: 'number', example: 15 },
+              user: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'user123' },
+                  firstName: { type: 'string', example: 'John' },
+                  lastName: { type: 'string', example: 'Doe' },
+                  email: { type: 'string', example: 'john.doe@example.com' },
+                },
+              },
+              application: {
+                type: 'object',
+                properties: {
+                  companyName: { type: 'string', example: 'ABC Travel Agency' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getExpiringLicenses(@Query('days') days = '30') {
+    const expiringLicenses = await this.licenseService.getLicensesExpiringSoon(
+      Number(days),
+    );
+
+    // Add days until expiry calculation
+    const licensesWithDaysUntilExpiry = expiringLicenses.map((license) => {
+      const now = new Date();
+      const expiryDate = new Date(license.expiresAt);
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      return {
+        ...license,
+        daysUntilExpiry,
+      };
+    });
+
+    return {
+      success: true,
+      message: 'Expiring licenses retrieved successfully',
+      data: licensesWithDaysUntilExpiry,
+    };
+  }
+
+  @Get('licenses/notification-statistics')
+  @ApiOperation({
+    summary: 'Get notification statistics',
+    description:
+      'Get statistics about license expiration notifications and reminders.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification statistics retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: {
+          type: 'string',
+          example: 'Notification statistics retrieved successfully',
+        },
+        data: {
+          type: 'object',
+          properties: {
+            totalNotifications: { type: 'number', example: 15 },
+            expiringIn30Days: { type: 'number', example: 10 },
+            expiringIn7Days: { type: 'number', example: 3 },
+            expiringIn1Day: { type: 'number', example: 1 },
+            overdue: { type: 'number', example: 1 },
+          },
+        },
+      },
+    },
+  })
+  async getNotificationStatistics() {
+    return this.notificationService.getNotificationStatistics();
+  }
+
   @Get('licenses/:id')
   @ApiOperation({
     summary: 'Get a specific license',
@@ -790,49 +950,6 @@ export class AdminTravelAgentUpgradeController {
     return this.licenseService.suspendLicense(id, admin.id, body.reason);
   }
 
-  @Get('licenses/statistics')
-  @ApiOperation({
-    summary: 'Get license statistics',
-    description: 'Get comprehensive statistics about travel agent licenses.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Statistics retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Statistics retrieved successfully',
-        },
-        data: {
-          type: 'object',
-          properties: {
-            total: { type: 'number', example: 150 },
-            active: { type: 'number', example: 120 },
-            expired: { type: 'number', example: 20 },
-            revoked: { type: 'number', example: 5 },
-            suspended: { type: 'number', example: 5 },
-            expiringSoon: {
-              type: 'number',
-              example: 10,
-              description: 'Licenses expiring within 30 days',
-            },
-            recentlyIssued: {
-              type: 'number',
-              example: 15,
-              description: 'Licenses issued in the last 30 days',
-            },
-          },
-        },
-      },
-    },
-  })
-  async getLicenseStatistics() {
-    return this.licenseService.getEnhancedLicenseStatistics();
-  }
-
   @Put('licenses/:id/reactivate')
   @ApiOperation({
     summary: 'Reactivate a suspended license',
@@ -935,89 +1052,6 @@ export class AdminTravelAgentUpgradeController {
     return this.licenseService.processExpiredLicenses();
   }
 
-  @Get('licenses/expiring-soon')
-  @ApiOperation({
-    summary: 'Get licenses expiring soon',
-    description:
-      'Get a list of licenses that are expiring within the specified number of days.',
-  })
-  @ApiQuery({
-    name: 'days',
-    required: false,
-    description: 'Number of days to look ahead for expiring licenses',
-    example: 30,
-    type: 'number',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Expiring licenses retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Expiring licenses retrieved successfully',
-        },
-        data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', example: 'license123' },
-              licenseNumber: { type: 'string', example: 'AGT-2025-000001' },
-              expiresAt: {
-                type: 'string',
-                example: '2025-02-20T10:30:00.000Z',
-              },
-              daysUntilExpiry: { type: 'number', example: 15 },
-              user: {
-                type: 'object',
-                properties: {
-                  id: { type: 'string', example: 'user123' },
-                  firstName: { type: 'string', example: 'John' },
-                  lastName: { type: 'string', example: 'Doe' },
-                  email: { type: 'string', example: 'john.doe@example.com' },
-                },
-              },
-              application: {
-                type: 'object',
-                properties: {
-                  companyName: { type: 'string', example: 'ABC Travel Agency' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  async getExpiringLicenses(@Query('days') days = '30') {
-    const expiringLicenses = await this.licenseService.getLicensesExpiringSoon(
-      Number(days),
-    );
-
-    // Add days until expiry calculation
-    const licensesWithDaysUntilExpiry = expiringLicenses.map((license) => {
-      const now = new Date();
-      const expiryDate = new Date(license.expiresAt);
-      const daysUntilExpiry = Math.ceil(
-        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      );
-
-      return {
-        ...license,
-        daysUntilExpiry,
-      };
-    });
-
-    return {
-      success: true,
-      message: 'Expiring licenses retrieved successfully',
-      data: licensesWithDaysUntilExpiry,
-    };
-  }
-
   // ===== NOTIFICATION MANAGEMENT ENDPOINTS =====
 
   @Post('licenses/send-expiration-notifications')
@@ -1089,39 +1123,5 @@ export class AdminTravelAgentUpgradeController {
   })
   async sendRenewalReminders() {
     return this.notificationService.sendRenewalReminders();
-  }
-
-  @Get('licenses/notification-statistics')
-  @ApiOperation({
-    summary: 'Get notification statistics',
-    description:
-      'Get statistics about license expiration notifications and reminders.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Notification statistics retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean', example: true },
-        message: {
-          type: 'string',
-          example: 'Notification statistics retrieved successfully',
-        },
-        data: {
-          type: 'object',
-          properties: {
-            totalNotifications: { type: 'number', example: 15 },
-            expiringIn30Days: { type: 'number', example: 10 },
-            expiringIn7Days: { type: 'number', example: 3 },
-            expiringIn1Day: { type: 'number', example: 1 },
-            overdue: { type: 'number', example: 1 },
-          },
-        },
-      },
-    },
-  })
-  async getNotificationStatistics() {
-    return this.notificationService.getNotificationStatistics();
   }
 }
