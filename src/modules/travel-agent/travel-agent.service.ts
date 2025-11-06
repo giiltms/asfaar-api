@@ -149,7 +149,6 @@ export class TravelAgentService {
           travelAgentId: agentId,
           status: SubmissionStatus.APPROVED,
           submittedAt: { not: null },
-          updatedAt: { not: null },
         },
         select: {
           submittedAt: true,

@@ -100,12 +100,12 @@ export class TravelAgentAnalyticsService {
       const revenueThisMonth = revenueThisMonthData._sum.amount || 0;
 
       // Calculate average processing time
+      // Only check submittedAt since updatedAt is always set (@updatedAt field)
       const processingTimeData = await this.prisma.formSubmission.findMany({
         where: {
           travelAgentId: agentId,
           status: SubmissionStatus.APPROVED,
           submittedAt: { not: null },
-          updatedAt: { not: null },
         },
         select: {
           submittedAt: true,
