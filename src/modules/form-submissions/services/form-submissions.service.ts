@@ -358,11 +358,14 @@ export class FormSubmissionsService {
 
     if (existingDraft) {
       // Update existing draft instead of creating new one
-      return this.updateSubmission(
-        targetUserId,
-        existingDraft.id,
-        createSubmissionDto,
-      );
+      // Convert CreateFormSubmissionDto to UpdateFormSubmissionDto by excluding formId and clientId
+      // Note: ValidationPipe only runs on HTTP requests, not internal service calls
+      // So we must manually exclude these fields to prevent Prisma errors
+      const updateDto: UpdateFormSubmissionDto = {
+        responses: createSubmissionDto.responses,
+        metadata: createSubmissionDto.metadata,
+      };
+      return this.updateSubmission(targetUserId, existingDraft.id, updateDto);
     }
 
     const submission = await this.prisma.formSubmission.create({
@@ -1174,11 +1177,17 @@ export class FormSubmissionsService {
     }
 
     const { responses, ...submissionData } = updateDto;
+    // Explicitly exclude formId and clientId (they're relations, not direct fields)
+    const {
+      formId: _,
+      clientId: __,
+      ...safeSubmissionData
+    } = submissionData as any;
 
     const submission = await this.prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
-        ...submissionData,
+        ...safeSubmissionData,
         responses: responses
           ? {
               deleteMany: {},
@@ -1234,12 +1243,18 @@ export class FormSubmissionsService {
     }
 
     const { responses, ...submissionData } = updateDto;
+    // Explicitly exclude formId and clientId (they're relations, not direct fields)
+    const {
+      formId: _,
+      clientId: __,
+      ...safeSubmissionData
+    } = submissionData as any;
 
     // Update the submission with new responses and mark as resubmitted
     const submission = await this.prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
-        ...submissionData,
+        ...safeSubmissionData,
         status: SubmissionStatus.SUBMITTED, // Change back to submitted for review
         isQueried: false, // Mark as no longer queried
         queryResponse: `Application updated and resubmitted on ${new Date().toISOString()}`,
