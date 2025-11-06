@@ -2947,11 +2947,9 @@ export class FormSubmissionsService {
       }
 
       // Validate user ownership or agent relationship
-      if (userId && submission.userId !== userId) {
-        // Check if user is an agent managing this client's submission
-        const isManagingThisSubmission = submission.travelAgentId === userId;
-
-        if (!isManagingThisSubmission) {
+      if (userId) {
+        const canAccess = await this.canAccessSubmission(userId, submission);
+        if (!canAccess) {
           throw new ForbiddenException(
             'You can only upload files to your own submissions or submissions you are managing as a travel agent',
           );
