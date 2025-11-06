@@ -169,11 +169,11 @@ export class FormSubmissionsService {
           description: form.description,
           country: form.country
             ? {
-              id: form.country.id,
-              name: form.country.name,
-              isoCode2: form.country.isoCode2,
-              flag: form.country.flag,
-            }
+                id: form.country.id,
+                name: form.country.name,
+                isoCode2: form.country.isoCode2,
+                flag: form.country.flag,
+              }
             : undefined,
           sections: sectionsCount,
           estimatedTime,
@@ -265,12 +265,12 @@ export class FormSubmissionsService {
       currentResponses,
       submission: submission
         ? {
-          id: submission.id,
-          status: submission.status,
-          submittedAt: submission.submittedAt,
-          createdAt: submission.createdAt,
-          updatedAt: submission.updatedAt,
-        }
+            id: submission.id,
+            status: submission.status,
+            submittedAt: submission.submittedAt,
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
+          }
         : null,
     };
   }
@@ -374,15 +374,15 @@ export class FormSubmissionsService {
         ...(travelAgentId && { travelAgentId }),
         responses: responses
           ? {
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId instead of formFieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-              instanceIndex: response.instanceIndex ?? 0,
-            })),
-          }
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId instead of formFieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+                instanceIndex: response.instanceIndex ?? 0,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -439,11 +439,11 @@ export class FormSubmissionsService {
       submission = await this.prisma.formSubmission.findFirst({
         where: {
           id: submissionId,
-          userId,
           formId,
           status: {
             in: [SubmissionStatus.DRAFT, SubmissionStatus.PENDING_PAYMENT],
           },
+          OR: [{ userId }, { travelAgentId: userId }],
         },
       });
 
@@ -456,9 +456,9 @@ export class FormSubmissionsService {
       // Look for existing draft submission
       submission = await this.prisma.formSubmission.findFirst({
         where: {
-          userId,
           formId,
           status: SubmissionStatus.DRAFT,
+          OR: [{ userId }, { travelAgentId: userId }],
         },
       });
     }
@@ -466,8 +466,8 @@ export class FormSubmissionsService {
     // Get existing responses for validation (to check FILE fields)
     const existingResponses = submission
       ? await this.prisma.fieldResponse.findMany({
-        where: { submissionId: submission.id },
-      })
+          where: { submissionId: submission.id },
+        })
       : [];
 
     // Validate submission against form template
@@ -643,12 +643,12 @@ export class FormSubmissionsService {
    * Delete submission and clean up associated files
    */
   async deleteSubmission(userId: string, submissionId: string): Promise<void> {
-    // Verify ownership and get submission with responses
+    // Verify ownership/agent access and get submission with responses
     const submission = await this.prisma.formSubmission.findFirst({
       where: {
         id: submissionId,
-        userId,
         isCancelled: false,
+        OR: [{ userId }, { travelAgentId: userId }],
       },
       include: {
         responses: true,
@@ -785,9 +785,9 @@ export class FormSubmissionsService {
       submission = await this.prisma.formSubmission.findFirst({
         where: {
           id: submissionId,
-          userId,
           formId,
           status: SubmissionStatus.DRAFT,
+          OR: [{ userId }, { travelAgentId: userId }],
         },
       });
 
@@ -800,9 +800,9 @@ export class FormSubmissionsService {
       // Look for existing draft submission
       submission = await this.prisma.formSubmission.findFirst({
         where: {
-          userId,
           formId,
           status: SubmissionStatus.DRAFT,
+          OR: [{ userId }, { travelAgentId: userId }],
         },
       });
     }
@@ -1086,6 +1086,26 @@ export class FormSubmissionsService {
     };
   }
 
+  /**
+   * Check if a user can access a submission (owner or managing agent)
+   */
+  private async canAccessSubmission(
+    userId: string,
+    submission: { userId: string; travelAgentId: string | null },
+  ): Promise<boolean> {
+    // Owner can always access
+    if (submission.userId === userId) {
+      return true;
+    }
+
+    // Agent managing this submission can access
+    if (submission.travelAgentId === userId) {
+      return true;
+    }
+
+    return false;
+  }
+
   async getSubmissionById(
     userId: string,
     submissionId: string,
@@ -1099,8 +1119,8 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (submission.userId !== userId && userId !== 'admin') {
-      // Allow admin access
+    const canAccess = await this.canAccessSubmission(userId, submission);
+    if (!canAccess) {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -1120,8 +1140,8 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (submission.userId !== userId) {
-      // Allow admin access
+    const canAccess = await this.canAccessSubmission(userId, submission);
+    if (!canAccess) {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -1141,7 +1161,11 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (existingSubmission.userId !== userId) {
+    const canAccess = await this.canAccessSubmission(
+      userId,
+      existingSubmission,
+    );
+    if (!canAccess) {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -1157,15 +1181,15 @@ export class FormSubmissionsService {
         ...submissionData,
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId, // Use fieldId
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId, // Use fieldId
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
       },
       include: this.getSubmissionInclude(),
@@ -1191,7 +1215,11 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (existingSubmission.userId !== userId) {
+    const canAccess = await this.canAccessSubmission(
+      userId,
+      existingSubmission,
+    );
+    if (!canAccess) {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -1219,15 +1247,15 @@ export class FormSubmissionsService {
         submittedAt: new Date(), // Update submission date
         responses: responses
           ? {
-            deleteMany: {},
-            create: responses.map((response) => ({
-              fieldId: response.fieldId,
-              fieldName: response.fieldName,
-              value: response.value,
-              fileUrls: response.fileUrls || [],
-              metadata: response.metadata,
-            })),
-          }
+              deleteMany: {},
+              create: responses.map((response) => ({
+                fieldId: response.fieldId,
+                fieldName: response.fieldName,
+                value: response.value,
+                fileUrls: response.fileUrls || [],
+                metadata: response.metadata,
+              })),
+            }
           : undefined,
         statusLogs: {
           create: {
@@ -1249,13 +1277,14 @@ export class FormSubmissionsService {
   /**
    * Get queried applications for a user
    * These are applications that need additional information or documents
+   * Includes both personal applications and applications managed by the agent
    */
   async getQueriedSubmissions(userId: string): Promise<FormSubmissionDto[]> {
     const submissions = await this.prisma.formSubmission.findMany({
       where: {
-        userId,
         status: SubmissionStatus.QUERIED,
         isQueried: true,
+        OR: [{ userId }, { travelAgentId: userId }],
       },
       include: this.getSubmissionInclude(),
       orderBy: { queriedAt: 'desc' },
@@ -1283,7 +1312,8 @@ export class FormSubmissionsService {
       throw new NotFoundException(FORM_SUBMISSION_NOT_FOUND);
     }
 
-    if (submission.userId !== userId) {
+    const canAccess = await this.canAccessSubmission(userId, submission);
+    if (!canAccess) {
       throw new ForbiddenException(FORBIDDEN_RESOURCE);
     }
 
@@ -1973,40 +2003,40 @@ export class FormSubmissionsService {
       case 'REQUIRED_FILE':
         return new BadRequestException(
           `The field '${fieldName}' requires a file upload. ` +
-          `Please upload a file or contact support if you need help. ` +
-          `Supported formats: ${this.getSupportedFileTypes(field)}`,
+            `Please upload a file or contact support if you need help. ` +
+            `Supported formats: ${this.getSupportedFileTypes(field)}`,
         );
 
       case 'REQUIRED_FIELD':
         return new BadRequestException(
           `The field '${fieldName}' is required to complete your submission. ` +
-          `Please fill in this information before proceeding.`,
+            `Please fill in this information before proceeding.`,
         );
 
       case 'INVALID_FILE_TYPE':
         const allowedTypes = this.getSupportedFileTypes(field);
         return new BadRequestException(
           `The file type for '${fieldName}' is not supported. ` +
-          `Allowed types: ${allowedTypes}. Please try uploading a different file.`,
+            `Allowed types: ${allowedTypes}. Please try uploading a different file.`,
         );
 
       case 'FILE_TOO_LARGE':
         const maxSize = field.fileTypes?.maxSize || '10MB';
         return new BadRequestException(
           `The file for '${fieldName}' is too large. ` +
-          `Maximum size allowed: ${maxSize}. Please compress or resize your file.`,
+            `Maximum size allowed: ${maxSize}. Please compress or resize your file.`,
         );
 
       case 'MULTIPLE_FILES_NOT_ALLOWED':
         return new BadRequestException(
           `The field '${fieldName}' only accepts a single file. ` +
-          `Please upload only one file for this field.`,
+            `Please upload only one file for this field.`,
         );
 
       default:
         return new BadRequestException(
           `There's an issue with the field '${fieldName}'. ` +
-          `Please check your input and try again. If the problem persists, contact support.`,
+            `Please check your input and try again. If the problem persists, contact support.`,
         );
     }
   }
@@ -2399,13 +2429,13 @@ export class FormSubmissionsService {
       biometricCompletedAt: submission.biometricCompletedAt,
       biometricAppointment: submission.appointment
         ? {
-          id: submission.appointment.id,
-          centerId: submission.appointment.centerId,
-          centerName: submission.appointment.center?.name,
-          appointmentTime: submission.appointment.appointmentTime,
-          status: submission.appointment.status,
-          appointmentClass: submission.appointment.appointmentClass,
-        }
+            id: submission.appointment.id,
+            centerId: submission.appointment.centerId,
+            centerName: submission.appointment.center?.name,
+            appointmentTime: submission.appointment.appointmentTime,
+            status: submission.appointment.status,
+            appointmentClass: submission.appointment.appointmentClass,
+          }
         : undefined,
 
       // Flag management
@@ -2461,11 +2491,11 @@ export class FormSubmissionsService {
         description: submission.form.description,
         applicationType: submission.form.applicationType
           ? {
-            id: submission.form.applicationType.id,
-            code: submission.form.applicationType.code,
-            name: submission.form.applicationType.name,
-            description: submission.form.applicationType.description,
-          }
+              id: submission.form.applicationType.id,
+              code: submission.form.applicationType.code,
+              name: submission.form.applicationType.name,
+              description: submission.form.applicationType.description,
+            }
           : undefined,
         country: submission.form.country,
         availableServiceFees:
@@ -2625,19 +2655,19 @@ export class FormSubmissionsService {
         minutesUntilAppointment,
         center: submission.appointment.center
           ? {
-            name: submission.appointment.center.name,
-            address: submission.appointment.center.address,
-            city: submission.appointment.center.city,
-            state: submission.appointment.center.state,
-            phone: submission.appointment.center.phone,
-          }
+              name: submission.appointment.center.name,
+              address: submission.appointment.center.address,
+              city: submission.appointment.center.city,
+              state: submission.appointment.center.state,
+              phone: submission.appointment.center.phone,
+            }
           : null,
         booth: submission.appointment.queueEntry?.booth
           ? {
-            boothNumber: submission.appointment.queueEntry.booth.boothNumber,
-            appointmentClass:
-              submission.appointment.queueEntry.booth.appointmentClass,
-          }
+              boothNumber: submission.appointment.queueEntry.booth.boothNumber,
+              appointmentClass:
+                submission.appointment.queueEntry.booth.appointmentClass,
+            }
           : null,
       };
     }
@@ -2658,12 +2688,12 @@ export class FormSubmissionsService {
         name: submission.form.name,
         country: submission.form.country
           ? {
-            name: submission.form.country.name,
-            isoCode2: submission.form.country.isoCode2,
-            isoCode3: submission.form.country.isoCode3,
-            flag: submission.form.country.flag,
-            logoUrl: submission.form.country.logoUrl,
-          }
+              name: submission.form.country.name,
+              isoCode2: submission.form.country.isoCode2,
+              isoCode3: submission.form.country.isoCode3,
+              flag: submission.form.country.flag,
+              logoUrl: submission.form.country.logoUrl,
+            }
           : null,
       },
       submission: {
@@ -2916,11 +2946,16 @@ export class FormSubmissionsService {
         );
       }
 
-      // Validate user ownership
+      // Validate user ownership or agent relationship
       if (userId && submission.userId !== userId) {
-        throw new ForbiddenException(
-          'You can only upload files to your own submissions',
-        );
+        // Check if user is an agent managing this client's submission
+        const isManagingThisSubmission = submission.travelAgentId === userId;
+
+        if (!isManagingThisSubmission) {
+          throw new ForbiddenException(
+            'You can only upload files to your own submissions or submissions you are managing as a travel agent',
+          );
+        }
       }
 
       // Validate that the field belongs to the submission's form
