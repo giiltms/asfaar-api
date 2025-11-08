@@ -82,12 +82,12 @@ export class UserController {
   @ApiOperation({
     summary: 'Get current user profile',
     description:
-      "Get the authenticated user's profile including addresses, NIN verification details, and personal information",
+      "Get the authenticated user's profile including addresses, NIN verification details, and personal information. For travel agents, includes company profile and license information.",
   })
   @ApiResponse({
     status: 200,
     description:
-      'Current user profile retrieved successfully including addresses and NIN verification',
+      'Current user profile retrieved successfully. For travel agents, includes travelAgentProfile and travelAgentLicense.',
     schema: {
       type: 'object',
       properties: {
@@ -99,21 +99,21 @@ export class UserController {
               type: 'object',
               example: {
                 id: '123e4567-e89b-12d3-a456-426614174000',
-                email: 'john.doe@example.com',
+                email: 'agent@example.com',
                 firstName: 'John',
                 lastName: 'Doe',
                 fullName: 'John Doe',
-                roles: ['APPLICANT'],
+                roles: ['AGENCY'],
                 isVerified: true,
-                onboardingPaid: false,
+                onboardingPaid: true,
                 addresses: [
                   {
                     id: 'addr123-456',
                     type: 'HOME',
                     addressLine1: '123 Main Street',
-                    city: 'New York',
-                    state: 'NY',
-                    country: 'United States',
+                    city: 'Lagos',
+                    state: 'Lagos',
+                    country: 'Nigeria',
                     isDefault: true,
                   },
                 ],
@@ -121,7 +121,7 @@ export class UserController {
                   id: 'addr123-456',
                   type: 'HOME',
                   addressLine1: '123 Main Street',
-                  city: 'New York',
+                  city: 'Lagos',
                   isDefault: true,
                 },
                 currentNinVerification: {
@@ -138,15 +138,58 @@ export class UserController {
                   state: 'Lagos',
                   country: 'Nigeria',
                 },
-                ninVerifications: [
-                  {
-                    id: 'nin123-456',
-                    nin: '12345678901',
-                    verificationStatus: 'VERIFIED',
-                    verificationDate: '2024-01-15T10:30:00Z',
-                    createdAt: '2024-01-15T10:00:00Z',
+                travelAgentProfile: {
+                  id: 'profile-uuid',
+                  userId: '123e4567-e89b-12d3-a456-426614174000',
+                  sourceApplicationId: 'application-uuid',
+                  company: {
+                    companyName: 'ABC Travel Agency Ltd',
+                    companyEmail: 'info@abctravel.com',
+                    companyPhone: '+2349012345678',
                   },
-                ],
+                  registration: {
+                    cacNumber: 'RC123456',
+                    cacDocumentUrl: 'https://example.com/cac-document.pdf',
+                    tinNumber: '12345678-0001',
+                    taxClearanceDocumentUrl:
+                      'https://example.com/tax-clearance.pdf',
+                  },
+                  compliance: {
+                    nahconLicenseNumber: 'NAHCON-2024-001',
+                    nahconDocumentUrl: 'https://example.com/nahcon-license.pdf',
+                    dssClearanceNumber: 'DSS-2024-001',
+                    dssDocumentUrl: 'https://example.com/dss-clearance.pdf',
+                    efccScumlNumber: 'EFCC-2024-001',
+                    efccScumlDocumentUrl: 'https://example.com/efcc-scuml.pdf',
+                  },
+                  certifications: {
+                    iataAccreditationNumber: 'IATA-2024-001',
+                    iataDocumentUrl: 'https://example.com/iata-certificate.pdf',
+                    nantaMembershipNumber: 'NANTA-2024-001',
+                    nantaDocumentUrl: 'https://example.com/nanta-membership.pdf',
+                  },
+                  bankAccount: {
+                    bankName: 'Access Bank',
+                    bankCode: '044',
+                    accountNumber: '1234567890',
+                    accountName: 'ABC Travel Agency Ltd',
+                    isVerified: true,
+                    verifiedAt: '2024-01-15T10:00:00Z',
+                  },
+                },
+                travelAgentLicense: {
+                  id: 'license-uuid',
+                  licenseNumber: 'AGT-2025-000001',
+                  licenseType: 'REGULAR_TRAVEL_AGENT',
+                  status: 'ACTIVE',
+                  issuedAt: '2024-01-15T10:00:00Z',
+                  expiresAt: '2025-01-15T10:00:00Z',
+                  application: {
+                    id: 'application-uuid',
+                    applicationType: 'REGULAR_TRAVEL_AGENT',
+                    companyName: 'ABC Travel Agency Ltd',
+                  },
+                },
               },
             },
           ],
