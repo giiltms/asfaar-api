@@ -161,7 +161,10 @@ export class TravelAgentLicenseNotificationsService {
       userId: license.user.id,
       userEmail: license.user.email,
       userName: `${license.user.firstName} ${license.user.lastName}`,
-      companyName: license.application?.companyName || 'N/A',
+      companyName:
+        license.user?.travelAgentProfile?.company?.companyName ||
+        license.application?.companyName ||
+        'N/A',
       expiresAt: license.expiresAt,
       daysUntilExpiry,
     };

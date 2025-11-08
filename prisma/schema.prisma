@@ -187,6 +187,7 @@ model User {
   upgradeApplications         TravelAgentUpgradeApplication[]
   reviewedUpgradeApplications TravelAgentUpgradeApplication[] @relation("UpgradeReviewer")
   travelAgentLicense          TravelAgentLicense?
+  travelAgentProfile          TravelAgentProfile?
   // Travel Agent Client Relations
   managedClients              TravelAgentClient[]             @relation("AgentClients")
   managingAgents              TravelAgentClient[]             @relation("ClientUsers")
@@ -1628,6 +1629,9 @@ model TravelAgentUpgradeApplication {
   // License relation (created when application is approved)
   licenses TravelAgentLicense[] @relation("ApplicationLicenses")
 
+  // Profile relation (created when application is approved)
+  profile TravelAgentProfile? @relation
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1771,6 +1775,118 @@ model TravelAgentLicenseDurationConfig {
   updatedAt DateTime @updatedAt
 
   @@map("travel_agent_license_duration_configs")
+}
+
+model TravelAgentProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Source application that this profile reflects
+  sourceApplicationId String                        @unique
+  sourceApplication   TravelAgentUpgradeApplication @relation(fields: [sourceApplicationId], references: [id])
+
+  // Normalized relations (1:1)
+  company        TravelAgentProfileCompany?
+  registration   TravelAgentProfileRegistration?
+  compliance     TravelAgentProfileCompliance?
+  certifications TravelAgentProfileCertifications?
+  bankAccount    TravelAgentProfileBankAccount?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sourceApplicationId])
+  @@map("travel_agent_profiles")
+}
+
+// Normalized profile tables (1:1 per profile)
+
+model TravelAgentProfileCompany {
+  id        String             @id @default(uuid())
+  profileId String             @unique
+  profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  companyName  String
+  companyEmail String
+  companyPhone String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_profile_company")
+}
+
+model TravelAgentProfileRegistration {
+  id        String             @id @default(uuid())
+  profileId String             @unique
+  profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  cacNumber               String
+  cacDocumentUrl          String?
+  tinNumber               String
+  taxClearanceDocumentUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_profile_registration")
+}
+
+model TravelAgentProfileCompliance {
+  id        String             @id @default(uuid())
+  profileId String             @unique
+  profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  nahconLicenseNumber  String
+  nahconDocumentUrl    String?
+  dssClearanceNumber   String
+  dssDocumentUrl       String?
+  efccScumlNumber      String
+  efccScumlDocumentUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_profile_compliance")
+}
+
+model TravelAgentProfileCertifications {
+  id        String             @id @default(uuid())
+  profileId String             @unique
+  profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  iataAccreditationNumber String?
+  iataDocumentUrl         String?
+  nantaMembershipNumber   String?
+  nantaDocumentUrl        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_profile_certifications")
+}
+
+model TravelAgentProfileBankAccount {
+  id        String             @id @default(uuid())
+  profileId String             @unique
+  profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  bankName      String
+  bankCode      String
+  accountNumber String
+  accountName   String
+  isVerified    Boolean @default(false)
+
+  verifiedAt            DateTime?
+  verificationReference String?
+  bankApiResponse       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("travel_agent_profile_bank_accounts")
 }
 
 model TravelAgentClient {

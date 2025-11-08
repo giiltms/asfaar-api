@@ -32,6 +32,16 @@ async function sendLicenseStatusChangeEmail(
             email: true,
             firstName: true,
             lastName: true,
+            travelAgentProfile: {
+              select: {
+                id: true,
+                company: {
+                  select: {
+                    companyName: true,
+                  },
+                },
+              },
+            },
           },
         },
         application: {
@@ -55,7 +65,11 @@ async function sendLicenseStatusChangeEmail(
     const userName = `${user.firstName} ${user.lastName}`;
     const userEmail = user.email;
     const licenseNumber = license.licenseNumber;
-    const companyName = license.application?.companyName || 'N/A';
+    // Use profile with fallback to application for backward compatibility
+    const companyName =
+      user.travelAgentProfile?.company?.companyName ||
+      license.application?.companyName ||
+      'N/A';
 
     // Send appropriate notification based on status
     switch (newStatus) {

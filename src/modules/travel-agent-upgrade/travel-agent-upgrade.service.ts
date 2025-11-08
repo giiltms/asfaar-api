@@ -420,15 +420,133 @@ export class TravelAgentUpgradeService {
       reviewerId,
     );
 
-    // Replace user roles with AGENCY role only
-    await this.prisma.user.update({
-      where: { id: application.userId },
-      data: { roles: [Roles.AGENCY] },
-    });
+    // Use transaction to ensure atomicity - all or nothing
+    // Includes: user role update, profile creation/update, and application status update
+    const updatedApplication = await this.prisma.$transaction(async (tx) => {
+      // Replace user roles with AGENCY role only
+      await tx.user.update({
+        where: { id: application.userId },
+        data: { roles: [Roles.AGENCY] },
+      });
 
-    // Update application status
-    const updatedApplication =
-      await this.prisma.travelAgentUpgradeApplication.update({
+      // Main profile
+      const profile = await tx.travelAgentProfile.upsert({
+        where: { userId: application.userId },
+        create: {
+          userId: application.userId,
+          sourceApplicationId: applicationId,
+        },
+        update: {
+          sourceApplicationId: applicationId,
+        },
+      });
+
+      // Company
+      await tx.travelAgentProfileCompany.upsert({
+        where: { profileId: profile.id },
+        create: {
+          profileId: profile.id,
+          companyName: application.companyName,
+          companyEmail: application.companyEmail,
+          companyPhone: application.companyPhone,
+        },
+        update: {
+          companyName: application.companyName,
+          companyEmail: application.companyEmail,
+          companyPhone: application.companyPhone,
+        },
+      });
+
+      // Registration
+      await tx.travelAgentProfileRegistration.upsert({
+        where: { profileId: profile.id },
+        create: {
+          profileId: profile.id,
+          cacNumber: application.cacNumber,
+          cacDocumentUrl: application.cacDocumentUrl,
+          tinNumber: application.tinNumber,
+          taxClearanceDocumentUrl: application.taxClearanceDocumentUrl,
+        },
+        update: {
+          cacNumber: application.cacNumber,
+          cacDocumentUrl: application.cacDocumentUrl,
+          tinNumber: application.tinNumber,
+          taxClearanceDocumentUrl: application.taxClearanceDocumentUrl,
+        },
+      });
+
+      // Compliance
+      await tx.travelAgentProfileCompliance.upsert({
+        where: { profileId: profile.id },
+        create: {
+          profileId: profile.id,
+          nahconLicenseNumber: application.nahconLicenseNumber,
+          nahconDocumentUrl: application.nahconDocumentUrl,
+          dssClearanceNumber: application.dssClearanceNumber,
+          dssDocumentUrl: application.dssDocumentUrl,
+          efccScumlNumber: application.efccScumlNumber,
+          efccScumlDocumentUrl: application.efccScumlDocumentUrl,
+        },
+        update: {
+          nahconLicenseNumber: application.nahconLicenseNumber,
+          nahconDocumentUrl: application.nahconDocumentUrl,
+          dssClearanceNumber: application.dssClearanceNumber,
+          dssDocumentUrl: application.dssDocumentUrl,
+          efccScumlNumber: application.efccScumlNumber,
+          efccScumlDocumentUrl: application.efccScumlDocumentUrl,
+        },
+      });
+
+      // Certifications
+      await tx.travelAgentProfileCertifications.upsert({
+        where: { profileId: profile.id },
+        create: {
+          profileId: profile.id,
+          iataAccreditationNumber: application.iataAccreditationNumber || undefined,
+          iataDocumentUrl: application.iataDocumentUrl || undefined,
+          nantaMembershipNumber: application.nantaMembershipNumber || undefined,
+          nantaDocumentUrl: application.nantaDocumentUrl || undefined,
+        },
+        update: {
+          iataAccreditationNumber: application.iataAccreditationNumber || undefined,
+          iataDocumentUrl: application.iataDocumentUrl || undefined,
+          nantaMembershipNumber: application.nantaMembershipNumber || undefined,
+          nantaDocumentUrl: application.nantaDocumentUrl || undefined,
+        },
+      });
+
+      // Bank account
+      if (application.bankDetails) {
+        await tx.travelAgentProfileBankAccount.upsert({
+          where: { profileId: profile.id },
+          create: {
+            profileId: profile.id,
+            bankName: application.bankDetails.bankName,
+            bankCode: application.bankDetails.bankCode,
+            accountNumber: application.bankDetails.accountNumber,
+            accountName: application.bankDetails.accountName,
+            isVerified: application.bankDetails.isVerified,
+            verifiedAt: application.bankDetails.verifiedAt || undefined,
+            verificationReference:
+              application.bankDetails.verificationReference || undefined,
+            bankApiResponse: application.bankDetails.bankApiResponse || undefined,
+          },
+          update: {
+            bankName: application.bankDetails.bankName,
+            bankCode: application.bankDetails.bankCode,
+            accountNumber: application.bankDetails.accountNumber,
+            accountName: application.bankDetails.accountName,
+            isVerified: application.bankDetails.isVerified,
+            verifiedAt: application.bankDetails.verifiedAt || undefined,
+            verificationReference:
+              application.bankDetails.verificationReference || undefined,
+            bankApiResponse: application.bankDetails.bankApiResponse || undefined,
+          },
+        });
+      }
+
+      // Update application status
+      return await tx.travelAgentUpgradeApplication.update({
         where: { id: applicationId },
         data: {
           status: UpgradeApplicationStatus.APPROVED,
@@ -438,6 +556,7 @@ export class TravelAgentUpgradeService {
         },
         include: { user: true },
       });
+    });
 
     return { application: updatedApplication, license };
   }

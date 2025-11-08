@@ -101,6 +101,11 @@ export class TravelAgentLicenseService {
             email: true,
             firstName: true,
             lastName: true,
+            travelAgentProfile: {
+              select: {
+                id: true,
+              },
+            },
           },
         },
         application: {
@@ -133,6 +138,11 @@ export class TravelAgentLicenseService {
             email: true,
             firstName: true,
             lastName: true,
+            travelAgentProfile: {
+              select: {
+                id: true,
+              },
+            },
           },
         },
         application: {
@@ -576,6 +586,16 @@ export class TravelAgentLicenseService {
             email: true,
             firstName: true,
             lastName: true,
+            travelAgentProfile: {
+              select: {
+                id: true,
+                company: {
+                  select: {
+                    companyName: true,
+                  },
+                },
+              },
+            },
           },
         },
         application: {
