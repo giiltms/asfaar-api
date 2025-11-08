@@ -176,6 +176,14 @@ export default class UserEntity implements User {
   @Type(() => Object)
   biometricCenters?: any[]; // Using any[] to avoid circular dependency issues
 
+  @ApiPropertyOptional({
+    description: 'Travel agent license/certificate (for agents only)',
+    type: 'object',
+  })
+  @Expose()
+  @Type(() => Object)
+  travelAgentLicense?: any; // Travel agent license with license number, status, expiry, etc.
+
   @Expose()
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`.trim();
