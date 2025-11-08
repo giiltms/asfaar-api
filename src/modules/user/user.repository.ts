@@ -75,6 +75,15 @@ export class UserRepository {
             logoUrl: true,
           },
         },
+        travelAgentProfile: {
+          include: {
+            company: true,
+            registration: true,
+            compliance: true,
+            certifications: true,
+            bankAccount: true,
+          },
+        },
         travelAgentLicense: {
           include: {
             application: {
