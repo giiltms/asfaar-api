@@ -135,26 +135,12 @@ export default class UserEntity implements User {
   country?: any; // Using any to avoid circular dependency issues
 
   @ApiPropertyOptional({
-    description: 'User NIN verifications (most recent first)',
-    type: 'object',
-    isArray: true,
-  })
-  @Expose()
-  @Type(() => Object)
-  ninVerifications?: any[]; // Using any[] to avoid circular dependency issues
-
-  @ApiPropertyOptional({
     description: 'Current/latest NIN verification details',
     type: 'object',
   })
   @Expose()
-  @Transform(({ obj }) => {
-    // Return the most recent NIN verification
-    return obj.ninVerifications?.[0] || null;
-  })
-  get currentNinVerification(): any {
-    return this.ninVerifications?.[0] || null;
-  }
+  @Type(() => Object)
+  currentNinVerification?: any; // Single NIN verification object (mapped from array in service)
 
   @ApiPropertyOptional({
     description: 'Centers assigned to the user',

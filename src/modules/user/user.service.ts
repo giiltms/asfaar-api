@@ -29,7 +29,17 @@ export class UserService {
     if (!user) {
       throw new NotFoundException(USER_NOT_FOUND);
     }
-    return new UserEntity(user);
+
+    // Transform ninVerifications array to currentNinVerification single object
+    // Since we only fetch 1 item (take: 1), we extract it here
+    const userWithRelations = user as any; // Type assertion needed due to Prisma include types
+    const userWithCurrentNin = {
+      ...user,
+      currentNinVerification: userWithRelations.ninVerifications?.[0] || null,
+      ninVerifications: undefined, // Remove array, we only need the single object
+    };
+
+    return new UserEntity(userWithCurrentNin);
   }
 
   async findOne(id: string): Promise<UserEntity> {
