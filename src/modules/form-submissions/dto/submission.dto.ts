@@ -890,12 +890,12 @@ export class SubmissionQueryDto {
 
   @ApiPropertyOptional({
     description: 'Sort by field',
-    example: 'createdAt',
-    enum: ['createdAt', 'submittedAt', 'status', 'formName', 'userName'],
+    example: 'updatedAt',
+    enum: ['createdAt', 'updatedAt', 'submittedAt', 'status', 'formName', 'userName'],
   })
   @IsOptional()
   @IsString()
-  sortBy?: string = 'createdAt';
+  sortBy?: string = 'updatedAt';
 
   @ApiPropertyOptional({
     description: 'Sort order',
