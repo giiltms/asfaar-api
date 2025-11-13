@@ -13,6 +13,7 @@ import {
   FieldOption,
   SubmissionStatus,
   Prisma,
+  FieldType,
 } from '@prisma/client';
 import {
   CreateFormDto,
@@ -86,38 +87,38 @@ export class FormsService {
         ...(countryId ? { country: { connect: { id: countryId } } } : {}),
         ...(createFormDto.applicationType
           ? {
-              applicationType: {
-                connect: { code: createFormDto.applicationType },
-              },
-            }
+            applicationType: {
+              connect: { code: createFormDto.applicationType },
+            },
+          }
           : {}),
         sections: sections
           ? {
-              create: sections.map((section) => ({
-                ...section,
-                config: section.config,
-                groups: section.groups
-                  ? {
-                      create: section.groups.map((group) => ({
-                        ...group,
-                        config: group.config,
-                        fields: group.fields
-                          ? {
-                              create: group.fields.map((field) => ({
-                                ...field,
-                                options: field.options
-                                  ? {
-                                      create: field.options,
-                                    }
-                                  : undefined,
-                              })),
+            create: sections.map((section) => ({
+              ...section,
+              config: section.config,
+              groups: section.groups
+                ? {
+                  create: section.groups.map((group) => ({
+                    ...group,
+                    config: group.config,
+                    fields: group.fields
+                      ? {
+                        create: group.fields.map((field) => ({
+                          ...field,
+                          options: field.options
+                            ? {
+                              create: field.options,
                             }
-                          : undefined,
-                      })),
-                    }
-                  : undefined,
-              })),
-            }
+                            : undefined,
+                        })),
+                      }
+                      : undefined,
+                  })),
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: this.getFormInclude(),
@@ -389,22 +390,22 @@ export class FormsService {
         formId,
         groups: sectionDto.groups
           ? {
-              create: sectionDto.groups.map((group) => ({
-                ...group,
-                fields: group.fields
-                  ? {
-                      create: group.fields.map((field) => ({
-                        ...field,
-                        options: field.options
-                          ? {
-                              create: field.options,
-                            }
-                          : undefined,
-                      })),
-                    }
-                  : undefined,
-              })),
-            }
+            create: sectionDto.groups.map((group) => ({
+              ...group,
+              fields: group.fields
+                ? {
+                  create: group.fields.map((field) => ({
+                    ...field,
+                    options: field.options
+                      ? {
+                        create: field.options,
+                      }
+                      : undefined,
+                  })),
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -484,15 +485,15 @@ export class FormsService {
         sectionId,
         fields: groupDto.fields
           ? {
-              create: groupDto.fields.map((field) => ({
-                ...field,
-                options: field.options
-                  ? {
-                      create: field.options,
-                    }
-                  : undefined,
-              })),
-            }
+            create: groupDto.fields.map((field) => ({
+              ...field,
+              options: field.options
+                ? {
+                  create: field.options,
+                }
+                : undefined,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -584,14 +585,21 @@ export class FormsService {
       throw new ConflictException(DUPLICATE_FIELD_NAME);
     }
 
+    // Validate that sampleFile is only set for FILE fields
+    if (fieldDto.sampleFile && fieldDto.type !== FieldType.FILE) {
+      throw new BadRequestException(
+        'sampleFile can only be set for FILE type fields',
+      );
+    }
+
     const field = await this.prisma.formField.create({
       data: {
         ...fieldDto,
         groupId,
         options: fieldDto.options
           ? {
-              create: fieldDto.options,
-            }
+            create: fieldDto.options,
+          }
           : undefined,
       },
       include: {
@@ -613,6 +621,14 @@ export class FormsService {
 
     // Exclude nested fields for update operation
     const { options, ...fieldData } = updateFieldDto;
+
+    // Validate that sampleFile is only set for FILE fields
+    const finalFieldType = updateFieldDto.type ?? field.type;
+    if (updateFieldDto.sampleFile && finalFieldType !== FieldType.FILE) {
+      throw new BadRequestException(
+        'sampleFile can only be set for FILE type fields',
+      );
+    }
 
     const updatedField = await this.prisma.formField.update({
       where: { id },
@@ -820,6 +836,51 @@ export class FormsService {
     return { message: 'All service fees removed from form successfully' };
   }
 
+  /**
+   * Upload sample file for form fields
+   * Returns JSON object that can be used in sampleFile field
+   */
+  async uploadSampleFile(file: Express.Multer.File): Promise<{
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+  }> {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Create samples directory if it doesn't exist
+    const uploadsDir =
+      process.env.NODE_ENV === 'production'
+        ? '/app/uploads'
+        : path.join(process.cwd(), 'uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const samplesDir = path.join(uploadsDir, 'samples');
+    fs.mkdirSync(samplesDir, { recursive: true });
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedFileName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const fileName = `sample_${timestamp}_${sanitizedFileName}`;
+
+    // Full path for the file
+    const filePath = path.join(samplesDir, fileName);
+
+    // Write file
+    fs.writeFileSync(filePath, file.buffer as unknown as Uint8Array);
+
+    // Return the URL that will be served by static middleware
+    const fileUrl = `/uploads/samples/${fileName}`;
+
+    return {
+      fileUrl,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    };
+  }
+
   // Helper Methods
   private getFormInclude() {
     return {
@@ -912,6 +973,8 @@ export class FormsService {
             metadata: field.metadata,
             source: field.source,
             fileTypes: field.fileTypes,
+            content: field.content,
+            sampleFile: field.sampleFile,
             order: field.order,
             options: field.options.map((option: any) => ({
               id: option.id,
@@ -943,12 +1006,12 @@ export class FormsService {
         })) || [],
       country: form.country
         ? {
-            id: form.country.id,
-            name: form.country.name,
-            isoCode2: form.country.isoCode2,
-            flag: form.country.flag,
-            logoUrl: form.country.logoUrl,
-          }
+          id: form.country.id,
+          name: form.country.name,
+          isoCode2: form.country.isoCode2,
+          flag: form.country.flag,
+          logoUrl: form.country.logoUrl,
+        }
         : undefined,
     };
   }
@@ -976,18 +1039,18 @@ export class FormsService {
       status: 'draft', // TODO: Add status field to schema
       applicationType: form.applicationType
         ? {
-            code: form.applicationType.code,
-            name: form.applicationType.name,
-          }
+          code: form.applicationType.code,
+          name: form.applicationType.name,
+        }
         : undefined,
       country: form.country
         ? {
-            id: form.country.id,
-            name: form.country.name,
-            isoCode2: form.country.isoCode2,
-            flag: form.country.flag,
-            logoUrl: form.country.logoUrl,
-          }
+          id: form.country.id,
+          name: form.country.name,
+          isoCode2: form.country.isoCode2,
+          flag: form.country.flag,
+          logoUrl: form.country.logoUrl,
+        }
         : undefined,
     };
   }

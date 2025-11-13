@@ -771,6 +771,7 @@ model FormField {
   fileTypes           Json? // e.g., { "accept": [".pdf", ".jpg", ".png"], "maxSize": "5MB", "multiple": false }
   content             String?    @db.Text // For INFO and AGREEMENT fields to display content
   order               Int
+  sampleFile          Json? // sample file data: { fileUrl, fileName, fileSize, mimeType }
 
   options   FieldOption[] // for SELECT / MULTISELECT
   responses FieldResponse[]

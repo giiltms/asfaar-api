@@ -66,6 +66,40 @@ export class FieldOptionDto {
   order: number;
 }
 
+// Sample File DTO
+export class SampleFileDto {
+  @ApiProperty({
+    description: 'File URL',
+    example: '/uploads/samples/sample_1234567890_passport_template.pdf',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fileUrl: string;
+
+  @ApiProperty({
+    description: 'Original file name',
+    example: 'passport_template.pdf',
+  })
+  @IsString()
+  @IsNotEmpty()
+  fileName: string;
+
+  @ApiProperty({
+    description: 'File size in bytes',
+    example: 204800,
+  })
+  @IsNumber()
+  fileSize: number;
+
+  @ApiProperty({
+    description: 'File MIME type',
+    example: 'application/pdf',
+  })
+  @IsString()
+  @IsNotEmpty()
+  mimeType: string;
+}
+
 // Field DTOs (depends on FieldOption)
 export class CreateFormFieldDto {
   @ApiProperty({
@@ -198,6 +232,23 @@ export class CreateFormFieldDto {
   @MaxLength(10000)
   content?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Sample file data for FILE fields - JSON object obtained from uploading a sample file via /forms/sample-files/upload endpoint. Contains fileUrl, fileName, fileSize, and mimeType. Applicants can download this template, fill it, and upload it back.',
+    type: SampleFileDto,
+    example: {
+      fileUrl: '/uploads/samples/sample_1234567890_passport_template.pdf',
+      fileName: 'passport_template.pdf',
+      fileSize: 204800,
+      mimeType: 'application/pdf',
+    },
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SampleFileDto)
+  @IsObject()
+  sampleFile?: SampleFileDto;
+
   @ApiProperty({
     description: 'Field order within group',
     example: 1,
@@ -274,6 +325,13 @@ export class FormFieldDto {
     required: false,
   })
   content?: string;
+
+  @ApiPropertyOptional({
+    description: 'Sample file data for FILE fields',
+    type: SampleFileDto,
+    required: false,
+  })
+  sampleFile?: SampleFileDto;
 
   @ApiProperty({ description: 'Field order' })
   order: number;

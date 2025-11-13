@@ -12,6 +12,11 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,7 +25,10 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { FormsService } from './services/forms.service';
 import {
@@ -407,6 +415,74 @@ export class FormsController {
     @Body() updateFieldDto: UpdateFormFieldDto,
   ) {
     return this.formsService.updateField(id, updateFieldDto);
+  }
+
+  @Post('sample-files/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload sample file for form field',
+    description:
+      'Upload a sample/template file that applicants can download. Returns a JSON object (fileUrl, fileName, fileSize, mimeType) that can be used in the sampleFile field when creating/updating FILE type fields.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Sample file to upload (PDF, DOC, DOCX, etc.)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Sample file uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        data: {
+          type: 'object',
+          properties: {
+            fileUrl: {
+              type: 'string',
+              example:
+                '/uploads/samples/sample_1234567890_passport_template.pdf',
+            },
+            fileName: { type: 'string', example: 'passport_template.pdf' },
+            fileSize: { type: 'number', example: 204800 },
+            mimeType: { type: 'string', example: 'application/pdf' },
+          },
+        },
+        timestamp: { type: 'string' },
+      },
+    },
+  })
+  @ApiDefaultResponse({})
+  async uploadSampleFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB max
+          new FileTypeValidator({
+            fileType: /(pdf|doc|docx|txt|jpg|jpeg|png)/i,
+          }), // Documents and images
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    const result = await this.formsService.uploadSampleFile(file);
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Delete('fields/:id')
