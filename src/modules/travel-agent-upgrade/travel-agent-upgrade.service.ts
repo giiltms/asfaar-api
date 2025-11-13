@@ -99,11 +99,11 @@ export class TravelAgentUpgradeService {
   ) {
     // Check if user has an active application with the same application type
     const activeStatuses = [
-      UpgradeApplicationStatus.DRAFT,
-      UpgradeApplicationStatus.PENDING,
-      UpgradeApplicationStatus.PENDING_PAYMENT,
-      UpgradeApplicationStatus.PENDING_REVIEW,
-      UpgradeApplicationStatus.UNDER_REVIEW,
+              UpgradeApplicationStatus.DRAFT,
+              UpgradeApplicationStatus.PENDING,
+              UpgradeApplicationStatus.PENDING_PAYMENT,
+              UpgradeApplicationStatus.PENDING_REVIEW,
+              UpgradeApplicationStatus.UNDER_REVIEW,
     ];
 
     const existingActiveApp =
@@ -399,10 +399,56 @@ export class TravelAgentUpgradeService {
     reviewerId: string,
     notes?: string,
   ) {
+    // Fetch application with all required fields explicitly
     const application =
       await this.prisma.travelAgentUpgradeApplication.findUnique({
         where: { id: applicationId },
-        include: { user: true, bankDetails: true, directors: true },
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          applicationType: true,
+          // Company information
+          companyName: true,
+          companyEmail: true,
+          companyPhone: true,
+          // Registration information
+          cacNumber: true,
+          cacDocumentUrl: true,
+          tinNumber: true,
+          taxClearanceDocumentUrl: true,
+          // Compliance information
+          nahconLicenseNumber: true,
+          nahconDocumentUrl: true,
+          dssClearanceNumber: true,
+          dssDocumentUrl: true,
+          efccScumlNumber: true,
+          efccScumlDocumentUrl: true,
+          // Certifications
+          iataAccreditationNumber: true,
+          iataDocumentUrl: true,
+          nantaMembershipNumber: true,
+          nantaDocumentUrl: true,
+          // Bank details relation
+          bankDetails: {
+            select: {
+              bankName: true,
+              bankCode: true,
+              accountNumber: true,
+              accountName: true,
+              isVerified: true,
+              verifiedAt: true,
+              verificationReference: true,
+              bankApiResponse: true,
+            },
+          },
+          // User relation (needed for userId)
+          user: {
+            select: {
+              id: true,
+            },
+          },
+        },
       });
 
     if (!application) {
@@ -502,16 +548,16 @@ export class TravelAgentUpgradeService {
         where: { profileId: profile.id },
         create: {
           profileId: profile.id,
-          iataAccreditationNumber: application.iataAccreditationNumber || undefined,
-          iataDocumentUrl: application.iataDocumentUrl || undefined,
-          nantaMembershipNumber: application.nantaMembershipNumber || undefined,
-          nantaDocumentUrl: application.nantaDocumentUrl || undefined,
+          iataAccreditationNumber: application.iataAccreditationNumber ?? null,
+          iataDocumentUrl: application.iataDocumentUrl ?? null,
+          nantaMembershipNumber: application.nantaMembershipNumber ?? null,
+          nantaDocumentUrl: application.nantaDocumentUrl ?? null,
         },
         update: {
-          iataAccreditationNumber: application.iataAccreditationNumber || undefined,
-          iataDocumentUrl: application.iataDocumentUrl || undefined,
-          nantaMembershipNumber: application.nantaMembershipNumber || undefined,
-          nantaDocumentUrl: application.nantaDocumentUrl || undefined,
+          iataAccreditationNumber: application.iataAccreditationNumber ?? null,
+          iataDocumentUrl: application.iataDocumentUrl ?? null,
+          nantaMembershipNumber: application.nantaMembershipNumber ?? null,
+          nantaDocumentUrl: application.nantaDocumentUrl ?? null,
         },
       });
 
@@ -541,9 +587,9 @@ export class TravelAgentUpgradeService {
             verificationReference:
               application.bankDetails.verificationReference || undefined,
             bankApiResponse: application.bankDetails.bankApiResponse || undefined,
-          },
-        });
-      }
+        },
+      });
+    }
 
       // Update application status
       return await tx.travelAgentUpgradeApplication.update({
@@ -580,7 +626,7 @@ export class TravelAgentUpgradeService {
     }
 
     const updatedApplication =
-      await this.prisma.travelAgentUpgradeApplication.update({
+    await this.prisma.travelAgentUpgradeApplication.update({
         where: { id: applicationId },
         data: {
           status: UpgradeApplicationStatus.REJECTED,
@@ -706,7 +752,7 @@ export class TravelAgentUpgradeService {
         return {
           success: true,
           message: 'Director identification document uploaded successfully',
-          data: {
+      data: {
             documentType: dto.documentType,
             fileUrl: dto.fileUrl,
             message: 'Use this URL when creating director information',
@@ -1076,8 +1122,8 @@ export class TravelAgentUpgradeService {
         bankDetails: true,
         directors: true,
         payment: true,
-      },
-    });
+        },
+      });
     if (!app) throw new NotFoundException('Application not found');
     return { application: app };
   }
