@@ -509,6 +509,7 @@ export class MailService {
         subject: data.subject,
         template: 'license-expiration-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           licenseNumber: data.licenseNumber,
           companyName: data.companyName,
