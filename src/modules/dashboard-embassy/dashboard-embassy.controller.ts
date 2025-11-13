@@ -31,6 +31,8 @@ import {
   EmbassyActionDto,
   EmbassyReviewFiltersDto,
   EmbassyActionResponseDto,
+  EmbassyHistoryDto,
+  EmbassyHistoryQueryDto,
 } from './dto/embassy-review.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { SubmissionStatus } from '@prisma/client';
@@ -258,6 +260,77 @@ export class DashboardEmbassyController {
     return {
       success: true,
       message: `${status} applications retrieved successfully`,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('history')
+  @ApiOperation({
+    summary: 'Get embassy review history',
+    description:
+      'Retrieve applications that the embassy officer has reviewed (approved, rejected, or requested info)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Embassy review history retrieved successfully',
+    type: EmbassyHistoryDto,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by application status',
+    example: 'APPROVED',
+  })
+  @ApiQuery({
+    name: 'action',
+    required: false,
+    enum: ['APPROVE', 'REJECT', 'REQUEST_INFO'],
+    description: 'Filter by action taken',
+    example: 'APPROVE',
+  })
+  @ApiQuery({
+    name: 'fromDate',
+    required: false,
+    type: String,
+    description: 'Filter from date (ISO 8601)',
+    example: '2024-01-01T00:00:00Z',
+  })
+  @ApiQuery({
+    name: 'toDate',
+    required: false,
+    type: String,
+    description: 'Filter to date (ISO 8601)',
+    example: '2024-12-31T23:59:59Z',
+  })
+  async getEmbassyHistory(
+    @CurrentUser() user: JwtUserPayload,
+    @Query(new ValidationPipe({ transform: true }))
+    query: EmbassyHistoryQueryDto,
+  ): Promise<BaseResponseDto<EmbassyHistoryDto>> {
+    const result = await this.dashboardEmbassyService.getEmbassyHistory(
+      user.id,
+      query,
+    );
+
+    return {
+      success: true,
+      message: 'Embassy review history retrieved successfully',
       data: result,
       timestamp: new Date().toISOString(),
     };

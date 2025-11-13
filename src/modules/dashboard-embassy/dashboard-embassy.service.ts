@@ -15,6 +15,9 @@ import {
   EmbassyActionResponseDto,
   EmbassyAction,
   EmbassyActionReason,
+  EmbassyHistoryDto,
+  EmbassyHistoryQueryDto,
+  EmbassyHistoryItemDto,
 } from './dto/embassy-review.dto';
 
 @Injectable()
@@ -631,6 +634,156 @@ export class DashboardEmbassyService {
     } catch (error) {
       this.logger.error(
         `Failed to get applications by status: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get embassy review history for an embassy officer
+   * Returns applications that the officer has reviewed (approved, rejected, or requested info)
+   */
+  async getEmbassyHistory(
+    embassyOfficerId: string,
+    query: EmbassyHistoryQueryDto,
+  ): Promise<EmbassyHistoryDto> {
+    try {
+      // Get user's assigned country
+      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+
+      this.logger.log(
+        `Getting embassy history for officer ${embassyOfficerId} in country ${countryCode}`,
+      );
+
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const skip = (page - 1) * limit;
+
+      // Get the country ID
+      const country = await this.prisma.country.findUnique({
+        where: { isoCode2: countryCode },
+        select: { id: true },
+      });
+
+      if (!country) {
+        throw new Error(`Country with code ${countryCode} not found`);
+      }
+
+      // Build where clause - applications reviewed by this officer in their country
+      const where: any = {
+        reviewedBy: embassyOfficerId,
+        reviewedAt: { not: null },
+        form: {
+          countryId: country.id,
+        },
+      };
+
+      // Apply status filter
+      if (query.status) {
+        where.status = query.status;
+      } else if (query.action) {
+        // Apply action filter by status if status not explicitly provided
+        // Note: We'll also filter in the mapping step for accuracy
+        if (query.action === EmbassyAction.APPROVE) {
+          where.status = SubmissionStatus.APPROVED;
+        } else if (query.action === EmbassyAction.REJECT) {
+          where.status = SubmissionStatus.REJECTED;
+        } else if (query.action === EmbassyAction.REQUEST_INFO) {
+          // REQUEST_INFO could be QUERIED or other statuses
+          where.status = { in: [SubmissionStatus.QUERIED, SubmissionStatus.PROCESSING] };
+        }
+      }
+
+      // Apply date range filter
+      if (query.fromDate || query.toDate) {
+        const dateFilter: any = {};
+        if (query.fromDate) {
+          dateFilter.gte = new Date(query.fromDate);
+        }
+        if (query.toDate) {
+          const endDate = new Date(query.toDate);
+          endDate.setHours(23, 59, 59, 999);
+          dateFilter.lte = endDate;
+        }
+        where.reviewedAt = dateFilter;
+      }
+
+      // Get applications
+      const [submissions, total] = await Promise.all([
+        this.prisma.formSubmission.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            form: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { reviewedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.formSubmission.count({ where }),
+      ]);
+
+      // Map to history items and filter by action if specified
+      const items: EmbassyHistoryItemDto[] = submissions
+        .map((submission) => {
+          // Determine action based on final status
+          let action: EmbassyAction;
+          if (submission.status === SubmissionStatus.APPROVED) {
+            action = EmbassyAction.APPROVE;
+          } else if (submission.status === SubmissionStatus.REJECTED) {
+            action = EmbassyAction.REJECT;
+          } else if (submission.status === SubmissionStatus.QUERIED) {
+            action = EmbassyAction.REQUEST_INFO;
+          } else {
+            // Default to REQUEST_INFO for other statuses (e.g., PROCESSING after review)
+            action = EmbassyAction.REQUEST_INFO;
+          }
+
+          return {
+            id: submission.id,
+            referenceNumber: submission.referenceNumber,
+            applicantName: submission.user
+              ? `${submission.user.firstName || ''} ${submission.user.lastName || ''}`.trim() ||
+              submission.user.email
+              : 'Unknown',
+            applicantEmail: submission.user?.email || 'N/A',
+            formName: submission.form?.name || 'Unknown',
+            status: submission.status,
+            action: action,
+            actionDate: submission.reviewedAt!,
+            reviewNotes: submission.reviewNotes,
+          };
+        })
+        .filter((item) => {
+          // Filter by action if specified
+          if (query.action) {
+            return item.action === query.action;
+          }
+          return true;
+        });
+
+      return {
+        items,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get embassy history for officer ${embassyOfficerId}: ${error.message}`,
         error.stack,
       );
       throw error;

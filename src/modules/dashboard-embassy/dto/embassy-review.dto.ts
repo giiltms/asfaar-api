@@ -5,6 +5,7 @@ import {
   IsString,
   IsUUID,
   IsNumber,
+  IsDateString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { SubmissionStatus } from '@prisma/client';
@@ -234,4 +235,89 @@ export class EmbassyActionResponseDto {
 
   @ApiProperty({ description: 'Email notification sent' })
   emailSent: boolean;
+}
+
+// Embassy History DTOs
+export class EmbassyHistoryItemDto {
+  @ApiProperty({ description: 'Application submission ID' })
+  id: string;
+
+  @ApiProperty({ description: 'Reference number' })
+  referenceNumber?: string;
+
+  @ApiProperty({ description: 'Applicant name' })
+  applicantName: string;
+
+  @ApiProperty({ description: 'Applicant email' })
+  applicantEmail: string;
+
+  @ApiProperty({ description: 'Form name' })
+  formName: string;
+
+  @ApiProperty({ description: 'Application status' })
+  status: string;
+
+  @ApiProperty({
+    description: 'Action taken (APPROVE, REJECT, REQUEST_INFO)',
+  })
+  action: string;
+
+  @ApiProperty({ description: 'Date when action was taken' })
+  actionDate: Date;
+
+  @ApiPropertyOptional({ description: 'Review notes' })
+  reviewNotes?: string;
+}
+
+export class EmbassyHistoryDto {
+  @ApiProperty({
+    description: 'List of embassy review history items',
+    type: [EmbassyHistoryItemDto],
+  })
+  items: EmbassyHistoryItemDto[];
+
+  @ApiProperty({ description: 'Total count' })
+  total: number;
+
+  @ApiProperty({ description: 'Page number' })
+  page: number;
+
+  @ApiProperty({ description: 'Items per page' })
+  limit: number;
+}
+
+export class EmbassyHistoryQueryDto {
+  @ApiPropertyOptional({ description: 'Page number' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  page?: number = 1;
+
+  @ApiPropertyOptional({ description: 'Items per page' })
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
+  @IsOptional()
+  @IsNumber()
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ description: 'Filter by status' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by action (APPROVE, REJECT, REQUEST_INFO)',
+  })
+  @IsOptional()
+  @IsEnum(EmbassyAction)
+  action?: EmbassyAction;
+
+  @ApiPropertyOptional({ description: 'Filter from date (ISO 8601)' })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: 'Filter to date (ISO 8601)' })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }
