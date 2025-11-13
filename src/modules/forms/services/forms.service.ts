@@ -28,6 +28,7 @@ import {
   UpdateFormFieldDto,
   CreateFieldOptionDto,
   FormQueryDto,
+  SampleFileDto,
 } from '../dto/form.dto';
 import {
   FORM_NOT_FOUND,
@@ -104,14 +105,20 @@ export class FormsService {
                     config: group.config,
                     fields: group.fields
                       ? {
-                        create: group.fields.map((field) => ({
-                          ...field,
-                          options: field.options
-                            ? {
-                              create: field.options,
-                            }
-                            : undefined,
-                        })),
+                        create: group.fields.map((field) => {
+                          const { sampleFile, ...restField } = field;
+                          return {
+                            ...restField,
+                            sampleFile: this.convertSampleFileToJson(
+                              sampleFile,
+                            ),
+                            options: field.options
+                              ? {
+                                create: field.options,
+                              }
+                              : undefined,
+                          };
+                        }),
                       }
                       : undefined,
                   })),
@@ -394,14 +401,18 @@ export class FormsService {
               ...group,
               fields: group.fields
                 ? {
-                  create: group.fields.map((field) => ({
-                    ...field,
-                    options: field.options
-                      ? {
-                        create: field.options,
-                      }
-                      : undefined,
-                  })),
+                  create: group.fields.map((field) => {
+                    const { sampleFile, ...restField } = field;
+                    return {
+                      ...restField,
+                      sampleFile: this.convertSampleFileToJson(sampleFile),
+                      options: field.options
+                        ? {
+                          create: field.options,
+                        }
+                        : undefined,
+                    };
+                  }),
                 }
                 : undefined,
             })),
@@ -485,14 +496,18 @@ export class FormsService {
         sectionId,
         fields: groupDto.fields
           ? {
-            create: groupDto.fields.map((field) => ({
-              ...field,
-              options: field.options
-                ? {
-                  create: field.options,
-                }
-                : undefined,
-            })),
+            create: groupDto.fields.map((field) => {
+              const { sampleFile, ...restField } = field;
+              return {
+                ...restField,
+                sampleFile: this.convertSampleFileToJson(sampleFile),
+                options: field.options
+                  ? {
+                    create: field.options,
+                  }
+                  : undefined,
+              };
+            }),
           }
           : undefined,
       },
@@ -592,9 +607,13 @@ export class FormsService {
       );
     }
 
+    // Convert sampleFile DTO to plain object for Prisma
+    const { sampleFile, ...restFieldDto } = fieldDto;
+
     const field = await this.prisma.formField.create({
       data: {
-        ...fieldDto,
+        ...restFieldDto,
+        sampleFile: this.convertSampleFileToJson(sampleFile),
         groupId,
         options: fieldDto.options
           ? {
@@ -620,7 +639,7 @@ export class FormsService {
     }
 
     // Exclude nested fields for update operation
-    const { options, ...fieldData } = updateFieldDto;
+    const { options, sampleFile, ...restFieldData } = updateFieldDto;
 
     // Validate that sampleFile is only set for FILE fields
     const finalFieldType = updateFieldDto.type ?? field.type;
@@ -632,7 +651,12 @@ export class FormsService {
 
     const updatedField = await this.prisma.formField.update({
       where: { id },
-      data: fieldData,
+      data: {
+        ...restFieldData,
+        ...(sampleFile !== undefined
+          ? { sampleFile: this.convertSampleFileToJson(sampleFile) }
+          : {}),
+      },
       include: {
         options: true,
       },
@@ -882,6 +906,23 @@ export class FormsService {
   }
 
   // Helper Methods
+  /**
+   * Convert SampleFileDto to plain JSON object for Prisma
+   */
+  private convertSampleFileToJson(
+    sampleFile?: SampleFileDto,
+  ): Record<string, any> | undefined {
+    if (!sampleFile) {
+      return undefined;
+    }
+    return {
+      fileUrl: sampleFile.fileUrl,
+      fileName: sampleFile.fileName,
+      fileSize: sampleFile.fileSize,
+      mimeType: sampleFile.mimeType,
+    };
+  }
+
   private getFormInclude() {
     return {
       country: {
