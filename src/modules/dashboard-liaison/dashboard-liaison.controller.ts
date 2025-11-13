@@ -31,6 +31,8 @@ import {
   LiaisonActionDto,
   LiaisonReviewFiltersDto,
   LiaisonActionResponseDto,
+  LiaisonHistoryDto,
+  LiaisonHistoryQueryDto,
 } from './dto/liaison-review.dto';
 import { BaseResponseDto } from '@common/dtos/base-response.dto';
 import { SubmissionStatus } from '@prisma/client';
@@ -233,6 +235,77 @@ export class DashboardLiaisonController {
     return {
       success: true,
       message: `${status} applications retrieved successfully`,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get('history')
+  @ApiOperation({
+    summary: 'Get liaison review history',
+    description:
+      'Retrieve applications that the liaison officer has reviewed (approved, rejected, requested info, or escalated)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Liaison review history retrieved successfully',
+    type: LiaisonHistoryDto,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: String,
+    description: 'Filter by application status',
+    example: 'UNDER_REVIEW',
+  })
+  @ApiQuery({
+    name: 'action',
+    required: false,
+    enum: ['APPROVE', 'REJECT', 'REQUEST_INFO', 'ESCALATE'],
+    description: 'Filter by action taken',
+    example: 'APPROVE',
+  })
+  @ApiQuery({
+    name: 'fromDate',
+    required: false,
+    type: String,
+    description: 'Filter from date (ISO 8601)',
+    example: '2024-01-01T00:00:00Z',
+  })
+  @ApiQuery({
+    name: 'toDate',
+    required: false,
+    type: String,
+    description: 'Filter to date (ISO 8601)',
+    example: '2024-12-31T23:59:59Z',
+  })
+  async getLiaisonHistory(
+    @CurrentUser() user: JwtUserPayload,
+    @Query(new ValidationPipe({ transform: true }))
+    query: LiaisonHistoryQueryDto,
+  ): Promise<BaseResponseDto<LiaisonHistoryDto>> {
+    const result = await this.dashboardLiaisonService.getLiaisonHistory(
+      user.id,
+      query,
+    );
+
+    return {
+      success: true,
+      message: 'Liaison review history retrieved successfully',
       data: result,
       timestamp: new Date().toISOString(),
     };

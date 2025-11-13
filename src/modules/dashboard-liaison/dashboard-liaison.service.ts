@@ -11,6 +11,9 @@ import {
   LiaisonActionResponseDto,
   LiaisonAction,
   LiaisonActionReason,
+  LiaisonHistoryDto,
+  LiaisonHistoryQueryDto,
+  LiaisonHistoryItemDto,
 } from './dto/liaison-review.dto';
 
 @Injectable()
@@ -447,6 +450,170 @@ export class DashboardLiaisonService {
     } catch (error) {
       this.logger.error(
         `Failed to get applications by status: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get liaison review history for a liaison officer
+   * Returns applications that the officer has reviewed (approved, rejected, requested info, or escalated)
+   */
+  async getLiaisonHistory(
+    liaisonOfficerId: string,
+    query: LiaisonHistoryQueryDto,
+  ): Promise<LiaisonHistoryDto> {
+    try {
+      this.logger.log(
+        `Getting liaison history for officer ${liaisonOfficerId}`,
+      );
+
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const skip = (page - 1) * limit;
+
+      // Get departments assigned to this liaison officer
+      const userWithDepartments = await this.prisma.user.findUnique({
+        where: { id: liaisonOfficerId },
+        select: { departments: { select: { id: true } } },
+      });
+
+      const departmentIds = (userWithDepartments?.departments || []).map(
+        (d) => d.id,
+      );
+
+      // Build where clause - applications reviewed by this officer
+      const where: any = {
+        reviewedBy: liaisonOfficerId,
+        reviewedAt: { not: null },
+      };
+
+      // Only include applications that were flagged to liaison's departments
+      if (departmentIds.length > 0) {
+        where.flags = {
+          some: {
+            targetDepartmentId: { in: departmentIds },
+          },
+        };
+      } else {
+        // If no departments assigned, return empty result
+        return {
+          items: [],
+          total: 0,
+          page,
+          limit,
+        };
+      }
+
+      // Apply status filter
+      if (query.status) {
+        where.status = query.status;
+      } else if (query.action) {
+        // Apply action filter by status if status not explicitly provided
+        // Note: We'll also filter in the mapping step for accuracy
+        if (query.action === LiaisonAction.APPROVE) {
+          where.status = SubmissionStatus.UNDER_REVIEW;
+        } else if (query.action === LiaisonAction.REJECT) {
+          where.status = SubmissionStatus.REJECTED;
+        } else if (query.action === LiaisonAction.REQUEST_INFO) {
+          where.status = SubmissionStatus.QUERIED;
+        } else if (query.action === LiaisonAction.ESCALATE) {
+          where.status = SubmissionStatus.FLAGGED;
+        }
+      }
+
+      // Apply date range filter
+      if (query.fromDate || query.toDate) {
+        const dateFilter: any = {};
+        if (query.fromDate) {
+          dateFilter.gte = new Date(query.fromDate);
+        }
+        if (query.toDate) {
+          const endDate = new Date(query.toDate);
+          endDate.setHours(23, 59, 59, 999);
+          dateFilter.lte = endDate;
+        }
+        where.reviewedAt = dateFilter;
+      }
+
+      // Get applications
+      const [submissions, total] = await Promise.all([
+        this.prisma.formSubmission.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            form: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: { reviewedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.formSubmission.count({ where }),
+      ]);
+
+      // Map to history items and filter by action if specified
+      const items: LiaisonHistoryItemDto[] = submissions
+        .map((submission) => {
+          // Determine action based on final status
+          let action: LiaisonAction;
+          if (submission.status === SubmissionStatus.UNDER_REVIEW) {
+            action = LiaisonAction.APPROVE;
+          } else if (submission.status === SubmissionStatus.REJECTED) {
+            action = LiaisonAction.REJECT;
+          } else if (submission.status === SubmissionStatus.QUERIED) {
+            action = LiaisonAction.REQUEST_INFO;
+          } else if (submission.status === SubmissionStatus.FLAGGED) {
+            action = LiaisonAction.ESCALATE;
+          } else {
+            // Default to APPROVE for other statuses
+            action = LiaisonAction.APPROVE;
+          }
+
+          return {
+            id: submission.id,
+            referenceNumber: submission.referenceNumber,
+            applicantName: submission.user
+              ? `${submission.user.firstName || ''} ${submission.user.lastName || ''}`.trim() ||
+              submission.user.email
+              : 'Unknown',
+            applicantEmail: submission.user?.email || 'N/A',
+            formName: submission.form?.name || 'Unknown',
+            status: submission.status,
+            action: action,
+            actionDate: submission.reviewedAt!,
+            reviewNotes: submission.reviewNotes,
+          };
+        })
+        .filter((item) => {
+          // Filter by action if specified
+          if (query.action) {
+            return item.action === query.action;
+          }
+          return true;
+        });
+
+      return {
+        items,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to get liaison history for officer ${liaisonOfficerId}: ${error.message}`,
         error.stack,
       );
       throw error;
