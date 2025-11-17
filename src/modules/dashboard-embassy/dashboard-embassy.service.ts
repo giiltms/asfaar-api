@@ -127,7 +127,15 @@ export class DashboardEmbassyService {
               OR: [
                 { firstName: { contains: search, mode: 'insensitive' } },
                 { lastName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
               ],
+            },
+          },
+          {
+            form: {
+              country: {
+                name: { contains: search, mode: 'insensitive' },
+              },
             },
           },
         ];

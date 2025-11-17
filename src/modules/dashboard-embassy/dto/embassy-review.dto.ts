@@ -188,7 +188,7 @@ export class EmbassyReviewFiltersDto {
   priority?: string;
 
   @ApiPropertyOptional({
-    description: 'Search by applicant name or reference number',
+    description: 'Search by reference number, applicant name, applicant email, or country',
   })
   @IsOptional()
   @IsString()

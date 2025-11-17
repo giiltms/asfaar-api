@@ -73,7 +73,7 @@ export class DashboardEmbassyController {
     name: 'search',
     required: false,
     type: String,
-    description: 'Search by applicant name or reference number',
+    description: 'Search by reference number, applicant name, applicant email, or country',
   })
   @ApiQuery({
     name: 'dateFrom',

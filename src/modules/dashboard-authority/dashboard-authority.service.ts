@@ -83,6 +83,13 @@ export class DashboardAuthorityService {
           user: { lastName: { contains: filters.search, mode: 'insensitive' } },
         },
         { user: { email: { contains: filters.search, mode: 'insensitive' } } },
+        {
+          form: {
+            country: {
+              name: { contains: filters.search, mode: 'insensitive' },
+            },
+          },
+        },
       ];
     }
 

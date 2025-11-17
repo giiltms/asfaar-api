@@ -37,7 +37,7 @@ export class AuthorityApplicationFiltersDto {
   @IsDateString()
   endDate?: string;
 
-  @ApiPropertyOptional({ description: 'Search by reference number or applicant name' })
+  @ApiPropertyOptional({ description: 'Search by reference number, applicant name, applicant email, or country' })
   @IsOptional()
   @IsString()
   search?: string;
