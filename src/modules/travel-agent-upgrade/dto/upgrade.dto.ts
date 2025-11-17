@@ -142,6 +142,11 @@ export class CreateDraftApplicationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  companyWebsite?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   cacNumber?: string;
 
   @ApiPropertyOptional()
@@ -266,6 +271,11 @@ export class CreateUpgradeApplicationDto {
   @ApiProperty()
   @IsString()
   companyPhone: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  companyWebsite?: string;
 
   @ApiProperty()
   @IsString()

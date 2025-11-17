@@ -556,6 +556,7 @@ export class MailService {
         subject: data.subject,
         template: 'license-issued-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           licenseNumber: data.licenseNumber,
           companyName: data.companyName,
@@ -601,6 +602,7 @@ export class MailService {
         subject: data.subject,
         template: 'license-suspended-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           licenseNumber: data.licenseNumber,
           companyName: data.companyName,
@@ -647,6 +649,7 @@ export class MailService {
         subject: data.subject,
         template: 'license-revoked-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           licenseNumber: data.licenseNumber,
           companyName: data.companyName,
@@ -693,6 +696,7 @@ export class MailService {
         subject: data.subject,
         template: 'license-reactivated-notification',
         context: {
+          subject: data.subject,
           userName: data.userName,
           licenseNumber: data.licenseNumber,
           companyName: data.companyName,

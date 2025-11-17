@@ -1585,9 +1585,10 @@ model TravelAgentUpgradeApplication {
   applicationType TravelAgentApplicationType @default(REGULAR_TRAVEL_AGENT)
 
   // Business Contact
-  companyName  String
-  companyEmail String
-  companyPhone String
+  companyName    String
+  companyEmail   String
+  companyPhone   String
+  companyWebsite String?
 
   // Company Registration
   cacNumber               String
@@ -1809,9 +1810,10 @@ model TravelAgentProfileCompany {
   profileId String             @unique
   profile   TravelAgentProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  companyName  String
-  companyEmail String
-  companyPhone String
+  companyName    String
+  companyEmail   String
+  companyPhone   String
+  companyWebsite String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

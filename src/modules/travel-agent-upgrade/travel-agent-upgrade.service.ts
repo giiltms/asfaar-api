@@ -20,6 +20,7 @@ export interface CreateDraftApplicationInput {
   companyName?: string;
   companyEmail?: string;
   companyPhone?: string;
+  companyWebsite?: string;
   cacNumber?: string;
   tinNumber?: string;
   nahconLicenseNumber?: string;
@@ -60,6 +61,7 @@ export interface CreateUpgradeApplicationInput {
   companyName: string;
   companyEmail: string;
   companyPhone: string;
+  companyWebsite?: string;
   cacNumber: string;
   tinNumber: string;
   nahconLicenseNumber?: string;
@@ -139,6 +141,7 @@ export class TravelAgentUpgradeService {
         companyName: input.companyName || '',
         companyEmail: input.companyEmail || '',
         companyPhone: input.companyPhone || '',
+        companyWebsite: input.companyWebsite,
         cacNumber: input.cacNumber || '',
         tinNumber: input.tinNumber || '',
         nahconLicenseNumber: input.nahconLicenseNumber || '',
@@ -359,6 +362,7 @@ export class TravelAgentUpgradeService {
         companyName: input.companyName,
         companyEmail: input.companyEmail,
         companyPhone: input.companyPhone,
+        companyWebsite: input.companyWebsite,
         cacNumber: input.cacNumber,
         tinNumber: input.tinNumber,
         nahconLicenseNumber: input.nahconLicenseNumber,
@@ -412,6 +416,7 @@ export class TravelAgentUpgradeService {
           companyName: true,
           companyEmail: true,
           companyPhone: true,
+          companyWebsite: true,
           // Registration information
           cacNumber: true,
           cacDocumentUrl: true,
@@ -488,6 +493,7 @@ export class TravelAgentUpgradeService {
       });
 
       // Company
+      const app = application as any;
       await tx.travelAgentProfileCompany.upsert({
         where: { profileId: profile.id },
         create: {
@@ -495,11 +501,13 @@ export class TravelAgentUpgradeService {
           companyName: application.companyName,
           companyEmail: application.companyEmail,
           companyPhone: application.companyPhone,
+          companyWebsite: app.companyWebsite ?? null,
         },
         update: {
           companyName: application.companyName,
           companyEmail: application.companyEmail,
           companyPhone: application.companyPhone,
+          companyWebsite: app.companyWebsite ?? null,
         },
       });
 
@@ -562,31 +570,32 @@ export class TravelAgentUpgradeService {
       });
 
       // Bank account
-      if (application.bankDetails) {
+      const bankDetails = (application as any).bankDetails;
+      if (bankDetails) {
         await tx.travelAgentProfileBankAccount.upsert({
           where: { profileId: profile.id },
           create: {
             profileId: profile.id,
-            bankName: application.bankDetails.bankName,
-            bankCode: application.bankDetails.bankCode,
-            accountNumber: application.bankDetails.accountNumber,
-            accountName: application.bankDetails.accountName,
-            isVerified: application.bankDetails.isVerified,
-            verifiedAt: application.bankDetails.verifiedAt || undefined,
+            bankName: bankDetails.bankName,
+            bankCode: bankDetails.bankCode,
+            accountNumber: bankDetails.accountNumber,
+            accountName: bankDetails.accountName,
+            isVerified: bankDetails.isVerified,
+            verifiedAt: bankDetails.verifiedAt || undefined,
             verificationReference:
-              application.bankDetails.verificationReference || undefined,
-            bankApiResponse: application.bankDetails.bankApiResponse || undefined,
+              bankDetails.verificationReference || undefined,
+            bankApiResponse: bankDetails.bankApiResponse || undefined,
           },
           update: {
-            bankName: application.bankDetails.bankName,
-            bankCode: application.bankDetails.bankCode,
-            accountNumber: application.bankDetails.accountNumber,
-            accountName: application.bankDetails.accountName,
-            isVerified: application.bankDetails.isVerified,
-            verifiedAt: application.bankDetails.verifiedAt || undefined,
+            bankName: bankDetails.bankName,
+            bankCode: bankDetails.bankCode,
+            accountNumber: bankDetails.accountNumber,
+            accountName: bankDetails.accountName,
+            isVerified: bankDetails.isVerified,
+            verifiedAt: bankDetails.verifiedAt || undefined,
             verificationReference:
-              application.bankDetails.verificationReference || undefined,
-            bankApiResponse: application.bankDetails.bankApiResponse || undefined,
+              bankDetails.verificationReference || undefined,
+            bankApiResponse: bankDetails.bankApiResponse || undefined,
         },
       });
     }
