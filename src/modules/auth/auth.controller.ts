@@ -27,6 +27,8 @@ import { SignInDTO } from './dto/sign-in.dto';
 import { VerifyNinDto, ConfirmNinDto } from './dto/verify-nin.dto';
 import RefreshTokenDTO from './dto/refresh-token.dto';
 import { ChangePasswordDTO } from './dto/change-password.dto';
+import { RequestResetPasswordDTO } from './dto/request-reset-password.dto';
+import { ResetPasswordDTO } from './dto/reset-password.dto';
 import { AuthGuard } from './guard/auth.guard';
 import {
   CurrentUser,
@@ -34,6 +36,7 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { Throttle, ThrottleConfigs } from '@common/decorators/throttle.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -134,6 +137,59 @@ export class AuthController {
     return {
       message: 'Password changed successfully',
     };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle(ThrottleConfigs.PASSWORD_RESET)
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset email sent successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Password reset email sent successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async forgotPassword(@Body() dto: RequestResetPasswordDTO) {
+    return this.passwordResetService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Password reset successfully',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+  })
+  async resetPassword(@Body() dto: ResetPasswordDTO) {
+    return this.passwordResetService.resetPassword(
+      dto.userId,
+      dto.token,
+      dto.newPassword,
+    );
   }
 
   @Post('verify-nin')

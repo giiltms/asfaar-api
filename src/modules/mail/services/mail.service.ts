@@ -189,6 +189,7 @@ export class MailService {
   async sendPasswordResetEmail(
     email: string,
     resetToken: string,
+    userName?: string,
   ): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
 
@@ -197,6 +198,7 @@ export class MailService {
       subject: 'Password Reset Request',
       template: 'request-reset-password',
       context: {
+        userName: userName || 'User',
         resetToken,
         siteUrl,
         resetUrl: `${siteUrl}/reset-password?token=${resetToken}`,

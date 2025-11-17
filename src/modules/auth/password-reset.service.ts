@@ -41,17 +41,21 @@ export class PasswordResetService {
       user.id,
       TokenUseCase.PASSWORD_RESET,
       TokenType.HEX,
+      6, // length (not used for HEX type)
+      60, // 60 minutes = 1 hour expiry
     );
 
-    const context = {
-      name: `${user.firstName} ${user.lastName}`,
-      token: token.code,
-      userId: user.id,
-      expiresAt: token.expiresAt,
-    };
+    const userName =
+      user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.firstName || user.email.split('@')[0];
 
     // Send password reset email with proper parameter
-    await this.mailService.sendPasswordResetEmail(user.email, token.code);
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      token.code,
+      userName,
+    );
 
     return {
       message: 'Password reset email sent successfully',
