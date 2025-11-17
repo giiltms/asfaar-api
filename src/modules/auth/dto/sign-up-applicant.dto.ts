@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsString,
@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsArray,
   IsUUID,
+  IsPhoneNumber,
 } from 'class-validator';
 import { IsSame } from '../validators/is-same.validator';
 
@@ -36,6 +37,14 @@ export class ApplicantSignUpDto {
   })
   @IsEmail()
   readonly email!: string;
+
+  @ApiPropertyOptional({
+    description: 'User phone number',
+    example: '+2348012345678',
+  })
+  @IsOptional()
+  @IsPhoneNumber()
+  readonly phone?: string;
 
   @ApiProperty({
     description: 'User password',

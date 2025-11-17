@@ -86,6 +86,14 @@ export class AuthService {
       throw new ConflictException(EMAIL_CONFLICT);
     }
 
+    // Check if phone is provided and if it already exists
+    if (signUpDto.phone) {
+      const existingUserByPhone = await this.getUserByPhone(signUpDto.phone);
+      if (existingUserByPhone) {
+        throw new ConflictException(PHONE_CONFLICT);
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(signUpDto.password, 10);
 
     const userData = {
@@ -93,6 +101,7 @@ export class AuthService {
       firstName: signUpDto.firstName,
       lastName: signUpDto.lastName,
       password: hashedPassword,
+      phone: signUpDto.phone,
       roles: [Roles.APPLICANT],
       isVerified: false, // Set to false by default
       isActive: true,
