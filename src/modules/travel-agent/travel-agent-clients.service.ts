@@ -68,7 +68,8 @@ export class TravelAgentClientsService {
           lastName: true,
           avatar: true,
           isVerified: true,
-          dateOfBirth: true, // Added for validation
+          dateOfBirth: true,
+          roles: true, // Include roles for validation
           createdAt: true,
         },
       });
@@ -77,7 +78,6 @@ export class TravelAgentClientsService {
 
       if (existingUser) {
         // User already exists - validate date of birth matches before proceeding
-        // Date of birth is always stored in NIN data, so we can safely validate
         const existingDob = new Date(existingUser.dateOfBirth)
           .toISOString()
           .split('T')[0];
@@ -91,8 +91,21 @@ export class TravelAgentClientsService {
           );
         }
 
+        // Prevent agent from adding themselves
+        if (existingUser.id === agentId) {
+          throw new BadRequestException(
+            'You cannot add yourself to your client list',
+          );
+        }
+
+        // Check if existing user is an agent
+        if (existingUser.roles.includes(Roles.AGENCY)) {
+          throw new BadRequestException(
+            'You can only add applicants to your client list, not other travel agents',
+          );
+        }
+
         // NIN exists and DOB is correct - just add to agent's list
-        // Skip NIN verification as per requirement
         this.logger.log(
           `User with NIN ${normalizedNin} already exists: ${existingUser.id}. Adding to agent's client list.`,
         );
@@ -592,18 +605,19 @@ export class TravelAgentClientsService {
       const averageProcessingTime =
         approvedSubmissions.length > 0
           ? approvedSubmissions.reduce((sum, submission) => {
-            const days = Math.ceil(
-              (submission.updatedAt.getTime() -
-                submission.submittedAt.getTime()) /
-              (1000 * 60 * 60 * 24),
-            );
-            return sum + days;
-          }, 0) / approvedSubmissions.length
+              const days = Math.ceil(
+                (submission.updatedAt.getTime() -
+                  submission.submittedAt.getTime()) /
+                  (1000 * 60 * 60 * 24),
+              );
+              return sum + days;
+            }, 0) / approvedSubmissions.length
           : 0;
 
       const clientName =
-        `${clientRelationship.client.firstName || ''} ${clientRelationship.client.lastName || ''
-          }`.trim() || clientRelationship.client.email;
+        `${clientRelationship.client.firstName || ''} ${
+          clientRelationship.client.lastName || ''
+        }`.trim() || clientRelationship.client.email;
 
       return {
         clientId,
