@@ -62,38 +62,71 @@ export class PasswordResetService {
     };
   }
 
-  async resetPassword(userId: string, token: string, newPassword: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      // First, find the token to get the user ID
+      const hashedToken = await this.hashToken(token);
+      const tokenRecord = await this.prisma.token.findFirst({
+        where: {
+          code: hashedToken,
+          useCase: TokenUseCase.PASSWORD_RESET,
+          isUsed: false,
+        },
+        include: {
+          owner: true,
+        },
+      });
 
-    if (!user) {
-      throw new BadRequestException('Invalid or expired token');
+      if (!tokenRecord) {
+        throw new BadRequestException('Invalid or expired token');
+      }
+
+      // Check if token is expired
+      if (new Date() > tokenRecord.expiresAt) {
+        throw new BadRequestException('Password reset token has expired');
+      }
+
+      // Verify the token using the token service
+      const isValid = await this.tokenService.verify(
+        tokenRecord.userId,
+        token,
+        TokenUseCase.PASSWORD_RESET,
+      );
+
+      if (!isValid) {
+        throw new BadRequestException('Invalid or expired token');
+      }
+
+      // Update the user's password in the database
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await this.prisma.user.update({
+        where: { id: tokenRecord.userId },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      this.logger.log(
+        `Password reset successful for user: ${tokenRecord.owner.email}`,
+      );
+
+      return {
+        message: 'Password reset successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to reset password: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
+  }
 
-    const validToken = await this.tokenService.verify(
-      user.id,
-      token,
-      TokenUseCase.PASSWORD_RESET,
-    );
-
-    if (!validToken) {
-      throw new BadRequestException('Invalid or expired token');
-    }
-
-    // Update the user's password in the database
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-      },
-    });
-
-    // Send confirmation email (simplified - method doesn't exist yet)
-    console.log('Password reset successful for user:', user.email);
-
-    return {
-      message: 'Password reset successfully',
-    };
+  // Helper method for token hashing (same as in TokenService and AuthService)
+  private async hashToken(token: string): Promise<string> {
+    const crypto = await import('crypto');
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    return hash;
   }
 
   async updatePassword(userId: string, newPassword: string) {

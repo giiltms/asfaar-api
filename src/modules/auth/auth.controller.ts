@@ -36,7 +36,10 @@ import {
 } from '@common/decorators/current-user.decorator';
 import { NinVerificationService } from '@shared/services/nin-verification/nin-verification.service';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import { Throttle, ThrottleConfigs } from '@common/decorators/throttle.decorator';
+import {
+  Throttle,
+  ThrottleConfigs,
+} from '@common/decorators/throttle.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -185,11 +188,7 @@ export class AuthController {
     description: 'Invalid or expired token',
   })
   async resetPassword(@Body() dto: ResetPasswordDTO) {
-    return this.passwordResetService.resetPassword(
-      dto.userId,
-      dto.token,
-      dto.newPassword,
-    );
+    return this.passwordResetService.resetPassword(dto.token, dto.newPassword);
   }
 
   @Post('verify-nin')
