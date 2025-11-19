@@ -86,7 +86,6 @@ export class BiometricCenterEntity {
   @Expose()
   specialFacilities: string[];
 
-
   @ApiProperty({ description: 'Creation timestamp' })
   @Expose()
   @Transform(({ value }) => value?.toISOString())

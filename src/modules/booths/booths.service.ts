@@ -430,7 +430,11 @@ export class BoothsService {
       }
 
       // Restore the booth
-      const restoredBooth = await this.updateBooth(id, { isDeleted: false }, lastModifiedBy);
+      const restoredBooth = await this.updateBooth(
+        id,
+        { isDeleted: false },
+        lastModifiedBy,
+      );
 
       this.logger.log(`Restored booth: ${booth.boothNumber}`);
 
@@ -584,7 +588,8 @@ export class BoothsService {
       });
 
       this.logger.log(
-        `Unassigned agent from booth ${updatedBooth.boothNumber}${reason ? `: ${reason}` : ''
+        `Unassigned agent from booth ${updatedBooth.boothNumber}${
+          reason ? `: ${reason}` : ''
         }`,
       );
 
@@ -659,7 +664,9 @@ export class BoothsService {
    */
   async getBoothStats(centerId?: string): Promise<BoothStatsDto> {
     try {
-      const where = centerId ? { centerId, isDeleted: false } : { isDeleted: false };
+      const where = centerId
+        ? { centerId, isDeleted: false }
+        : { isDeleted: false };
 
       const [total, active, occupied, withAgent] = await Promise.all([
         this.prisma.booth.count({ where }),

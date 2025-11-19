@@ -48,7 +48,8 @@ export class BiometricCaptureHistoryController {
   @Get()
   @ApiOperation({
     summary: 'Get biometric capture history',
-    description: 'Retrieve biometric capture history for centers managed by the current center manager',
+    description:
+      'Retrieve biometric capture history for centers managed by the current center manager',
   })
   @ApiQuery({
     name: 'page',
@@ -167,7 +168,8 @@ export class BiometricCaptureHistoryController {
   @Get('statistics')
   @ApiOperation({
     summary: 'Get biometric capture statistics',
-    description: 'Retrieve statistics about biometric captures for centers managed by the current center manager',
+    description:
+      'Retrieve statistics about biometric captures for centers managed by the current center manager',
   })
   @ApiQuery({
     name: 'fromDate',
@@ -215,7 +217,8 @@ export class BiometricCaptureHistoryController {
   @Get(':captureId')
   @ApiOperation({
     summary: 'Get biometric capture details',
-    description: 'Retrieve detailed information for a specific biometric capture',
+    description:
+      'Retrieve detailed information for a specific biometric capture',
   })
   @ApiParam({
     name: 'captureId',

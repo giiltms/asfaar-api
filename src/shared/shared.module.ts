@@ -7,7 +7,6 @@ import { FincraProvider } from './services/payment/providers/fincra.provider';
 import { NinVerificationService } from './services/nin-verification/nin-verification.service';
 import { YouVerifyProvider } from './services/nin-verification/providers/youverify.provider';
 
-
 @Global()
 @Module({
   imports: [MailModule],
@@ -18,7 +17,6 @@ import { YouVerifyProvider } from './services/nin-verification/providers/youveri
     FincraProvider,
     NinVerificationService,
     YouVerifyProvider,
-
   ],
   exports: [PaymentService, NinVerificationService],
 })

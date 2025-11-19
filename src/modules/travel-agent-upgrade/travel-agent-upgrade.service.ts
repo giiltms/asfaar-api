@@ -32,6 +32,10 @@ export interface CreateDraftApplicationInput {
 
 export interface CompleteApplicationInput {
   applicationType: TravelAgentApplicationType;
+  companyName: string;
+  companyEmail: string;
+  companyPhone: string;
+  companyWebsite?: string;
   cacNumber: string;
   tinNumber: string;
   nahconLicenseNumber?: string;
@@ -88,6 +92,12 @@ export interface CreateUpgradeApplicationInput {
   paymentMethodId: string;
 }
 
+interface ApplicationCompletenessResult {
+  isValid: boolean;
+  missingFields: string[];
+  errors: string[];
+}
+
 @Injectable()
 export class TravelAgentUpgradeService {
   constructor(
@@ -95,17 +105,142 @@ export class TravelAgentUpgradeService {
     private readonly licenseService: TravelAgentLicenseService,
   ) {}
 
+  /**
+   * Validates that an application has all required fields for approval
+   * Returns a structured result with validation details
+   */
+  private validateApplicationCompleteness(
+    application: {
+      companyName: string | null;
+      companyEmail: string | null;
+      companyPhone: string | null;
+      cacNumber: string | null;
+      tinNumber: string | null;
+      dssClearanceNumber: string | null;
+      efccScumlNumber: string | null;
+      nahconLicenseNumber: string | null;
+      applicationType: TravelAgentApplicationType;
+      bankDetails: {
+        bankName: string | null;
+        bankCode: string | null;
+        accountNumber: string | null;
+        accountName: string | null;
+      } | null;
+      directors: Array<{ id: string }> | null;
+      cacDocumentUrl: string | null;
+      taxClearanceDocumentUrl: string | null;
+      nahconDocumentUrl: string | null;
+      efccScumlDocumentUrl: string | null;
+    },
+  ): ApplicationCompletenessResult {
+    const missingFields: string[] = [];
+    const errors: string[] = [];
+
+    // Company information
+    if (!application.companyName?.trim()) {
+      missingFields.push('companyName');
+    }
+    if (!application.companyEmail?.trim()) {
+      missingFields.push('companyEmail');
+    }
+    if (!application.companyPhone?.trim()) {
+      missingFields.push('companyPhone');
+    }
+
+    // Registration information
+    if (!application.cacNumber?.trim()) {
+      missingFields.push('cacNumber');
+    }
+    if (!application.tinNumber?.trim()) {
+      missingFields.push('tinNumber');
+    }
+
+    // Compliance information
+    if (!application.dssClearanceNumber?.trim()) {
+      missingFields.push('dssClearanceNumber');
+    }
+    if (!application.efccScumlNumber?.trim()) {
+      missingFields.push('efccScumlNumber');
+    }
+
+    // NAHCON-specific validation
+    if (
+      application.applicationType ===
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      !application.nahconLicenseNumber?.trim()
+    ) {
+      missingFields.push('nahconLicenseNumber');
+      errors.push(
+        'NAHCON license number is required for NAHCON registered agent applications',
+      );
+    }
+
+    // Bank details validation
+    if (!application.bankDetails) {
+      missingFields.push('bankDetails');
+      errors.push('Bank details are missing');
+    } else {
+      if (!application.bankDetails.bankName?.trim()) {
+        missingFields.push('bankDetails.bankName');
+      }
+      if (!application.bankDetails.bankCode?.trim()) {
+        missingFields.push('bankDetails.bankCode');
+      }
+      if (!application.bankDetails.accountNumber?.trim()) {
+        missingFields.push('bankDetails.accountNumber');
+      }
+      if (!application.bankDetails.accountName?.trim()) {
+        missingFields.push('bankDetails.accountName');
+      }
+    }
+
+    // Directors validation
+    if (!application.directors || application.directors.length === 0) {
+      missingFields.push('directors');
+      errors.push('At least one director is required');
+    }
+
+    // Document validation
+    const missingDocuments: string[] = [];
+    if (!application.cacDocumentUrl) {
+      missingDocuments.push('CAC Document');
+    }
+    if (!application.taxClearanceDocumentUrl) {
+      missingDocuments.push('Tax Clearance Certificate');
+    }
+    if (!application.efccScumlDocumentUrl) {
+      missingDocuments.push('EFCC SCUML Document');
+    }
+    if (
+      application.applicationType ===
+      TravelAgentApplicationType.NAHCON_REGISTERED_AGENT &&
+      !application.nahconDocumentUrl
+    ) {
+      missingDocuments.push('NAHCON Document');
+    }
+
+    if (missingDocuments.length > 0) {
+      errors.push(`Missing required documents: ${missingDocuments.join(', ')}`);
+    }
+
+    return {
+      isValid: missingFields.length === 0 && errors.length === 0,
+      missingFields,
+      errors,
+    };
+  }
+
   async createDraftApplication(
     userId: string,
     input: CreateDraftApplicationInput,
   ) {
     // Check if user has an active application with the same application type
     const activeStatuses = [
-              UpgradeApplicationStatus.DRAFT,
-              UpgradeApplicationStatus.PENDING,
-              UpgradeApplicationStatus.PENDING_PAYMENT,
-              UpgradeApplicationStatus.PENDING_REVIEW,
-              UpgradeApplicationStatus.UNDER_REVIEW,
+      UpgradeApplicationStatus.DRAFT,
+      UpgradeApplicationStatus.PENDING,
+      UpgradeApplicationStatus.PENDING_PAYMENT,
+      UpgradeApplicationStatus.PENDING_REVIEW,
+      UpgradeApplicationStatus.UNDER_REVIEW,
     ];
 
     const existingActiveApp =
@@ -231,6 +366,10 @@ export class TravelAgentUpgradeService {
         data: {
           status: UpgradeApplicationStatus.PENDING,
           applicationType: input.applicationType,
+          companyName: input.companyName,
+          companyEmail: input.companyEmail,
+          companyPhone: input.companyPhone,
+          companyWebsite: input.companyWebsite,
           cacNumber: input.cacNumber,
           tinNumber: input.tinNumber,
           nahconLicenseNumber: input.nahconLicenseNumber || '',
@@ -403,7 +542,7 @@ export class TravelAgentUpgradeService {
     reviewerId: string,
     notes?: string,
   ) {
-    // Fetch application with all required fields explicitly
+    // Fetch application with all required fields for validation and approval
     const application =
       await this.prisma.travelAgentUpgradeApplication.findUnique({
         where: { id: applicationId },
@@ -453,6 +592,12 @@ export class TravelAgentUpgradeService {
               id: true,
             },
           },
+          // Directors relation (needed for validation)
+          directors: {
+            select: {
+              id: true,
+            },
+          },
         },
       });
 
@@ -461,7 +606,24 @@ export class TravelAgentUpgradeService {
     }
 
     if (application.status !== UpgradeApplicationStatus.UNDER_REVIEW) {
-      throw new BadRequestException('Application is not under review');
+      throw new BadRequestException(
+        `Application is not under review. Current status: ${application.status}`,
+      );
+    }
+
+    // Comprehensive validation using dedicated method
+    const validationResult = this.validateApplicationCompleteness(application);
+    if (!validationResult.isValid) {
+      const errorMessage = [
+        'Application is incomplete and cannot be approved.',
+        ...validationResult.errors,
+        validationResult.missingFields.length > 0
+          ? `Missing fields: ${validationResult.missingFields.join(', ')}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      throw new BadRequestException(errorMessage);
     }
 
     // Create travel agent license using the license service (which handles configurable duration)
@@ -492,8 +654,7 @@ export class TravelAgentUpgradeService {
         },
       });
 
-      // Company
-      const app = application as any;
+      // Company - Type-safe access (validation ensures these are non-null)
       await tx.travelAgentProfileCompany.upsert({
         where: { profileId: profile.id },
         create: {
@@ -501,13 +662,13 @@ export class TravelAgentUpgradeService {
           companyName: application.companyName,
           companyEmail: application.companyEmail,
           companyPhone: application.companyPhone,
-          companyWebsite: app.companyWebsite ?? null,
+          companyWebsite: application.companyWebsite ?? null,
         },
         update: {
           companyName: application.companyName,
           companyEmail: application.companyEmail,
           companyPhone: application.companyPhone,
-          companyWebsite: app.companyWebsite ?? null,
+          companyWebsite: application.companyWebsite ?? null,
         },
       });
 
@@ -569,36 +730,39 @@ export class TravelAgentUpgradeService {
         },
       });
 
-      // Bank account
-      const bankDetails = (application as any).bankDetails;
-      if (bankDetails) {
+      // Bank account - Type-safe access (validation ensures this exists)
+      if (application.bankDetails) {
         await tx.travelAgentProfileBankAccount.upsert({
           where: { profileId: profile.id },
           create: {
             profileId: profile.id,
-            bankName: bankDetails.bankName,
-            bankCode: bankDetails.bankCode,
-            accountNumber: bankDetails.accountNumber,
-            accountName: bankDetails.accountName,
-            isVerified: bankDetails.isVerified,
-            verifiedAt: bankDetails.verifiedAt || undefined,
+            bankName: application.bankDetails.bankName,
+            bankCode: application.bankDetails.bankCode,
+            accountNumber: application.bankDetails.accountNumber,
+            accountName: application.bankDetails.accountName,
+            isVerified: application.bankDetails.isVerified ?? false,
+            verifiedAt: application.bankDetails.verifiedAt ?? undefined,
             verificationReference:
-              bankDetails.verificationReference || undefined,
-            bankApiResponse: bankDetails.bankApiResponse || undefined,
+              application.bankDetails.verificationReference ?? undefined,
+            bankApiResponse: application.bankDetails.bankApiResponse
+              ? (application.bankDetails.bankApiResponse as object)
+              : undefined,
           },
           update: {
-            bankName: bankDetails.bankName,
-            bankCode: bankDetails.bankCode,
-            accountNumber: bankDetails.accountNumber,
-            accountName: bankDetails.accountName,
-            isVerified: bankDetails.isVerified,
-            verifiedAt: bankDetails.verifiedAt || undefined,
+            bankName: application.bankDetails.bankName,
+            bankCode: application.bankDetails.bankCode,
+            accountNumber: application.bankDetails.accountNumber,
+            accountName: application.bankDetails.accountName,
+            isVerified: application.bankDetails.isVerified ?? false,
+            verifiedAt: application.bankDetails.verifiedAt ?? undefined,
             verificationReference:
-              bankDetails.verificationReference || undefined,
-            bankApiResponse: bankDetails.bankApiResponse || undefined,
-        },
-      });
-    }
+              application.bankDetails.verificationReference ?? undefined,
+            bankApiResponse: application.bankDetails.bankApiResponse
+              ? (application.bankDetails.bankApiResponse as object)
+              : undefined,
+          },
+        });
+      }
 
       // Update application status
       return await tx.travelAgentUpgradeApplication.update({
@@ -635,7 +799,7 @@ export class TravelAgentUpgradeService {
     }
 
     const updatedApplication =
-    await this.prisma.travelAgentUpgradeApplication.update({
+      await this.prisma.travelAgentUpgradeApplication.update({
         where: { id: applicationId },
         data: {
           status: UpgradeApplicationStatus.REJECTED,
@@ -761,7 +925,7 @@ export class TravelAgentUpgradeService {
         return {
           success: true,
           message: 'Director identification document uploaded successfully',
-      data: {
+          data: {
             documentType: dto.documentType,
             fileUrl: dto.fileUrl,
             message: 'Use this URL when creating director information',
@@ -1131,8 +1295,8 @@ export class TravelAgentUpgradeService {
         bankDetails: true,
         directors: true,
         payment: true,
-        },
-      });
+      },
+    });
     if (!app) throw new NotFoundException('Application not found');
     return { application: app };
   }

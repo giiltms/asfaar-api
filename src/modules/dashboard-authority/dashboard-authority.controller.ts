@@ -18,7 +18,10 @@ import { AuthGuard } from '@modules/auth/guard/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { Roles } from '@common/decorators/roles.decorator';
 import { Roles as UserRoles } from '@common/constants/roles.constants';
-import { CurrentUser, JwtUserPayload } from '@common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  JwtUserPayload,
+} from '@common/decorators/current-user.decorator';
 import { DashboardAuthorityService } from './dashboard-authority.service';
 import {
   AuthorityApplicationListDto,
@@ -45,7 +48,8 @@ export class DashboardAuthorityController {
   @Get('applications')
   @ApiOperation({
     summary: 'Get all applications in the system',
-    description: 'Retrieve all submitted applications with filtering, sorting, and pagination options',
+    description:
+      'Retrieve all submitted applications with filtering, sorting, and pagination options',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -55,19 +59,50 @@ export class DashboardAuthorityController {
   @ApiQuery({ name: 'page', required: false, description: 'Page number' })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
   @ApiQuery({ name: 'sortBy', required: false, description: 'Sort field' })
-  @ApiQuery({ name: 'sortOrder', required: false, description: 'Sort order (asc/desc)' })
-  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
-  @ApiQuery({ name: 'countryId', required: false, description: 'Filter by country ID' })
-  @ApiQuery({ name: 'formType', required: false, description: 'Filter by form/visa type' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Filter by start date' })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Filter by end date' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search by reference number or applicant name' })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    description: 'Sort order (asc/desc)',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter by status',
+  })
+  @ApiQuery({
+    name: 'countryId',
+    required: false,
+    description: 'Filter by country ID',
+  })
+  @ApiQuery({
+    name: 'formType',
+    required: false,
+    description: 'Filter by form/visa type',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Filter by start date',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Filter by end date',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by reference number or applicant name',
+  })
   async getAllApplications(
     @Query() filters: AuthorityApplicationFiltersDto,
     @Query() query: AuthorityApplicationQueryDto,
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<AuthorityApplicationListDto>> {
-    const result = await this.dashboardAuthorityService.getAllApplications(filters, query);
+    const result = await this.dashboardAuthorityService.getAllApplications(
+      filters,
+      query,
+    );
 
     return {
       success: true,
@@ -83,7 +118,8 @@ export class DashboardAuthorityController {
   @Get('applications/:submissionId')
   @ApiOperation({
     summary: 'Get detailed application information',
-    description: 'Retrieve comprehensive details of a specific application including form responses, biometric data, and status history',
+    description:
+      'Retrieve comprehensive details of a specific application including form responses, biometric data, and status history',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -98,7 +134,9 @@ export class DashboardAuthorityController {
     @Param('submissionId', ParseUUIDPipe) submissionId: string,
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<AuthorityApplicationDetailDto>> {
-    const result = await this.dashboardAuthorityService.getApplicationDetail(submissionId);
+    const result = await this.dashboardAuthorityService.getApplicationDetail(
+      submissionId,
+    );
 
     return {
       success: true,
@@ -114,7 +152,8 @@ export class DashboardAuthorityController {
   @Get('analytics')
   @ApiOperation({
     summary: 'Get system analytics and statistics',
-    description: 'Retrieve comprehensive analytics including total applications, breakdowns by country, visa type, year, and revenue statistics',
+    description:
+      'Retrieve comprehensive analytics including total applications, breakdowns by country, visa type, year, and revenue statistics',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -140,7 +179,8 @@ export class DashboardAuthorityController {
   @Get('analytics/countries')
   @ApiOperation({
     summary: 'Get applications breakdown by country',
-    description: 'Retrieve detailed statistics of applications grouped by country',
+    description:
+      'Retrieve detailed statistics of applications grouped by country',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -150,7 +190,7 @@ export class DashboardAuthorityController {
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<any>> {
     const stats = await this.dashboardAuthorityService.getAnalyticsStats();
-    
+
     return {
       success: true,
       message: 'Country statistics retrieved successfully',
@@ -168,7 +208,8 @@ export class DashboardAuthorityController {
   @Get('analytics/visa-types')
   @ApiOperation({
     summary: 'Get applications breakdown by visa type',
-    description: 'Retrieve detailed statistics of applications grouped by visa type/form type',
+    description:
+      'Retrieve detailed statistics of applications grouped by visa type/form type',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -178,7 +219,7 @@ export class DashboardAuthorityController {
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<any>> {
     const stats = await this.dashboardAuthorityService.getAnalyticsStats();
-    
+
     return {
       success: true,
       message: 'Visa type statistics retrieved successfully',
@@ -205,7 +246,7 @@ export class DashboardAuthorityController {
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<any>> {
     const stats = await this.dashboardAuthorityService.getAnalyticsStats();
-    
+
     return {
       success: true,
       message: 'Year statistics retrieved successfully',
@@ -222,7 +263,8 @@ export class DashboardAuthorityController {
   @Get('analytics/revenue')
   @ApiOperation({
     summary: 'Get revenue statistics',
-    description: 'Retrieve comprehensive revenue statistics including total revenue, average application value, and revenue by country',
+    description:
+      'Retrieve comprehensive revenue statistics including total revenue, average application value, and revenue by country',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -232,7 +274,7 @@ export class DashboardAuthorityController {
     @CurrentUser() user: JwtUserPayload,
   ): Promise<BaseResponseDto<any>> {
     const stats = await this.dashboardAuthorityService.getAnalyticsStats();
-    
+
     return {
       success: true,
       message: 'Revenue statistics retrieved successfully',

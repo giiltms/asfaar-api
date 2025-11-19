@@ -166,7 +166,8 @@ export class UserController {
                     iataAccreditationNumber: 'IATA-2024-001',
                     iataDocumentUrl: 'https://example.com/iata-certificate.pdf',
                     nantaMembershipNumber: 'NANTA-2024-001',
-                    nantaDocumentUrl: 'https://example.com/nanta-membership.pdf',
+                    nantaDocumentUrl:
+                      'https://example.com/nanta-membership.pdf',
                   },
                   bankAccount: {
                     bankName: 'Access Bank',

@@ -160,7 +160,6 @@ describe('BiometricCentersService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-
     it('should set default values when not provided', async () => {
       // Arrange
       const minimalDto = {

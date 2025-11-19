@@ -88,44 +88,43 @@ export class FormsService {
         ...(countryId ? { country: { connect: { id: countryId } } } : {}),
         ...(createFormDto.applicationType
           ? {
-            applicationType: {
-              connect: { code: createFormDto.applicationType },
-            },
-          }
+              applicationType: {
+                connect: { code: createFormDto.applicationType },
+              },
+            }
           : {}),
         sections: sections
           ? {
-            create: sections.map((section) => ({
-              ...section,
-              config: section.config,
-              groups: section.groups
-                ? {
-                  create: section.groups.map((group) => ({
-                    ...group,
-                    config: group.config,
-                    fields: group.fields
-                      ? {
-                        create: group.fields.map((field) => {
-                          const { sampleFile, ...restField } = field;
-                          return {
-                            ...restField,
-                            sampleFile: this.convertSampleFileToJson(
-                              sampleFile,
-                            ),
-                            options: field.options
-                              ? {
-                                create: field.options,
-                              }
-                              : undefined,
-                          };
-                        }),
-                      }
-                      : undefined,
-                  })),
-                }
-                : undefined,
-            })),
-          }
+              create: sections.map((section) => ({
+                ...section,
+                config: section.config,
+                groups: section.groups
+                  ? {
+                      create: section.groups.map((group) => ({
+                        ...group,
+                        config: group.config,
+                        fields: group.fields
+                          ? {
+                              create: group.fields.map((field) => {
+                                const { sampleFile, ...restField } = field;
+                                return {
+                                  ...restField,
+                                  sampleFile:
+                                    this.convertSampleFileToJson(sampleFile),
+                                  options: field.options
+                                    ? {
+                                        create: field.options,
+                                      }
+                                    : undefined,
+                                };
+                              }),
+                            }
+                          : undefined,
+                      })),
+                    }
+                  : undefined,
+              })),
+            }
           : undefined,
       },
       include: this.getFormInclude(),
@@ -397,26 +396,26 @@ export class FormsService {
         formId,
         groups: sectionDto.groups
           ? {
-            create: sectionDto.groups.map((group) => ({
-              ...group,
-              fields: group.fields
-                ? {
-                  create: group.fields.map((field) => {
-                    const { sampleFile, ...restField } = field;
-                    return {
-                      ...restField,
-                      sampleFile: this.convertSampleFileToJson(sampleFile),
-                      options: field.options
-                        ? {
-                          create: field.options,
-                        }
-                        : undefined,
-                    };
-                  }),
-                }
-                : undefined,
-            })),
-          }
+              create: sectionDto.groups.map((group) => ({
+                ...group,
+                fields: group.fields
+                  ? {
+                      create: group.fields.map((field) => {
+                        const { sampleFile, ...restField } = field;
+                        return {
+                          ...restField,
+                          sampleFile: this.convertSampleFileToJson(sampleFile),
+                          options: field.options
+                            ? {
+                                create: field.options,
+                              }
+                            : undefined,
+                        };
+                      }),
+                    }
+                  : undefined,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -496,19 +495,19 @@ export class FormsService {
         sectionId,
         fields: groupDto.fields
           ? {
-            create: groupDto.fields.map((field) => {
-              const { sampleFile, ...restField } = field;
-              return {
-                ...restField,
-                sampleFile: this.convertSampleFileToJson(sampleFile),
-                options: field.options
-                  ? {
-                    create: field.options,
-                  }
-                  : undefined,
-              };
-            }),
-          }
+              create: groupDto.fields.map((field) => {
+                const { sampleFile, ...restField } = field;
+                return {
+                  ...restField,
+                  sampleFile: this.convertSampleFileToJson(sampleFile),
+                  options: field.options
+                    ? {
+                        create: field.options,
+                      }
+                    : undefined,
+                };
+              }),
+            }
           : undefined,
       },
       include: {
@@ -617,8 +616,8 @@ export class FormsService {
         groupId,
         options: fieldDto.options
           ? {
-            create: fieldDto.options,
-          }
+              create: fieldDto.options,
+            }
           : undefined,
       },
       include: {
@@ -1047,12 +1046,12 @@ export class FormsService {
         })) || [],
       country: form.country
         ? {
-          id: form.country.id,
-          name: form.country.name,
-          isoCode2: form.country.isoCode2,
-          flag: form.country.flag,
-          logoUrl: form.country.logoUrl,
-        }
+            id: form.country.id,
+            name: form.country.name,
+            isoCode2: form.country.isoCode2,
+            flag: form.country.flag,
+            logoUrl: form.country.logoUrl,
+          }
         : undefined,
     };
   }
@@ -1080,18 +1079,18 @@ export class FormsService {
       status: 'draft', // TODO: Add status field to schema
       applicationType: form.applicationType
         ? {
-          code: form.applicationType.code,
-          name: form.applicationType.name,
-        }
+            code: form.applicationType.code,
+            name: form.applicationType.name,
+          }
         : undefined,
       country: form.country
         ? {
-          id: form.country.id,
-          name: form.country.name,
-          isoCode2: form.country.isoCode2,
-          flag: form.country.flag,
-          logoUrl: form.country.logoUrl,
-        }
+            id: form.country.id,
+            name: form.country.name,
+            isoCode2: form.country.isoCode2,
+            flag: form.country.flag,
+            logoUrl: form.country.logoUrl,
+          }
         : undefined,
     };
   }

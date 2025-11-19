@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Length,
@@ -204,6 +205,38 @@ export class CompleteUpgradeApplicationDto {
   })
   @IsEnum(TravelAgentApplicationType)
   applicationType: TravelAgentApplicationType;
+
+  @ApiProperty({
+    description: 'Company name',
+    example: 'ABC Travel Agency',
+  })
+  @IsString()
+  @IsNotEmpty()
+  companyName: string;
+
+  @ApiProperty({
+    description: 'Company email address',
+    example: 'contact@abctravel.com',
+  })
+  @IsEmail()
+  @IsNotEmpty()
+  companyEmail: string;
+
+  @ApiProperty({
+    description: 'Company phone number',
+    example: '+2348012345678',
+  })
+  @IsString()
+  @IsNotEmpty()
+  companyPhone: string;
+
+  @ApiPropertyOptional({
+    description: 'Company website URL',
+    example: 'https://www.abctravel.com',
+  })
+  @IsOptional()
+  @IsString()
+  companyWebsite?: string;
 
   @ApiProperty()
   @IsString()

@@ -1035,8 +1035,9 @@ export class BiometricCaptureService {
       submissionId: bd.submission?.id ?? '',
       referenceNumber: bd.submission?.referenceNumber ?? null,
       capturedAt: bd.capturedAt?.toISOString() ?? '',
-      applicantName: `${bd.submission?.user?.firstName ?? ''} ${bd.submission?.user?.lastName ?? ''
-        }`.trim(),
+      applicantName: `${bd.submission?.user?.firstName ?? ''} ${
+        bd.submission?.user?.lastName ?? ''
+      }`.trim(),
       formName: bd.submission?.form?.name ?? '',
       country: bd.submission?.form?.country?.name ?? '',
       center: bd.captureLocation?.split(' - Booth ')[0] ?? '',

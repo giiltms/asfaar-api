@@ -504,7 +504,8 @@ export class TravelAgentLicenseService {
     });
 
     this.logger.log(
-      `License ${licenseId} reactivated by ${reactivatedBy}${reason ? ` - Reason: ${reason}` : ''
+      `License ${licenseId} reactivated by ${reactivatedBy}${
+        reason ? ` - Reason: ${reason}` : ''
       }`,
     );
     return updatedLicense;
@@ -554,7 +555,8 @@ export class TravelAgentLicenseService {
     );
 
     this.logger.log(
-      `Processed ${expiredLicenses.length
+      `Processed ${
+        expiredLicenses.length
       } expired licenses: ${expiredLicenseNumbers.join(', ')}`,
     );
 

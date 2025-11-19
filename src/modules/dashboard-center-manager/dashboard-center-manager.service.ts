@@ -540,24 +540,25 @@ export class DashboardCenterManagerService {
           status: bookedAppointment ? 'BOOKED' : 'AVAILABLE',
           appointment: bookedAppointment
             ? {
-              id: bookedAppointment.id,
-              referenceNumber:
-                bookedAppointment.submission.referenceNumber ||
-                bookedAppointment.id,
-              applicantName: `${bookedAppointment.user.firstName || ''} ${bookedAppointment.user.lastName || ''
+                id: bookedAppointment.id,
+                referenceNumber:
+                  bookedAppointment.submission.referenceNumber ||
+                  bookedAppointment.id,
+                applicantName: `${bookedAppointment.user.firstName || ''} ${
+                  bookedAppointment.user.lastName || ''
                 }`.trim(),
-              country: bookedAppointment.submission.form.country.name,
-              formType: bookedAppointment.submission.form.name,
-              appointmentClass: bookedAppointment.appointmentClass,
-              boothNumber:
-                bookedAppointment.queueEntry?.booth?.boothNumber || 'TBD',
-              agentName: bookedAppointment.queueEntry?.booth?.agent
-                ? `${bookedAppointment.queueEntry.booth.agent.firstName} ${bookedAppointment.queueEntry.booth.agent.lastName}`.trim()
-                : 'Unassigned',
-              status: bookedAppointment.status,
-              appointmentId: bookedAppointment.id,
-              submissionId: bookedAppointment.submission.id,
-            }
+                country: bookedAppointment.submission.form.country.name,
+                formType: bookedAppointment.submission.form.name,
+                appointmentClass: bookedAppointment.appointmentClass,
+                boothNumber:
+                  bookedAppointment.queueEntry?.booth?.boothNumber || 'TBD',
+                agentName: bookedAppointment.queueEntry?.booth?.agent
+                  ? `${bookedAppointment.queueEntry.booth.agent.firstName} ${bookedAppointment.queueEntry.booth.agent.lastName}`.trim()
+                  : 'Unassigned',
+                status: bookedAppointment.status,
+                appointmentId: bookedAppointment.id,
+                submissionId: bookedAppointment.submission.id,
+              }
             : undefined,
         };
 

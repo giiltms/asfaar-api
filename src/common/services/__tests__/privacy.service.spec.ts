@@ -39,14 +39,24 @@ describe('PrivacyService', () => {
   describe('isPrivateStatus', () => {
     it('should return true for private statuses', () => {
       expect(PrivacyService.isPrivateStatus(SubmissionStatus.DRAFT)).toBe(true);
-      expect(PrivacyService.isPrivateStatus(SubmissionStatus.PENDING_PAYMENT)).toBe(true);
-      expect(PrivacyService.isPrivateStatus(SubmissionStatus.CANCELLED)).toBe(true);
+      expect(
+        PrivacyService.isPrivateStatus(SubmissionStatus.PENDING_PAYMENT),
+      ).toBe(true);
+      expect(PrivacyService.isPrivateStatus(SubmissionStatus.CANCELLED)).toBe(
+        true,
+      );
     });
 
     it('should return false for public statuses', () => {
-      expect(PrivacyService.isPrivateStatus(SubmissionStatus.SUBMITTED)).toBe(false);
-      expect(PrivacyService.isPrivateStatus(SubmissionStatus.UNDER_REVIEW)).toBe(false);
-      expect(PrivacyService.isPrivateStatus(SubmissionStatus.APPROVED)).toBe(false);
+      expect(PrivacyService.isPrivateStatus(SubmissionStatus.SUBMITTED)).toBe(
+        false,
+      );
+      expect(
+        PrivacyService.isPrivateStatus(SubmissionStatus.UNDER_REVIEW),
+      ).toBe(false);
+      expect(PrivacyService.isPrivateStatus(SubmissionStatus.APPROVED)).toBe(
+        false,
+      );
     });
   });
 
@@ -86,7 +96,7 @@ describe('PrivacyService', () => {
       const whereClause = PrivacyService.createPrivacyWhereClause();
 
       expect(whereClause).toEqual({
-        status: { notIn: PrivacyService.getPrivateStatuses() }
+        status: { notIn: PrivacyService.getPrivateStatuses() },
       });
     });
   });
@@ -99,10 +109,13 @@ describe('PrivacyService', () => {
         SubmissionStatus.UNDER_REVIEW,
       ];
 
-      const whereClause = PrivacyService.createFilteredStatusWhereClause(requestedStatuses);
+      const whereClause =
+        PrivacyService.createFilteredStatusWhereClause(requestedStatuses);
 
       expect(whereClause).toEqual({
-        status: { in: [SubmissionStatus.SUBMITTED, SubmissionStatus.UNDER_REVIEW] }
+        status: {
+          in: [SubmissionStatus.SUBMITTED, SubmissionStatus.UNDER_REVIEW],
+        },
       });
     });
   });
@@ -112,7 +125,7 @@ describe('PrivacyService', () => {
       const whereClause = PrivacyService.createPrivacyProtectedWhereClause();
 
       expect(whereClause).toEqual({
-        status: { notIn: PrivacyService.getPrivateStatuses() }
+        status: { notIn: PrivacyService.getPrivateStatuses() },
       });
     });
 
@@ -123,10 +136,13 @@ describe('PrivacyService', () => {
         SubmissionStatus.UNDER_REVIEW,
       ];
 
-      const whereClause = PrivacyService.createPrivacyProtectedWhereClause(requestedStatuses);
+      const whereClause =
+        PrivacyService.createPrivacyProtectedWhereClause(requestedStatuses);
 
       expect(whereClause).toEqual({
-        status: { in: [SubmissionStatus.SUBMITTED, SubmissionStatus.UNDER_REVIEW] }
+        status: {
+          in: [SubmissionStatus.SUBMITTED, SubmissionStatus.UNDER_REVIEW],
+        },
       });
     });
   });
@@ -139,7 +155,9 @@ describe('PrivacyService', () => {
         SubmissionStatus.APPROVED,
       ];
 
-      expect(() => PrivacyService.validateStatusRequest(publicStatuses)).not.toThrow();
+      expect(() =>
+        PrivacyService.validateStatusRequest(publicStatuses),
+      ).not.toThrow();
     });
 
     it('should throw error for private statuses', () => {
@@ -149,7 +167,9 @@ describe('PrivacyService', () => {
         SubmissionStatus.CANCELLED,
       ];
 
-      expect(() => PrivacyService.validateStatusRequest(privateStatuses)).toThrow();
+      expect(() =>
+        PrivacyService.validateStatusRequest(privateStatuses),
+      ).toThrow();
     });
 
     it('should throw error for mixed statuses with private ones', () => {
@@ -159,7 +179,9 @@ describe('PrivacyService', () => {
         SubmissionStatus.UNDER_REVIEW,
       ];
 
-      expect(() => PrivacyService.validateStatusRequest(mixedStatuses)).toThrow();
+      expect(() =>
+        PrivacyService.validateStatusRequest(mixedStatuses),
+      ).toThrow();
     });
   });
 

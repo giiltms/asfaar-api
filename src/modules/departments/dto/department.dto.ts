@@ -1,10 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsUrl,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUrl } from 'class-validator';
 
 export class CreateDepartmentDto {
   @ApiProperty({

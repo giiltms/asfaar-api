@@ -98,7 +98,8 @@ export class DashboardCenterManagerController {
   @Roles(UserRoles.CENTER_MANAGER, UserRoles.ADMIN, UserRoles.SUPER_ADMIN)
   @ApiOperation({
     summary: 'Get calendar slots for date range',
-    description: 'Retrieve calendar slots with appointments for the specified date range',
+    description:
+      'Retrieve calendar slots with appointments for the specified date range',
   })
   @ApiResponse({
     status: HttpStatus.OK,

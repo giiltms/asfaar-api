@@ -50,8 +50,9 @@ async function sendTravelAgentUpgradeDecisionEmail(
 
     // Prepare email data
     const userFullName =
-      `${application.user.firstName || ''} ${application.user.lastName || ''
-        }`.trim() || application.user.email.split('@')[0];
+      `${application.user.firstName || ''} ${
+        application.user.lastName || ''
+      }`.trim() || application.user.email.split('@')[0];
 
     const applicationTypeDisplay =
       application.applicationType === 'NAHCON_REGISTERED_AGENT'
@@ -64,7 +65,9 @@ async function sendTravelAgentUpgradeDecisionEmail(
       applicationId: application.id,
       applicationType: applicationTypeDisplay,
       companyName: application.companyName,
-      decision: (application.status === UpgradeApplicationStatus.APPROVED ? 'APPROVED' : 'REJECTED') as 'APPROVED' | 'REJECTED',
+      decision: (application.status === UpgradeApplicationStatus.APPROVED
+        ? 'APPROVED'
+        : 'REJECTED') as 'APPROVED' | 'REJECTED',
       decisionDate: application.updatedAt?.toLocaleDateString('en-NG', {
         year: 'numeric',
         month: 'long',

@@ -163,7 +163,8 @@ export default class UserEntity implements User {
   biometricCenters?: any[]; // Using any[] to avoid circular dependency issues
 
   @ApiPropertyOptional({
-    description: 'Travel agent profile with company information (for agents only)',
+    description:
+      'Travel agent profile with company information (for agents only)',
     type: 'object',
   })
   @Expose()

@@ -143,17 +143,17 @@ export class DashboardLiaisonService {
         },
         appointment: submission.appointment
           ? {
-            appointmentTime: submission.appointment.appointmentTime,
-            status: submission.appointment.status,
-            center: submission.appointment.center.name,
-          }
+              appointmentTime: submission.appointment.appointmentTime,
+              status: submission.appointment.status,
+              center: submission.appointment.center.name,
+            }
           : null,
         payment: submission.payment
           ? {
-            amount: submission.payment.amount,
-            status: submission.payment.status,
-            currency: submission.payment.currency,
-          }
+              amount: submission.payment.amount,
+              status: submission.payment.status,
+              currency: submission.payment.currency,
+            }
           : null,
       }));
 
@@ -586,8 +586,9 @@ export class DashboardLiaisonService {
             id: submission.id,
             referenceNumber: submission.referenceNumber,
             applicantName: submission.user
-              ? `${submission.user.firstName || ''} ${submission.user.lastName || ''}`.trim() ||
-              submission.user.email
+              ? `${submission.user.firstName || ''} ${
+                  submission.user.lastName || ''
+                }`.trim() || submission.user.email
               : 'Unknown',
             applicantEmail: submission.user?.email || 'N/A',
             formName: submission.form?.name || 'Unknown',

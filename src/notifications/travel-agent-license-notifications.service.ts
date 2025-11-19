@@ -177,7 +177,14 @@ export class TravelAgentLicenseNotificationsService {
     notification: LicenseExpirationNotification,
   ): Promise<void> {
     try {
-      const { userEmail, userName, licenseNumber, companyName, daysUntilExpiry, expiresAt } = notification;
+      const {
+        userEmail,
+        userName,
+        licenseNumber,
+        companyName,
+        daysUntilExpiry,
+        expiresAt,
+      } = notification;
 
       // Determine email subject and urgency based on days until expiry
       let subject: string;

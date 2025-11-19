@@ -32,7 +32,8 @@ export class AnalyticsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get system overview analytics',
-    description: 'Retrieve comprehensive system analytics including application data, user statistics, and role distribution. Super admin only.',
+    description:
+      'Retrieve comprehensive system analytics including application data, user statistics, and role distribution. Super admin only.',
   })
   @ApiQuery({
     name: 'startDate',

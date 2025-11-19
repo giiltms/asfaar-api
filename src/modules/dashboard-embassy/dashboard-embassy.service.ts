@@ -232,17 +232,17 @@ export class DashboardEmbassyService {
           },
           appointment: submission.appointment
             ? {
-              appointmentTime: submission.appointment.appointmentTime,
-              status: submission.appointment.status,
-              center: submission.appointment.center?.name || '',
-            }
+                appointmentTime: submission.appointment.appointmentTime,
+                status: submission.appointment.status,
+                center: submission.appointment.center?.name || '',
+              }
             : null,
           payment: submission.payment
             ? {
-              amount: submission.payment.amount,
-              status: submission.payment.status,
-              currency: submission.payment.currency,
-            }
+                amount: submission.payment.amount,
+                status: submission.payment.status,
+                currency: submission.payment.currency,
+              }
             : null,
         };
       });
@@ -426,12 +426,12 @@ export class DashboardEmbassyService {
       const averageProcessingTime =
         processingTimeData.length > 0
           ? processingTimeData.reduce((sum, app) => {
-            const processingTime =
-              app.reviewedAt.getTime() - app.submittedAt.getTime();
-            return sum + processingTime;
-          }, 0) /
-          processingTimeData.length /
-          (1000 * 60 * 60 * 24) // Convert to days
+              const processingTime =
+                app.reviewedAt.getTime() - app.submittedAt.getTime();
+              return sum + processingTime;
+            }, 0) /
+            processingTimeData.length /
+            (1000 * 60 * 60 * 24) // Convert to days
           : 0;
 
       return {
@@ -699,7 +699,9 @@ export class DashboardEmbassyService {
           where.status = SubmissionStatus.REJECTED;
         } else if (query.action === EmbassyAction.REQUEST_INFO) {
           // REQUEST_INFO could be QUERIED or other statuses
-          where.status = { in: [SubmissionStatus.QUERIED, SubmissionStatus.PROCESSING] };
+          where.status = {
+            in: [SubmissionStatus.QUERIED, SubmissionStatus.PROCESSING],
+          };
         }
       }
 
@@ -764,8 +766,9 @@ export class DashboardEmbassyService {
             id: submission.id,
             referenceNumber: submission.referenceNumber,
             applicantName: submission.user
-              ? `${submission.user.firstName || ''} ${submission.user.lastName || ''}`.trim() ||
-              submission.user.email
+              ? `${submission.user.firstName || ''} ${
+                  submission.user.lastName || ''
+                }`.trim() || submission.user.email
               : 'Unknown',
             applicantEmail: submission.user?.email || 'N/A',
             formName: submission.form?.name || 'Unknown',
