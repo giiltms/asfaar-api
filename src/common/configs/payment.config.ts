@@ -53,6 +53,10 @@ class PaymentConfig {
   @IsOptional()
   FLUTTERWAVE_WEBHOOK_SECRET?: string;
 
+  @IsString()
+  @IsOptional()
+  FLUTTERWAVE_BASE_URL?: string;
+
   // Paystack Configuration
   @IsString()
   @IsOptional()
@@ -65,6 +69,10 @@ class PaymentConfig {
   @IsString()
   @IsOptional()
   PAYSTACK_WEBHOOK_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  PAYSTACK_BASE_URL?: string;
 
   // Fincra Configuration
   @IsString()
@@ -82,6 +90,14 @@ class PaymentConfig {
   @IsString()
   @IsOptional()
   FINCRA_WEBHOOK_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  FINCRA_BASE_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  FINCRA_SANDBOX_BASE_URL?: string;
 
   // Stripe Configuration
   @IsString()
@@ -141,17 +157,24 @@ export default registerAs('payment', () => {
     FLUTTERWAVE_SECRET_KEY: process.env.FLUTTERWAVE_SECRET_KEY,
     FLUTTERWAVE_ENCRYPTION_KEY: process.env.FLUTTERWAVE_ENCRYPTION_KEY,
     FLUTTERWAVE_WEBHOOK_SECRET: process.env.FLUTTERWAVE_WEBHOOK_SECRET,
+    FLUTTERWAVE_BASE_URL:
+      process.env.FLUTTERWAVE_BASE_URL || 'https://api.flutterwave.com/v3',
 
     // Paystack
     PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY,
     PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
     PAYSTACK_WEBHOOK_SECRET: process.env.PAYSTACK_WEBHOOK_SECRET,
+    PAYSTACK_BASE_URL:
+      process.env.PAYSTACK_BASE_URL || 'https://api.paystack.co',
 
     // Fincra
     FINCRA_PUBLIC_KEY: process.env.FINCRA_PUBLIC_KEY,
     FINCRA_SECRET_KEY: process.env.FINCRA_SECRET_KEY,
     FINCRA_MERCHANT_ID: process.env.FINCRA_MERCHANT_ID,
     FINCRA_WEBHOOK_SECRET: process.env.FINCRA_WEBHOOK_SECRET,
+    FINCRA_BASE_URL: process.env.FINCRA_BASE_URL || 'https://api.fincra.com',
+    FINCRA_SANDBOX_BASE_URL:
+      process.env.FINCRA_SANDBOX_BASE_URL || 'https://sandboxapi.fincra.com',
 
     // Stripe
     STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,

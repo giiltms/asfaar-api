@@ -24,12 +24,9 @@ export class FlutterwaveProvider implements PaymentProviderInterface {
 
   constructor(private readonly configService: ConfigService) {
     const paymentConfig = this.configService.get('payment');
-    const isSandbox = paymentConfig.PAYMENT_SANDBOX_MODE;
 
-    this.baseUrl = isSandbox
-      ? 'https://api.flutterwave.com/v3'
-      : 'https://api.flutterwave.com/v3';
-
+    this.baseUrl =
+      paymentConfig.FLUTTERWAVE_BASE_URL || 'https://api.flutterwave.com/v3';
     this.secretKey = paymentConfig.FLUTTERWAVE_SECRET_KEY;
     this.webhookSecret = paymentConfig.FLUTTERWAVE_WEBHOOK_SECRET;
 

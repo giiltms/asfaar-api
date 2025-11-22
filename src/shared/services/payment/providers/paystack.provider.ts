@@ -24,12 +24,9 @@ export class PaystackProvider implements PaymentProviderInterface {
 
   constructor(private readonly configService: ConfigService) {
     const paymentConfig = this.configService.get('payment');
-    const isSandbox = paymentConfig.PAYMENT_SANDBOX_MODE;
 
-    this.baseUrl = isSandbox
-      ? 'https://api.paystack.co'
-      : 'https://api.paystack.co';
-
+    this.baseUrl =
+      paymentConfig.PAYSTACK_BASE_URL || 'https://api.paystack.co';
     this.secretKey = paymentConfig.PAYSTACK_SECRET_KEY;
     this.webhookSecret = paymentConfig.PAYSTACK_WEBHOOK_SECRET;
 
