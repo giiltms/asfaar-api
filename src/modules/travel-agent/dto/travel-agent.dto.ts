@@ -11,6 +11,7 @@ import {
   IsDateString,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -311,3 +312,159 @@ export class ApplicationFiltersDto extends PaginationQueryDto {
 }
 
 // Communication filters - TODO: Implement when ClientCommunication model is added to schema
+
+// Calendar DTOs
+export class AgentCalendarFiltersDto {
+  @ApiProperty({
+    description: 'Start date for the calendar view (ISO date string)',
+    example: '2024-01-15',
+  })
+  @IsDateString()
+  startDate: string;
+
+  @ApiProperty({
+    description: 'End date for the calendar view (ISO date string)',
+    example: '2024-01-20',
+  })
+  @IsDateString()
+  endDate: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by specific client ID',
+    example: 'client-uuid-123',
+  })
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by appointment class',
+    enum: ['REGULAR', 'VIP', 'PREMIUM'],
+    example: 'REGULAR',
+  })
+  @IsOptional()
+  @IsEnum(['REGULAR', 'VIP', 'PREMIUM'])
+  appointmentClass?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by appointment status',
+    enum: [
+      'PENDING',
+      'SCHEDULED',
+      'ACTIVE',
+      'CHECKED_IN',
+      'IN_QUEUE',
+      'AT_BOOTH',
+      'COMPLETED',
+      'CANCELLED',
+      'RESCHEDULED',
+      'NO_SHOW',
+    ],
+    example: 'ACTIVE',
+  })
+  @IsOptional()
+  @IsEnum([
+    'PENDING',
+    'SCHEDULED',
+    'ACTIVE',
+    'CHECKED_IN',
+    'IN_QUEUE',
+    'AT_BOOTH',
+    'COMPLETED',
+    'CANCELLED',
+    'RESCHEDULED',
+    'NO_SHOW',
+  ])
+  status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by biometric center ID',
+    example: 'center-uuid-123',
+  })
+  @IsOptional()
+  @IsUUID()
+  centerId?: string;
+}
+
+export class AgentCalendarAppointmentDto {
+  @ApiProperty({ description: 'Appointment ID', example: 'apt-123' })
+  id: string;
+
+  @ApiPropertyOptional({
+    description: 'Appointment time (nullable if not scheduled)',
+    example: '2024-01-15T09:00:00Z',
+  })
+  appointmentTime: Date | null;
+
+  @ApiProperty({
+    description: 'Appointment status',
+    enum: [
+      'PENDING',
+      'SCHEDULED',
+      'ACTIVE',
+      'CHECKED_IN',
+      'IN_QUEUE',
+      'AT_BOOTH',
+      'COMPLETED',
+      'CANCELLED',
+      'RESCHEDULED',
+      'NO_SHOW',
+    ],
+    example: 'ACTIVE',
+  })
+  status: string;
+
+  @ApiProperty({
+    description: 'Appointment class',
+    enum: ['REGULAR', 'VIP', 'PREMIUM'],
+    example: 'REGULAR',
+  })
+  appointmentClass: string;
+
+  @ApiProperty({ description: 'Client information' })
+  client: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    avatar?: string;
+  };
+
+  @ApiProperty({ description: 'Submission information' })
+  submission: {
+    id: string;
+    referenceNumber: string;
+    formName: string;
+    country: string;
+  };
+
+  @ApiPropertyOptional({ description: 'Biometric center information' })
+  center?: {
+    id: string;
+    name: string;
+  };
+
+  @ApiPropertyOptional({ description: 'Booth information' })
+  booth?: {
+    id: string;
+    boothNumber: string;
+  };
+}
+
+export class AgentCalendarResponseDto {
+  @ApiProperty({
+    description: 'Calendar appointments',
+    type: [AgentCalendarAppointmentDto],
+  })
+  appointments: AgentCalendarAppointmentDto[];
+
+  @ApiProperty({ description: 'Total appointments count', example: 25 })
+  totalAppointments: number;
+
+  @ApiProperty({
+    description: 'Date range',
+    example: '2024-01-15 to 2024-01-20',
+  })
+  dateRange: string;
+}

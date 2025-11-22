@@ -32,6 +32,8 @@ import {
   ApplicationDto,
   ApplicationFiltersDto,
   AgentAnalyticsDto,
+  AgentCalendarFiltersDto,
+  AgentCalendarResponseDto,
 } from './dto/travel-agent.dto';
 import ApiOkBaseResponse from '@common/decorators/api-ok-base-response.decorator';
 import { ApiDefaultResponse } from '@common/decorators/api-default-response.decorator';
@@ -434,6 +436,42 @@ export class TravelAgentController {
       success: true,
       message: 'Recent applications retrieved successfully',
       data: applications,
+    };
+  }
+
+  /**
+   * Get calendar appointments for travel agent's clients
+   */
+  @Get('calendar/appointments')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get calendar appointments for clients',
+    description:
+      'Retrieve biometric appointments for all clients managed by the travel agent within a date range',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Calendar appointments retrieved successfully',
+    type: AgentCalendarResponseDto,
+  })
+  @ApiDefaultResponse({})
+  async getCalendarAppointments(
+    @Query(ValidationPipe) filters: AgentCalendarFiltersDto,
+    @CurrentUser() user: JwtUserPayload,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: AgentCalendarResponseDto;
+  }> {
+    const result = await this.travelAgentService.getClientAppointments(
+      user.id,
+      filters,
+    );
+
+    return {
+      success: true,
+      message: 'Calendar appointments retrieved successfully',
+      data: result,
     };
   }
 }

@@ -7,8 +7,11 @@ import {
   ApplicationDto,
   AgentAnalyticsDto,
   ApplicationFiltersDto,
+  AgentCalendarFiltersDto,
+  AgentCalendarResponseDto,
+  AgentCalendarAppointmentDto,
 } from './dto/travel-agent.dto';
-import { SubmissionStatus, PaymentStatus } from '@prisma/client';
+import { SubmissionStatus, PaymentStatus, Prisma } from '@prisma/client';
 
 /**
  * Service for managing travel agent operations
@@ -159,13 +162,13 @@ export class TravelAgentService {
       const averageProcessingTime =
         processingTimeData.length > 0
           ? processingTimeData.reduce((sum, submission) => {
-              const days = Math.ceil(
-                (submission.updatedAt.getTime() -
-                  submission.submittedAt.getTime()) /
-                  (1000 * 60 * 60 * 24),
-              );
-              return sum + days;
-            }, 0) / processingTimeData.length
+            const days = Math.ceil(
+              (submission.updatedAt.getTime() -
+                submission.submittedAt.getTime()) /
+              (1000 * 60 * 60 * 24),
+            );
+            return sum + days;
+          }, 0) / processingTimeData.length
           : 0;
 
       return {
@@ -213,8 +216,7 @@ export class TravelAgentService {
         formName: submission.form?.name || 'Unknown Form',
         clientId: submission.userId,
         clientName: submission.user
-          ? `${submission.user.firstName || ''} ${
-              submission.user.lastName || ''
+          ? `${submission.user.firstName || ''} ${submission.user.lastName || ''
             }`.trim() || submission.user.email
           : 'Unknown User',
         status: submission.status,
@@ -296,9 +298,8 @@ export class TravelAgentService {
         formName: updatedSubmission.form.name,
         clientId: updatedSubmission.userId,
         clientName:
-          `${updatedSubmission.user.firstName || ''} ${
-            updatedSubmission.user.lastName || ''
-          }`.trim() || updatedSubmission.user.email,
+          `${updatedSubmission.user.firstName || ''} ${updatedSubmission.user.lastName || ''
+            }`.trim() || updatedSubmission.user.email,
         status: updatedSubmission.status,
         createdAt: updatedSubmission.createdAt,
         updatedAt: updatedSubmission.updatedAt,
@@ -356,8 +357,7 @@ export class TravelAgentService {
         formName: submission.form?.name || 'Unknown Form',
         clientId: submission.userId,
         clientName: submission.user
-          ? `${submission.user.firstName || ''} ${
-              submission.user.lastName || ''
+          ? `${submission.user.firstName || ''} ${submission.user.lastName || ''
             }`.trim() || submission.user.email
           : 'Unknown User',
         status: submission.status,
@@ -376,6 +376,163 @@ export class TravelAgentService {
     } catch (error) {
       this.logger.error(
         `Failed to get applications: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get calendar appointments for travel agent's clients
+   */
+  async getClientAppointments(
+    agentId: string,
+    filters: AgentCalendarFiltersDto,
+  ): Promise<AgentCalendarResponseDto> {
+    try {
+      // Parse date range
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
+
+      // Set proper time boundaries
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+
+      this.logger.log(
+        `Getting calendar appointments for agent ${agentId} from ${filters.startDate} to ${filters.endDate}`,
+      );
+
+      // Get agent's client IDs
+      const clientRelationships = await this.prisma.travelAgentClient.findMany({
+        where: {
+          agentId,
+          ...(filters.clientId && { clientId: filters.clientId }),
+        },
+        select: {
+          clientId: true,
+        },
+      });
+
+      const clientIds = clientRelationships.map((rel) => rel.clientId);
+
+      if (clientIds.length === 0) {
+        return {
+          appointments: [],
+          totalAppointments: 0,
+          dateRange: `${filters.startDate} to ${filters.endDate}`,
+        };
+      }
+
+      // Build where clause for appointments (type-safe with Prisma)
+      const where: Prisma.BiometricAppointmentWhereInput = {
+        userId: { in: clientIds },
+        appointmentTime: {
+          gte: startDate,
+          lte: endDate,
+        },
+        ...(filters.appointmentClass && {
+          appointmentClass: filters.appointmentClass as any,
+        }),
+        ...(filters.status && { status: filters.status as any }),
+        ...(filters.centerId && { centerId: filters.centerId }),
+      };
+
+      // Get appointments
+      const appointments = await this.prisma.biometricAppointment.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              avatar: true,
+            },
+          },
+          submission: {
+            select: {
+              id: true,
+              referenceNumber: true,
+              form: {
+                select: {
+                  name: true,
+                  country: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          center: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          queueEntry: {
+            select: {
+              booth: {
+                select: {
+                  id: true,
+                  boothNumber: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          appointmentTime: 'asc',
+        },
+      });
+
+      // Map to DTO format
+      const appointmentDtos: AgentCalendarAppointmentDto[] = appointments.map(
+        (apt) => ({
+          id: apt.id,
+          appointmentTime: apt.appointmentTime,
+          status: apt.status,
+          appointmentClass: apt.appointmentClass,
+          client: {
+            id: apt.user.id,
+            firstName: apt.user.firstName,
+            lastName: apt.user.lastName,
+            email: apt.user.email,
+            phone: apt.user.phone || undefined,
+            avatar: apt.user.avatar || undefined,
+          },
+          submission: {
+            id: apt.submission.id,
+            referenceNumber: apt.submission.referenceNumber || '',
+            formName: apt.submission.form.name,
+            country: apt.submission.form.country?.name || 'N/A',
+          },
+          center: apt.center
+            ? {
+              id: apt.center.id,
+              name: apt.center.name,
+            }
+            : undefined,
+          booth: apt.queueEntry?.booth
+            ? {
+              id: apt.queueEntry.booth.id,
+              boothNumber: apt.queueEntry.booth.boothNumber,
+            }
+            : undefined,
+        }),
+      );
+
+      return {
+        appointments: appointmentDtos,
+        totalAppointments: appointmentDtos.length,
+        dateRange: `${filters.startDate} to ${filters.endDate}`,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to get client appointments: ${error.message}`,
         error.stack,
       );
       throw error;
