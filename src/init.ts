@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 // Staff roles bypass the onboarding payment gate — only APPLICANT must pay.
-const STAFF_ROLES = new Set([
+const STAFF_ROLES = new Set<Roles>([
   Roles.SUPER_ADMIN,
   Roles.ADMIN,
   Roles.AGENCY,
