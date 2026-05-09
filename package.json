@@ -25,7 +25,7 @@
     "db:deploy": "npx prisma migrate deploy",
     "db:seed": "ts-node src/seed.ts",
     "db:seed:prod": "node -r ts-node/register src/seed.ts",
-    "db:init": "node -r ts-node/register src/init.ts",
+    "db:init": "node dist/init.js",
     "db:repair-migrations": "node scripts/fix-migration-state.js",
     "prepare": "husky install"
   },
