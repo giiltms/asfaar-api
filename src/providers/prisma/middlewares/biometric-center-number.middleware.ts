@@ -1,11 +1,12 @@
 import { Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
+const prismaInternal = new PrismaClient();
 const logger = new Logger('BiometricCenterNumberMiddleware');
 
-async function generateNextCenterNumber(prismaClient: any): Promise<string> {
+async function generateNextCenterNumber(): Promise<string> {
   // Get all centers and find the highest valid 3-digit number
-  const allCenters = await prismaClient.biometricCenter.findMany({
+  const allCenters = await prismaInternal.biometricCenter.findMany({
     select: {
       centerNumber: true,
     },
@@ -52,11 +53,8 @@ export function biometricCenterNumberMiddleware(): Prisma.Middleware {
 
       if (!hasCenterNumber) {
         try {
-          // Get the Prisma client from the middleware context
-          const prismaClient = (globalThis as any).prisma || this;
-
           // Generate the next available center number
-          const nextCenterNumber = await generateNextCenterNumber(prismaClient);
+          const nextCenterNumber = await generateNextCenterNumber();
           params.args.data.centerNumber = nextCenterNumber;
 
           logger.log(
@@ -73,7 +71,36 @@ export function biometricCenterNumberMiddleware(): Prisma.Middleware {
 
     try {
       return await next(params);
-    } catch (err) {
+    } catch (err: any) {
+      // If it's a unique constraint violation on centerNumber, retry with a new number
+      if (
+        err.code === 'P2002' &&
+        err.meta?.target?.includes('centerNumber') &&
+        params.action === 'create'
+      ) {
+        logger.warn(
+          `Center number conflict detected, regenerating number and retrying...`,
+        );
+        try {
+          // Regenerate center number and retry
+          const nextCenterNumber = await generateNextCenterNumber();
+          params.args.data.centerNumber = nextCenterNumber;
+
+          logger.log(
+            `Regenerated center number: ${nextCenterNumber} after conflict`,
+          );
+
+          // Retry the operation
+          return await next(params);
+        } catch (retryError) {
+          logger.error(
+            `Failed to retry after center number conflict: ${
+              (retryError as Error).message
+            }`,
+          );
+          throw retryError;
+        }
+      }
       throw err;
     }
   };
