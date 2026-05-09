@@ -100,7 +100,7 @@ async function seedServiceFees() {
     {
       name: 'Onboarding Fee',
       description: 'One-time registration and platform setup fee for new applicants.',
-      amount: 5000,   // ₦5,000 — update to your actual amount
+      amount: 2000,
       currency: 'NGN',
       feeType: FeeType.ONBOARDING,
       isOptional: false,
@@ -118,7 +118,7 @@ async function seedServiceFees() {
         where: { id: existing.id },
         data: { isActive: true },
       });
-      console.log(`  ~ ${fee.feeType} fee already exists (₦${existing.amount}) — skipped`);
+      console.log(`  ~ ${fee.feeType} fee already exists (amount: ${existing.amount}) — skipped`);
     } else {
       await prisma.serviceFee.create({ data: { ...fee, isActive: true } });
       console.log(`  ✓ ${fee.feeType} fee created — ₦${fee.amount}`);
