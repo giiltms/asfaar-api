@@ -6,8 +6,8 @@ sleep 30
 # Run database migrations
 yarn run db:deploy
 
-# Seed the database
-yarn run seed
+# Create/update role accounts (idempotent — safe on every deploy)
+yarn run db:init
 
 # Start the application
 yarn run start:prod

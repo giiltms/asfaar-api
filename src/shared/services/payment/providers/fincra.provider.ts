@@ -29,8 +29,7 @@ export class FincraProvider implements PaymentProviderInterface {
     const isSandbox = paymentConfig.PAYMENT_SANDBOX_MODE;
 
     this.baseUrl = isSandbox
-      ? paymentConfig.FINCRA_SANDBOX_BASE_URL ||
-        'https://sandboxapi.fincra.com'
+      ? paymentConfig.FINCRA_SANDBOX_BASE_URL || 'https://sandboxapi.fincra.com'
       : paymentConfig.FINCRA_BASE_URL || 'https://api.fincra.com';
 
     this.secretKey = paymentConfig.FINCRA_SECRET_KEY;

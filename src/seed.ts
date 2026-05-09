@@ -10,6 +10,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('🚫 Seed cannot run in production. Set NODE_ENV to development or staging.');
+  }
+
   console.log('🌱 Starting database seeding...');
 
   // Clean existing data
@@ -397,161 +401,284 @@ async function main() {
 
   // Create users
   console.log('👥 Creating users...');
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const seedPassword = process.env.SEED_PASSWORD || 'Asfaar@2025!';
+  const hashedPassword = await bcrypt.hash(seedPassword, 10);
 
-  const superAdmin = await prisma.user.create({
-    data: {
-      email: 'superadmin@example.com',
-      password: hashedPassword,
-      firstName: 'Super',
-      lastName: 'Admin',
-      username: 'superadmin',
-      roles: [Roles.SUPER_ADMIN],
-      status: Status.ACTIVE,
-      isVerified: true,
-      isActive: true,
-      timezone: 'UTC',
-      locale: 'en',
-    },
-  });
-
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@example.com',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      username: 'admin',
-      roles: [Roles.ADMIN],
-      status: Status.ACTIVE,
-      isVerified: true,
-      isActive: true,
-      timezone: 'UTC',
-      locale: 'en',
-    },
-  });
-
-  const users = await Promise.all([
-    prisma.user.create({
-      data: {
-        email: 'john.doe@example.com',
+  const [
+    superAdmin,
+    admin,
+    applicant,
+    agency,
+    finance,
+    embassyOfficer,
+    liaisonOfficer,
+    verificationOfficer,
+    biometricAgent,
+    centerManager,
+    receptionist,
+    gatehouse,
+    authority,
+  ] = await Promise.all([
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+superadmin@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+superadmin@gmail.com',
         password: hashedPassword,
-        firstName: 'John',
-        lastName: 'Doe',
-        username: 'johndoe',
+        firstName: 'Super',
+        lastName: 'Admin',
+        username: 'superadmin',
+        roles: [Roles.SUPER_ADMIN],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+admin@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+admin@gmail.com',
+        password: hashedPassword,
+        firstName: 'Asfaar',
+        lastName: 'Admin',
+        username: 'asfaaradmin',
+        roles: [Roles.ADMIN],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+applicant@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+applicant@gmail.com',
+        password: hashedPassword,
+        firstName: 'Test',
+        lastName: 'Applicant',
+        username: 'testapplicant',
         gender: Gender.MALE,
-        bio: 'Software engineer passionate about technology',
-        website: 'https://johndoe.dev',
         nin: '12345678901',
-        state: 'New York',
-        lga: 'Manhattan',
+        state: 'Lagos',
+        lga: 'Ikeja',
         roles: [Roles.APPLICANT],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
-        timezone: 'America/New_York',
+        timezone: 'Africa/Lagos',
         locale: 'en',
       },
     }),
-    prisma.user.create({
-      data: {
-        email: 'jane.smith@example.com',
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+agency@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+agency@gmail.com',
         password: hashedPassword,
-        firstName: 'Jane',
-        lastName: 'Smith',
-        username: 'janesmith',
-        gender: Gender.FEMALE,
-        bio: 'UX designer and tech enthusiast',
-        website: 'https://janesmith.design',
-        nin: '12345678902',
-        state: 'California',
-        lga: 'San Francisco',
-        roles: [Roles.APPLICANT],
+        firstName: 'Travel',
+        lastName: 'Agency',
+        username: 'travelagency',
+        roles: [Roles.AGENCY],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
-        timezone: 'America/Los_Angeles',
+        timezone: 'Africa/Lagos',
         locale: 'en',
       },
     }),
-    prisma.user.create({
-      data: {
-        email: 'alex.wilson@example.com',
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+finance@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+finance@gmail.com',
         password: hashedPassword,
-        firstName: 'Alex',
-        lastName: 'Wilson',
-        username: 'alexwilson',
-        bio: 'Full-stack developer and open source contributor',
-        nin: '12345678903',
-        state: 'London',
-        lga: 'London',
-        roles: [Roles.APPLICANT],
+        firstName: 'Finance',
+        lastName: 'Officer',
+        username: 'financeofficer',
+        roles: [Roles.FINANCE],
         status: Status.ACTIVE,
         isVerified: true,
         isActive: true,
-        timezone: 'Europe/London',
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+embassy@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+embassy@gmail.com',
+        password: hashedPassword,
+        firstName: 'Embassy',
+        lastName: 'Officer',
+        username: 'embassyofficer',
+        roles: [Roles.EMBASSY_OFFICER],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+liaison@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+liaison@gmail.com',
+        password: hashedPassword,
+        firstName: 'Liaison',
+        lastName: 'Officer',
+        username: 'liaisonofficer',
+        roles: [Roles.LIAISON_OFFICER],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+verification@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+verification@gmail.com',
+        password: hashedPassword,
+        firstName: 'Verification',
+        lastName: 'Officer',
+        username: 'verificationofficer',
+        roles: [Roles.VERIFICATION_OFFICER],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+biometric@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+biometric@gmail.com',
+        password: hashedPassword,
+        firstName: 'Biometric',
+        lastName: 'Agent',
+        username: 'biometricagent',
+        roles: [Roles.BIOMETRIC_AGENT],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+centermanager@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+centermanager@gmail.com',
+        password: hashedPassword,
+        firstName: 'Center',
+        lastName: 'Manager',
+        username: 'centermanager',
+        roles: [Roles.CENTER_MANAGER],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+receptionist@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+receptionist@gmail.com',
+        password: hashedPassword,
+        firstName: 'Front',
+        lastName: 'Desk',
+        username: 'receptionist',
+        roles: [Roles.RECEPTIONIST],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+gatehouse@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+gatehouse@gmail.com',
+        password: hashedPassword,
+        firstName: 'Gate',
+        lastName: 'House',
+        username: 'gatehouse',
+        roles: [Roles.GATEHOUSE],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
+        locale: 'en',
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'alhajee2009+authority@gmail.com' },
+      update: { password: hashedPassword },
+      create: {
+        email: 'alhajee2009+authority@gmail.com',
+        password: hashedPassword,
+        firstName: 'Authority',
+        lastName: 'User',
+        username: 'authorityuser',
+        roles: [Roles.AUTHORITY],
+        status: Status.ACTIVE,
+        isVerified: true,
+        isActive: true,
+        timezone: 'Africa/Lagos',
         locale: 'en',
       },
     }),
   ]);
 
+  // Keep users array alias so post/comment/like seeding below still works
+  const users = [applicant, agency, finance];
+
   console.log('👤 Creating user profiles...');
-  // Create user profiles
   await Promise.all([
     prisma.userProfile.create({
       data: {
-        userId: users[0].id,
-        company: 'Tech Corp',
-        jobTitle: 'Senior Software Engineer',
-        education: 'Computer Science',
-        skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'NestJS'],
-        interests: ['Technology', 'Music', 'Travel'],
-        socialLinks: {
-          linkedin: 'https://linkedin.com/in/johndoe',
-          github: 'https://github.com/johndoe',
-          twitter: 'https://twitter.com/johndoe',
-        },
+        userId: superAdmin.id,
+        jobTitle: 'System Administrator',
         address: {
-          street: '123 Main St',
-          city: 'New York',
-          state: 'NY',
-          country: 'USA',
-          zipCode: '10001',
+          street: '1 Government House',
+          city: 'Abuja',
+          state: 'FCT',
+          country: 'Nigeria',
         },
       },
     }),
     prisma.userProfile.create({
       data: {
-        userId: users[1].id,
-        company: 'Design Studio',
-        jobTitle: 'UX Designer',
-        education: 'Graphic Design',
-        skills: [
-          'Figma',
-          'Adobe Creative Suite',
-          'User Research',
-          'Prototyping',
-        ],
-        interests: ['Design', 'Art', 'Photography'],
-        socialLinks: {
-          linkedin: 'https://linkedin.com/in/janesmith',
-          dribbble: 'https://dribbble.com/janesmith',
-        },
+        userId: applicant.id,
+        jobTitle: 'Visa Applicant',
         address: {
-          street: '456 Oak Ave',
-          city: 'San Francisco',
-          state: 'CA',
-          country: 'USA',
-          zipCode: '94102',
+          street: '45 Allen Avenue',
+          city: 'Lagos',
+          state: 'Lagos',
+          country: 'Nigeria',
         },
       },
     }),
   ]);
 
   console.log('🏠 Creating addresses...');
-  // Create addresses for users
   await Promise.all([
-    // Addresses for superAdmin
     prisma.address.create({
       data: {
         userId: superAdmin.id,
@@ -565,7 +692,6 @@ async function main() {
         isVerified: true,
       },
     }),
-    // Addresses for admin
     prisma.address.create({
       data: {
         userId: admin.id,
@@ -580,57 +706,19 @@ async function main() {
         isVerified: true,
       },
     }),
-    // Addresses for John Doe
     prisma.address.create({
       data: {
-        userId: users[0].id,
-        addressLine1: '123 Main Street',
-        addressLine2: 'Apartment 4B',
-        area: 'Manhattan',
-        city: 'New York',
-        state: 'New York',
-        postalCode: '10001',
-        country: 'United States',
-        type: AddressType.HOME,
-        isDefault: true,
-        isVerified: true,
-        label: 'Home Address',
-        latitude: 40.7128,
-        longitude: -74.006,
-      },
-    }),
-    // Addresses for Jane Smith
-    prisma.address.create({
-      data: {
-        userId: users[1].id,
-        addressLine1: '456 Oak Avenue',
-        area: 'Mission District',
-        city: 'San Francisco',
-        state: 'California',
-        postalCode: '94102',
-        country: 'United States',
-        type: AddressType.HOME,
-        isDefault: true,
-        isVerified: true,
-        label: 'Home',
-        latitude: 37.7749,
-        longitude: -122.4194,
-      },
-    }),
-    // Addresses for Alex Wilson
-    prisma.address.create({
-      data: {
-        userId: users[2].id,
-        addressLine1: '12 Ahmadu Bello Way',
-        area: 'Garki',
-        city: 'Abuja',
-        state: 'FCT',
-        lga: 'Abuja Municipal',
+        userId: applicant.id,
+        addressLine1: '45 Allen Avenue',
+        area: 'Ikeja',
+        city: 'Lagos',
+        state: 'Lagos',
+        lga: 'Ikeja',
         country: 'Nigeria',
         type: AddressType.HOME,
         isDefault: true,
-        isVerified: false,
-        postalCode: '900001',
+        isVerified: true,
+        postalCode: '100001',
       },
     }),
   ]);
@@ -1243,25 +1331,33 @@ async function main() {
 
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Created:');
-  console.log(`  - ${3 + users.length} users (including admin accounts)`);
+  console.log(`  - 13 role accounts`);
   console.log(`  - ${categories.length} categories`);
   console.log(`  - ${tags.length} tags`);
   console.log(`  - ${posts.length} posts`);
   console.log(`  - 3 comments`);
   console.log(`  - 3 likes`);
   console.log(`  - 2 notifications`);
-  console.log(`  - 4 user preferences`);
   console.log(`  - 2 user profiles`);
   console.log(`  - ${biometricCenters.length} biometric centers`);
   console.log(`  - ${booths.length} booths`);
 
-  console.log('\n🔑 Test accounts:');
-  console.log('  - Super Admin: superadmin@example.com / password123');
-  console.log('  - Admin: admin@example.com / password123');
-
-  console.log('  - Applicant: john.doe@example.com / password123');
-  console.log('  - Applicant: jane.smith@example.com / password123');
-  console.log('  - Applicant: alex.wilson@example.com / password123');
+  const displayPassword = process.env.SEED_PASSWORD ? '(from SEED_PASSWORD env var)' : 'Asfaar@2025!';
+  console.log('\n🔑 Seeded accounts (password: ' + displayPassword + '):');
+  console.log('  - SUPER_ADMIN:          alhajee2009+superadmin@gmail.com');
+  console.log('  - ADMIN:                alhajee2009+admin@gmail.com');
+  console.log('  - APPLICANT:            alhajee2009+applicant@gmail.com');
+  console.log('  - AGENCY:               alhajee2009+agency@gmail.com');
+  console.log('  - FINANCE:              alhajee2009+finance@gmail.com');
+  console.log('  - EMBASSY_OFFICER:      alhajee2009+embassy@gmail.com');
+  console.log('  - LIAISON_OFFICER:      alhajee2009+liaison@gmail.com');
+  console.log('  - VERIFICATION_OFFICER: alhajee2009+verification@gmail.com');
+  console.log('  - BIOMETRIC_AGENT:      alhajee2009+biometric@gmail.com');
+  console.log('  - CENTER_MANAGER:       alhajee2009+centermanager@gmail.com');
+  console.log('  - RECEPTIONIST:         alhajee2009+receptionist@gmail.com');
+  console.log('  - GATEHOUSE:            alhajee2009+gatehouse@gmail.com');
+  console.log('  - AUTHORITY:            alhajee2009+authority@gmail.com');
+  console.log('\n⚠️  Change passwords after first login in production.');
 }
 
 main()
