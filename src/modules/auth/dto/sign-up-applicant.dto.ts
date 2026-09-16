@@ -80,4 +80,15 @@ export class ApplicantSignUpDto {
   @IsArray()
   @IsUUID('4', { each: true })
   readonly centerIds?: string[];
+
+  @ApiPropertyOptional({
+    description:
+      'Google reCAPTCHA token from the registration form. Required unless ' +
+      'RECAPTCHA_ENABLED=false; presence is enforced by RecaptchaGuard so that ' +
+      'the toggle lives in one place.',
+    example: '03AGdBq24...',
+  })
+  @IsOptional()
+  @IsString()
+  readonly recaptchaToken?: string;
 }
