@@ -202,7 +202,19 @@ CLOUDINARY_CLOUD_NAME=your-cloud
 PAYSTACK_SECRET_KEY=your-paystack-key
 FLUTTERWAVE_SECRET_KEY=your-flutterwave-key
 STRIPE_SECRET_KEY=your-stripe-key
+
+# Google reCAPTCHA (server-side verification of the sign-up and
+# forgot-password forms). RECAPTCHA_SECRET_KEY is a secret - never expose it to
+# the browser and never name it with a NEXT_PUBLIC_ prefix.
+RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
+RECAPTCHA_ENABLED=true              # set to false for local dev / tests
+RECAPTCHA_ALLOWED_HOSTNAMES=        # optional comma-separated allow-list
+RECAPTCHA_TIMEOUT_MS=10000          # optional, defaults to 10s
 ```
+
+> `RECAPTCHA_ENABLED` defaults to `true`, so a missing `RECAPTCHA_SECRET_KEY`
+> fails at startup rather than silently disabling the check. Set
+> `RECAPTCHA_ENABLED=false` to opt out explicitly during local development.
 
 ## 📁 Project Structure
 

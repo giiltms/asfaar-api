@@ -30,6 +30,7 @@ import { ChangePasswordDTO } from './dto/change-password.dto';
 import { RequestResetPasswordDTO } from './dto/request-reset-password.dto';
 import { ResetPasswordDTO } from './dto/reset-password.dto';
 import { AuthGuard } from './guard/auth.guard';
+import { RecaptchaGuard } from './guard/recaptcha.guard';
 import {
   CurrentUser,
   JwtUserPayload,
@@ -58,8 +59,17 @@ export class AuthController {
   }
 
   @Post('sign-up-applicant')
+  @UseGuards(RecaptchaGuard)
   @Serialize(UserEntity)
   @ApiOperation({ summary: 'Applicant registration' })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing, expired, replayed or invalid reCAPTCHA token',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'reCAPTCHA verification is temporarily unavailable',
+  })
   async signUpApplicant(@Body() signUpDto: ApplicantSignUpDto) {
     return this.authService.signUpApplicant(signUpDto);
   }
@@ -144,6 +154,7 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RecaptchaGuard)
   @Throttle(ThrottleConfigs.PASSWORD_RESET)
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({

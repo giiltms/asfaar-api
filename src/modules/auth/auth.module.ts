@@ -10,6 +10,7 @@ import { AuthTokenService } from './auth-token.service';
 import { PasswordResetService } from './password-reset.service';
 import { RedisService } from './redis.service';
 import { AuthGuard } from './guard/auth.guard';
+import { RecaptchaGuard } from './guard/recaptcha.guard';
 import { TokenRepository } from './token.repository';
 import { MailService } from '@modules/mail/services/mail.service';
 import { SharedModule } from '@shared/shared.module';
@@ -45,6 +46,7 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
     PasswordResetService,
     RedisService,
     AuthGuard,
+    RecaptchaGuard,
     TokenRepository,
     MailService,
   ],

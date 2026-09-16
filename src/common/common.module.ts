@@ -13,6 +13,7 @@ import jwtConfig from './configs/jwt.config';
 import storageConfig from './configs/storage.config';
 import mailConfig from './configs/mail.config';
 import paymentConfig from './configs/payment.config';
+import recaptchaConfig from './configs/recaptcha.config';
 
 // Global filters and interceptors
 import { AllExceptionsFilter } from '../filters/all-exception.filter';
@@ -45,6 +46,7 @@ import { PrismaModule } from '@providers/prisma/prisma.module';
         storageConfig,
         mailConfig,
         paymentConfig,
+        recaptchaConfig,
       ],
       envFilePath: ['.env.local', '.env'],
     }),
