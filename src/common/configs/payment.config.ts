@@ -139,6 +139,12 @@ class PaymentConfig {
   PAYMENT_MIN_AMOUNT?: number;
 }
 
+// Payment providers redirect the user's browser back to the frontend after
+// checkout, so these URLs must resolve to SITE_URL (the frontend), never the API.
+const FRONTEND_BASE_URL = (
+  process.env.SITE_URL || 'http://localhost:3000'
+).replace(/\/+$/, '');
+
 export default registerAs('payment', () => {
   const config = {
     PAYMENT_PROVIDER:
@@ -147,9 +153,9 @@ export default registerAs('payment', () => {
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
     PAYMENT_CALLBACK_URL:
       process.env.PAYMENT_CALLBACK_URL ||
-      'http://localhost:3000/payments/callback',
+      `${FRONTEND_BASE_URL}/payments/callback`,
     PAYMENT_CANCEL_URL:
-      process.env.PAYMENT_CANCEL_URL || 'http://localhost:3000/payments/cancel',
+      process.env.PAYMENT_CANCEL_URL || `${FRONTEND_BASE_URL}/payments/cancel`,
     PAYMENT_SANDBOX_MODE: process.env.PAYMENT_SANDBOX_MODE === 'true',
 
     // Flutterwave
