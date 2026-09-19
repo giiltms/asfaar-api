@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  Matches,
   ValidateNested,
   ValidateIf,
 } from 'class-validator';
@@ -60,9 +61,10 @@ export class CreateBankDetailsDto {
   @IsString()
   bankName: string;
 
-  @ApiProperty({ description: '3-digit bank code' })
+  @ApiProperty({ description: 'Bank code from the bank list (2-10 digits)' })
   @IsString()
-  @Length(3, 3)
+  @Length(2, 10)
+  @Matches(/^\d+$/, { message: 'Bank code must contain only digits' })
   bankCode: string;
 
   @ApiProperty({ description: '10-digit Nigerian account number' })

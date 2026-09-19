@@ -302,14 +302,14 @@ export class ResolveAccountDto {
   accountNumber: string;
 
   @ApiProperty({
-    example: '044',
+    example: '999992',
     description: 'Bank code from the list of banks',
-    minLength: 3,
-    maxLength: 3,
+    minLength: 2,
+    maxLength: 10,
   })
   @IsString()
-  @Length(3, 3, { message: 'Bank code must be exactly 3 characters' })
-  @Matches(/^\d{3}$/, { message: 'Bank code must contain only digits' })
+  @Length(2, 10, { message: 'Bank code must be between 2 and 10 characters' })
+  @Matches(/^\d+$/, { message: 'Bank code must contain only digits' })
   bankCode: string;
 }
 
