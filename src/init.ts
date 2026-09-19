@@ -119,7 +119,7 @@ async function seedServiceFees() {
       name: 'NAHCON Licensed Travel Agent Upgrade',
       description:
         'Upgrade to a NAHCON licensed travel agent account for Hajj and Umrah visa processing.',
-      amount: 70000,
+      amount: 200000,
       currency: 'NGN',
       feeType: FeeType.UPGRADE,
       isOptional: false,
@@ -128,7 +128,7 @@ async function seedServiceFees() {
       name: 'Regular Travel Agent Upgrade',
       description:
         'Upgrade to a regular travel agent account for international visa processing.',
-      amount: 150000,
+      amount: 70000,
       currency: 'NGN',
       feeType: FeeType.UPGRADE,
       isOptional: false,
