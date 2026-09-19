@@ -1977,6 +1977,17 @@ export class FormSubmissionsService {
       : new Map();
 
     for (const field of allFields) {
+      // Repeatable-group fields are stored as templates whose name still carries
+      // the unexpanded "{{index}}" placeholder (e.g. "previousVisa_{{index}}_date").
+      // The template itself is never a concrete answerable field — its real
+      // per-instance responses are persisted separately by instanceIndex — so it
+      // must not be validated directly. Validating it treated the empty template
+      // as a missing required field and blocked submission once its parent toggle
+      // (e.g. hasPreviousVisas) was on.
+      if (typeof field.name === 'string' && field.name.includes('{{index}}')) {
+        continue;
+      }
+
       const response = responseMap.get(field.id);
       const existingResponse = existingResponseMap.get(field.id);
 
