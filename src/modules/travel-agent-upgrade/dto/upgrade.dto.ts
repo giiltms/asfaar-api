@@ -12,14 +12,39 @@ import {
   ValidateNested,
   ValidateIf,
 } from 'class-validator';
-import { TravelAgentApplicationType } from '@prisma/client';
+import {
+  DirectorIdentificationType,
+  TravelAgentApplicationType,
+} from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateDirectorDto {
-  @ApiProperty({ description: 'Director NIN' })
+  @ApiPropertyOptional({
+    description:
+      'Which identification the director provided. Omitted means NIN, so existing clients keep working.',
+    enum: DirectorIdentificationType,
+    default: DirectorIdentificationType.NIN,
+  })
+  @IsOptional()
+  @IsEnum(DirectorIdentificationType)
+  identificationType?: DirectorIdentificationType;
+
+  @ApiPropertyOptional({
+    description: 'Director NIN — 11 digits. Required unless a passport is used.',
+    example: '12345678901',
+  })
+  @ValidateIf((o) => o.identificationType !== DirectorIdentificationType.PASSPORT)
   @IsString()
-  @Length(11, 11)
-  nin: string;
+  @Matches(/^\d{11}$/, { message: 'NIN must be exactly 11 digits' })
+  nin?: string;
+
+  @ApiPropertyOptional({
+    description: 'Passport number. Required when identificationType is PASSPORT.',
+  })
+  @ValidateIf((o) => o.identificationType === DirectorIdentificationType.PASSPORT)
+  @IsString()
+  @IsNotEmpty({ message: 'Passport number is required for a passport director' })
+  passportNumber?: string;
 
   @ApiProperty({ description: 'Date of birth (ISO string)' })
   @IsDateString()
