@@ -5,15 +5,44 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { TravelAgentLicenseService } from './travel-agent-license.service';
-import { UploadUpgradeDocumentDto } from './dto/upgrade.dto';
+import { CreateDirectorDto, UploadUpgradeDocumentDto } from './dto/upgrade.dto';
 import {
   UpgradeApplicationStatus,
   TravelAgentApplicationType,
+  DirectorIdentificationType,
   FeeType,
   PaymentStatus,
   Roles,
   TravelAgentLicenseStatus,
 } from '@prisma/client';
+
+/**
+ * A director identifies with either a NIN or a passport, never both. Store only
+ * the one actually provided so the unused column stays null rather than holding
+ * the empty string the form sends for whichever option was not chosen.
+ */
+function toDirectorIdentification(director: CreateDirectorDto): {
+  identificationType: DirectorIdentificationType;
+  nin: string | null;
+  passportNumber: string | null;
+} {
+  const identificationType =
+    director.identificationType ?? DirectorIdentificationType.NIN;
+
+  if (identificationType === DirectorIdentificationType.PASSPORT) {
+    return {
+      identificationType,
+      nin: null,
+      passportNumber: director.passportNumber || null,
+    };
+  }
+
+  return {
+    identificationType,
+    nin: director.nin || null,
+    passportNumber: null,
+  };
+}
 
 export interface CreateDraftApplicationInput {
   applicationType: TravelAgentApplicationType;
@@ -49,15 +78,7 @@ export interface CompleteApplicationInput {
     accountNumber: string;
     accountName: string;
   };
-  directors: Array<{
-    nin: string;
-    dateOfBirth: string;
-    firstName: string;
-    lastName: string;
-    middleName?: string;
-    phoneNumber?: string;
-    email?: string;
-  }>;
+  directors: CreateDirectorDto[];
 }
 
 export interface CreateUpgradeApplicationInput {
@@ -79,15 +100,7 @@ export interface CreateUpgradeApplicationInput {
     accountNumber: string;
     accountName: string;
   };
-  directors: Array<{
-    nin: string;
-    dateOfBirth: string;
-    firstName: string;
-    lastName: string;
-    middleName?: string;
-    phoneNumber?: string;
-    email?: string;
-  }>;
+  directors: CreateDirectorDto[];
   serviceFeeId: string;
   paymentMethodId: string;
 }
@@ -388,13 +401,14 @@ export class TravelAgentUpgradeService {
           directors: {
             createMany: {
               data: input.directors.map((d) => ({
-                nin: d.nin,
+                ...toDirectorIdentification(d),
                 dateOfBirth: new Date(d.dateOfBirth),
                 firstName: d.firstName,
                 lastName: d.lastName,
                 middleName: d.middleName,
                 phoneNumber: d.phoneNumber,
                 email: d.email,
+                identificationDocument: d.identificationDocument || null,
               })),
             },
           },
@@ -520,13 +534,14 @@ export class TravelAgentUpgradeService {
         directors: {
           createMany: {
             data: input.directors.map((d) => ({
-              nin: d.nin,
+              ...toDirectorIdentification(d),
               dateOfBirth: new Date(d.dateOfBirth),
               firstName: d.firstName,
               lastName: d.lastName,
               middleName: d.middleName,
               phoneNumber: d.phoneNumber,
               email: d.email,
+              identificationDocument: d.identificationDocument || null,
             })),
           },
         },

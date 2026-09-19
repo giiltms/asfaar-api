@@ -1640,12 +1640,22 @@ model TravelAgentUpgradeApplication {
   @@map("travel_agent_upgrade_applications")
 }
 
+// A director identifies with either a Nigerian NIN or a passport; non-Nigerian
+// directors have no NIN, so neither column can be required on its own.
+enum DirectorIdentificationType {
+  NIN
+  PASSPORT
+}
+
 model TravelAgentDirector {
   id            String                        @id @default(uuid())
   applicationId String
   application   TravelAgentUpgradeApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
-  nin         String
+  identificationType DirectorIdentificationType @default(NIN)
+  nin                String?
+  passportNumber     String?
+
   dateOfBirth DateTime
   firstName   String
   lastName    String
