@@ -364,8 +364,10 @@ export class PaystackProvider implements PaymentProviderInterface {
         throw new Error('Account number must be exactly 10 digits');
       }
 
-      if (!/^\d{3}$/.test(bankCode)) {
-        throw new Error('Bank code must be exactly 3 digits');
+      // Bank codes are 2-9 digits: fintechs are longer than the legacy
+      // 3-digit NIBSS codes (e.g. OPay 999992, Kuda 50211).
+      if (!/^\d{2,10}$/.test(bankCode)) {
+        throw new Error('Bank code must be 2-10 digits');
       }
 
       const response = await this.makeRequest(
