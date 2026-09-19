@@ -38,19 +38,19 @@ async function main() {
     lastName: string;
     roles: Roles[];
   }[] = [
-    { email: 'alhajee2009+superadmin@gmail.com',    username: 'superadmin',           firstName: 'Super',        lastName: 'Admin',     roles: [Roles.SUPER_ADMIN] },
-    { email: 'alhajee2009+admin@gmail.com',          username: 'asfaaradmin',           firstName: 'Asfaar',       lastName: 'Admin',     roles: [Roles.ADMIN] },
-    { email: 'alhajee2009+applicant@gmail.com',      username: 'testapplicant',         firstName: 'Test',         lastName: 'Applicant', roles: [Roles.APPLICANT] },
-    { email: 'alhajee2009+agency@gmail.com',         username: 'travelagency',          firstName: 'Travel',       lastName: 'Agency',    roles: [Roles.AGENCY] },
-    { email: 'alhajee2009+finance@gmail.com',        username: 'financeofficer',        firstName: 'Finance',      lastName: 'Officer',   roles: [Roles.FINANCE] },
-    { email: 'alhajee2009+embassy@gmail.com',        username: 'embassyofficer',        firstName: 'Embassy',      lastName: 'Officer',   roles: [Roles.EMBASSY_OFFICER] },
-    { email: 'alhajee2009+liaison@gmail.com',        username: 'liaisonofficer',        firstName: 'Liaison',      lastName: 'Officer',   roles: [Roles.LIAISON_OFFICER] },
-    { email: 'alhajee2009+verification@gmail.com',   username: 'verificationofficer',   firstName: 'Verification', lastName: 'Officer',   roles: [Roles.VERIFICATION_OFFICER] },
-    { email: 'alhajee2009+biometric@gmail.com',      username: 'biometricagent',        firstName: 'Biometric',    lastName: 'Agent',     roles: [Roles.BIOMETRIC_AGENT] },
-    { email: 'alhajee2009+centermanager@gmail.com',  username: 'centermanager',         firstName: 'Center',       lastName: 'Manager',   roles: [Roles.CENTER_MANAGER] },
-    { email: 'alhajee2009+receptionist@gmail.com',   username: 'receptionist',          firstName: 'Front',        lastName: 'Desk',      roles: [Roles.RECEPTIONIST] },
-    { email: 'alhajee2009+gatehouse@gmail.com',      username: 'gatehouse',             firstName: 'Gate',         lastName: 'House',     roles: [Roles.GATEHOUSE] },
-    { email: 'alhajee2009+authority@gmail.com',      username: 'authorityuser',         firstName: 'Authority',    lastName: 'User',      roles: [Roles.AUTHORITY] },
+    { email: 'dev+superadmin@giantbeats.com.ng',    username: 'superadmin',          firstName: 'Super',        lastName: 'Admin',     roles: [Roles.SUPER_ADMIN] },
+    { email: 'dev+admin@giantbeats.com.ng',         username: 'asfaaradmin',         firstName: 'Asfaar',       lastName: 'Admin',     roles: [Roles.ADMIN] },
+    { email: 'dev+applicant@giantbeats.com.ng',     username: 'testapplicant',       firstName: 'Test',         lastName: 'Applicant', roles: [Roles.APPLICANT] },
+    { email: 'dev+agency@giantbeats.com.ng',        username: 'travelagency',        firstName: 'Travel',       lastName: 'Agency',    roles: [Roles.AGENCY] },
+    { email: 'dev+finance@giantbeats.com.ng',       username: 'financeofficer',      firstName: 'Finance',      lastName: 'Officer',   roles: [Roles.FINANCE] },
+    { email: 'dev+embassy@giantbeats.com.ng',       username: 'embassyofficer',      firstName: 'Embassy',      lastName: 'Officer',   roles: [Roles.EMBASSY_OFFICER] },
+    { email: 'dev+liaison@giantbeats.com.ng',       username: 'liaisonofficer',      firstName: 'Liaison',      lastName: 'Officer',   roles: [Roles.LIAISON_OFFICER] },
+    { email: 'dev+verification@giantbeats.com.ng',  username: 'verificationofficer', firstName: 'Verification', lastName: 'Officer',   roles: [Roles.VERIFICATION_OFFICER] },
+    { email: 'dev+biometric@giantbeats.com.ng',     username: 'biometricagent',      firstName: 'Biometric',    lastName: 'Agent',     roles: [Roles.BIOMETRIC_AGENT] },
+    { email: 'dev+centermanager@giantbeats.com.ng', username: 'centermanager',       firstName: 'Center',       lastName: 'Manager',   roles: [Roles.CENTER_MANAGER] },
+    { email: 'dev+receptionist@giantbeats.com.ng',  username: 'receptionist',        firstName: 'Front',        lastName: 'Desk',      roles: [Roles.RECEPTIONIST] },
+    { email: 'dev+gatehouse@giantbeats.com.ng',     username: 'gatehouse',           firstName: 'Gate',         lastName: 'House',     roles: [Roles.GATEHOUSE] },
+    { email: 'dev+authority@giantbeats.com.ng',     username: 'authorityuser',       firstName: 'Authority',    lastName: 'User',      roles: [Roles.AUTHORITY] },
   ];
 
   for (const account of accounts) {

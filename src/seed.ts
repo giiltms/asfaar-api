@@ -420,10 +420,10 @@ async function main() {
     authority,
   ] = await Promise.all([
     prisma.user.upsert({
-      where: { email: 'alhajee2009+superadmin@gmail.com' },
+      where: { email: 'dev+superadmin@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+superadmin@gmail.com',
+        email: 'dev+superadmin@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Super',
         lastName: 'Admin',
@@ -437,10 +437,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+admin@gmail.com' },
+      where: { email: 'dev+admin@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+admin@gmail.com',
+        email: 'dev+admin@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Asfaar',
         lastName: 'Admin',
@@ -454,10 +454,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+applicant@gmail.com' },
+      where: { email: 'dev+applicant@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+applicant@gmail.com',
+        email: 'dev+applicant@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Test',
         lastName: 'Applicant',
@@ -475,10 +475,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+agency@gmail.com' },
+      where: { email: 'dev+agency@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+agency@gmail.com',
+        email: 'dev+agency@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Travel',
         lastName: 'Agency',
@@ -492,10 +492,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+finance@gmail.com' },
+      where: { email: 'dev+finance@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+finance@gmail.com',
+        email: 'dev+finance@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Finance',
         lastName: 'Officer',
@@ -509,10 +509,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+embassy@gmail.com' },
+      where: { email: 'dev+embassy@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+embassy@gmail.com',
+        email: 'dev+embassy@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Embassy',
         lastName: 'Officer',
@@ -526,10 +526,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+liaison@gmail.com' },
+      where: { email: 'dev+liaison@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+liaison@gmail.com',
+        email: 'dev+liaison@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Liaison',
         lastName: 'Officer',
@@ -543,10 +543,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+verification@gmail.com' },
+      where: { email: 'dev+verification@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+verification@gmail.com',
+        email: 'dev+verification@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Verification',
         lastName: 'Officer',
@@ -560,10 +560,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+biometric@gmail.com' },
+      where: { email: 'dev+biometric@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+biometric@gmail.com',
+        email: 'dev+biometric@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Biometric',
         lastName: 'Agent',
@@ -577,10 +577,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+centermanager@gmail.com' },
+      where: { email: 'dev+centermanager@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+centermanager@gmail.com',
+        email: 'dev+centermanager@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Center',
         lastName: 'Manager',
@@ -594,10 +594,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+receptionist@gmail.com' },
+      where: { email: 'dev+receptionist@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+receptionist@gmail.com',
+        email: 'dev+receptionist@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Front',
         lastName: 'Desk',
@@ -611,10 +611,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+gatehouse@gmail.com' },
+      where: { email: 'dev+gatehouse@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+gatehouse@gmail.com',
+        email: 'dev+gatehouse@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Gate',
         lastName: 'House',
@@ -628,10 +628,10 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { email: 'alhajee2009+authority@gmail.com' },
+      where: { email: 'dev+authority@giantbeats.com.ng' },
       update: { password: hashedPassword },
       create: {
-        email: 'alhajee2009+authority@gmail.com',
+        email: 'dev+authority@giantbeats.com.ng',
         password: hashedPassword,
         firstName: 'Authority',
         lastName: 'User',
@@ -1344,19 +1344,19 @@ async function main() {
 
   const displayPassword = process.env.SEED_PASSWORD ? '(from SEED_PASSWORD env var)' : 'Asfaar@2025!';
   console.log('\n🔑 Seeded accounts (password: ' + displayPassword + '):');
-  console.log('  - SUPER_ADMIN:          alhajee2009+superadmin@gmail.com');
-  console.log('  - ADMIN:                alhajee2009+admin@gmail.com');
-  console.log('  - APPLICANT:            alhajee2009+applicant@gmail.com');
-  console.log('  - AGENCY:               alhajee2009+agency@gmail.com');
-  console.log('  - FINANCE:              alhajee2009+finance@gmail.com');
-  console.log('  - EMBASSY_OFFICER:      alhajee2009+embassy@gmail.com');
-  console.log('  - LIAISON_OFFICER:      alhajee2009+liaison@gmail.com');
-  console.log('  - VERIFICATION_OFFICER: alhajee2009+verification@gmail.com');
-  console.log('  - BIOMETRIC_AGENT:      alhajee2009+biometric@gmail.com');
-  console.log('  - CENTER_MANAGER:       alhajee2009+centermanager@gmail.com');
-  console.log('  - RECEPTIONIST:         alhajee2009+receptionist@gmail.com');
-  console.log('  - GATEHOUSE:            alhajee2009+gatehouse@gmail.com');
-  console.log('  - AUTHORITY:            alhajee2009+authority@gmail.com');
+  console.log('  - SUPER_ADMIN:          dev+superadmin@giantbeats.com.ng');
+  console.log('  - ADMIN:                dev+admin@giantbeats.com.ng');
+  console.log('  - APPLICANT:            dev+applicant@giantbeats.com.ng');
+  console.log('  - AGENCY:               dev+agency@giantbeats.com.ng');
+  console.log('  - FINANCE:              dev+finance@giantbeats.com.ng');
+  console.log('  - EMBASSY_OFFICER:      dev+embassy@giantbeats.com.ng');
+  console.log('  - LIAISON_OFFICER:      dev+liaison@giantbeats.com.ng');
+  console.log('  - VERIFICATION_OFFICER: dev+verification@giantbeats.com.ng');
+  console.log('  - BIOMETRIC_AGENT:      dev+biometric@giantbeats.com.ng');
+  console.log('  - CENTER_MANAGER:       dev+centermanager@giantbeats.com.ng');
+  console.log('  - RECEPTIONIST:         dev+receptionist@giantbeats.com.ng');
+  console.log('  - GATEHOUSE:            dev+gatehouse@giantbeats.com.ng');
+  console.log('  - AUTHORITY:            dev+authority@giantbeats.com.ng');
   console.log('\n⚠️  Change passwords after first login in production.');
 }
 
