@@ -21,6 +21,18 @@ const STAFF_ROLES = new Set<Roles>([
 
 // Runs on every deploy — safe, idempotent, no data wipe.
 async function main() {
+  await seedRoleAccounts();
+
+  // Seed payment fee config so the frontend payment pages don't break. This is
+  // independent of SEED_PASSWORD: fees are not credentials, and gating them
+  // behind one meant an environment without it had no fees at all.
+  console.log('\n💳 Seeding payment fee config...');
+  await seedServiceFees();
+
+  console.log('\n✅ Init complete.');
+}
+
+async function seedRoleAccounts() {
   console.log('🔐 Initializing role accounts...');
 
   const password = process.env.SEED_PASSWORD;
@@ -81,11 +93,6 @@ async function main() {
     console.log(`  ${tag.padEnd(26)} [${account.roles[0]}] ${account.email}`);
   }
 
-  // Seed payment fee config so the frontend payment pages don't break.
-  console.log('\n💳 Seeding payment fee config...');
-  await seedServiceFees();
-
-  console.log('\n✅ Init complete.');
 }
 
 async function seedServiceFees() {
@@ -105,11 +112,35 @@ async function seedServiceFees() {
       feeType: FeeType.ONBOARDING,
       isOptional: false,
     },
+    // The upgrade plans are matched on the frontend by name substring
+    // ("NAHCON" / "Regular"), so these names must keep those words.
+    // Amounts are in naira — the Paystack provider converts to kobo on charge.
+    {
+      name: 'NAHCON Licensed Travel Agent Upgrade',
+      description:
+        'Upgrade to a NAHCON licensed travel agent account for Hajj and Umrah visa processing.',
+      amount: 70000,
+      currency: 'NGN',
+      feeType: FeeType.UPGRADE,
+      isOptional: false,
+    },
+    {
+      name: 'Regular Travel Agent Upgrade',
+      description:
+        'Upgrade to a regular travel agent account for international visa processing.',
+      amount: 150000,
+      currency: 'NGN',
+      feeType: FeeType.UPGRADE,
+      isOptional: false,
+    },
   ];
 
   for (const fee of fees) {
+    // Match on name, not feeType: there is more than one UPGRADE fee, and
+    // keying on feeType alone made every fee after the first look like a
+    // duplicate of it and get skipped.
     const existing = await prisma.serviceFee.findFirst({
-      where: { feeType: fee.feeType, isActive: true },
+      where: { name: fee.name },
     });
 
     if (existing) {
@@ -118,10 +149,12 @@ async function seedServiceFees() {
         where: { id: existing.id },
         data: { isActive: true },
       });
-      console.log(`  ~ ${fee.feeType} fee already exists (amount: ${existing.amount}) — skipped`);
+      console.log(
+        `  ~ ${fee.name} already exists (amount: ₦${existing.amount}) — skipped`,
+      );
     } else {
       await prisma.serviceFee.create({ data: { ...fee, isActive: true } });
-      console.log(`  ✓ ${fee.feeType} fee created — ₦${fee.amount}`);
+      console.log(`  ✓ ${fee.name} created — ₦${fee.amount}`);
     }
   }
 }
