@@ -75,6 +75,7 @@ class MockPrismaService {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
     update: jest.fn(),
+      updateMany: jest.fn(),
   };
 
   serviceFee = {
@@ -378,9 +379,8 @@ describe('PaymentsService', () => {
       prismaService.biometricAppointment.findUnique.mockResolvedValue(
         mockBiometricAppointment,
       );
-      prismaService.biometricAppointment.update.mockResolvedValue({
-        ...mockBiometricAppointment,
-        status: 'ACTIVE',
+      prismaService.biometricAppointment.updateMany.mockResolvedValue({
+        count: 1,
       });
 
       // Act
@@ -391,9 +391,14 @@ describe('PaymentsService', () => {
         prismaService.biometricAppointment.findUnique,
       ).toHaveBeenCalledWith({
         where: { submissionId: 'submission-1' },
+        select: { id: true },
       });
-      expect(prismaService.biometricAppointment.update).toHaveBeenCalledWith({
-        where: { id: 'appointment-1' },
+      // Conditional on PENDING so a concurrent webhook delivery cannot also
+      // activate and send a second confirmation email.
+      expect(
+        prismaService.biometricAppointment.updateMany,
+      ).toHaveBeenCalledWith({
+        where: { id: 'appointment-1', status: 'PENDING' },
         data: { status: 'ACTIVE' },
       });
     });

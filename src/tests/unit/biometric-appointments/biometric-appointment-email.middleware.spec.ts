@@ -392,6 +392,91 @@ describe('biometricAppointmentEmailMiddleware', () => {
     });
   });
 
+  describe('conditional (atomic) activation via updateMany', () => {
+    const conditionalActivate = {
+      model: 'BiometricAppointment',
+      action: 'updateMany',
+      args: {
+        // The status precondition is the race guard: only one concurrent
+        // caller can match PENDING, so only one write affects a row.
+        where: { id: 'appt-1', status: 'PENDING' },
+        data: { status: 'ACTIVE' },
+      },
+    };
+
+    beforeEach(() => {
+      client.biometricAppointment.findUnique.mockResolvedValue(
+        buildAppointment(),
+      );
+      client.formSubmission.findUnique.mockResolvedValue(buildSubmission());
+    });
+
+    it('notifies the caller that won the conditional update', async () => {
+      next.mockResolvedValue({ count: 1 });
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      const result = await middleware(conditionalActivate as any, next);
+      await flushAsyncSend();
+
+      expect(result).toEqual({ count: 1 });
+      expect(mailService.sendBiometricAppointmentScheduled).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'applicant@example.com',
+          cc: ['agent@travelco.com'],
+        }),
+      );
+    });
+
+    it('stays silent for the caller that lost the race', async () => {
+      next.mockResolvedValue({ count: 0 });
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      await middleware(conditionalActivate as any, next);
+      await flushAsyncSend();
+
+      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+    });
+
+    it('sends exactly one email when two activations race', async () => {
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      // The database serializes the two conditional updates: the first matches
+      // PENDING, the second finds nothing left to match.
+      const racingNext = jest
+        .fn()
+        .mockResolvedValueOnce({ count: 1 })
+        .mockResolvedValueOnce({ count: 0 });
+
+      await Promise.all([
+        middleware(conditionalActivate as any, racingNext),
+        middleware(conditionalActivate as any, racingNext),
+      ]);
+      await flushAsyncSend();
+
+      expect(mailService.sendBiometricAppointmentScheduled).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
+    it('ignores an updateMany that does not target one appointment', async () => {
+      next.mockResolvedValue({ count: 3 });
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      await middleware(
+        {
+          model: 'BiometricAppointment',
+          action: 'updateMany',
+          args: { where: { centerId: 'center-1' }, data: { status: 'ACTIVE' } },
+        } as any,
+        next,
+      );
+      await flushAsyncSend();
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+    });
+  });
+
   describe('unaddressable appointments', () => {
     it('sends nothing when the submission has no applicant email', async () => {
       client.biometricAppointment.findUnique
