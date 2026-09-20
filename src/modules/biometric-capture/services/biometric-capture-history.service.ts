@@ -8,6 +8,7 @@ import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
 import { BiometricCaptureHistoryFiltersDto } from '../dto/biometric-capture-history.dto';
+import { hasUnrestrictedAccess } from '@common/access/privileged-scope';
 
 /**
  * Service for managing biometric capture history for center managers
@@ -46,14 +47,25 @@ export class BiometricCaptureHistoryService {
         throw new NotFoundException('Manager not found');
       }
 
-      // Check if manager has access to any centers
-      if (!manager.biometricCenters || manager.biometricCenters.length === 0) {
+      // Roles that are not scoped to a center see every active one; everyone
+      // else needs an assignment to see anything.
+      const unrestricted = hasUnrestrictedAccess(manager.roles);
+
+      if (
+        !unrestricted &&
+        (!manager.biometricCenters || manager.biometricCenters.length === 0)
+      ) {
         throw new ForbiddenException('No centers assigned to this manager');
       }
 
-      const managerCenterIds = manager.biometricCenters.map(
-        (center) => center.id,
-      );
+      const accessibleCenters = unrestricted
+        ? await this.prisma.biometricCenter.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, code: true },
+          })
+        : manager.biometricCenters;
+
+      const managerCenterIds = accessibleCenters.map((center) => center.id);
 
       // Build where clause
       const where: any = {
@@ -62,7 +74,7 @@ export class BiometricCaptureHistoryService {
           // Direct capture location filter (if capture location contains center info)
           {
             captureLocation: {
-              contains: manager.biometricCenters
+              contains: accessibleCenters
                 .map((center) => center.name)
                 .join('|'),
               mode: 'insensitive',
@@ -90,9 +102,8 @@ export class BiometricCaptureHistoryService {
         where.OR = [
           {
             captureLocation: {
-              contains: manager.biometricCenters.find(
-                (c) => c.id === filters.centerId,
-              )?.name,
+              contains: accessibleCenters.find((c) => c.id === filters.centerId)
+                ?.name,
               mode: 'insensitive',
             },
           },
@@ -239,7 +250,7 @@ export class BiometricCaptureHistoryService {
       return {
         data: transformedCaptures,
         meta,
-        managerCenters: manager.biometricCenters,
+        managerCenters: accessibleCenters,
       };
     } catch (error) {
       this.logger.error(
@@ -268,13 +279,25 @@ export class BiometricCaptureHistoryService {
         },
       });
 
-      if (!manager || !manager.biometricCenters.length) {
+      if (!manager) {
+        throw new NotFoundException('Manager not found');
+      }
+
+      // Roles that are not scoped to a center see every active one.
+      const unrestricted = hasUnrestrictedAccess(manager.roles);
+
+      if (!unrestricted && !manager.biometricCenters.length) {
         throw new ForbiddenException('No centers assigned to this manager');
       }
 
-      const managerCenterIds = manager.biometricCenters.map(
-        (center) => center.id,
-      );
+      const accessibleCenters = unrestricted
+        ? await this.prisma.biometricCenter.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, code: true },
+          })
+        : manager.biometricCenters;
+
+      const managerCenterIds = accessibleCenters.map((center) => center.id);
 
       // Build base where clause
       const baseWhere: any = {
@@ -349,7 +372,7 @@ export class BiometricCaptureHistoryService {
         verificationRate:
           totalCaptures > 0 ? (verifiedCaptures / totalCaptures) * 100 : 0,
         capturesByDate,
-        managerCenters: manager.biometricCenters,
+        managerCenters: accessibleCenters,
       };
     } catch (error) {
       this.logger.error(
@@ -375,13 +398,25 @@ export class BiometricCaptureHistoryService {
         },
       });
 
-      if (!manager || !manager.biometricCenters.length) {
+      if (!manager) {
+        throw new NotFoundException('Manager not found');
+      }
+
+      // Roles that are not scoped to a center see every active one.
+      const unrestricted = hasUnrestrictedAccess(manager.roles);
+
+      if (!unrestricted && !manager.biometricCenters.length) {
         throw new ForbiddenException('No centers assigned to this manager');
       }
 
-      const managerCenterIds = manager.biometricCenters.map(
-        (center) => center.id,
-      );
+      const accessibleCenters = unrestricted
+        ? await this.prisma.biometricCenter.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, code: true },
+          })
+        : manager.biometricCenters;
+
+      const managerCenterIds = accessibleCenters.map((center) => center.id);
 
       // Get capture details
       const capture = await this.prisma.biometricData.findUnique({
