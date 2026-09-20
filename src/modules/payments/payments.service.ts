@@ -1373,20 +1373,26 @@ export class PaymentsService {
     submissionId: string,
   ): Promise<void> {
     try {
-      // Update any related biometric appointments to ACTIVE status
+      // Update any related biometric appointments to ACTIVE status.
       const appointment = await this.prisma.biometricAppointment.findUnique({
         where: { submissionId },
+        select: { id: true },
       });
 
-      if (appointment && appointment.status === 'PENDING') {
-        await this.prisma.biometricAppointment.update({
-          where: { id: appointment.id },
+      if (appointment) {
+        // Conditional on PENDING: this runs for the same payment as the
+        // webhook handler's own activation, so without a precondition both
+        // could activate and both send the confirmation email.
+        const { count } = await this.prisma.biometricAppointment.updateMany({
+          where: { id: appointment.id, status: 'PENDING' },
           data: { status: 'ACTIVE' },
         });
 
-        this.logger.log(
-          `Activated biometric appointment ${appointment.id} after payment completion`,
-        );
+        if (count > 0) {
+          this.logger.log(
+            `Activated biometric appointment ${appointment.id} after payment completion`,
+          );
+        }
       }
 
       // TODO: Add other submission-specific side effects like sending confirmation emails, etc.

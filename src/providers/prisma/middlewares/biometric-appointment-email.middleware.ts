@@ -38,6 +38,12 @@ export type AppointmentNotificationKind =
  * live PrismaService rather than constructing its own client, so notification
  * lookups share the application's connection pool.
  */
+interface AppointmentState {
+  id: string;
+  status: string;
+  appointmentTime?: Date | null;
+}
+
 export interface AppointmentLookupClient extends SubmissionLookupClient {
   biometricAppointment: {
     findUnique(args: any): Promise<any>;
@@ -213,14 +219,37 @@ export async function sendBiometricAppointmentEmail(
 export function biometricAppointmentEmailMiddleware(
   client: AppointmentLookupClient,
 ): Prisma.Middleware {
+  /**
+   * Returns the stored row, null when there is none, or undefined when the
+   * read itself failed - the caller must still perform its write either way.
+   */
+  const readCurrentState = async (
+    where: Record<string, unknown>,
+  ): Promise<AppointmentState | null | undefined> => {
+    try {
+      return await client.biometricAppointment.findUnique({
+        where,
+        select: { id: true, status: true, appointmentTime: true },
+      });
+    } catch (error) {
+      logger.error(
+        `Could not read appointment state before update, skipping notification: ${
+          (error as Error).message
+        }`,
+      );
+      return undefined;
+    }
+  };
+
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    // `update` only: Prisma reports `upsert` as its own action, so a status
-    // change written through an upsert would not be seen here. No current
-    // caller does that.
-    if (
-      params.model !== 'BiometricAppointment' ||
-      params.action !== 'update'
-    ) {
+    if (params.model !== 'BiometricAppointment') {
+      return next(params);
+    }
+
+    // `upsert` is deliberately absent: Prisma reports it as its own action, and
+    // no current caller changes status through one.
+    const isConditional = params.action === 'updateMany';
+    if (params.action !== 'update' && !isConditional) {
       return next(params);
     }
 
@@ -241,21 +270,41 @@ export function biometricAppointmentEmailMiddleware(
       return next(params);
     }
 
-    let current: { id: string; status: string; appointmentTime?: Date } | null =
-      null;
+    if (isConditional) {
+      // Callers make a transition atomic by writing through updateMany with the
+      // prior status as a precondition, so the database - not a prior read -
+      // decides who wins. Whoever's write affects a row owns the notification;
+      // everyone else gets count 0 and stays quiet.
+      const appointmentId = params.args?.where?.id;
 
-    try {
-      current = await client.biometricAppointment.findUnique({
-        where: params.args?.where || {},
-        select: { id: true, status: true, appointmentTime: true },
-      });
-    } catch (error) {
-      // The write must still go ahead; only the notification is lost.
-      logger.error(
-        `Could not read appointment state before update, skipping notification: ${
-          (error as Error).message
-        }`,
-      );
+      if (typeof appointmentId !== 'string') {
+        return next(params);
+      }
+
+      const current =
+        kind === 'rescheduled'
+          ? await readCurrentState({ id: appointmentId })
+          : null;
+
+      const result = await next(params);
+
+      if ((result?.count ?? 0) > 0) {
+        setImmediate(() => {
+          void sendBiometricAppointmentEmail(
+            client,
+            appointmentId,
+            kind,
+            current?.appointmentTime,
+          );
+        });
+      }
+
+      return result;
+    }
+
+    const current = await readCurrentState(params.args?.where || {});
+
+    if (current === undefined) {
       return next(params);
     }
 
@@ -268,8 +317,8 @@ export function biometricAppointmentEmailMiddleware(
     const previousAppointmentTime = current.appointmentTime;
     const appointmentId = current.id;
 
-    // Deliberately outside the try above: a failed write must surface to the
-    // caller, never be swallowed or retried behind their back.
+    // Deliberately outside readCurrentState's try: a failed write must surface
+    // to the caller, never be swallowed or retried behind their back.
     const result = await next(params);
 
     setImmediate(() => {

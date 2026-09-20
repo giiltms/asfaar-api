@@ -586,17 +586,22 @@ export abstract class BaseWebhookHandler implements WebhookHandlerInterface {
         `Found biometric appointment ${appointment.id} with status: ${appointment.status}`,
       );
 
-      if (appointment.status === 'PENDING') {
-        const updated = await this.prisma.biometricAppointment.update({
-          where: { id: appointment.id },
-          data: { status: 'ACTIVE' },
-        });
+      // Conditional on PENDING so that two concurrent deliveries of the same
+      // payment event cannot both activate - and, now that activation notifies
+      // the applicant and their travel agent, cannot both send that email.
+      // The database decides the winner; the loser gets count 0.
+      const { count } = await this.prisma.biometricAppointment.updateMany({
+        where: { id: appointment.id, status: 'PENDING' },
+        data: { status: 'ACTIVE' },
+      });
+
+      if (count > 0) {
         this.logger.log(
-          `✅ Biometric appointment ${appointment.id} successfully activated (${appointment.status} → ${updated.status}) for submission ${submissionId}`,
+          `✅ Biometric appointment ${appointment.id} successfully activated (PENDING → ACTIVE) for submission ${submissionId}`,
         );
       } else {
         this.logger.log(
-          `ℹ️ Biometric appointment ${appointment.id} already has status ${appointment.status}, skipping activation`,
+          `ℹ️ Biometric appointment ${appointment.id} was not PENDING (status ${appointment.status}), skipping activation`,
         );
       }
     } catch (error) {
