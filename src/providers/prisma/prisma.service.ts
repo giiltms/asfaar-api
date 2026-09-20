@@ -46,7 +46,7 @@ export class PrismaService
     this.$use(biometricCenterNumberMiddleware());
     this.$use(embassySubmissionEmailMiddleware());
     this.$use(paymentEmailMiddleware());
-    this.$use(biometricCaptureEmailMiddleware());
+    this.$use(biometricCaptureEmailMiddleware(this));
     // Reads through `this` rather than its own PrismaClient, so appointment
     // notification lookups share the application connection pool.
     this.$use(biometricAppointmentEmailMiddleware(this));

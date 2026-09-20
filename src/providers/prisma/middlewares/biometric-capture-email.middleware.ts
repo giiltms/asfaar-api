@@ -1,9 +1,19 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, AppointmentStatus } from '@prisma/client';
+import { Prisma, AppointmentStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('BiometricCaptureEmailMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so notification
+ * lookups share the application's connection pool.
+ */
+export interface CaptureLookupClient {
+  biometricAppointment: {
+    findUnique(args: any): Promise<any>;
+  };
+}
 
 // We'll inject the mail service externally to avoid circular dependencies
 let mailService: MailService | null = null;
@@ -12,7 +22,10 @@ export function setMailServiceForBiometricMiddleware(service: MailService) {
   mailService = service;
 }
 
-async function sendBiometricCaptureEmail(appointmentId: string): Promise<void> {
+async function sendBiometricCaptureEmail(
+  client: CaptureLookupClient,
+  appointmentId: string,
+): Promise<void> {
   if (!mailService) {
     logger.warn('MailService not available for biometric capture email');
     return;
@@ -20,7 +33,7 @@ async function sendBiometricCaptureEmail(appointmentId: string): Promise<void> {
 
   try {
     // Get appointment with all related data
-    const appointment = await prismaInternal.biometricAppointment.findUnique({
+    const appointment = await client.biometricAppointment.findUnique({
       where: { id: appointmentId },
       include: {
         user: {
@@ -104,61 +117,61 @@ async function sendBiometricCaptureEmail(appointmentId: string): Promise<void> {
   }
 }
 
-export function biometricCaptureEmailMiddleware(): Prisma.Middleware {
+export function biometricCaptureEmailMiddleware(
+  client: CaptureLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    if (params.model !== 'BiometricAppointment') {
+    if (
+      params.model !== 'BiometricAppointment' ||
+      params.action !== 'update'
+    ) {
       return next(params);
     }
 
-    if (params.action === 'update') {
-      const data = params.args?.data || {};
-      const where = params.args?.where || {};
-      const newStatus: AppointmentStatus | string | undefined = data.status;
+    const newStatus: AppointmentStatus | string | undefined =
+      params.args?.data?.status;
 
-      // Check if status is being updated to COMPLETED
-      if (
-        newStatus === AppointmentStatus.COMPLETED ||
-        newStatus === 'COMPLETED'
-      ) {
-        try {
-          // Get the current appointment to check if status is actually changing
-          const currentAppointment =
-            await prismaInternal.biometricAppointment.findUnique({
-              where,
-              select: { id: true, status: true },
-            });
-
-          if (
-            currentAppointment &&
-            currentAppointment.status !== AppointmentStatus.COMPLETED
-          ) {
-            // Status is changing to COMPLETED, proceed with update first
-            const result = await next(params);
-
-            // Then send email asynchronously (don't block the response)
-            setImmediate(() => {
-              sendBiometricCaptureEmail(currentAppointment.id).catch(
-                (error) => {
-                  logger.error(
-                    `Async biometric capture email send failed for appointment ${currentAppointment.id}: ${error.message}`,
-                  );
-                },
-              );
-            });
-
-            return result;
-          }
-        } catch (error) {
-          logger.error(
-            `Error in biometric capture email middleware: ${
-              (error as Error).message
-            }`,
-          );
-          // Continue with normal flow even if email logic fails
-        }
-      }
+    if (
+      newStatus !== AppointmentStatus.COMPLETED &&
+      newStatus !== 'COMPLETED'
+    ) {
+      return next(params);
     }
 
-    return next(params);
+    let current: { id: string; status: AppointmentStatus } | null = null;
+
+    try {
+      // Check whether the status is actually changing, so a repeated write
+      // does not re-send mail the applicant has already received.
+      current = await client.biometricAppointment.findUnique({
+        where: params.args?.where || {},
+        select: { id: true, status: true },
+      });
+    } catch (error) {
+      // The write must still go ahead; only the notification is lost.
+      logger.error(
+        `Could not read appointment state before update, skipping capture notification: ${
+          (error as Error).message
+        }`,
+      );
+      return next(params);
+    }
+
+    if (!current || current.status === AppointmentStatus.COMPLETED) {
+      return next(params);
+    }
+
+    const appointmentId = current.id;
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed and retried behind their back.
+    const result = await next(params);
+
+    // Send asynchronously so a slow or dead SMTP server cannot block the write.
+    setImmediate(() => {
+      void sendBiometricCaptureEmail(client, appointmentId);
+    });
+
+    return result;
   };
 }
