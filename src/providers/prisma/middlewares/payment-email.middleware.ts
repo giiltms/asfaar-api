@@ -1,6 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { Prisma, PaymentStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
+import {
+  SubmissionLookupClient,
+  ccExcluding,
+  resolveSubmissionRecipients,
+} from '@modules/mail/recipients/submission-recipients';
 
 const logger = new Logger('PaymentEmailMiddleware');
 
@@ -9,7 +14,7 @@ const logger = new Logger('PaymentEmailMiddleware');
  * live PrismaService rather than constructing its own client, so notification
  * lookups share the application's connection pool.
  */
-export interface PaymentLookupClient {
+export interface PaymentLookupClient extends SubmissionLookupClient {
   payment: {
     findUnique(args: any): Promise<any>;
   };
@@ -96,8 +101,17 @@ export async function sendPaymentConfirmationEmail(
     const primaryPaymentType =
       paymentTypes.length > 0 ? paymentTypes[0] : 'UNKNOWN';
 
+    // Copy the travel agent managing this application, when there is one.
+    // Payment mail is addressed to whoever the payment belongs to, which on an
+    // agent-filed application can be the agent, so exclude them from their own cc.
+    const recipients = submission?.id
+      ? await resolveSubmissionRecipients(client, submission.id)
+      : null;
+
     // Prepare email data
     const emailData = {
+      cc: recipients ? ccExcluding(user.email, recipients.cc) : [],
+      agentName: recipients?.agentName || '',
       userName,
       userEmail: user.email,
       referenceNumber: submission?.referenceNumber || 'N/A',

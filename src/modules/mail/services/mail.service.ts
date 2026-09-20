@@ -30,6 +30,12 @@ export interface BiometricAppointmentMailData {
 }
 
 export interface PaymentConfirmationData {
+  /**
+   * Managing travel agent, copied on this applicant's lifecycle mail.
+   * Absent when the application was not filed by an agent.
+   */
+  cc?: string[];
+  agentName?: string;
   userName: string;
   userEmail: string;
   referenceNumber: string;
@@ -43,6 +49,12 @@ export interface PaymentConfirmationData {
 }
 
 export interface EmbassySubmissionData {
+  /**
+   * Managing travel agent, copied on this applicant's lifecycle mail.
+   * Absent when the application was not filed by an agent.
+   */
+  cc?: string[];
+  agentName?: string;
   userName: string;
   userEmail: string;
   referenceNumber: string;
@@ -51,6 +63,12 @@ export interface EmbassySubmissionData {
 }
 
 export interface BiometricCaptureData {
+  /**
+   * Managing travel agent, copied on this applicant's lifecycle mail.
+   * Absent when the application was not filed by an agent.
+   */
+  cc?: string[];
+  agentName?: string;
   userName: string;
   userEmail: string;
   referenceNumber: string;
@@ -59,6 +77,12 @@ export interface BiometricCaptureData {
 }
 
 export interface ApplicationQueryData {
+  /**
+   * Managing travel agent, copied on this applicant's lifecycle mail.
+   * Absent when the application was not filed by an agent.
+   */
+  cc?: string[];
+  agentName?: string;
   userName: string;
   userEmail: string;
   referenceNumber: string;
@@ -69,6 +93,12 @@ export interface ApplicationQueryData {
 }
 
 export interface ApplicationDecisionData {
+  /**
+   * Managing travel agent, copied on this applicant's lifecycle mail.
+   * Absent when the application was not filed by an agent.
+   */
+  cc?: string[];
+  agentName?: string;
   userName: string;
   userEmail: string;
   referenceNumber: string;
@@ -180,6 +210,28 @@ export class MailService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * The cc option for a sendMail call, omitted entirely when there is nobody
+   * to copy so the header is not emitted empty.
+   */
+  private ccOption(data: { cc?: string[] }): { cc?: string[] } {
+    return data.cc?.length ? { cc: data.cc } : {};
+  }
+
+  /**
+   * Template context describing the copied agent. Always defined, because the
+   * Handlebars adapter runs in strict mode and a missing key throws at render.
+   */
+  private agentContext(data: { cc?: string[]; agentName?: string }): {
+    hasAgent: boolean;
+    agentName: string;
+  } {
+    return {
+      hasAgent: !!data.cc?.length,
+      agentName: data.agentName || '',
+    };
+  }
+
   async sendRegisterationConfirmation(email: string, data: any): Promise<void> {
     const siteUrl = this.configService.get('SITE_URL', 'http://localhost:3000');
     const contactEmail = this.configService.get(
@@ -287,9 +339,11 @@ export class MailService {
 
       await this.mailerService.sendMail({
         to: data.userEmail,
+        ...this.ccOption(data),
         subject,
         template,
         context: {
+          ...this.agentContext(data),
           userName: data.userName,
           referenceNumber: data.referenceNumber || 'N/A',
           paymentReference: data.paymentReference,
@@ -319,9 +373,11 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.userEmail,
+        ...this.ccOption(data),
         subject: 'Application Submitted to Embassy - Asfaar Visa Services',
         template: 'embassysubmission',
         context: {
+          ...this.agentContext(data),
           userName: data.userName,
           referenceNumber: data.referenceNumber,
           embassyName: data.embassyName,
@@ -347,9 +403,11 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: data.userEmail,
+        ...this.ccOption(data),
         subject: 'Biometric Capture Completed - Asfaar Visa Services',
         template: 'biometriccapturing',
         context: {
+          ...this.agentContext(data),
           userName: data.userName,
           referenceNumber: data.referenceNumber,
           centerName: data.centerName,
@@ -380,9 +438,11 @@ export class MailService {
 
       await this.mailerService.sendMail({
         to: data.userEmail,
+        ...this.ccOption(data),
         subject: 'Application Query - Action Required - Asfaar Visa Services',
         template: 'applicationquery',
         context: {
+          ...this.agentContext(data),
           userName: data.userName,
           referenceNumber: data.referenceNumber,
           queryMessage: data.queryMessage,
@@ -416,9 +476,11 @@ export class MailService {
 
       await this.mailerService.sendMail({
         to: data.userEmail,
+        ...this.ccOption(data),
         subject,
         template: 'applicationdecision',
         context: {
+          ...this.agentContext(data),
           userName: data.userName,
           referenceNumber: data.referenceNumber,
           embassyName: data.embassyName,

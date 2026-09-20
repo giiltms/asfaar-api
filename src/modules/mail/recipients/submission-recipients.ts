@@ -61,6 +61,17 @@ const normalizeEmail = (email?: string | null): string =>
   (email || '').trim().toLowerCase();
 
 /**
+ * Drop any copied address that is already the primary recipient.
+ *
+ * Most lifecycle mail is addressed to the applicant, but some - payment
+ * confirmation, for instance - is addressed to whoever the record belongs to,
+ * which on an agent-filed application can be the agent. Nobody should receive
+ * the same message twice.
+ */
+export const ccExcluding = (to: string, cc: string[]): string[] =>
+  cc.filter((address) => normalizeEmail(address) !== normalizeEmail(to));
+
+/**
  * Resolve who to notify about a form submission.
  *
  * Applicant lifecycle mail has historically addressed the applicant alone, which
