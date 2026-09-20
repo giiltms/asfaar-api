@@ -91,6 +91,12 @@
 
         <p>Thank you for your cooperation. We look forward to processing your
           application once the required information is provided.</p>
+        {{#if hasAgent}}
+          <p style='font-size: 13px; color: #666; font-style: italic; margin-top: 22px;'>A
+            copy of this notice has also been sent to your travel agent,
+            {{agentName}}.</p>
+        {{/if}}
+
       </div>
 
       <div class='footer'>

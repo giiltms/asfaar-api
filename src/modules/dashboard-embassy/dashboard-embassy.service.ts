@@ -19,6 +19,10 @@ import {
   EmbassyHistoryQueryDto,
   EmbassyHistoryItemDto,
 } from './dto/embassy-review.dto';
+import {
+  ccExcluding,
+  resolveSubmissionRecipients,
+} from '@modules/mail/recipients/submission-recipients';
 
 @Injectable()
 export class DashboardEmbassyService {
@@ -554,14 +558,27 @@ export class DashboardEmbassyService {
         },
       });
 
-      // Send email notification to applicant
+      // Send email notification to applicant, copying the travel agent
+      // managing this application when there is one.
       try {
+        const recipients = await resolveSubmissionRecipients(
+          this.prisma,
+          submissionId,
+        );
+        const agentCopy = {
+          cc: recipients
+            ? ccExcluding(submission.user.email, recipients.cc)
+            : [],
+          agentName: recipients?.agentName || '',
+        };
+
         if (
           action === EmbassyAction.APPROVE ||
           action === EmbassyAction.REJECT
         ) {
           // Send application decision notification
           await this.mailService.sendApplicationDecisionNotification({
+            ...agentCopy,
             userName: `${submission.user.firstName} ${submission.user.lastName}`,
             userEmail: submission.user.email,
             referenceNumber: submission.referenceNumber,
@@ -578,6 +595,7 @@ export class DashboardEmbassyService {
           emailSent = true;
         } else if (action === EmbassyAction.REQUEST_INFO) {
           await this.mailService.sendApplicationQueryNotification({
+            ...agentCopy,
             userName: `${submission.user.firstName} ${submission.user.lastName}`,
             userEmail: submission.user.email,
             referenceNumber: submission.referenceNumber,

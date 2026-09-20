@@ -1,6 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { Prisma, AppointmentStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
+import {
+  SubmissionLookupClient,
+  ccExcluding,
+  resolveSubmissionRecipients,
+} from '@modules/mail/recipients/submission-recipients';
 
 const logger = new Logger('BiometricCaptureEmailMiddleware');
 
@@ -9,7 +14,7 @@ const logger = new Logger('BiometricCaptureEmailMiddleware');
  * live PrismaService rather than constructing its own client, so notification
  * lookups share the application's connection pool.
  */
-export interface CaptureLookupClient {
+export interface CaptureLookupClient extends SubmissionLookupClient {
   biometricAppointment: {
     findUnique(args: any): Promise<any>;
   };
@@ -94,7 +99,14 @@ async function sendBiometricCaptureEmail(
         });
 
     // Prepare email data
+    // Copy the travel agent managing this application, when there is one.
+    const recipients = submission?.id
+      ? await resolveSubmissionRecipients(client, submission.id)
+      : null;
+
     const emailData = {
+      cc: recipients ? ccExcluding(user.email, recipients.cc) : [],
+      agentName: recipients?.agentName || '',
       userName,
       userEmail: user.email,
       referenceNumber: submission?.referenceNumber || 'N/A',

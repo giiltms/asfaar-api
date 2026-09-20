@@ -17,6 +17,10 @@ import {
   VerificationHistoryItemDto,
   VerificationAction,
 } from './dto/verification-review.dto';
+import {
+  ccExcluding,
+  resolveSubmissionRecipients,
+} from '@modules/mail/recipients/submission-recipients';
 
 @Injectable()
 export class DashboardVerificationService {
@@ -930,7 +934,17 @@ export class DashboardVerificationService {
         const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
         const applicationUrl = `${siteUrl}/applications/${submissionId}/edit`;
 
+        // Copy the travel agent managing this application, when there is one.
+        const recipients = await resolveSubmissionRecipients(
+          this.prisma,
+          submissionId,
+        );
+
         const emailData: ApplicationQueryData = {
+          cc: recipients
+            ? ccExcluding(result.submission.user.email, recipients.cc)
+            : [],
+          agentName: recipients?.agentName || '',
           userName,
           userEmail: result.submission.user.email,
           referenceNumber: result.submission.referenceNumber || 'N/A',

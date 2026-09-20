@@ -1,6 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { Prisma, SubmissionStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
+import {
+  ccExcluding,
+  resolveSubmissionRecipients,
+} from '@modules/mail/recipients/submission-recipients';
 
 const logger = new Logger('EmbassySubmissionEmailMiddleware');
 
@@ -92,7 +96,12 @@ async function sendEmbassySubmissionEmail(
         });
 
     // Prepare email data
+    // Copy the travel agent managing this application, when there is one.
+    const recipients = await resolveSubmissionRecipients(client, submissionId);
+
     const emailData = {
+      cc: recipients ? ccExcluding(user.email, recipients.cc) : [],
+      agentName: recipients?.agentName || '',
       userName,
       userEmail: user.email,
       referenceNumber: submission.referenceNumber || 'N/A',

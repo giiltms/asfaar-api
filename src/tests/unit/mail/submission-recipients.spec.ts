@@ -1,4 +1,5 @@
 import {
+  ccExcluding,
   formatUserName,
   resolveSubmissionRecipients,
 } from '@modules/mail/recipients/submission-recipients';
@@ -181,5 +182,31 @@ describe('resolveSubmissionRecipients', () => {
     await expect(
       resolveSubmissionRecipients(client as any, 'sub-1'),
     ).resolves.toBeNull();
+  });
+});
+
+describe('ccExcluding', () => {
+  it('keeps agents who are not already the primary recipient', () => {
+    expect(
+      ccExcluding('applicant@example.com', ['agent@travelco.com']),
+    ).toEqual(['agent@travelco.com']);
+  });
+
+  it('drops an agent who is already the primary recipient', () => {
+    // Payment mail addresses whoever paid, which on an agent-filed
+    // application can be the agent themselves.
+    expect(
+      ccExcluding('agent@travelco.com', ['agent@travelco.com']),
+    ).toEqual([]);
+  });
+
+  it('compares without regard to case or surrounding whitespace', () => {
+    expect(
+      ccExcluding(' Agent@TravelCo.com ', ['agent@travelco.com']),
+    ).toEqual([]);
+  });
+
+  it('handles an empty cc list', () => {
+    expect(ccExcluding('applicant@example.com', [])).toEqual([]);
   });
 });
