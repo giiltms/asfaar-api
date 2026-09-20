@@ -2,6 +2,33 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 
+/**
+ * Shared shape for biometric appointment mail.
+ *
+ * Unlike the older notification payloads, this carries an explicit recipient
+ * list so the managing travel agent is copied alongside the applicant. Every
+ * field is required because the Handlebars adapter runs in strict mode - a
+ * missing key throws at render time rather than rendering blank.
+ */
+export interface BiometricAppointmentMailData {
+  /** Applicant - the primary recipient. */
+  to: string;
+  /** Managing travel agent, when the application was filed by one. */
+  cc: string[];
+  applicantName: string;
+  agentName: string;
+  referenceNumber: string;
+  centerName: string;
+  centerAddress: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  appointmentClass: string;
+  /** Prior date, on a reschedule. Empty string otherwise. */
+  previousAppointmentDate: string;
+  /** Reschedule or cancellation reason. Empty string when none was given. */
+  reason: string;
+}
+
 export interface PaymentConfirmationData {
   userName: string;
   userEmail: string;
@@ -761,6 +788,100 @@ export class MailService {
     } catch (error) {
       this.logger.error(
         `Failed to send client added notification to ${data.userEmail}:`,
+        error.message,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Confirm a biometric appointment to the applicant, copying their travel agent.
+   *
+   * Sent when the appointment becomes real to the applicant - on activation
+   * after payment clears - not at booking time, when it is still PENDING and
+   * may never be paid for.
+   */
+  async sendBiometricAppointmentScheduled(
+    data: BiometricAppointmentMailData,
+  ): Promise<void> {
+    await this.sendBiometricAppointmentMail(
+      data,
+      'biometric-appointment-scheduled',
+      `Biometric Appointment Confirmed - ${data.referenceNumber}`,
+    );
+  }
+
+  /**
+   * Tell the applicant and their travel agent that an appointment moved.
+   */
+  async sendBiometricAppointmentRescheduled(
+    data: BiometricAppointmentMailData,
+  ): Promise<void> {
+    await this.sendBiometricAppointmentMail(
+      data,
+      'biometric-appointment-rescheduled',
+      `Biometric Appointment Rescheduled - ${data.referenceNumber}`,
+    );
+  }
+
+  /**
+   * Tell the applicant and their travel agent that an appointment was cancelled.
+   */
+  async sendBiometricAppointmentCancelled(
+    data: BiometricAppointmentMailData,
+  ): Promise<void> {
+    await this.sendBiometricAppointmentMail(
+      data,
+      'biometric-appointment-cancelled',
+      `Biometric Appointment Cancelled - ${data.referenceNumber}`,
+    );
+  }
+
+  /**
+   * Shared dispatch for the three appointment lifecycle mails - they differ
+   * only by template and subject.
+   */
+  private async sendBiometricAppointmentMail(
+    data: BiometricAppointmentMailData,
+    template: string,
+    subject: string,
+  ): Promise<void> {
+    const dashboardUrl = this.configService.get(
+      'SITE_URL',
+      'http://localhost:3000',
+    );
+
+    try {
+      await this.mailerService.sendMail({
+        to: data.to,
+        ...(data.cc.length > 0 && { cc: data.cc }),
+        subject,
+        template,
+        context: {
+          applicantName: data.applicantName,
+          agentName: data.agentName,
+          hasAgent: data.cc.length > 0,
+          referenceNumber: data.referenceNumber,
+          centerName: data.centerName,
+          centerAddress: data.centerAddress,
+          appointmentDate: data.appointmentDate,
+          appointmentTime: data.appointmentTime,
+          appointmentClass: data.appointmentClass,
+          previousAppointmentDate: data.previousAppointmentDate,
+          reason: data.reason,
+          hasReason: data.reason.length > 0,
+          dashboardUrl,
+        },
+      });
+
+      this.logger.log(
+        `${template} sent to ${data.to}${
+          data.cc.length > 0 ? ` (cc: ${data.cc.join(', ')})` : ''
+        }`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send ${template} to ${data.to}:`,
         error.message,
       );
       throw error;
