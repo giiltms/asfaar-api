@@ -1,0 +1,82 @@
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Biometric Appointment Confirmed</title>
+    <link
+      href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      body { font-family: 'Inter', sans-serif; background-color: #f9f9f9;
+      margin: 0; padding: 0; color: #333; } .container { background-color:
+      #ffffff; max-width: 700px; margin: 40px auto; border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); overflow: hidden; border-top:
+      5px solid #2e7d32; } .header { background: linear-gradient(90deg, #2e7d32
+      0%, #388e3c 100%); padding: 30px; text-align: center; color: white; }
+      .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+      .section { padding: 30px; line-height: 1.6; } .section h2 { color:
+      #2e7d32; font-size: 20px; } .details { background-color: #f1f8f2;
+      border-left: 4px solid #2e7d32; padding: 18px 20px; margin: 22px 0;
+      border-radius: 4px; } .details p { margin: 6px 0; } .button { display:
+      inline-block; margin-top: 20px; padding: 14px 24px; font-size: 16px; color:
+      white; background-color: #2e7d32; text-decoration: none; border-radius:
+      6px; } .agent-note { font-size: 13px; color: #666; font-style: italic;
+      margin-top: 22px; } .footer { font-size: 12px; color: #777; text-align:
+      center; padding: 25px; background-color: #f1f8f2; } .footer a { color:
+      #2e7d32; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>ASFAAR VISA SERVICES</h1>
+      </div>
+
+      <div class='section'>
+        <h2>Hello {{applicantName}},</h2>
+        <p>Your biometric appointment has been confirmed. Please find the
+          details below.</p>
+
+        <div class='details'>
+          <p><strong>Reference Number:</strong> {{referenceNumber}}</p>
+          <p><strong>Date:</strong> {{appointmentDate}}</p>
+          <p><strong>Time:</strong> {{appointmentTime}}</p>
+          <p><strong>Center:</strong> {{centerName}}</p>
+          <p><strong>Address:</strong> {{centerAddress}}</p>
+          <p><strong>Appointment Class:</strong> {{appointmentClass}}</p>
+        </div>
+
+        <p>Please arrive at least 30 minutes early and bring a valid means of
+          identification along with your international passport. Your reference
+          number above will be required at the gate.</p>
+
+        <p>If you are unable to attend, please reschedule through your dashboard
+          before the appointment date.</p>
+
+        <p>
+          <a href='{{dashboardUrl}}/dashboard' class='button'>View Appointment</a>
+        </p>
+
+        {{#if hasAgent}}
+          <p class='agent-note'>A copy of this notice has also been sent to your
+            travel agent, {{agentName}}.</p>
+        {{/if}}
+      </div>
+
+      <div class='footer'>
+        <p>For inquiries:
+          <a
+            href='mailto:info@asfaarvisaservices.com'
+          >info@asfaarvisaservices.com</a>
+          | Visit:
+          <a
+            href='https://www.asfaarvisaservices.com'
+          >www.asfaarvisaservices.com</a></p>
+        <p><strong>Hotline:</strong>
+          +234 700 700 4001 |
+          <strong>Open Hours:</strong>
+          Mon-Fri 08:00 - 18:00</p>
+      </div>
+    </div>
+  </body>
+</html>

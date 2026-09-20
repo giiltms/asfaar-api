@@ -12,6 +12,7 @@ import {
   setMailServiceForEmbassyMiddleware,
   biometricCaptureEmailMiddleware,
   setMailServiceForBiometricMiddleware,
+  setMailServiceForBiometricAppointmentMiddleware,
   setMailServiceForTravelAgentUpgradeMiddleware,
   setMailServiceForTravelAgentUpgradeDecisionMiddleware,
   setMailServiceForLicenseMiddleware,
@@ -67,6 +68,7 @@ export class CoreModule implements OnModuleInit {
     setMailServiceForPaymentMiddleware(this.mailService);
     setMailServiceForEmbassyMiddleware(this.mailService);
     setMailServiceForBiometricMiddleware(this.mailService);
+    setMailServiceForBiometricAppointmentMiddleware(this.mailService);
     setMailServiceForTravelAgentUpgradeMiddleware(this.mailService);
     setMailServiceForTravelAgentUpgradeDecisionMiddleware(this.mailService);
     setMailServiceForLicenseMiddleware(this.mailService);

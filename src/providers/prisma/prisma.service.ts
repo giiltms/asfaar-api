@@ -14,6 +14,7 @@ import { biometricCenterNumberMiddleware } from './middlewares/biometric-center-
 import { embassySubmissionEmailMiddleware } from './middlewares/embassy-submission-email.middleware';
 import { paymentEmailMiddleware } from './middlewares/payment-email.middleware';
 import { biometricCaptureEmailMiddleware } from './middlewares/biometric-capture-email.middleware';
+import { biometricAppointmentEmailMiddleware } from './middlewares/biometric-appointment-email.middleware';
 import { referenceNumberMiddleware } from './middlewares/reference-number.middleware';
 import { travelAgentUpgradePaymentEmailMiddleware } from './middlewares/travel-agent-upgrade-payment-email.middleware';
 import { travelAgentUpgradeDecisionEmailMiddleware } from './middlewares/travel-agent-upgrade-decision-email.middleware';
@@ -46,6 +47,9 @@ export class PrismaService
     this.$use(embassySubmissionEmailMiddleware());
     this.$use(paymentEmailMiddleware());
     this.$use(biometricCaptureEmailMiddleware());
+    // Reads through `this` rather than its own PrismaClient, so appointment
+    // notification lookups share the application connection pool.
+    this.$use(biometricAppointmentEmailMiddleware(this));
     this.$use(referenceNumberMiddleware());
     this.$use(travelAgentUpgradePaymentEmailMiddleware());
     this.$use(travelAgentUpgradeDecisionEmailMiddleware());
