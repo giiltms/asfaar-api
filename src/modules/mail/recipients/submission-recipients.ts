@@ -107,7 +107,7 @@ export async function resolveSubmissionRecipients(
       normalizeEmail(agent.email) !== normalizeEmail(applicant.email);
 
     return {
-      to: applicant.email,
+      to: applicant.email.trim(),
       cc: agentIsSeparateRecipient ? [agent.email.trim()] : [],
       applicantName: formatUserName(applicant),
       agentName: agentIsSeparateRecipient ? formatUserName(agent) : '',
