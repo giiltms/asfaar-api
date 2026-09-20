@@ -5,12 +5,8 @@ import { PrismaModule } from '../providers/prisma/prisma.module';
 import { DatabaseService } from './database/database.service';
 import { CacheService } from './cache/cache.service';
 import {
-  formSubmissionReferenceMiddleware,
-  paymentEmailMiddleware,
   setMailServiceForPaymentMiddleware,
-  embassySubmissionEmailMiddleware,
   setMailServiceForEmbassyMiddleware,
-  biometricCaptureEmailMiddleware,
   setMailServiceForBiometricMiddleware,
   setMailServiceForBiometricAppointmentMiddleware,
   setMailServiceForTravelAgentUpgradeMiddleware,
@@ -44,16 +40,12 @@ import { MailService } from '@modules/mail/services/mail.service';
         };
       },
     }),
+    // PrismaService registers the application middleware chain in its own
+    // constructor. Listing middlewares here as well registers them a second
+    // time, and a middleware registered twice runs twice - which duplicated
+    // every payment, embassy submission and biometric capture email.
     PrismaModule.forRoot({
       isGlobal: true,
-      prismaServiceOptions: {
-        middlewares: [
-          formSubmissionReferenceMiddleware(),
-          paymentEmailMiddleware(),
-          embassySubmissionEmailMiddleware(),
-          biometricCaptureEmailMiddleware(),
-        ],
-      },
     }),
     MailModule,
   ],
