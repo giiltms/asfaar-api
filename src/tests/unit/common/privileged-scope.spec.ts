@@ -23,6 +23,10 @@ describe('hasUnrestrictedAccess', () => {
     expect(hasUnrestrictedAccess([Roles.SUPER_ADMIN])).toBe(true);
   });
 
+  it('recognises an admin', () => {
+    expect(hasUnrestrictedAccess([Roles.ADMIN])).toBe(true);
+  });
+
   it('recognises a super admin holding several roles', () => {
     expect(
       hasUnrestrictedAccess([Roles.CENTER_MANAGER, Roles.SUPER_ADMIN]),

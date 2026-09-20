@@ -9,9 +9,10 @@ import { Roles } from '../constants/roles.constants';
  * without this the scoped queries fail outright rather than returning
  * everything - which is what a super admin expects to see.
  *
- * Add ADMIN here to give ordinary admins the same reach.
+ * ADMIN is included alongside SUPER_ADMIN: admins sit directly below them in
+ * the hierarchy and hit exactly the same walls.
  */
-export const UNRESTRICTED_ROLES: string[] = [Roles.SUPER_ADMIN];
+export const UNRESTRICTED_ROLES: string[] = [Roles.SUPER_ADMIN, Roles.ADMIN];
 
 export interface ScopedCountry {
   id: string;

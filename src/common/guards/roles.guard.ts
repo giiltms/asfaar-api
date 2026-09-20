@@ -24,9 +24,9 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    // Dashboards name only their own role, so a super admin would otherwise be
-    // locked out of every one of them. They reach all routes without each
-    // controller having to list them.
+    // Dashboards name only their own role, so an administrator would otherwise
+    // be locked out of every one of them. Unrestricted roles reach all routes
+    // without each controller having to list them.
     if (hasUnrestrictedAccess(user.roles)) {
       return true;
     }
