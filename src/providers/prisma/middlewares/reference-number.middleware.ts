@@ -1,11 +1,34 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@nestjs/common';
-import { sendPaymentConfirmationEmail } from './payment-email.middleware';
+import {
+  PaymentLookupClient,
+  sendPaymentConfirmationEmail,
+} from './payment-email.middleware';
 
-const prismaInternal = new PrismaClient();
+/**
+ * Reads through the live PrismaService rather than its own client, so it
+ * shares the application's connection pool.
+ */
+export interface ReferenceNumberClient extends PaymentLookupClient {
+  formSubmission: {
+    findUnique(args: any): Promise<any>;
+    update(args: any): Promise<any>;
+  };
+  payment: {
+    findUnique(args: any): Promise<any>;
+    findFirst(args: any): Promise<any>;
+  };
+  biometricAppointment: {
+    findFirst(args: any): Promise<any>;
+  };
+  $transaction<T>(fn: (tx: any) => Promise<T>): Promise<T>;
+}
+
 const logger = new Logger('ReferenceNumberMiddleware');
 
-export function referenceNumberMiddleware(): Prisma.Middleware {
+export function referenceNumberMiddleware(
+  client: ReferenceNumberClient,
+): Prisma.Middleware {
   return async function middleware(params: Prisma.MiddlewareParams, next) {
     // Only process FormSubmission updates
     if (params.model === 'FormSubmission' && params.action === 'update') {
@@ -15,7 +38,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
       if (data.status === 'SUBMITTED') {
         try {
           // Get the submission to check if it already has a reference number
-          const submission = await prismaInternal.formSubmission.findUnique({
+          const submission = await client.formSubmission.findUnique({
             where,
             select: {
               id: true,
@@ -45,7 +68,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
             try {
               // Get the biometric appointment to find the center
               const appointment =
-                await prismaInternal.biometricAppointment.findFirst({
+                await client.biometricAppointment.findFirst({
                   where: { submissionId: submission.id },
                   include: {
                     center: {
@@ -63,7 +86,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
                 );
 
                 // Get or create application counter for this country/year
-                const counter = await prismaInternal.$transaction(
+                const counter = await client.$transaction(
                   async (tx) => {
                     // Try to find existing counter
                     let applicationCounter =
@@ -121,7 +144,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
                 );
 
                 // Update the submission with the generated reference number
-                await prismaInternal.formSubmission.update({
+                await client.formSubmission.update({
                   where,
                   data: { referenceNumber },
                 });
@@ -129,7 +152,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
                 // Now send payment confirmation email with the reference number
                 try {
                   // Find the payment associated with this submission
-                  const payment = await prismaInternal.payment.findFirst({
+                  const payment = await client.payment.findFirst({
                     where: { submissionId: submission.id },
                     select: { id: true },
                   });
@@ -141,7 +164,7 @@ export function referenceNumberMiddleware(): Prisma.Middleware {
 
                     // Send email asynchronously (don't block the response)
                     setImmediate(() => {
-                      sendPaymentConfirmationEmail(payment.id).catch(
+                      sendPaymentConfirmationEmail(client, payment.id).catch(
                         (error) => {
                           logger.error(
                             `Failed to send payment confirmation email for payment ${payment.id}: ${error.message}`,
