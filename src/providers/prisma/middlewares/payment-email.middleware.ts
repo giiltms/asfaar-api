@@ -1,9 +1,19 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, PaymentStatus } from '@prisma/client';
+import { Prisma, PaymentStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('PaymentEmailMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so notification
+ * lookups share the application's connection pool.
+ */
+export interface PaymentLookupClient {
+  payment: {
+    findUnique(args: any): Promise<any>;
+  };
+}
 
 // We'll inject the mail service externally to avoid circular dependencies
 let mailService: MailService | null = null;
@@ -13,6 +23,7 @@ export function setMailServiceForPaymentMiddleware(service: MailService) {
 }
 
 export async function sendPaymentConfirmationEmail(
+  client: PaymentLookupClient,
   paymentId: string,
 ): Promise<void> {
   if (!mailService) {
@@ -22,7 +33,7 @@ export async function sendPaymentConfirmationEmail(
 
   try {
     // Get payment with all related data
-    const payment = await prismaInternal.payment.findUnique({
+    const payment = await client.payment.findUnique({
       where: { id: paymentId },
       include: {
         user: {
@@ -114,50 +125,53 @@ export async function sendPaymentConfirmationEmail(
   }
 }
 
-export function paymentEmailMiddleware(): Prisma.Middleware {
+export function paymentEmailMiddleware(
+  client: PaymentLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    if (params.model !== 'Payment') {
+    if (params.model !== 'Payment' || params.action !== 'update') {
       return next(params);
     }
 
-    if (params.action === 'update') {
-      const data = params.args?.data || {};
-      const where = params.args?.where || {};
-      const newStatus: PaymentStatus | string | undefined = data.status;
+    const newStatus: PaymentStatus | string | undefined =
+      params.args?.data?.status;
 
-      // Check if status is being updated to COMPLETED
-      if (newStatus === PaymentStatus.COMPLETED || newStatus === 'COMPLETED') {
-        try {
-          // Get the current payment to check if status is actually changing
-          const currentPayment = await prismaInternal.payment.findUnique({
-            where,
-            select: { id: true, status: true },
-          });
-
-          if (
-            currentPayment &&
-            currentPayment.status !== PaymentStatus.COMPLETED
-          ) {
-            // Status is changing to COMPLETED, proceed with update first
-            const result = await next(params);
-
-            // Note: Payment confirmation email is now sent by the reference number middleware
-            // after the reference number is generated to ensure it's included in the email
-            logger.log(
-              `Payment ${currentPayment.id} marked as completed. Email will be sent after reference number generation.`,
-            );
-
-            return result;
-          }
-        } catch (error) {
-          logger.error(
-            `Error in payment email middleware: ${(error as Error).message}`,
-          );
-          // Continue with normal flow even if email logic fails
-        }
-      }
+    if (newStatus !== PaymentStatus.COMPLETED && newStatus !== 'COMPLETED') {
+      return next(params);
     }
 
-    return next(params);
+    let current: { id: string; status: PaymentStatus } | null = null;
+
+    try {
+      // Check whether the status is actually changing.
+      current = await client.payment.findUnique({
+        where: params.args?.where || {},
+        select: { id: true, status: true },
+      });
+    } catch (error) {
+      // The write must still go ahead.
+      logger.error(
+        `Could not read payment state before update: ${
+          (error as Error).message
+        }`,
+      );
+      return next(params);
+    }
+
+    if (!current || current.status === PaymentStatus.COMPLETED) {
+      return next(params);
+    }
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed and retried behind their back.
+    const result = await next(params);
+
+    // The confirmation email itself is dispatched by the reference number
+    // middleware, once a reference number exists to include in it.
+    logger.log(
+      `Payment ${current.id} marked as completed. Email will be sent after reference number generation.`,
+    );
+
+    return result;
   };
 }

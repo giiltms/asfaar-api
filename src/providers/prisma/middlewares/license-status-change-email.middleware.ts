@@ -1,9 +1,19 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, TravelAgentLicenseStatus } from '@prisma/client';
+import { Prisma, TravelAgentLicenseStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('LicenseStatusChangeEmailMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so notification
+ * lookups share the application's connection pool.
+ */
+export interface LicenseLookupClient {
+  travelAgentLicense: {
+    findUnique(args: any): Promise<any>;
+  };
+}
 
 // We'll inject the mail service externally to avoid circular dependencies
 let mailService: MailService | null = null;
@@ -13,6 +23,7 @@ export function setMailServiceForLicenseMiddleware(service: MailService) {
 }
 
 async function sendLicenseStatusChangeEmail(
+  client: LicenseLookupClient,
   licenseId: string,
   newStatus: TravelAgentLicenseStatus,
 ): Promise<void> {
@@ -23,7 +34,7 @@ async function sendLicenseStatusChangeEmail(
 
   try {
     // Get license with all related data
-    const license = await prismaInternal.travelAgentLicense.findUnique({
+    const license = await client.travelAgentLicense.findUnique({
       where: { id: licenseId },
       include: {
         user: {
@@ -200,57 +211,62 @@ async function sendLicenseRevokedNotification(
   logger.log(`License revoked notification sent to ${userEmail}`);
 }
 
-export function licenseStatusChangeEmailMiddleware(): Prisma.Middleware {
+/** License statuses the agent is emailed about. */
+const NOTIFIED_LICENSE_STATUSES: string[] = ['ACTIVE', 'SUSPENDED', 'REVOKED'];
+
+export function licenseStatusChangeEmailMiddleware(
+  client: LicenseLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    if (params.model !== 'TravelAgentLicense') {
+    if (params.model !== 'TravelAgentLicense' || params.action !== 'update') {
       return next(params);
     }
 
-    if (params.action === 'update') {
-      const data = params.args?.data || {};
-      const where = params.args?.where || {};
-      const newStatus: TravelAgentLicenseStatus | string | undefined =
-        data.status;
+    const newStatus: TravelAgentLicenseStatus | string | undefined =
+      params.args?.data?.status;
 
-      // Check if status is being updated to a notification-worthy status
-      if (newStatus && ['ACTIVE', 'SUSPENDED', 'REVOKED'].includes(newStatus)) {
-        try {
-          // Get the current license to check if status is actually changing
-          const currentLicense =
-            await prismaInternal.travelAgentLicense.findUnique({
-              where,
-              select: { id: true, status: true },
-            });
-
-          if (currentLicense && currentLicense.status !== newStatus) {
-            // Status is changing, proceed with update first
-            const result = await next(params);
-
-            // Then send email asynchronously (don't block the response)
-            setImmediate(() => {
-              sendLicenseStatusChangeEmail(
-                currentLicense.id,
-                newStatus as TravelAgentLicenseStatus,
-              ).catch((error) => {
-                logger.error(
-                  `Async license status change email send failed for license ${currentLicense.id}: ${error.message}`,
-                );
-              });
-            });
-
-            return result;
-          }
-        } catch (error) {
-          logger.error(
-            `Error in license status change email middleware: ${
-              (error as Error).message
-            }`,
-          );
-          // Continue with normal flow even if email logic fails
-        }
-      }
+    if (!newStatus || !NOTIFIED_LICENSE_STATUSES.includes(newStatus)) {
+      return next(params);
     }
 
-    return next(params);
+    let current: { id: string; status: TravelAgentLicenseStatus } | null = null;
+
+    try {
+      // Check whether the status is actually changing, so a repeated write
+      // does not re-send mail the agent has already received.
+      current = await client.travelAgentLicense.findUnique({
+        where: params.args?.where || {},
+        select: { id: true, status: true },
+      });
+    } catch (error) {
+      // The write must still go ahead; only the notification is lost.
+      logger.error(
+        `Could not read license state before update, skipping status notification: ${
+          (error as Error).message
+        }`,
+      );
+      return next(params);
+    }
+
+    if (!current || current.status === newStatus) {
+      return next(params);
+    }
+
+    const licenseId = current.id;
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed and retried behind their back.
+    const result = await next(params);
+
+    // Send asynchronously so a slow or dead SMTP server cannot block the write.
+    setImmediate(() => {
+      void sendLicenseStatusChangeEmail(
+        client,
+        licenseId,
+        newStatus as TravelAgentLicenseStatus,
+      );
+    });
+
+    return result;
   };
 }

@@ -1,9 +1,19 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, SubmissionStatus } from '@prisma/client';
+import { Prisma, SubmissionStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('EmbassySubmissionEmailMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so notification
+ * lookups share the application's connection pool.
+ */
+export interface EmbassyLookupClient {
+  formSubmission: {
+    findUnique(args: any): Promise<any>;
+  };
+}
 
 // We'll inject the mail service externally to avoid circular dependencies
 let mailService: MailService | null = null;
@@ -12,7 +22,10 @@ export function setMailServiceForEmbassyMiddleware(service: MailService) {
   mailService = service;
 }
 
-async function sendEmbassySubmissionEmail(submissionId: string): Promise<void> {
+async function sendEmbassySubmissionEmail(
+  client: EmbassyLookupClient,
+  submissionId: string,
+): Promise<void> {
   if (!mailService) {
     logger.warn('MailService not available for embassy submission email');
     return;
@@ -20,7 +33,7 @@ async function sendEmbassySubmissionEmail(submissionId: string): Promise<void> {
 
   try {
     // Get submission with all related data
-    const submission = await prismaInternal.formSubmission.findUnique({
+    const submission = await client.formSubmission.findUnique({
       where: { id: submissionId },
       include: {
         user: {
@@ -102,58 +115,58 @@ async function sendEmbassySubmissionEmail(submissionId: string): Promise<void> {
   }
 }
 
-export function embassySubmissionEmailMiddleware(): Prisma.Middleware {
+export function embassySubmissionEmailMiddleware(
+  client: EmbassyLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    if (params.model !== 'FormSubmission') {
+    if (params.model !== 'FormSubmission' || params.action !== 'update') {
       return next(params);
     }
 
-    if (params.action === 'update') {
-      const data = params.args?.data || {};
-      const where = params.args?.where || {};
-      const newStatus: SubmissionStatus | string | undefined = data.status;
+    const newStatus: SubmissionStatus | string | undefined =
+      params.args?.data?.status;
 
-      // Check if status is being updated to APPROVED
-      if (newStatus === SubmissionStatus.APPROVED || newStatus === 'APPROVED') {
-        try {
-          // Get the current submission to check if status is actually changing
-          const currentSubmission =
-            await prismaInternal.formSubmission.findUnique({
-              where,
-              select: { id: true, status: true },
-            });
-
-          if (
-            currentSubmission &&
-            currentSubmission.status !== SubmissionStatus.APPROVED
-          ) {
-            // Status is changing to APPROVED, proceed with update first
-            const result = await next(params);
-
-            // Then send email asynchronously (don't block the response)
-            setImmediate(() => {
-              sendEmbassySubmissionEmail(currentSubmission.id).catch(
-                (error) => {
-                  logger.error(
-                    `Async embassy email send failed for submission ${currentSubmission.id}: ${error.message}`,
-                  );
-                },
-              );
-            });
-
-            return result;
-          }
-        } catch (error) {
-          logger.error(
-            `Error in embassy submission email middleware: ${
-              (error as Error).message
-            }`,
-          );
-          // Continue with normal flow even if email logic fails
-        }
-      }
+    if (
+      newStatus !== SubmissionStatus.APPROVED &&
+      newStatus !== 'APPROVED'
+    ) {
+      return next(params);
     }
 
-    return next(params);
+    let current: { id: string; status: SubmissionStatus } | null = null;
+
+    try {
+      // Check whether the status is actually changing, so a repeated write
+      // does not re-send mail the applicant has already received.
+      current = await client.formSubmission.findUnique({
+        where: params.args?.where || {},
+        select: { id: true, status: true },
+      });
+    } catch (error) {
+      // The write must still go ahead; only the notification is lost.
+      logger.error(
+        `Could not read submission state before update, skipping embassy notification: ${
+          (error as Error).message
+        }`,
+      );
+      return next(params);
+    }
+
+    if (!current || current.status === SubmissionStatus.APPROVED) {
+      return next(params);
+    }
+
+    const submissionId = current.id;
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed and retried behind their back.
+    const result = await next(params);
+
+    // Send asynchronously so a slow or dead SMTP server cannot block the write.
+    setImmediate(() => {
+      void sendEmbassySubmissionEmail(client, submissionId);
+    });
+
+    return result;
   };
 }
