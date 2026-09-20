@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { DashboardVerificationService } from '@modules/dashboard-verification/dashboard-verification.service';
 import {
@@ -6,6 +6,10 @@ import {
   ApplicationDecisionData,
 } from '@modules/mail/services/mail.service';
 import { SubmissionStatus } from '@prisma/client';
+import {
+  ScopedCountry,
+  resolveScopedCountry,
+} from '@common/access/privileged-scope';
 import {
   ApplicationReviewDto,
   EmbassyReviewListDto,
@@ -35,40 +39,19 @@ export class DashboardEmbassyService {
   ) {}
 
   /**
-   * Get user's assigned country
+   * The country this caller's view is restricted to, or null when they see
+   * every country. A super admin has no country assignment, so rather than
+   * failing they are simply left unfiltered.
    */
-  private async getUserAssignedCountry(userId: string): Promise<string> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        country: {
-          select: {
-            id: true,
-            name: true,
-            isoCode2: true,
-            isActive: true,
-          },
-        },
-      },
-    });
+  private async getScopedCountry(
+    userId: string,
+  ): Promise<ScopedCountry | null> {
+    return resolveScopedCountry(this.prisma, userId);
+  }
 
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (!user.country) {
-      throw new Error(
-        'No country assigned to this embassy officer. Please contact an administrator to assign a country.',
-      );
-    }
-
-    if (!user.country.isActive) {
-      throw new Error(
-        `Assigned country "${user.country.name}" is not active. Please contact an administrator.`,
-      );
-    }
-
-    return user.country.isoCode2;
+  /** Country filter for a submission query - empty when unscoped. */
+  private countryFilter(country: ScopedCountry | null) {
+    return country ? { form: { countryId: country.id } } : {};
   }
 
   /**
@@ -79,11 +62,13 @@ export class DashboardEmbassyService {
     filters: EmbassyReviewFiltersDto = {},
   ): Promise<EmbassyReviewListDto> {
     try {
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
-        `Getting applications for country ${countryCode} for embassy officer ${embassyOfficerId}`,
+        `Getting applications for country ${
+          country?.isoCode2 ?? 'all countries'
+        } for embassy officer ${embassyOfficerId}`,
       );
 
       const {
@@ -96,21 +81,9 @@ export class DashboardEmbassyService {
         limit = 10,
       } = filters;
 
-      // First get the country ID
-      const country = await this.prisma.country.findUnique({
-        where: { isoCode2: countryCode },
-        select: { id: true },
-      });
-
-      if (!country) {
-        throw new Error(`Country with code ${countryCode} not found`);
-      }
-
       // Build where clause for embassy applications
       const whereClause: any = {
-        form: {
-          countryId: country.id,
-        },
+        ...this.countryFilter(country),
         status: { in: status },
       };
 
@@ -252,7 +225,9 @@ export class DashboardEmbassyService {
       });
 
       this.logger.log(
-        `Found ${applications.length} applications for country ${countryCode}`,
+        `Found ${applications.length} applications for country ${
+          country?.isoCode2 ?? 'all countries'
+        }`,
       );
 
       return {
@@ -282,11 +257,13 @@ export class DashboardEmbassyService {
     embassyOfficerId: string,
   ): Promise<ApplicationReviewDto> {
     try {
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
-        `Getting application ${submissionId} for embassy review in country ${countryCode}`,
+        `Getting application ${submissionId} for embassy review in country ${
+          country?.isoCode2 ?? 'all countries'
+        }`,
       );
 
       // Verify the application is for the embassy officer's country
@@ -309,9 +286,11 @@ export class DashboardEmbassyService {
         throw new Error(`Application ${submissionId} not found`);
       }
 
-      if (submission.form.country.isoCode2 !== countryCode) {
-        throw new Error(
-          `Application ${submissionId} is not for country ${countryCode}`,
+      // Unrestricted roles are not tied to a country, so there is nothing to
+      // enforce; a scoped officer may only touch their own country's work.
+      if (country && submission.form.country.isoCode2 !== country.isoCode2) {
+        throw new ForbiddenException(
+          `Application ${submissionId} is not for country ${country.isoCode2}`,
         );
       }
 
@@ -333,29 +312,17 @@ export class DashboardEmbassyService {
    */
   async getEmbassyStats(embassyOfficerId: string): Promise<EmbassyStatsDto> {
     try {
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
-        `Getting stats for country ${countryCode} for embassy officer ${embassyOfficerId}`,
+        `Getting stats for country ${
+          country?.isoCode2 ?? 'all countries'
+        } for embassy officer ${embassyOfficerId}`,
       );
 
-      // First get the country ID
-      const country = await this.prisma.country.findUnique({
-        where: { isoCode2: countryCode },
-        select: { id: true },
-      });
-
-      if (!country) {
-        throw new Error(`Country with code ${countryCode} not found`);
-      }
-
       // Build where clause for embassy applications
-      const whereClause = {
-        form: {
-          countryId: country.id,
-        },
-      };
+      const whereClause = this.countryFilter(country);
 
       const [
         totalApplications,
@@ -467,8 +434,8 @@ export class DashboardEmbassyService {
       const { submissionId, action, reason, notes, requiredDocuments } =
         actionDto;
 
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
         `Embassy officer ${embassyOfficerId} taking final action ${action} on application ${submissionId}`,
@@ -502,9 +469,11 @@ export class DashboardEmbassyService {
         throw new Error(`Application ${submissionId} not found`);
       }
 
-      if (submission.form.country.isoCode2 !== countryCode) {
-        throw new Error(
-          `Application ${submissionId} is not for country ${countryCode}`,
+      // Unrestricted roles are not tied to a country, so there is nothing to
+      // enforce; a scoped officer may only touch their own country's work.
+      if (country && submission.form.country.isoCode2 !== country.isoCode2) {
+        throw new ForbiddenException(
+          `Application ${submissionId} is not for country ${country.isoCode2}`,
         );
       }
 
@@ -644,11 +613,13 @@ export class DashboardEmbassyService {
     limit = 10,
   ): Promise<EmbassyReviewListDto> {
     try {
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
-        `Getting ${status} applications for country ${countryCode} for embassy officer ${embassyOfficerId}`,
+        `Getting ${status} applications for country ${
+          country?.isoCode2 ?? 'all countries'
+        } for embassy officer ${embassyOfficerId}`,
       );
 
       // Use the same logic as getApplicationsForCountry but with specific status
@@ -675,34 +646,24 @@ export class DashboardEmbassyService {
     query: EmbassyHistoryQueryDto,
   ): Promise<EmbassyHistoryDto> {
     try {
-      // Get user's assigned country
-      const countryCode = await this.getUserAssignedCountry(embassyOfficerId);
+      // Country this caller is scoped to, or null for unrestricted roles.
+      const country = await this.getScopedCountry(embassyOfficerId);
 
       this.logger.log(
-        `Getting embassy history for officer ${embassyOfficerId} in country ${countryCode}`,
+        `Getting embassy history for officer ${embassyOfficerId} in country ${
+          country?.isoCode2 ?? 'all countries'
+        }`,
       );
 
       const page = query.page || 1;
       const limit = query.limit || 20;
       const skip = (page - 1) * limit;
 
-      // Get the country ID
-      const country = await this.prisma.country.findUnique({
-        where: { isoCode2: countryCode },
-        select: { id: true },
-      });
-
-      if (!country) {
-        throw new Error(`Country with code ${countryCode} not found`);
-      }
-
       // Build where clause - applications reviewed by this officer in their country
       const where: any = {
         reviewedBy: embassyOfficerId,
         reviewedAt: { not: null },
-        form: {
-          countryId: country.id,
-        },
+        ...this.countryFilter(country),
       };
 
       // Apply status filter

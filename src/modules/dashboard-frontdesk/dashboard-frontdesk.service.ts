@@ -8,6 +8,8 @@ import {
 import { PrismaService } from '@providers/prisma';
 import { SubmissionStatus } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
+import { resolveAccessibleCenters } from '@common/access/privileged-scope';
+import { CENTER_FIELDS } from '@common/access/center-fields';
 import {
   FrontDeskDashboardStatsDto,
   QueueStatsDto,
@@ -30,28 +32,7 @@ export class DashboardFrontdeskService {
    * Get user's assigned centers
    */
   async getUserCenters(userId: string) {
-    const userCenters = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        biometricCenters: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            address: true,
-            city: true,
-            state: true,
-            isActive: true,
-          },
-        },
-      },
-    });
-
-    if (!userCenters) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    return userCenters.biometricCenters;
+    return resolveAccessibleCenters(this.prisma, userId, CENTER_FIELDS);
   }
 
   /**
@@ -61,23 +42,13 @@ export class DashboardFrontdeskService {
     userId: string,
   ): Promise<FrontDeskDashboardStatsDto> {
     try {
-      // Get user's assigned centers
-      const userCenters = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          biometricCenters: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-
-      if (!userCenters) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
-      }
-
-      const userCenterIds = userCenters.biometricCenters.map(
-        (center) => center.id,
+      // Centers this user may see - their own assignments, or every active
+      // center for roles that are not scoped to one.
+      const accessibleCenters = await resolveAccessibleCenters(
+        this.prisma,
+        userId,
       );
+      const userCenterIds = accessibleCenters.map((center) => center.id);
 
       if (userCenterIds.length === 0) {
         throw new NotFoundException(`User has no assigned centers`);
@@ -109,7 +80,7 @@ export class DashboardFrontdeskService {
         stationName: `${userCenterIds.length} Center${
           userCenterIds.length > 1 ? 's' : ''
         }`,
-        userCenters: userCenters.biometricCenters,
+        userCenters: accessibleCenters,
       };
     } catch (error) {
       this.logger.error(

@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { resolveAccessibleCenters } from '@common/access/privileged-scope';
+import { CENTER_FIELDS } from '@common/access/center-fields';
 import {
   StationStatsDto,
   CenterManagerStatsResponseDto,
@@ -18,28 +20,7 @@ export class DashboardCenterManagerService {
    * Get user's assigned centers
    */
   async getUserCenters(userId: string) {
-    const userCenters = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        biometricCenters: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            address: true,
-            city: true,
-            state: true,
-            isActive: true,
-          },
-        },
-      },
-    });
-
-    if (!userCenters) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    return userCenters.biometricCenters;
+    return resolveAccessibleCenters(this.prisma, userId, CENTER_FIELDS);
   }
 
   /**
