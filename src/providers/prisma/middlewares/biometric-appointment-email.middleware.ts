@@ -101,6 +101,12 @@ export async function sendBiometricAppointmentEmail(
   client: AppointmentLookupClient,
   appointmentId: string,
   kind: AppointmentNotificationKind,
+  /**
+   * The slot the appointment held immediately before this write. Captured by
+   * the caller pre-update, because `originalAppointmentDate` is only ever set
+   * on the first reschedule and so names the wrong slot on every later one.
+   */
+  previousAppointmentTime?: Date | null,
 ): Promise<void> {
   if (!mailService) {
     logger.warn('MailService not available for biometric appointment email');
@@ -115,7 +121,6 @@ export async function sendBiometricAppointmentEmail(
         submissionId: true,
         appointmentTime: true,
         appointmentClass: true,
-        originalAppointmentDate: true,
         rescheduleReason: true,
         adminNotes: true,
         center: {
@@ -159,7 +164,7 @@ export async function sendBiometricAppointmentEmail(
       appointmentClass: appointment.appointmentClass || 'REGULAR',
       previousAppointmentDate:
         kind === 'rescheduled'
-          ? formatAppointmentDate(appointment.originalAppointmentDate)
+          ? formatAppointmentDate(previousAppointmentTime)
           : '',
       reason,
     };
@@ -209,6 +214,9 @@ export function biometricAppointmentEmailMiddleware(
   client: AppointmentLookupClient,
 ): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
+    // `update` only: Prisma reports `upsert` as its own action, so a status
+    // change written through an upsert would not be seen here. No current
+    // caller does that.
     if (
       params.model !== 'BiometricAppointment' ||
       params.action !== 'update'
@@ -216,7 +224,8 @@ export function biometricAppointmentEmailMiddleware(
       return next(params);
     }
 
-    const newStatus: string | undefined = params.args?.data?.status;
+    const data = params.args?.data || {};
+    const newStatus: string | undefined = data.status;
     const kind = newStatus
       ? APPOINTMENT_NOTIFICATION_BY_STATUS[newStatus]
       : undefined;
@@ -225,32 +234,53 @@ export function biometricAppointmentEmailMiddleware(
       return next(params);
     }
 
+    // A genuine reschedule writes a new time alongside the status. The generic
+    // admin status endpoint writes status only, and announcing a "new" date
+    // identical to the current one is worse than staying silent.
+    if (kind === 'rescheduled' && !data.appointmentTime) {
+      return next(params);
+    }
+
+    let current: { id: string; status: string; appointmentTime?: Date } | null =
+      null;
+
     try {
-      const current = await client.biometricAppointment.findUnique({
+      current = await client.biometricAppointment.findUnique({
         where: params.args?.where || {},
-        select: { id: true, status: true },
+        select: { id: true, status: true, appointmentTime: true },
       });
-
-      // Only notify on a real transition, so a repeated write does not
-      // re-send mail the applicant has already received.
-      if (!current || current.status === newStatus) {
-        return next(params);
-      }
-
-      const result = await next(params);
-
-      setImmediate(() => {
-        void sendBiometricAppointmentEmail(client, current.id, kind);
-      });
-
-      return result;
     } catch (error) {
+      // The write must still go ahead; only the notification is lost.
       logger.error(
-        `Error in biometric appointment email middleware: ${
+        `Could not read appointment state before update, skipping notification: ${
           (error as Error).message
         }`,
       );
       return next(params);
     }
+
+    // Only notify on a real transition, so a repeated write does not
+    // re-send mail the applicant has already received.
+    if (!current || current.status === newStatus) {
+      return next(params);
+    }
+
+    const previousAppointmentTime = current.appointmentTime;
+    const appointmentId = current.id;
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed or retried behind their back.
+    const result = await next(params);
+
+    setImmediate(() => {
+      void sendBiometricAppointmentEmail(
+        client,
+        appointmentId,
+        kind,
+        previousAppointmentTime,
+      );
+    });
+
+    return result;
   };
 }

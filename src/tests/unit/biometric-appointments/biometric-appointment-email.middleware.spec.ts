@@ -145,7 +145,11 @@ describe('biometricAppointmentEmailMiddleware', () => {
   describe('scheduling confirmation', () => {
     beforeEach(() => {
       client.biometricAppointment.findUnique
-        .mockResolvedValueOnce({ id: 'appt-1', status: 'PENDING' })
+        .mockResolvedValueOnce({
+          id: 'appt-1',
+          status: 'PENDING',
+          appointmentTime: APPOINTMENT_INSTANT,
+        })
         .mockResolvedValueOnce(buildAppointment());
       client.formSubmission.findUnique.mockResolvedValue(buildSubmission());
     });
@@ -216,26 +220,33 @@ describe('biometricAppointmentEmailMiddleware', () => {
   });
 
   describe('reschedule notification', () => {
+    const rescheduleParams = {
+      model: 'BiometricAppointment',
+      action: 'update',
+      args: {
+        where: { id: 'appt-1' },
+        // A genuine reschedule always writes a new time alongside the status.
+        data: {
+          status: 'RESCHEDULED',
+          appointmentTime: APPOINTMENT_INSTANT,
+        },
+      },
+    };
+
     it('includes the previous date and the reason', async () => {
       client.biometricAppointment.findUnique
-        .mockResolvedValueOnce({ id: 'appt-1', status: 'ACTIVE' })
+        .mockResolvedValueOnce({
+          id: 'appt-1',
+          status: 'ACTIVE',
+          appointmentTime: PREVIOUS_INSTANT,
+        })
         .mockResolvedValueOnce(
-          buildAppointment({
-            originalAppointmentDate: PREVIOUS_INSTANT,
-            rescheduleReason: 'Center maintenance',
-          }),
+          buildAppointment({ rescheduleReason: 'Center maintenance' }),
         );
       client.formSubmission.findUnique.mockResolvedValue(buildSubmission());
       const middleware = biometricAppointmentEmailMiddleware(client);
 
-      await middleware(
-        {
-          model: 'BiometricAppointment',
-          action: 'update',
-          args: { where: { id: 'appt-1' }, data: { status: 'RESCHEDULED' } },
-        } as any,
-        next,
-      );
+      await middleware(rescheduleParams as any, next);
       await flushAsyncSend();
 
       expect(
@@ -250,12 +261,111 @@ describe('biometricAppointmentEmailMiddleware', () => {
         }),
       );
     });
+
+    it('reports the slot just vacated, not the first slot ever booked', async () => {
+      // Second reschedule: originalAppointmentDate still holds the very first
+      // booking, which is not what "your previous appointment" means to a reader.
+      client.biometricAppointment.findUnique
+        .mockResolvedValueOnce({
+          id: 'appt-1',
+          status: 'ACTIVE',
+          appointmentTime: PREVIOUS_INSTANT,
+        })
+        .mockResolvedValueOnce(
+          buildAppointment({
+            originalAppointmentDate: new Date('2026-08-01T08:00:00Z'),
+          }),
+        );
+      client.formSubmission.findUnique.mockResolvedValue(buildSubmission());
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      await middleware(rescheduleParams as any, next);
+      await flushAsyncSend();
+
+      expect(
+        mailService.sendBiometricAppointmentRescheduled,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousAppointmentDate: 'Tuesday, 29 September 2026',
+        }),
+      );
+    });
+
+    it('stays silent when a status is flipped to RESCHEDULED without a new time', async () => {
+      // The generic admin status endpoint writes status only, so the email
+      // would otherwise announce a "new" date identical to the current one.
+      client.biometricAppointment.findUnique.mockResolvedValueOnce({
+        id: 'appt-1',
+        status: 'ACTIVE',
+        appointmentTime: PREVIOUS_INSTANT,
+      });
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      await middleware(
+        {
+          model: 'BiometricAppointment',
+          action: 'update',
+          args: { where: { id: 'appt-1' }, data: { status: 'RESCHEDULED' } },
+        } as any,
+        next,
+      );
+      await flushAsyncSend();
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(
+        mailService.sendBiometricAppointmentRescheduled,
+      ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('write-path failures', () => {
+    const activateParams = {
+      model: 'BiometricAppointment',
+      action: 'update',
+      args: { where: { id: 'appt-1' }, data: { status: 'ACTIVE' } },
+    };
+
+    it('still performs the write exactly once when the pre-check read fails', async () => {
+      client.biometricAppointment.findUnique.mockRejectedValueOnce(
+        new Error('db blip'),
+      );
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      const result = await middleware(activateParams as any, next);
+      await flushAsyncSend();
+
+      expect(result).toEqual({ id: 'appt-1' });
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+    });
+
+    it('propagates a failed write instead of silently retrying it', async () => {
+      client.biometricAppointment.findUnique.mockResolvedValueOnce({
+        id: 'appt-1',
+        status: 'PENDING',
+        appointmentTime: APPOINTMENT_INSTANT,
+      });
+      next.mockRejectedValue(new Error('connection lost'));
+      const middleware = biometricAppointmentEmailMiddleware(client);
+
+      await expect(
+        middleware(activateParams as any, next),
+      ).rejects.toThrow('connection lost');
+      await flushAsyncSend();
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+    });
   });
 
   describe('cancellation notification', () => {
     it('includes the cancellation reason', async () => {
       client.biometricAppointment.findUnique
-        .mockResolvedValueOnce({ id: 'appt-1', status: 'ACTIVE' })
+        .mockResolvedValueOnce({
+          id: 'appt-1',
+          status: 'ACTIVE',
+          appointmentTime: APPOINTMENT_INSTANT,
+        })
         .mockResolvedValueOnce(
           buildAppointment({ adminNotes: 'Applicant withdrew' }),
         );
@@ -285,7 +395,11 @@ describe('biometricAppointmentEmailMiddleware', () => {
   describe('unaddressable appointments', () => {
     it('sends nothing when the submission has no applicant email', async () => {
       client.biometricAppointment.findUnique
-        .mockResolvedValueOnce({ id: 'appt-1', status: 'PENDING' })
+        .mockResolvedValueOnce({
+          id: 'appt-1',
+          status: 'PENDING',
+          appointmentTime: APPOINTMENT_INSTANT,
+        })
         .mockResolvedValueOnce(buildAppointment());
       client.formSubmission.findUnique.mockResolvedValue(
         buildSubmission({ user: { id: 'user-1', email: null } }),

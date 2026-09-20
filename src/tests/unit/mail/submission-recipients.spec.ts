@@ -117,6 +117,23 @@ describe('resolveSubmissionRecipients', () => {
     expect(recipients?.cc).toEqual([]);
   });
 
+  it('normalizes whitespace on the applicant address, as it does for cc', async () => {
+    const client = buildClient({
+      id: 'sub-1',
+      referenceNumber: 'SA25001234',
+      user: { ...applicant, email: '  applicant@example.com ' },
+      travelAgent: { ...agent, email: ' agent@travelco.com ' },
+    });
+
+    const recipients = await resolveSubmissionRecipients(
+      client as any,
+      'sub-1',
+    );
+
+    expect(recipients?.to).toBe('applicant@example.com');
+    expect(recipients?.cc).toEqual(['agent@travelco.com']);
+  });
+
   it('falls back to a placeholder when the submission has no reference number', async () => {
     const client = buildClient({
       id: 'sub-1',
