@@ -69,7 +69,9 @@ describe('biometricCaptureEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricCaptureNotification).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricCaptureNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('does not re-notify an appointment already marked COMPLETED', async () => {
@@ -83,7 +85,9 @@ describe('biometricCaptureEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricCaptureNotification).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricCaptureNotification,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -116,7 +120,9 @@ describe('biometricCaptureEmailMiddleware', () => {
       const result = await middleware(completeParams as any, next);
 
       expect(result).toEqual({ id: 'appt-1' });
-      expect(mailService.sendBiometricCaptureNotification).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricCaptureNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('never fails the write when the email send throws', async () => {
@@ -125,9 +131,9 @@ describe('biometricCaptureEmailMiddleware', () => {
       );
       const middleware = biometricCaptureEmailMiddleware(client);
 
-      await expect(
-        middleware(completeParams as any, next),
-      ).resolves.toEqual({ id: 'appt-1' });
+      await expect(middleware(completeParams as any, next)).resolves.toEqual({
+        id: 'appt-1',
+      });
       await flushAsyncSend();
     });
   });
@@ -144,7 +150,9 @@ describe('biometricCaptureEmailMiddleware', () => {
 
       expect(result).toEqual({ id: 'appt-1' });
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricCaptureNotification).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricCaptureNotification,
+      ).not.toHaveBeenCalled();
     });
 
     it('propagates a failed write instead of silently retrying it', async () => {
@@ -155,13 +163,15 @@ describe('biometricCaptureEmailMiddleware', () => {
       next.mockRejectedValue(new Error('connection lost'));
       const middleware = biometricCaptureEmailMiddleware(client);
 
-      await expect(
-        middleware(completeParams as any, next),
-      ).rejects.toThrow('connection lost');
+      await expect(middleware(completeParams as any, next)).rejects.toThrow(
+        'connection lost',
+      );
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricCaptureNotification).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricCaptureNotification,
+      ).not.toHaveBeenCalled();
     });
   });
 });

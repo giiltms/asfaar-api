@@ -679,6 +679,10 @@ export class BiometricAppointmentsService {
           rescheduleReason: rescheduleDto.rescheduleReason,
           rescheduleCount: { increment: 1 },
           status: AppointmentStatus.RESCHEDULED,
+          // The previous reminder described the old date, so let the new date
+          // earn its own.
+          reminderSent: false,
+          reminderSentAt: null,
           lastModifiedBy,
         },
         include: {

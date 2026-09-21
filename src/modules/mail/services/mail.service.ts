@@ -874,6 +874,22 @@ export class MailService {
   }
 
   /**
+   * Remind the applicant of an upcoming appointment, copying their agent.
+   *
+   * Sent once per appointment by the reminder job; a reschedule clears the
+   * flag so the new date gets its own reminder.
+   */
+  async sendBiometricAppointmentReminder(
+    data: BiometricAppointmentMailData,
+  ): Promise<void> {
+    await this.sendBiometricAppointmentMail(
+      data,
+      'biometric-appointment-reminder',
+      `Reminder: Biometric Appointment ${data.appointmentDate} - ${data.referenceNumber}`,
+    );
+  }
+
+  /**
    * Tell the applicant and their travel agent that an appointment moved.
    */
   async sendBiometricAppointmentRescheduled(

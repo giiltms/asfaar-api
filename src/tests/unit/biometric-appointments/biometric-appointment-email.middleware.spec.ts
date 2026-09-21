@@ -100,7 +100,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
 
       expect(next).toHaveBeenCalledTimes(1);
       expect(client.biometricAppointment.findUnique).not.toHaveBeenCalled();
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
 
     it('ignores status changes it does not own, such as COMPLETED', async () => {
@@ -117,7 +119,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
 
     it('does not re-notify when the status is already the target status', async () => {
@@ -138,7 +142,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -167,7 +173,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       );
       await flushAsyncSend();
 
-      expect(mailService.sendBiometricAppointmentScheduled).toHaveBeenCalledWith(
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'applicant@example.com',
           cc: ['agent@travelco.com'],
@@ -196,7 +204,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       );
 
       expect(result).toEqual({ id: 'appt-1' });
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
 
     it('never fails the write when the email send throws', async () => {
@@ -336,7 +346,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
 
       expect(result).toEqual({ id: 'appt-1' });
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
 
     it('propagates a failed write instead of silently retrying it', async () => {
@@ -348,13 +360,15 @@ describe('biometricAppointmentEmailMiddleware', () => {
       next.mockRejectedValue(new Error('connection lost'));
       const middleware = biometricAppointmentEmailMiddleware(client);
 
-      await expect(
-        middleware(activateParams as any, next),
-      ).rejects.toThrow('connection lost');
+      await expect(middleware(activateParams as any, next)).rejects.toThrow(
+        'connection lost',
+      );
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -382,7 +396,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       );
       await flushAsyncSend();
 
-      expect(mailService.sendBiometricAppointmentCancelled).toHaveBeenCalledWith(
+      expect(
+        mailService.sendBiometricAppointmentCancelled,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'applicant@example.com',
           cc: ['agent@travelco.com'],
@@ -419,7 +435,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(result).toEqual({ count: 1 });
-      expect(mailService.sendBiometricAppointmentScheduled).toHaveBeenCalledWith(
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'applicant@example.com',
           cc: ['agent@travelco.com'],
@@ -434,7 +452,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       await middleware(conditionalActivate as any, next);
       await flushAsyncSend();
 
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
 
     it('sends exactly one email when two activations race', async () => {
@@ -453,9 +473,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       ]);
       await flushAsyncSend();
 
-      expect(mailService.sendBiometricAppointmentScheduled).toHaveBeenCalledTimes(
-        1,
-      );
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).toHaveBeenCalledTimes(1);
     });
 
     it('ignores an updateMany that does not target one appointment', async () => {
@@ -473,7 +493,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       await flushAsyncSend();
 
       expect(next).toHaveBeenCalledTimes(1);
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -501,7 +523,9 @@ describe('biometricAppointmentEmailMiddleware', () => {
       );
       await flushAsyncSend();
 
-      expect(mailService.sendBiometricAppointmentScheduled).not.toHaveBeenCalled();
+      expect(
+        mailService.sendBiometricAppointmentScheduled,
+      ).not.toHaveBeenCalled();
     });
   });
 });
