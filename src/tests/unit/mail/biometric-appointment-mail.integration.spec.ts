@@ -131,6 +131,24 @@ describe('biometric appointment mail (integration)', () => {
     });
   });
 
+  describe('appointment reminder', () => {
+    it('delivers to the applicant and the travel agent', async () => {
+      await mailService.sendBiometricAppointmentReminder(baseData);
+
+      const [message] = sink.messages;
+
+      expect(message.rcptTo).toEqual([
+        'applicant@example.com',
+        'agent@travelco.com',
+      ]);
+      expect(readHeader(message.raw, 'Subject')).toContain(
+        'Reminder: Biometric Appointment',
+      );
+      expect(bodyOf(message.raw)).toContain('Tuesday, 6 October 2026');
+      expect(bodyOf(message.raw)).toContain('10:30 AM');
+    });
+  });
+
   describe('appointment rescheduled', () => {
     it('delivers with the superseded date and the reason', async () => {
       await mailService.sendBiometricAppointmentRescheduled(baseData);

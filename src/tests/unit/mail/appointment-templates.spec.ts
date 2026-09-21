@@ -15,6 +15,7 @@ const TEMPLATE_DIR = join(
 
 const TEMPLATES = [
   'biometric-appointment-scheduled',
+  'biometric-appointment-reminder',
   'biometric-appointment-rescheduled',
   'biometric-appointment-cancelled',
 ];
