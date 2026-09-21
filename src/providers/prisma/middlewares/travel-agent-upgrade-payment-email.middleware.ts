@@ -125,29 +125,58 @@ export function travelAgentUpgradePaymentEmailMiddleware(
   client: UpgradePaymentLookupClient,
 ): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
+    if (
+      params.model !== 'TravelAgentUpgradeApplication' ||
+      params.action !== 'update'
+    ) {
+      return next(params);
+    }
+
+    const notified: string[] = [UpgradeApplicationStatus.PENDING_REVIEW];
+
+    const newStatus: string | undefined = params.args?.data?.status;
+
+    if (!newStatus || !notified.includes(newStatus)) {
+      return next(params);
+    }
+
+    const applicationId = params.args?.where?.id;
+
+    if (typeof applicationId !== 'string') {
+      return next(params);
+    }
+
+    let current: { id: string; status: string } | null = null;
+
+    try {
+      // Only notify on a real transition. Without this, any write repeating
+      // the status the application already holds re-sends the email.
+      current = await client.travelAgentUpgradeApplication.findUnique({
+        where: { id: applicationId },
+        select: { id: true, status: true },
+      });
+    } catch (error) {
+      // The write must still go ahead; only the notification is lost.
+      logger.error(
+        `Could not read upgrade application before update, skipping payment notification: ${
+          (error as Error).message
+        }`,
+      );
+      return next(params);
+    }
+
+    if (!current || current.status === newStatus) {
+      return next(params);
+    }
+
+    // Deliberately outside the try above: a failed write must surface to the
+    // caller, never be swallowed and retried behind their back.
     const result = await next(params);
 
-    // Check if this is an update to TravelAgentUpgradeApplication
-    if (
-      params.model === 'TravelAgentUpgradeApplication' &&
-      params.action === 'update' &&
-      params.args?.data?.status === UpgradeApplicationStatus.PENDING_REVIEW
-    ) {
-      const applicationId = params.args.where?.id;
-
-      if (applicationId) {
-        // Send email asynchronously to avoid blocking the database operation
-        setImmediate(() => {
-          sendTravelAgentUpgradePaymentEmail(client, applicationId).catch(
-            (error) => {
-              logger.error(
-                `Failed to send travel agent upgrade payment email for application ${applicationId}: ${error.message}`,
-              );
-            },
-          );
-        });
-      }
-    }
+    // Send asynchronously so a slow or dead SMTP server cannot block the write.
+    setImmediate(() => {
+      void sendTravelAgentUpgradePaymentEmail(client, applicationId);
+    });
 
     return result;
   };
