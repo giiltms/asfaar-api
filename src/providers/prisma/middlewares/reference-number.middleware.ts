@@ -67,15 +67,14 @@ export function referenceNumberMiddleware(
             // This ensures the middleware works exactly as it did before
             try {
               // Get the biometric appointment to find the center
-              const appointment =
-                await client.biometricAppointment.findFirst({
-                  where: { submissionId: submission.id },
-                  include: {
-                    center: {
-                      select: { centerNumber: true, name: true },
-                    },
+              const appointment = await client.biometricAppointment.findFirst({
+                where: { submissionId: submission.id },
+                include: {
+                  center: {
+                    select: { centerNumber: true, name: true },
                   },
-                });
+                },
+              });
 
               if (appointment && appointment.center) {
                 const centerNumber = appointment.center.centerNumber;
@@ -86,48 +85,46 @@ export function referenceNumberMiddleware(
                 );
 
                 // Get or create application counter for this country/year
-                const counter = await client.$transaction(
-                  async (tx) => {
-                    // Try to find existing counter
-                    let applicationCounter =
-                      await tx.applicationCounter.findUnique({
-                        where: {
-                          countryId_year: {
-                            countryId: submission.form.country.id,
-                            year: new Date().getFullYear(),
-                          },
-                        },
-                      });
-
-                    // Create counter if it doesn't exist
-                    if (!applicationCounter) {
-                      applicationCounter = await tx.applicationCounter.create({
-                        data: {
+                const counter = await client.$transaction(async (tx) => {
+                  // Try to find existing counter
+                  let applicationCounter =
+                    await tx.applicationCounter.findUnique({
+                      where: {
+                        countryId_year: {
                           countryId: submission.form.country.id,
                           year: new Date().getFullYear(),
-                          counter: 1,
                         },
-                      });
-                    } else {
-                      // Increment the counter
-                      applicationCounter = await tx.applicationCounter.update({
-                        where: {
-                          countryId_year: {
-                            countryId: submission.form.country.id,
-                            year: new Date().getFullYear(),
-                          },
-                        },
-                        data: {
-                          counter: {
-                            increment: 1,
-                          },
-                        },
-                      });
-                    }
+                      },
+                    });
 
-                    return applicationCounter;
-                  },
-                );
+                  // Create counter if it doesn't exist
+                  if (!applicationCounter) {
+                    applicationCounter = await tx.applicationCounter.create({
+                      data: {
+                        countryId: submission.form.country.id,
+                        year: new Date().getFullYear(),
+                        counter: 1,
+                      },
+                    });
+                  } else {
+                    // Increment the counter
+                    applicationCounter = await tx.applicationCounter.update({
+                      where: {
+                        countryId_year: {
+                          countryId: submission.form.country.id,
+                          year: new Date().getFullYear(),
+                        },
+                      },
+                      data: {
+                        counter: {
+                          increment: 1,
+                        },
+                      },
+                    });
+                  }
+
+                  return applicationCounter;
+                });
 
                 // Format the reference number: SA00125000004
                 const yearSuffix = new Date()

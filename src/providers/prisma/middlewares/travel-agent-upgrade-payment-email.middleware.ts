@@ -1,9 +1,20 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, UpgradeApplicationStatus } from '@prisma/client';
+import { Prisma, UpgradeApplicationStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('TravelAgentUpgradePaymentEmailMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so lookups share
+ * the application's connection pool.
+ */
+export interface UpgradePaymentLookupClient {
+  travelAgentUpgradeApplication: {
+    findUnique(args: any): Promise<any>;
+    findMany(args: any): Promise<any[]>;
+  };
+}
 
 // We'll inject the mail service externally to avoid circular dependencies
 let mailService: MailService | null = null;
@@ -15,6 +26,7 @@ export function setMailServiceForTravelAgentUpgradeMiddleware(
 }
 
 async function sendTravelAgentUpgradePaymentEmail(
+  client: UpgradePaymentLookupClient,
   applicationId: string,
 ): Promise<void> {
   if (!mailService) {
@@ -26,29 +38,28 @@ async function sendTravelAgentUpgradePaymentEmail(
 
   try {
     // Get application with all related data
-    const application =
-      await prismaInternal.travelAgentUpgradeApplication.findUnique({
-        where: { id: applicationId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
-          payment: {
-            select: {
-              id: true,
-              amount: true,
-              currency: true,
-              reference: true,
-              paidAt: true,
-            },
+    const application = await client.travelAgentUpgradeApplication.findUnique({
+      where: { id: applicationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
           },
         },
-      });
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+            reference: true,
+            paidAt: true,
+          },
+        },
+      },
+    });
 
     if (!application?.user) {
       logger.warn(
@@ -110,7 +121,9 @@ async function sendTravelAgentUpgradePaymentEmail(
 }
 
 // Prisma middleware to trigger email when application status changes to PENDING_REVIEW
-export function travelAgentUpgradePaymentEmailMiddleware(): Prisma.Middleware {
+export function travelAgentUpgradePaymentEmailMiddleware(
+  client: UpgradePaymentLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
     const result = await next(params);
 
@@ -125,11 +138,13 @@ export function travelAgentUpgradePaymentEmailMiddleware(): Prisma.Middleware {
       if (applicationId) {
         // Send email asynchronously to avoid blocking the database operation
         setImmediate(() => {
-          sendTravelAgentUpgradePaymentEmail(applicationId).catch((error) => {
-            logger.error(
-              `Failed to send travel agent upgrade payment email for application ${applicationId}: ${error.message}`,
-            );
-          });
+          sendTravelAgentUpgradePaymentEmail(client, applicationId).catch(
+            (error) => {
+              logger.error(
+                `Failed to send travel agent upgrade payment email for application ${applicationId}: ${error.message}`,
+              );
+            },
+          );
         });
       }
     }

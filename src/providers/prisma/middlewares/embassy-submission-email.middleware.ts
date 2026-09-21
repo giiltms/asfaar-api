@@ -135,10 +135,7 @@ export function embassySubmissionEmailMiddleware(
     const newStatus: SubmissionStatus | string | undefined =
       params.args?.data?.status;
 
-    if (
-      newStatus !== SubmissionStatus.APPROVED &&
-      newStatus !== 'APPROVED'
-    ) {
+    if (newStatus !== SubmissionStatus.APPROVED && newStatus !== 'APPROVED') {
       return next(params);
     }
 

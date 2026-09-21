@@ -43,7 +43,7 @@ export class PrismaService
     }
 
     this.$use(formSubmissionReferenceMiddleware());
-    this.$use(biometricCenterNumberMiddleware());
+    this.$use(biometricCenterNumberMiddleware(this));
     this.$use(embassySubmissionEmailMiddleware(this));
     this.$use(paymentEmailMiddleware(this));
     this.$use(biometricCaptureEmailMiddleware(this));
@@ -51,10 +51,10 @@ export class PrismaService
     // notification lookups share the application connection pool.
     this.$use(biometricAppointmentEmailMiddleware(this));
     this.$use(referenceNumberMiddleware(this));
-    this.$use(travelAgentUpgradePaymentEmailMiddleware());
-    this.$use(travelAgentUpgradeDecisionEmailMiddleware());
+    this.$use(travelAgentUpgradePaymentEmailMiddleware(this));
+    this.$use(travelAgentUpgradeDecisionEmailMiddleware(this));
     this.$use(licenseStatusChangeEmailMiddleware(this));
-    this.$use(clientAddedNotificationMiddleware());
+    this.$use(clientAddedNotificationMiddleware(this));
   }
 
   async onModuleInit() {
