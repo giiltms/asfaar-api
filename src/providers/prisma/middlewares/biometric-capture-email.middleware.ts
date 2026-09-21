@@ -133,10 +133,7 @@ export function biometricCaptureEmailMiddleware(
   client: CaptureLookupClient,
 ): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
-    if (
-      params.model !== 'BiometricAppointment' ||
-      params.action !== 'update'
-    ) {
+    if (params.model !== 'BiometricAppointment' || params.action !== 'update') {
       return next(params);
     }
 

@@ -1,12 +1,25 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('BiometricCenterNumberMiddleware');
 
-async function generateNextCenterNumber(): Promise<string> {
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so lookups share
+ * the application's connection pool.
+ */
+export interface CenterNumberLookupClient {
+  biometricCenter: {
+    findUnique(args: any): Promise<any>;
+    findMany(args: any): Promise<any[]>;
+  };
+}
+
+async function generateNextCenterNumber(
+  client: CenterNumberLookupClient,
+): Promise<string> {
   // Get all centers and find the highest valid 3-digit number
-  const allCenters = await prismaInternal.biometricCenter.findMany({
+  const allCenters = await client.biometricCenter.findMany({
     select: {
       centerNumber: true,
     },
@@ -35,7 +48,9 @@ async function generateNextCenterNumber(): Promise<string> {
   return nextNumber.toString().padStart(3, '0');
 }
 
-export function biometricCenterNumberMiddleware(): Prisma.Middleware {
+export function biometricCenterNumberMiddleware(
+  client: CenterNumberLookupClient,
+): Prisma.Middleware {
   return async function middleware(params: Prisma.MiddlewareParams, next) {
     logger.log(
       `Middleware triggered: model=${params.model}, action=${params.action}`,
@@ -54,7 +69,7 @@ export function biometricCenterNumberMiddleware(): Prisma.Middleware {
       if (!hasCenterNumber) {
         try {
           // Generate the next available center number
-          const nextCenterNumber = await generateNextCenterNumber();
+          const nextCenterNumber = await generateNextCenterNumber(client);
           params.args.data.centerNumber = nextCenterNumber;
 
           logger.log(
@@ -83,7 +98,7 @@ export function biometricCenterNumberMiddleware(): Prisma.Middleware {
         );
         try {
           // Regenerate center number and retry
-          const nextCenterNumber = await generateNextCenterNumber();
+          const nextCenterNumber = await generateNextCenterNumber(client);
           params.args.data.centerNumber = nextCenterNumber;
 
           logger.log(

@@ -1,9 +1,20 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient, TravelAgentLicenseStatus } from '@prisma/client';
+import { Prisma, TravelAgentLicenseStatus } from '@prisma/client';
 import { MailService } from '@modules/mail/services/mail.service';
 
-const prismaInternal = new PrismaClient();
 const logger = new Logger('ClientAddedNotificationMiddleware');
+
+/**
+ * The slice of a Prisma client this middleware reads through. It is handed the
+ * live PrismaService rather than constructing its own client, so lookups share
+ * the application's connection pool.
+ */
+export interface ClientAddedLookupClient {
+  travelAgentClient: {
+    findUnique(args: any): Promise<any>;
+    findMany(args: any): Promise<any[]>;
+  };
+}
 
 let mailService: MailService | null = null;
 
@@ -12,6 +23,7 @@ export function setMailServiceForClientAddedMiddleware(service: MailService) {
 }
 
 async function sendClientAddedNotification(
+  client: ClientAddedLookupClient,
   clientRelationshipId: string,
 ): Promise<void> {
   if (!mailService) {
@@ -20,7 +32,7 @@ async function sendClientAddedNotification(
   }
 
   try {
-    const relationship = await prismaInternal.travelAgentClient.findUnique({
+    const relationship = await client.travelAgentClient.findUnique({
       where: { id: clientRelationshipId },
       include: {
         client: {
@@ -104,7 +116,9 @@ async function sendClientAddedNotification(
   }
 }
 
-export function clientAddedNotificationMiddleware(): Prisma.Middleware {
+export function clientAddedNotificationMiddleware(
+  client: ClientAddedLookupClient,
+): Prisma.Middleware {
   return async (params: Prisma.MiddlewareParams, next): Promise<any> => {
     if (params.model !== 'TravelAgentClient') {
       return next(params);
@@ -116,7 +130,7 @@ export function clientAddedNotificationMiddleware(): Prisma.Middleware {
 
       // Then send email asynchronously (don't block the response)
       setImmediate(() => {
-        sendClientAddedNotification(result.id).catch((error) => {
+        sendClientAddedNotification(client, result.id).catch((error) => {
           logger.error(
             `Async client added notification send failed for relationship ${result.id}: ${error.message}`,
           );
