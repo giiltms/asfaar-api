@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 
 export interface UserBoothContext {
+  /** Empty when the operator staffs a center without a booth assignment. */
   boothId: string;
   boothNumber: string;
   centerId: string;
@@ -131,12 +132,41 @@ export class UserContextService {
   async getUserActiveBoothContext(
     userId: string,
   ): Promise<UserBoothContext | null> {
-    // Only return explicit booth assignment; do not auto-pick fallbacks
     const assignedBooth = await this.getUserBoothContext(userId);
     if (assignedBooth) {
       return assignedBooth;
     }
-    return null;
+
+    // No booth, but the operator may still staff a center - which is what the
+    // capture endpoint's own error message has always offered as the
+    // alternative. A booth is never invented here: it only supplies a location
+    // string on the capture record, so the center alone is honest and enough.
+    const centers = await this.getUserCenterContext(userId);
+
+    // Exactly one center, or there is no telling which one they are standing
+    // in, and guessing would mislabel where the capture happened.
+    if (centers?.length !== 1) {
+      this.logger.warn(
+        `No booth assignment for user ${userId}, and ${
+          centers?.length ?? 0
+        } center assignments - cannot establish a capture location`,
+      );
+      return null;
+    }
+
+    const center = centers[0];
+
+    return {
+      boothId: '',
+      boothNumber: '',
+      centerId: center.centerId,
+      centerName: center.centerName,
+      centerCode: center.centerCode,
+      centerAddress: center.centerAddress,
+      centerCity: center.centerCity,
+      centerState: center.centerState,
+      appointmentClass: '',
+    };
   }
 
   /**
@@ -145,7 +175,9 @@ export class UserContextService {
    * @returns Formatted location string
    */
   formatLocationString(context: UserBoothContext): string {
-    return `${context.centerName} - Booth ${context.boothNumber}`;
+    return context.boothNumber
+      ? `${context.centerName} - Booth ${context.boothNumber}`
+      : context.centerName;
   }
 
   /**
