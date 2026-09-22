@@ -589,7 +589,8 @@ export class FormSubmissionsService {
           tx,
           updatedSubmission.id,
           biometricAppointment,
-          userId,
+          // The applicant, not the caller - an agent files for their client.
+          updatedSubmission.userId,
         );
       }
 
@@ -606,7 +607,8 @@ export class FormSubmissionsService {
     tx: any,
     submissionId: string,
     appointmentData: any,
-    userId: string,
+    /** The applicant the appointment is for, which is not always the caller. */
+    applicantId: string,
   ): Promise<void> {
     // Use upsert to atomically create or update the appointment within transaction
     await tx.biometricAppointment.upsert({
@@ -624,7 +626,7 @@ export class FormSubmissionsService {
         // Don't update status - preserve existing status
       },
       create: {
-        userId,
+        userId: applicantId,
         submissionId,
         centerId: appointmentData.centerId,
         appointmentClass: appointmentData.appointmentClass || 'REGULAR',

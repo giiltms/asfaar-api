@@ -62,7 +62,13 @@ export class BiometricAppointmentsService {
         );
       }
 
-      if (submission.userId !== userId) {
+      // A travel agent files and books on behalf of their client, so the
+      // caller is legitimately not the applicant.
+      const isApplicant = submission.userId === userId;
+      const isManagingAgent =
+        !!submission.travelAgentId && submission.travelAgentId === userId;
+
+      if (!isApplicant && !isManagingAgent) {
         throw new BadRequestException(
           'You can only book appointments for your own submissions',
         );
@@ -144,7 +150,10 @@ export class BiometricAppointmentsService {
 
       // 9. Create appointment with PENDING status (will be activated by payment webhook)
       const appointmentData: Prisma.BiometricAppointmentCreateInput = {
-        user: { connect: { id: userId } },
+        // The appointment belongs to whoever attends it - the applicant - not
+        // to whoever booked it. Every screen that shows a name for a slot
+        // reads it from here.
+        user: { connect: { id: submission.userId } },
         submission: { connect: { id: createDto.submissionId } },
         center: { connect: { id: createDto.centerId } },
         appointmentClass: createDto.appointmentClass || 'REGULAR',
