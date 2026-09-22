@@ -38,6 +38,7 @@ import {
   FORBIDDEN_RESOURCE,
 } from '@common/constants/errors.constants';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
+import { formatAppointmentDate } from '@common/utils/appointment-date.util';
 
 @Injectable()
 export class FormSubmissionsService {
@@ -2461,6 +2462,12 @@ export class FormSubmissionsService {
             centerId: submission.appointment.centerId,
             centerName: submission.appointment.center?.name,
             appointmentTime: submission.appointment.appointmentTime,
+            // The DTO has always declared this, and the create endpoint
+            // requires it, but nothing derived it from the stored instant -
+            // so readers that gate on it treated booked appointments as unset.
+            appointmentDate: formatAppointmentDate(
+              submission.appointment.appointmentTime,
+            ),
             status: submission.appointment.status,
             appointmentClass: submission.appointment.appointmentClass,
           }

@@ -9,6 +9,7 @@ import { PrismaService } from '@providers/prisma';
 import { SubmissionStatus } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
 import { resolveAccessibleCenters } from '@common/access/privileged-scope';
+import { formatAppointmentDate } from '@common/utils/appointment-date.util';
 import { CENTER_FIELDS } from '@common/access/center-fields';
 import {
   FrontDeskDashboardStatsDto,
@@ -737,6 +738,9 @@ export class DashboardFrontdeskService {
         biometricAppointment: submission.appointment
           ? {
               appointmentTime: submission.appointment.appointmentTime,
+              appointmentDate: formatAppointmentDate(
+                submission.appointment.appointmentTime,
+              ),
               status: submission.appointment.status,
               centerName: submission.appointment.center?.name,
             }

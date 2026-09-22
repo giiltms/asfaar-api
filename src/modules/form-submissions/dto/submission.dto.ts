@@ -409,7 +409,13 @@ export class FormSubmissionDto {
     id: string;
     centerId: string;
     centerName?: string;
+    /** The full instant of the appointment. */
     appointmentTime: Date;
+    /**
+     * The calendar date, YYYY-MM-DD, in the timezone the centers operate in.
+     * Derived from appointmentTime; empty when no time has been set.
+     */
+    appointmentDate: string;
     status: string;
     appointmentClass: string;
   };
