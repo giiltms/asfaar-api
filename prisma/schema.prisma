@@ -729,7 +729,7 @@ model DynamicForm {
 
 model FormSection {
   id          String      @id @default(uuid())
-  form        DynamicForm @relation(fields: [formId], references: [id])
+  form        DynamicForm @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId      String
   title       String
   description String?
@@ -741,7 +741,7 @@ model FormSection {
 
 model InputGroup {
   id          String      @id @default(uuid())
-  section     FormSection @relation(fields: [sectionId], references: [id])
+  section     FormSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   sectionId   String
   title       String?
   description String?
@@ -754,7 +754,7 @@ model InputGroup {
 
 model FormField {
   id                  String     @id @default(uuid())
-  group               InputGroup @relation(fields: [groupId], references: [id])
+  group               InputGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId             String
   label               String
   name                String // unique per form context
@@ -779,7 +779,7 @@ model FormField {
 
 model FieldOption {
   id      String    @id @default(uuid())
-  field   FormField @relation(fields: [fieldId], references: [id])
+  field   FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
   fieldId String
   label   String // e.g., "Married"
   value   String // e.g., "MARRIED"
