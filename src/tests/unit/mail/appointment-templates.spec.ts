@@ -8,10 +8,7 @@ import * as Handlebars from 'handlebars';
  * instead of rendering blank. These tests render each appointment template with
  * exactly the context MailService builds, which fails loudly on any drift.
  */
-const TEMPLATE_DIR = join(
-  __dirname,
-  '../../../modules/mail/templates',
-);
+const TEMPLATE_DIR = join(__dirname, '../../../modules/mail/templates');
 
 const TEMPLATES = [
   'biometric-appointment-scheduled',
@@ -57,7 +54,12 @@ describe.each(TEMPLATES)('%s template', (template) => {
   it('renders in strict mode for an applicant with no travel agent', () => {
     const html = render(
       template,
-      buildContext({ hasAgent: false, agentName: '', hasReason: false, reason: '' }),
+      buildContext({
+        hasAgent: false,
+        agentName: '',
+        hasReason: false,
+        reason: '',
+      }),
     );
 
     expect(html).not.toContain('travel agent');
@@ -73,10 +75,7 @@ describe.each(TEMPLATES)('%s template', (template) => {
 
 describe('reschedule template', () => {
   it('shows the superseded appointment date', () => {
-    const html = render(
-      'biometric-appointment-rescheduled',
-      buildContext(),
-    );
+    const html = render('biometric-appointment-rescheduled', buildContext());
 
     expect(html).toContain('Tuesday, 29 September 2026');
     expect(html).toContain('Center maintenance');

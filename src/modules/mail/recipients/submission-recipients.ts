@@ -15,6 +15,15 @@ export interface AddressableUser {
  * The parties who should be told about an event on a form submission:
  * the applicant it belongs to, plus the travel agent managing it (if any).
  */
+export interface AgentRecord extends AddressableUser {
+  travelAgentProfile?: {
+    company?: { companyName?: string | null } | null;
+  } | null;
+  travelAgentLicense?: {
+    application?: { companyName?: string | null } | null;
+  } | null;
+}
+
 export interface SubmissionRecipients {
   /** Primary recipient - always the applicant. */
   to: string;
@@ -41,7 +50,9 @@ export const NO_REFERENCE_NUMBER = 'N/A';
 /**
  * Build a display name from whatever the user record actually has.
  */
-export function formatUserName(user: AddressableUser | null | undefined): string {
+export function formatUserName(
+  user: AddressableUser | null | undefined,
+): string {
   if (!user) {
     return '';
   }
@@ -55,6 +66,21 @@ export function formatUserName(user: AddressableUser | null | undefined): string
   }
 
   return user.email ? user.email.split('@')[0] : '';
+}
+
+/**
+ * What to call a travel agent in front of their client.
+ *
+ * Applicants deal with the agency, not with whoever holds the login, so the
+ * company name is the right thing to show. Agents who have not completed an
+ * upgrade application have no company on file, and fall back to their own name.
+ */
+export function formatAgentName(agent: AgentRecord | null | undefined): string {
+  const company =
+    agent?.travelAgentProfile?.company?.companyName ??
+    agent?.travelAgentLicense?.application?.companyName;
+
+  return company?.trim() || formatUserName(agent);
 }
 
 const normalizeEmail = (email?: string | null): string =>
@@ -96,7 +122,19 @@ export async function resolveSubmissionRecipients(
           select: { id: true, email: true, firstName: true, lastName: true },
         },
         travelAgent: {
-          select: { id: true, email: true, firstName: true, lastName: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            // The agency name shown to the applicant, current profile first.
+            travelAgentProfile: {
+              select: { company: { select: { companyName: true } } },
+            },
+            travelAgentLicense: {
+              select: { application: { select: { companyName: true } } },
+            },
+          },
         },
       },
     });
@@ -121,7 +159,7 @@ export async function resolveSubmissionRecipients(
       to: applicant.email.trim(),
       cc: agentIsSeparateRecipient ? [agent.email.trim()] : [],
       applicantName: formatUserName(applicant),
-      agentName: agentIsSeparateRecipient ? formatUserName(agent) : '',
+      agentName: agentIsSeparateRecipient ? formatAgentName(agent) : '',
       referenceNumber: submission.referenceNumber || NO_REFERENCE_NUMBER,
     };
   } catch (error) {
