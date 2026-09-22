@@ -1,5 +1,6 @@
 import {
   ccExcluding,
+  formatAgentName,
   formatUserName,
   resolveSubmissionRecipients,
 } from '@modules/mail/recipients/submission-recipients';
@@ -30,9 +31,7 @@ describe('formatUserName', () => {
   });
 
   it('falls back to the first name alone', () => {
-    expect(
-      formatUserName({ ...applicant, lastName: null }),
-    ).toBe('Amina');
+    expect(formatUserName({ ...applicant, lastName: null })).toBe('Amina');
   });
 
   it('falls back to the email local part when no name is stored', () => {
@@ -195,18 +194,103 @@ describe('ccExcluding', () => {
   it('drops an agent who is already the primary recipient', () => {
     // Payment mail addresses whoever paid, which on an agent-filed
     // application can be the agent themselves.
-    expect(
-      ccExcluding('agent@travelco.com', ['agent@travelco.com']),
-    ).toEqual([]);
+    expect(ccExcluding('agent@travelco.com', ['agent@travelco.com'])).toEqual(
+      [],
+    );
   });
 
   it('compares without regard to case or surrounding whitespace', () => {
-    expect(
-      ccExcluding(' Agent@TravelCo.com ', ['agent@travelco.com']),
-    ).toEqual([]);
+    expect(ccExcluding(' Agent@TravelCo.com ', ['agent@travelco.com'])).toEqual(
+      [],
+    );
   });
 
   it('handles an empty cc list', () => {
     expect(ccExcluding('applicant@example.com', [])).toEqual([]);
+  });
+});
+
+describe('formatAgentName', () => {
+  const agent = {
+    email: 'agent@travelco.com',
+    firstName: 'Yusuf',
+    lastName: 'Sani',
+  };
+
+  it('names the company, because that is who the applicant deals with', () => {
+    expect(
+      formatAgentName({
+        ...agent,
+        travelAgentProfile: {
+          company: { companyName: 'African Gulf Investment Company' },
+        },
+      }),
+    ).toBe('African Gulf Investment Company');
+  });
+
+  it('falls back to the company on the upgrade application', () => {
+    expect(
+      formatAgentName({
+        ...agent,
+        travelAgentProfile: null,
+        travelAgentLicense: {
+          application: { companyName: 'African Gulf Investment Company' },
+        },
+      }),
+    ).toBe('African Gulf Investment Company');
+  });
+
+  it('prefers the profile company over the application company', () => {
+    expect(
+      formatAgentName({
+        ...agent,
+        travelAgentProfile: { company: { companyName: 'Current Name Ltd' } },
+        travelAgentLicense: { application: { companyName: 'Former Name Ltd' } },
+      }),
+    ).toBe('Current Name Ltd');
+  });
+
+  it('falls back to the account name when no company is on file', () => {
+    // Not every agent account has completed an upgrade application.
+    expect(formatAgentName({ ...agent, travelAgentProfile: null })).toBe(
+      'Yusuf Sani',
+    );
+  });
+
+  it('ignores a blank company name', () => {
+    expect(
+      formatAgentName({
+        ...agent,
+        travelAgentProfile: { company: { companyName: '   ' } },
+      }),
+    ).toBe('Yusuf Sani');
+  });
+});
+
+describe('resolveSubmissionRecipients agent naming', () => {
+  it('uses the company name for the copied agent', async () => {
+    const client = {
+      formSubmission: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'sub-1',
+          referenceNumber: 'SA25001234',
+          user: applicant,
+          travelAgent: {
+            ...agent,
+            travelAgentProfile: {
+              company: { companyName: 'African Gulf Investment Company' },
+            },
+          },
+        }),
+      },
+    };
+
+    const recipients = await resolveSubmissionRecipients(
+      client as any,
+      'sub-1',
+    );
+
+    expect(recipients?.agentName).toBe('African Gulf Investment Company');
+    expect(recipients?.cc).toEqual(['agent@travelco.com']);
   });
 });

@@ -46,7 +46,9 @@ describe('travel agent is copied on applicant lifecycle email', () => {
   describe('biometric capture', () => {
     const run = async (travelAgent: any) => {
       const mail = {
-        sendBiometricCaptureNotification: jest.fn().mockResolvedValue(undefined),
+        sendBiometricCaptureNotification: jest
+          .fn()
+          .mockResolvedValue(undefined),
       };
       setMailServiceForBiometricMiddleware(mail as any);
 
