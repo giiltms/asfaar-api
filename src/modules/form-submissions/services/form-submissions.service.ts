@@ -2655,6 +2655,18 @@ export class FormSubmissionsService {
     // Get the most recent verified NIN data
     const ninVerification = submission.user.ninVerifications?.[0];
 
+    // The gate needs a face to check against. A NIN photo is evidence of
+    // identity; a profile avatar the applicant uploaded themselves is not.
+    // Show whichever exists, and say which it is - staff decide what to trust.
+    const ninPhoto = ninVerification?.photo || null;
+    const profileAvatar = submission.user.avatar || null;
+    const applicantPhoto = ninPhoto || profileAvatar;
+    const applicantPhotoSource = ninPhoto
+      ? 'NIN'
+      : profileAvatar
+      ? 'PROFILE'
+      : null;
+
     // Calculate appointment time validation if appointment exists
     let appointmentData = null;
     if (submission.appointment) {
@@ -2714,7 +2726,9 @@ export class FormSubmissionsService {
         lastName: submission.user.lastName,
         email: submission.user.email,
         phone: submission.user.phone,
-        photo: ninVerification?.photo || null,
+        photo: applicantPhoto,
+        /** 'NIN' when verified, 'PROFILE' when self-uploaded, null when absent. */
+        photoSource: applicantPhotoSource,
         nin: ninVerification?.nin || submission.user.nin || null,
         ninVerified: submission.user.ninVerified,
       },
