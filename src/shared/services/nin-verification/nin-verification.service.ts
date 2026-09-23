@@ -224,6 +224,58 @@ export class NinVerificationService {
     }
   }
 
+  /**
+   * Move a NIN lookup result from TempNINData into nin_verifications for the
+   * user it now belongs to. Every path that marks a user ninVerified must
+   * call this: the NIMC photo and verified details are read from there.
+   */
+  async linkTempNinToUser(tempNinId: string, userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const temp = await tx.tempNINData.findUnique({
+        where: { id: tempNinId },
+      });
+
+      if (!temp) {
+        throw new BadRequestException('Invalid or expired NIN verification');
+      }
+
+      await tx.ninVerification.create({
+        data: {
+          nin: temp.nin,
+          firstName: temp.firstName,
+          middleName: temp.middleName,
+          lastName: temp.lastName,
+          fullName: temp.fullName,
+          dateOfBirth: new Date(temp.dateOfBirth),
+          gender: temp.gender as Gender,
+          phoneNumber: temp.phoneNumber,
+          verifiedPhoneNumber: temp.verifiedPhoneNumber,
+          photo: temp.photo,
+          addressLine1: temp.addressLine1,
+          addressLine2: temp.addressLine2,
+          city: temp.city,
+          state: temp.state,
+          lga: temp.lga,
+          postalCode: temp.postalCode,
+          country: temp.country,
+          birthState: temp.birthState,
+          birthLga: temp.birthLga,
+          verificationStatus: 'VERIFIED',
+          verificationMethod: 'YOUVERIFY',
+          verificationId: temp.verificationId,
+          trackingId: temp.trackingId,
+          verificationDate: temp.verificationDate || new Date(),
+          rawData: temp.rawData,
+          userId: userId,
+        },
+      });
+
+      await tx.tempNINData.delete({
+        where: { id: tempNinId },
+      });
+    });
+  }
+
   async confirmNin(
     request: ConfirmNinDto,
     userId: string,
@@ -263,42 +315,7 @@ export class NinVerificationService {
         },
       });
 
-      // Save to NinVerification model
-      await this.prisma.ninVerification.create({
-        data: {
-          nin: tempNinData.nin,
-          firstName: tempNinData.firstName,
-          middleName: tempNinData.middleName,
-          lastName: tempNinData.lastName,
-          fullName: tempNinData.fullName,
-          dateOfBirth: new Date(tempNinData.dateOfBirth),
-          gender: tempNinData.gender as Gender,
-          phoneNumber: tempNinData.phoneNumber,
-          verifiedPhoneNumber: tempNinData.verifiedPhoneNumber,
-          photo: tempNinData.photo,
-          addressLine1: tempNinData.addressLine1,
-          addressLine2: tempNinData.addressLine2,
-          city: tempNinData.city,
-          state: tempNinData.state,
-          lga: tempNinData.lga,
-          postalCode: tempNinData.postalCode,
-          country: tempNinData.country,
-          birthState: tempNinData.birthState,
-          birthLga: tempNinData.birthLga,
-          verificationStatus: 'VERIFIED',
-          verificationMethod: 'YOUVERIFY',
-          verificationId: tempNinData.verificationId,
-          trackingId: tempNinData.trackingId,
-          verificationDate: tempNinData.verificationDate || new Date(),
-          rawData: tempNinData.rawData,
-          userId: userId,
-        },
-      });
-
-      // Delete temp data
-      await this.prisma.tempNINData.delete({
-        where: { id: request.tempNinId },
-      });
+      await this.linkTempNinToUser(request.tempNinId, userId);
 
       return {
         success: true,
