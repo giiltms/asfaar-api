@@ -195,6 +195,13 @@ export class TravelAgentClientsService {
           }
           throw error;
         }
+
+        // The account is marked ninVerified, so the verification itself
+        // (NIMC photo included) has to be on record for it.
+        await this.ninVerificationService.linkTempNinToUser(
+          verificationResult.tempNinId,
+          clientId,
+        );
       }
 
       // Check if client is already in agent's client list
