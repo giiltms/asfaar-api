@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
 import {
@@ -582,15 +587,13 @@ export class DashboardVerificationService {
     });
 
     if (!submission) {
-      throw new Error('Application not found');
+      throw new NotFoundException('Application not found');
     }
 
     const ninVerification = submission.user.ninVerifications?.[0];
+    // A capture can be marked complete without anything saved; the officer
+    // still needs the application to query it or send it back.
     const biometricData = submission.biometricData;
-
-    if (!biometricData) {
-      throw new Error('Biometric data not found for this application');
-    }
 
     // Optionally resolve capturedBy user info for detail view
     let capturedByUser: {
@@ -661,7 +664,7 @@ export class DashboardVerificationService {
             },
           }
         : null,
-      biometricData: {
+      biometricData: biometricData && {
         id: biometricData.id,
         photoUrl: biometricData.photoUrl,
         photoQualityScore: biometricData.photoQualityScore,
