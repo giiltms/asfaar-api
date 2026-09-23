@@ -276,7 +276,8 @@ export class ApplicationReviewDto {
 
   @ApiProperty({
     description:
-      'Biometric data summary (detailed fingerprint data available via separate endpoint)',
+      'Biometric data summary (detailed fingerprint data available via separate endpoint). Null when the capture saved nothing.',
+    nullable: true,
     example: {
       id: 'abc12345-e89b-12d3-a456-426614174003',
       photoUrl: 'https://storage.example.com/biometric-photos/photo-123.jpg',
@@ -321,7 +322,7 @@ export class ApplicationReviewDto {
       lastName: string;
       email: string;
     } | null;
-  };
+  } | null;
 
   @ApiPropertyOptional({ description: 'User profile photo' })
   userProfilePhoto?: string;

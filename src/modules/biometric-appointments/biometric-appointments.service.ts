@@ -735,6 +735,19 @@ export class BiometricAppointmentsService {
           `Can only complete biometric capture for appointments at booth or in queue. Current status: ${appointment.status}`,
         );
       }
+      // Completion hands the application to the verification officer, who
+      // needs a photo to check the applicant against.
+      if (appointment.submissionId) {
+        const biometricData = await this.prisma.biometricData.findUnique({
+          where: { submissionId: appointment.submissionId },
+          select: { photoUrl: true },
+        });
+        if (!biometricData?.photoUrl) {
+          throw new BadRequestException(
+            "Capture and save the applicant's photo before completing biometric capture",
+          );
+        }
+      }
       const result = await this.prisma.$transaction(async (tx) => {
         const completionTime = new Date();
 
