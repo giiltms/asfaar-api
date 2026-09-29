@@ -270,3 +270,33 @@ describe('AGIC biometric payload', () => {
     expect(nextRetryDelayMs(40)).toBe(360 * 60_000);
   });
 });
+
+describe('AgicBiometricSyncService.onCaptureCompleted', () => {
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  it('queues a retake again even after the earlier capture was sent', async () => {
+    const { service, prisma } = build();
+    prisma.agicImport.findUnique.mockResolvedValue({ id: 'imp-1' });
+    service.onCaptureCompleted('sub-1');
+    await flush();
+    await flush();
+    const requeue = prisma.agicImport.updateMany.mock.calls[0][0];
+    expect(requeue.where).toEqual({
+      id: 'imp-1',
+      syncStatus: { in: ['SENT', 'FAILED'] },
+    });
+    expect(requeue.data).toEqual({
+      syncStatus: 'PENDING',
+      syncAttempts: 0,
+      nextAttemptAt: null,
+    });
+  });
+
+  it('does nothing for an applicant who did not come from AGIC', async () => {
+    const { service, prisma } = build();
+    prisma.agicImport.findUnique.mockResolvedValue(null);
+    service.onCaptureCompleted('sub-x');
+    await flush();
+    expect(prisma.agicImport.updateMany).not.toHaveBeenCalled();
+  });
+});

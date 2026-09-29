@@ -23,11 +23,19 @@ const targets = {
   warnings: [],
 };
 
-function build(overrides: { existingUser?: any; existingImport?: any } = {}) {
+function build(
+  overrides: {
+    existingUser?: any;
+    existingImport?: any;
+    previousImport?: any;
+  } = {},
+) {
   const prisma: any = {
     agicImport: {
       findUnique: jest.fn().mockResolvedValue(overrides.existingImport ?? null),
+      findFirst: jest.fn().mockResolvedValue(overrides.previousImport ?? null),
       create: jest.fn().mockResolvedValue({}),
+      update: jest.fn().mockResolvedValue({}),
     },
     user: {
       findFirst: jest.fn().mockResolvedValue(overrides.existingUser ?? null),
@@ -46,6 +54,7 @@ function build(overrides: { existingUser?: any; existingImport?: any } = {}) {
     },
     biometricAppointment: {
       create: jest.fn().mockResolvedValue({ id: 'appt-1' }),
+      update: jest.fn().mockResolvedValue({}),
     },
     travelAgentClient: {
       findUnique: jest.fn().mockResolvedValue(null),
@@ -430,5 +439,87 @@ describe('namesAgree', () => {
     expect(
       namesAgree('SALISU HAFSATU', { firstName: null, lastName: null }),
     ).toBe(false);
+  });
+});
+
+describe('AgicImportService rebooking on AGIC', () => {
+  const previousImport = (appointment: any) => ({
+    id: 'imp-old',
+    appointmentNumber: 'AGIC-BIO-260920-AAAAAA',
+    submissionId: 'sub-old',
+    clientId: 'client-old',
+    agencyId: 'agency-1',
+    agicData: { previousAppointmentNumbers: ['AGIC-BIO-260901-000000'] },
+    submission: { appointment },
+  });
+
+  it('moves the existing application to the new slot instead of filing another', async () => {
+    const { service, prisma } = build({
+      previousImport: previousImport({
+        id: 'appt-old',
+        checkedIn: false,
+        status: 'ACTIVE',
+      }),
+    });
+    prisma.formSubmission.findUniqueOrThrow.mockResolvedValue({
+      referenceNumber: 'SA00126000003',
+    });
+
+    const result = await service.importFromScan(SLIP, 'gate-1');
+
+    expect(prisma.formSubmission.create).not.toHaveBeenCalled();
+    expect(prisma.biometricAppointment.update.mock.calls[0][0]).toMatchObject({
+      where: { id: 'appt-old' },
+      data: {
+        appointmentTime: new Date('2026-10-06T11:30:00.000Z'),
+        centerId: 'center-1',
+      },
+    });
+    // Status is untouched, so no "rescheduled" email; AGIC told them.
+    expect(
+      prisma.biometricAppointment.update.mock.calls[0][0].data.status,
+    ).toBeUndefined();
+    const reKeyed = prisma.agicImport.update.mock.calls[0][0];
+    expect(reKeyed.where).toEqual({ id: 'imp-old' });
+    expect(reKeyed.data.appointmentNumber).toBe('AGIC-BIO-260929-62ACF5');
+    expect(reKeyed.data.agicData.previousAppointmentNumbers).toEqual([
+      'AGIC-BIO-260901-000000',
+      'AGIC-BIO-260920-AAAAAA',
+    ]);
+    expect(result).toMatchObject({
+      referenceNumber: 'SA00126000003',
+      alreadyImported: true,
+      warnings: [],
+    });
+  });
+
+  it('leaves a visit already under way where it is, and says so', async () => {
+    const { service, prisma } = build({
+      previousImport: previousImport({
+        id: 'appt-old',
+        checkedIn: true,
+        status: 'IN_QUEUE',
+      }),
+    });
+    const result = await service.importFromScan(SLIP, 'gate-1');
+    expect(prisma.biometricAppointment.update).not.toHaveBeenCalled();
+    expect(prisma.agicImport.update).toHaveBeenCalled();
+    expect(result.warnings[0]).toMatch(/already under way/);
+  });
+});
+
+describe('AgicImportService center access', () => {
+  it('refuses, with the reason, an applicant booked at a center the staff member is not at', async () => {
+    const { AgicCenterAccessError } = jest.requireActual(
+      '@modules/agic/agic-targets.service',
+    );
+    const { service, targetsService } = build();
+    targetsService.resolve.mockRejectedValue(
+      new AgicCenterAccessError('not your center'),
+    );
+    await expect(service.importFromScan(SLIP, 'gate-1')).rejects.toMatchObject({
+      status: 403,
+      message: 'not your center',
+    });
   });
 });

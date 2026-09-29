@@ -240,6 +240,38 @@ describe('AgicClientService', () => {
   });
 });
 
+describe('AgicClientService redirects', () => {
+  it('reports a redirect elsewhere as a base URL problem, not bad credentials', async () => {
+    const { client, fetchFn } = clientWith([
+      new Response(null, {
+        status: 301,
+        headers: { location: 'https://www.agic.test/api/v1/auth/token' },
+      }),
+    ]);
+    const error = (await client
+      .getAppointment('AGIC-BIO-1')
+      .catch((e) => e)) as AgicApiError;
+    expect(error.code).toBe('REDIRECT');
+    expect(error.status).not.toBe(401);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not renew the token for a redirect that is not to the login page', async () => {
+    const { client, fetchFn } = clientWith([
+      tokenResponse(),
+      new Response(null, {
+        status: 308,
+        headers: { location: 'https://agic.test/elsewhere' },
+      }),
+    ]);
+    const error = (await client
+      .getAppointment('AGIC-BIO-1')
+      .catch((e) => e)) as AgicApiError;
+    expect(error.code).toBe('REDIRECT');
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('AgicClientService.postJson', () => {
   it('counts only an explicit success as delivered', async () => {
     const { client } = clientWith([
