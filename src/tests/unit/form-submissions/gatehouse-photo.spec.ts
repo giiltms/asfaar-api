@@ -99,10 +99,20 @@ describe('gatehouse applicant photo', () => {
     const applicant = (
       await buildService(
         { ...baseUser, avatar: 'data:image/jpeg;base64,agic' },
-        { source: 'AGIC' },
+        { source: 'AGIC', agicPhotoUsed: true },
       ).getApplicantInfoByReference('MA00126000007')
     ).applicant;
     expect(applicant.photo).toBe('data:image/jpeg;base64,agic');
     expect(applicant.photoSource).toBe('AGIC');
+  });
+
+  it('keeps an existing account’s own avatar labelled as their profile photo', async () => {
+    const applicant = (
+      await buildService(
+        { ...baseUser, avatar: 'https://cdn/their-own.png' },
+        { source: 'AGIC', agicPhotoUsed: false },
+      ).getApplicantInfoByReference('MA00126000007')
+    ).applicant;
+    expect(applicant.photoSource).toBe('PROFILE');
   });
 });
