@@ -14,6 +14,9 @@ import { AgicConfig } from './agic.config';
  */
 export class AgicSetupError extends Error {}
 
+/** The applicant belongs at a center this member of staff does not work at. */
+export class AgicCenterAccessError extends Error {}
+
 export interface AgicTargets {
   agency: { id: string };
   center: { id: string; name: string };
@@ -78,6 +81,32 @@ export class AgicTargetsService {
     staffId: string,
     config: AgicConfig,
   ) {
+    const staff = await this.prisma.user.findUnique({
+      where: { id: staffId },
+      select: { roles: true },
+    });
+    const unrestricted = hasUnrestrictedAccess(staff?.roles);
+    // Unrestricted roles get every active center here.
+    const staffCenters = await resolveAccessibleCenters<{
+      id: string;
+      name: string;
+    }>(this.prisma, staffId);
+    if (!unrestricted && !staffCenters.length) {
+      throw new AgicCenterAccessError(
+        'Your account is not assigned to a biometric center. Ask an administrator to assign one.',
+      );
+    }
+    // Check-in is refused at a center the staff member is not assigned to, so
+    // booking the applicant at one would only strand them at the gate.
+    const accessible = (center: { id: string; name: string }) => {
+      if (!unrestricted && !staffCenters.some((c) => c.id === center.id)) {
+        throw new AgicCenterAccessError(
+          `AGIC books this applicant at ${center.name}, which your account is not assigned to`,
+        );
+      }
+      return center;
+    };
+
     const agicCenterId = record.biometricCenter?.centerId;
     const mapped =
       agicCenterId !== undefined ? config.centerMap[String(agicCenterId)] : '';
@@ -91,21 +120,15 @@ export class AgicTargetsService {
           `AGIC_CENTER_MAP sends AGIC center ${agicCenterId} to "${mapped}", which is not an active ASFAAR center`,
         );
       }
-      return center;
+      return accessible(center);
     }
 
-    const staff = await this.prisma.user.findUnique({
-      where: { id: staffId },
-      select: { roles: true },
-    });
-    const staffCenters = await resolveAccessibleCenters<{
-      id: string;
-      name: string;
-    }>(this.prisma, staffId);
-    if (!hasUnrestrictedAccess(staff?.roles) && staffCenters.length === 1) {
+    if (!unrestricted && staffCenters.length === 1) {
       return staffCenters[0];
     }
 
+    // Staff at several centers, and administrators: AGIC's center or
+    // location name picks one - among the staff member's own centers.
     const names = [
       record.biometricCenter?.centerName,
       record.biometricCenter?.locationName,
@@ -114,6 +137,9 @@ export class AgicTargetsService {
       const center = await this.prisma.biometricCenter.findFirst({
         where: {
           isActive: true,
+          ...(unrestricted
+            ? {}
+            : { id: { in: staffCenters.map((c) => c.id) } }),
           OR: [
             { name: { equals: name.trim(), mode: 'insensitive' } },
             { code: { equals: name.trim(), mode: 'insensitive' } },
@@ -125,10 +151,16 @@ export class AgicTargetsService {
       if (center) return center;
     }
 
+    const agicName = names.join(' / ') || String(agicCenterId ?? 'unknown');
+    if (!unrestricted) {
+      throw new AgicCenterAccessError(
+        `AGIC center "${agicName}" does not match any of your centers (${staffCenters
+          .map((c) => c.name)
+          .join(', ')}). Set AGIC_CENTER_MAP to say which it is.`,
+      );
+    }
     throw new AgicSetupError(
-      `No ASFAAR center matches AGIC center "${
-        names.join(' / ') || agicCenterId
-      }". Assign this account to a center or set AGIC_CENTER_MAP.`,
+      `No ASFAAR center matches AGIC center "${agicName}". Set AGIC_CENTER_MAP.`,
     );
   }
 

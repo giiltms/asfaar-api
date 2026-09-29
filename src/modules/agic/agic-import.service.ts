@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -28,6 +29,7 @@ import {
 import { AgicApiError, AgicClientService } from './agic-client.service';
 import { AgicScanError, parseAgicScan } from './agic-scan';
 import {
+  AgicCenterAccessError,
   AgicSetupError,
   AgicTargets,
   AgicTargetsService,
@@ -52,6 +54,14 @@ export interface AgicImportResult {
   };
   warnings: string[];
 }
+
+/** Appointments not yet under way, whose slot a rebooking may move. */
+const MOVABLE_STATUSES: AppointmentStatus[] = [
+  AppointmentStatus.PENDING,
+  AppointmentStatus.SCHEDULED,
+  AppointmentStatus.ACTIVE,
+  AppointmentStatus.RESCHEDULED,
+];
 
 /** How long a gate waits for another gate's reference number. */
 const SUBMIT_WAIT_ATTEMPTS = 10;
@@ -136,6 +146,12 @@ export class AgicImportService {
     }
 
     const targets = await this.resolveTargets(record, staffId, config);
+
+    // AGIC gives a rebooked applicant a new appointment number for the same
+    // application. That is the application already here, moved.
+    const rebooked = await this.rebook(record, targets, staffId);
+    if (rebooked) return rebooked;
+
     const warnings = [...targets.warnings];
     const photo = await this.fetchPhotoDataUri(record, warnings);
 
@@ -221,6 +237,98 @@ export class AgicImportService {
     );
   }
 
+  /**
+   * Moves an application imported under an earlier AGIC appointment number to
+   * the new appointment, when AGIC rebooked it. The slot and center follow
+   * AGIC unless the applicant has already been checked in, when the visit in
+   * progress stands. The import row is re-keyed to the new number, so either
+   * slip still finds it (the old one through AGIC's application number).
+   */
+  private async rebook(
+    record: AgicApplicantRecord,
+    targets: AgicTargets,
+    staffId: string,
+  ): Promise<AgicImportResult | null> {
+    const previous = await this.prisma.agicImport.findFirst({
+      where: { applicationNumber: record.application.applicationNumber },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        appointmentNumber: true,
+        submissionId: true,
+        clientId: true,
+        agencyId: true,
+        agicData: true,
+        submission: {
+          select: {
+            appointment: {
+              select: { id: true, checkedIn: true, status: true },
+            },
+          },
+        },
+      },
+    });
+    if (!previous) return null;
+
+    const warnings = [...targets.warnings];
+    const appointment = previous.submission.appointment;
+    const underway =
+      !appointment ||
+      appointment.checkedIn ||
+      !MOVABLE_STATUSES.includes(appointment.status);
+
+    if (appointment && !underway) {
+      await this.prisma.biometricAppointment.update({
+        where: { id: appointment.id },
+        data: {
+          appointmentTime:
+            agicSlotStart(
+              record.biometricAppointment?.slotDate,
+              record.biometricAppointment?.startTime,
+            ) || new Date(),
+          centerId: targets.center.id,
+          adminNotes: `Rebooked on AGIC as ${record.appointmentNumber} (was ${previous.appointmentNumber})`,
+          lastModifiedBy: staffId,
+        },
+      });
+    } else {
+      warnings.push(
+        `AGIC rebooked this applicant as ${record.appointmentNumber}, but their visit under ${previous.appointmentNumber} is already under way; it was left as it is`,
+      );
+    }
+
+    const earlier = (previous.agicData as any)?.previousAppointmentNumbers;
+    await this.prisma.agicImport.update({
+      where: { id: previous.id },
+      data: {
+        appointmentNumber: record.appointmentNumber.toUpperCase(),
+        agicData: {
+          ...agicRecordForStorage(record),
+          previousAppointmentNumbers: [
+            ...(Array.isArray(earlier) ? earlier : []),
+            previous.appointmentNumber,
+          ],
+        },
+      },
+    });
+    this.logger.log(
+      `AGIC rebooked application ${record.application.applicationNumber} from ${previous.appointmentNumber} to ${record.appointmentNumber}`,
+    );
+
+    await this.linkToAgency(previous.agencyId, previous.clientId, record);
+    const referenceNumber = await this.submit(previous.submissionId);
+    return this.result(
+      record,
+      {
+        referenceNumber,
+        submissionId: previous.submissionId,
+        clientId: previous.clientId,
+      },
+      true,
+      warnings,
+    );
+  }
+
   private async fetchRecord(
     appointmentNumber: string,
   ): Promise<AgicApplicantRecord> {
@@ -237,6 +345,11 @@ export class AgicImportService {
         if (error.status === 401) {
           throw new BadGatewayException(
             'ASFAAR could not sign in to AGIC - check the AGIC client credentials',
+          );
+        }
+        if (error.code === 'REDIRECT') {
+          throw new BadGatewayException(
+            'AGIC redirected the request elsewhere. Check AGIC_API_BASE_URL on the server.',
           );
         }
         if (error.status === 400) {
@@ -273,6 +386,9 @@ export class AgicImportService {
       if (error instanceof AgicSetupError) {
         this.logger.error(`AGIC import blocked: ${error.message}`);
         throw new ServiceUnavailableException(error.message);
+      }
+      if (error instanceof AgicCenterAccessError) {
+        throw new ForbiddenException(error.message);
       }
       throw error;
     }

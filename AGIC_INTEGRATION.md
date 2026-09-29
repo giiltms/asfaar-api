@@ -29,7 +29,12 @@ biometrics back to AGIC.
    - submits it, which generates the ASFAAR reference number, and records the
      AGIC appointment and application numbers in `agic_imports`.
 
-   Scanning the same slip again returns the same application. The response
+   Scanning the same slip again returns the same application. A slip AGIC
+   issued after **rebooking** - a new appointment number for the same AGIC
+   application - moves that application to the new slot and center instead
+   of filing another, unless the visit is already under way (checked in or
+   further), which is left as it is with a warning. The import is re-keyed to
+   the new number; earlier numbers are kept in `agicData`. The response
    carries the ASFAAR `referenceNumber`, which the page then looks up and
    checks in as usual.
 3. **Check-in, queue, capture** — unchanged.
@@ -37,7 +42,8 @@ biometrics back to AGIC.
    every minute sends whatever is due, retrying failures with backoff
    (1, 2, 4 … minutes, at most 6 hours, `AGIC_BIOMETRIC_PUSH_MAX_ATTEMPTS`
    times). Rows are claimed before sending, so several API instances never
-   send the same one twice.
+   send the same one twice. Every completed capture queues a send, so a
+   retake after an earlier capture was sent goes to AGIC too.
 
 ## Configuration
 
@@ -55,9 +61,12 @@ biometrics back to AGIC.
 | `AGIC_FORM_MAP` | | | JSON, `"<visaCountryId>:<visaTypeId>"` or `"<visaCountryId>"` → ASFAAR form id. |
 
 **Center.** An explicit `AGIC_CENTER_MAP` entry wins. Otherwise the center the
-gate staff member is assigned to — where the applicant is standing. Staff not
-tied to one center (admins) fall back to matching AGIC's center or location
-name against ASFAAR center name, code or city.
+gate staff member is assigned to — where the applicant is standing. Staff at
+several centers, and admins, fall back to matching AGIC's center or location
+name against ASFAAR center name, code or city — among their own centers only.
+Check-in is refused at a center staff are not assigned to, so import refuses
+(403) a center they are not at, rather than booking an applicant who then
+cannot be checked in; staff with no center are told to get one assigned.
 
 **Form.** An `AGIC_FORM_MAP` entry wins. Otherwise the destination country's
 form (AGIC's "Saudi Arabia" matches ASFAAR's "Kingdom of Saudi Arabia") whose
@@ -70,7 +79,9 @@ with a warning shown at the gate.
   900 s. Cached, renewed a minute early, and renewed + retried once on an
   authentication failure.
 - **AGIC's guide says 401 for a bad token; production answers `302` to
-  `/Account/Login`.** Redirects are never followed and are treated as 401.
+  `/Account/Login`.** Redirects are never followed. One to the login page, or
+  carrying AGIC's `AUTH401` code, is treated as 401; any other (http→https,
+  apex→www) is reported as a misconfigured `AGIC_API_BASE_URL`.
 - The QR `sig` is not verified — AGIC has not published how it is made. It
   does not need to be: the record is always fetched from AGIC with our
   credentials, so a forged slip finds nothing.

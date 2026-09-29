@@ -68,7 +68,29 @@ export class AgicBiometricSyncService {
           where: { submissionId },
           select: { id: true },
         });
-        if (row && this.enabledConfig()) await this.syncOne(row.id);
+        if (!row) return;
+        // A completed capture is new data to send, even when an earlier
+        // capture was sent or given up on - a retake replaces it on AGIC,
+        // whose idempotency key (the capture digest) changes with it. A send
+        // already in flight is not interrupted; if it read the earlier
+        // capture, use the manual retry to send the retake.
+        await this.prisma.agicImport.updateMany({
+          where: {
+            id: row.id,
+            syncStatus: {
+              in: [
+                AgicBiometricSyncStatus.SENT,
+                AgicBiometricSyncStatus.FAILED,
+              ],
+            },
+          },
+          data: {
+            syncStatus: AgicBiometricSyncStatus.PENDING,
+            syncAttempts: 0,
+            nextAttemptAt: null,
+          },
+        });
+        if (this.enabledConfig()) await this.syncOne(row.id);
       } catch (error: any) {
         this.logger.error(
           `AGIC biometric send after capture of ${submissionId} failed: ${error.message}`,

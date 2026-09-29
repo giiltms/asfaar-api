@@ -1,4 +1,5 @@
 import {
+  AgicCenterAccessError,
   AgicTargetsService,
   AgicSetupError,
 } from '@modules/agic/agic-targets.service';
@@ -80,6 +81,10 @@ describe('AgicTargetsService', () => {
 
   it('lets AGIC_CENTER_MAP override both', async () => {
     const { service, prisma } = build({ forms });
+    prisma.biometricCenter.findFirst.mockResolvedValue({
+      id: 'gate-center',
+      name: 'Gate Center',
+    });
     await service.resolve(
       sampleAgicRecord(),
       'gate-1',
@@ -148,5 +153,60 @@ describe('AgicTargetsService', () => {
     await expect(
       service.resolve(sampleAgicRecord(), 'gate-1', config()),
     ).rejects.toThrow('ASFAAR has no form for Saudi Arabia');
+  });
+});
+
+describe('AgicTargetsService center access', () => {
+  const two = [
+    { id: 'abj', name: 'ASFAAR-ABUJA HQ' },
+    { id: 'kno', name: 'ASFAAR-KANO CENTRAL' },
+  ];
+
+  it('picks, for staff at several centers, the one AGIC names among their own', async () => {
+    const { service, prisma } = build({ staffCenters: two, forms });
+    prisma.biometricCenter.findFirst.mockImplementation(
+      async ({ where }: any) =>
+        where.OR[2].city.equals === 'ABUJA'
+          ? { id: 'abj', name: 'ASFAAR-ABUJA HQ' }
+          : null,
+    );
+    const t = await service.resolve(sampleAgicRecord(), 'gate-1', config());
+    expect(t.center.id).toBe('abj');
+    // Only their own centers were searched.
+    expect(prisma.biometricCenter.findFirst.mock.calls[0][0].where.id).toEqual({
+      in: ['abj', 'kno'],
+    });
+  });
+
+  it('refuses when AGIC’s center is none of theirs', async () => {
+    const { service, prisma } = build({ staffCenters: two, forms });
+    prisma.biometricCenter.findFirst.mockResolvedValue(null);
+    await expect(
+      service.resolve(sampleAgicRecord(), 'gate-1', config()),
+    ).rejects.toThrow(AgicCenterAccessError);
+  });
+
+  it('refuses a mapped center the staff member is not assigned to', async () => {
+    const { service, prisma } = build({ forms });
+    prisma.biometricCenter.findFirst.mockResolvedValue({
+      id: 'elsewhere',
+      name: 'ASFAAR-LAGOS IKEJA',
+    });
+    await expect(
+      service.resolve(
+        sampleAgicRecord(),
+        'gate-1',
+        config({ AGIC_CENTER_MAP: '{"1":"ASFAAR-LOS-IKJ"}' }),
+      ),
+    ).rejects.toThrow(
+      'AGIC books this applicant at ASFAAR-LAGOS IKEJA, which your account is not assigned to',
+    );
+  });
+
+  it('tells staff with no center to get one', async () => {
+    const { service } = build({ staffCenters: [], forms });
+    await expect(
+      service.resolve(sampleAgicRecord(), 'gate-1', config()),
+    ).rejects.toThrow(/not assigned to a biometric center/);
   });
 });

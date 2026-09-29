@@ -181,20 +181,21 @@ export class AgicClientService {
       });
 
     const first = await send(await this.accessToken());
-    if (!this.isAuthFailure(first)) return first;
+    if (!(await this.isAuthFailure(first)))
+      return this.notRedirected(first, path);
 
     // The token may have been revoked or expired early: renew once, retry once.
     this.logger.warn(`AGIC refused the access token for ${path}; renewing`);
     this.clearToken();
     const second = await send(await this.accessToken());
-    if (this.isAuthFailure(second)) {
+    if (await this.isAuthFailure(second)) {
       throw new AgicApiError(
         'AGIC refused a freshly issued access token',
         401,
         'AUTH401',
       );
     }
-    return second;
+    return this.notRedirected(second, path);
   }
 
   private async accessToken(): Promise<string> {
@@ -226,6 +227,9 @@ export class AgicClientService {
     });
     const body = await this.readJson(response, path).catch(() => null);
 
+    if (this.isRedirect(response) && !this.isAuthResponse(response, body)) {
+      throw this.redirectError(response, path);
+    }
     if (
       !response.ok ||
       body?.success !== true ||
@@ -237,7 +241,6 @@ export class AgicClientService {
         response,
         body,
         'AGIC did not issue an access token',
-        this.isAuthFailure(response) ? 401 : undefined,
       );
     }
 
@@ -266,10 +269,49 @@ export class AgicClientService {
     }
   }
 
-  private isAuthFailure(response: Response): boolean {
+  private isRedirect(response: Response): boolean {
+    return response.status >= 300 && response.status < 400;
+  }
+
+  /**
+   * AGIC's way of refusing a token: a 401, a redirect to its login page, or
+   * a redirect whose body carries its AUTH401 code. Any other redirect - say
+   * http to https, or to www - is a misconfigured base URL, not bad
+   * credentials, and is reported as that.
+   */
+  private isAuthResponse(response: Response, body?: any): boolean {
     return (
       response.status === 401 ||
-      (response.status >= 300 && response.status < 400)
+      body?.code === 'AUTH401' ||
+      (this.isRedirect(response) &&
+        /\/account\/login/i.test(response.headers.get('location') || ''))
+    );
+  }
+
+  private async isAuthFailure(response: Response): Promise<boolean> {
+    if (this.isAuthResponse(response)) return true;
+    if (!this.isRedirect(response)) return false;
+    const text = await response
+      .clone()
+      .text()
+      .catch(() => '');
+    return /"code"\s*:\s*"AUTH401"/.test(text);
+  }
+
+  private notRedirected(response: Response, path: string): Response {
+    if (this.isRedirect(response)) throw this.redirectError(response, path);
+    return response;
+  }
+
+  private redirectError(response: Response, path: string): AgicApiError {
+    const location = response.headers.get('location') || 'nowhere';
+    this.logger.error(
+      `AGIC redirected ${path} (HTTP ${response.status}) to ${location}; check AGIC_API_BASE_URL`,
+    );
+    return new AgicApiError(
+      `AGIC redirected ${path} to ${location}`,
+      502,
+      'REDIRECT',
     );
   }
 
@@ -293,7 +335,8 @@ export class AgicClientService {
     statusOverride?: number,
   ): AgicApiError {
     const status =
-      statusOverride ?? (this.isAuthFailure(response) ? 401 : response.status);
+      statusOverride ??
+      (this.isAuthResponse(response, body) ? 401 : response.status);
     const requestId =
       body?.requestId || response.headers.get('x-request-id') || undefined;
     const error = new AgicApiError(
