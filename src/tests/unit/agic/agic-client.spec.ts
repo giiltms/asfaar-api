@@ -234,7 +234,35 @@ describe('AgicClientService', () => {
       tokenResponse(),
       json(200, { not: 'an image' }),
     ]);
-    await expect(client.getPhoto('/photo')).rejects.toThrow(/not an image/);
+    await expect(client.getPhoto('/photo')).rejects.toThrow(
+      /not a JPEG, PNG or WebP/,
+    );
+  });
+});
+
+describe('AgicClientService.postJson', () => {
+  it('counts only an explicit success as delivered', async () => {
+    const { client } = clientWith([
+      tokenResponse(),
+      json(200, { success: true, requestId: 'r-1' }),
+    ]);
+    await expect(
+      client.postJson('/in', {}, { purpose: 'BIOMETRIC' }),
+    ).resolves.toMatchObject({ requestId: 'r-1' });
+  });
+
+  it('does not take a 200 page without a success flag for a delivery', async () => {
+    const { client } = clientWith([
+      tokenResponse(),
+      new Response('<html>Welcome to AGIC</html>', { status: 200 }),
+    ]);
+    const error = (await client
+      .postJson('/wrong-path', {}, { purpose: 'BIOMETRIC' })
+      .catch((e) => e)) as AgicApiError;
+    expect(error).toBeInstanceOf(AgicApiError);
+    expect(error.message).toMatch(/did not confirm receipt/);
+    // Retried later rather than given up on.
+    expect(error.isTransient).toBe(true);
   });
 });
 

@@ -38,7 +38,9 @@ export interface AgicPhoto {
 
 /** Renew this long before expiry, as AGIC's guide recommends. */
 const TOKEN_RENEW_MARGIN_MS = 60_000;
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+/** Stored on the user row as a data URI, so kept to a portrait's size. */
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 type FetchFn = typeof fetch;
 
@@ -102,9 +104,11 @@ export class AgicClientService {
       .split(';')[0]
       .trim()
       .toLowerCase();
-    if (!mimeType.startsWith('image/')) {
+    if (!PHOTO_TYPES.includes(mimeType)) {
       throw new AgicApiError(
-        `AGIC photo came back as "${mimeType || 'unknown'}", not an image`,
+        `AGIC photo came back as "${
+          mimeType || 'unknown'
+        }", not a JPEG, PNG or WebP image`,
         response.status,
       );
     }
@@ -141,6 +145,17 @@ export class AgicClientService {
     const body = await this.readJson(response, path).catch(() => null);
     if (!response.ok || body?.success === false) {
       throw this.errorFrom(response, body, `AGIC rejected ${path}`);
+    }
+    // Only an explicit success is a delivery. A 200 with an HTML page, an
+    // empty body or no success flag - a wrong path answered by a catch-all -
+    // must not mark biometrics sent that AGIC never took in.
+    if (body?.success !== true) {
+      throw new AgicApiError(
+        `AGIC answered ${path} with HTTP ${response.status} but did not confirm receipt`,
+        502,
+        body?.code,
+        body?.requestId || response.headers.get('x-request-id') || undefined,
+      );
     }
     return { requestId: body?.requestId, body };
   }

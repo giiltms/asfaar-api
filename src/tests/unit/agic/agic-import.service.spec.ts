@@ -4,7 +4,11 @@ import {
   BadRequestException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { AgicImportService } from '@modules/agic/agic-import.service';
+import * as bcrypt from 'bcrypt';
+import {
+  AgicImportService,
+  namesAgree,
+} from '@modules/agic/agic-import.service';
 import { AgicApiError } from '@modules/agic/agic-client.service';
 import { AgicSetupError } from '@modules/agic/agic-targets.service';
 import { sampleAgicRecord } from './agic-fixtures';
@@ -34,6 +38,7 @@ function build(overrides: { existingUser?: any; existingImport?: any } = {}) {
     internationalPassport: { upsert: jest.fn().mockResolvedValue({}) },
     formSubmission: {
       create: jest.fn().mockResolvedValue({ id: 'sub-1' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       update: jest.fn().mockResolvedValue({}),
       findUniqueOrThrow: jest
         .fn()
@@ -161,6 +166,8 @@ describe('AgicImportService.importFromScan', () => {
         roles: ['APPLICANT'],
         dateOfBirth: new Date('1995-12-30T00:00:00Z'),
         avatar: 'nimc-photo',
+        firstName: 'Hafsatu',
+        lastName: 'Salisu',
       },
     });
 
@@ -274,5 +281,154 @@ describe('AgicImportService.importFromScan', () => {
       referenceNumber: 'SA00126000002',
       alreadyImported: true,
     });
+  });
+
+  it('stores a hashed password, never the plain one', async () => {
+    const { service, prisma } = build();
+    await service.importFromScan(SLIP, 'gate-1');
+    const { password } = prisma.user.create.mock.calls[0][0].data;
+    expect(password).toMatch(/^\$2[aby]\$10\$/);
+    expect(bcrypt.getRounds(password)).toBe(10);
+  });
+
+  it('records that the account photo is AGIC’s only when it put it there', async () => {
+    const { service, prisma } = build();
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(
+      prisma.formSubmission.create.mock.calls[0][0].data.metadata.agicPhotoUsed,
+    ).toBe(true);
+
+    const existing = build({
+      existingUser: {
+        id: 'u',
+        nin: '86463406817',
+        roles: ['APPLICANT'],
+        avatar: 'their-own',
+        dateOfBirth: new Date('1995-12-30T00:00:00Z'),
+        firstName: 'Hafsatu',
+        lastName: 'Salisu',
+      },
+    });
+    await existing.service.importFromScan(SLIP, 'gate-1');
+    expect(
+      existing.prisma.formSubmission.create.mock.calls[0][0].data.metadata
+        .agicPhotoUsed,
+    ).toBe(false);
+  });
+
+  it('never turns a staff account into an applicant', async () => {
+    const { service, prisma } = build({
+      existingUser: {
+        id: 'u',
+        nin: '86463406817',
+        roles: ['GATEHOUSE'],
+        dateOfBirth: null,
+      },
+    });
+    await expect(service.importFromScan(SLIP, 'gate-1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.formSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('refuses a match with no date of birth to compare and a different name', async () => {
+    const { service } = build({
+      existingUser: {
+        id: 'u',
+        nin: '86463406817',
+        roles: ['APPLICANT'],
+        dateOfBirth: null,
+        firstName: 'Musa',
+        lastName: 'Ibrahim',
+      },
+    });
+    await expect(service.importFromScan(SLIP, 'gate-1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
+  it('accepts a match with no date of birth when the name agrees', async () => {
+    const { service, prisma } = build({
+      existingUser: {
+        id: 'user-3',
+        nin: '86463406817',
+        roles: ['APPLICANT'],
+        dateOfBirth: null,
+        firstName: 'HAFSATU',
+        lastName: 'SALISU',
+      },
+    });
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(prisma.formSubmission.create.mock.calls[0][0].data.userId).toBe(
+      'user-3',
+    );
+  });
+
+  it('retries once when a racing gate created the account first', async () => {
+    const { service, prisma } = build();
+    prisma.$transaction
+      .mockRejectedValueOnce({ code: 'P2002', meta: { target: ['email'] } })
+      .mockImplementationOnce((fn: any) => fn(prisma));
+    const result = await service.importFromScan(SLIP, 'gate-1');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(result.alreadyImported).toBe(false);
+  });
+
+  it('waits for the other gate’s reference instead of generating a second', async () => {
+    const { service, prisma } = build();
+    prisma.formSubmission.updateMany.mockResolvedValue({ count: 0 });
+    prisma.formSubmission.findUniqueOrThrow
+      .mockResolvedValueOnce({ referenceNumber: null })
+      .mockResolvedValueOnce({ referenceNumber: 'SA00126000005' });
+    const result = await service.importFromScan(SLIP, 'gate-1');
+    expect(prisma.formSubmission.update).not.toHaveBeenCalled();
+    expect(result.referenceNumber).toBe('SA00126000005');
+  });
+
+  it('repairs a missing agency link when the slip is scanned again', async () => {
+    const { service, prisma } = build({
+      existingImport: {
+        submissionId: 'sub-9',
+        clientId: 'client-9',
+        agencyId: 'agency-1',
+        agicData: sampleAgicRecord(),
+        submission: { referenceNumber: 'SA00126000009' },
+      },
+    });
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(prisma.travelAgentClient.create.mock.calls[0][0].data).toMatchObject(
+      {
+        agentId: 'agency-1',
+        clientId: 'client-9',
+      },
+    );
+  });
+
+  it('refuses AGIC answering for a different appointment than asked', async () => {
+    const { service, agic } = build();
+    agic.getAppointment.mockResolvedValue({
+      ...sampleAgicRecord(),
+      appointmentNumber: 'AGIC-BIO-OTHER-1',
+    });
+    await expect(service.importFromScan(SLIP, 'gate-1')).rejects.toThrow(
+      /when asked for/,
+    );
+  });
+});
+
+describe('namesAgree', () => {
+  it('needs every name on the account in the AGIC name, in any order or case', () => {
+    expect(
+      namesAgree('SALISU HAFSATU', {
+        firstName: 'Hafsatu',
+        lastName: 'Salisu',
+      }),
+    ).toBe(true);
+    expect(
+      namesAgree('SALISU HAFSATU', { firstName: 'Hafsatu', lastName: 'Bello' }),
+    ).toBe(false);
+    expect(
+      namesAgree('SALISU HAFSATU', { firstName: null, lastName: null }),
+    ).toBe(false);
   });
 });

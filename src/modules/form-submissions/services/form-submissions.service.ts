@@ -2661,9 +2661,12 @@ export class FormSubmissionsService {
     const ninPhoto = ninVerification?.photo || null;
     const profileAvatar = submission.user.avatar || null;
     const applicantPhoto = ninPhoto || profileAvatar;
-    // An applicant imported from AGIC has the photo AGIC took at application,
-    // which is neither NIMC's nor one they uploaded themselves.
-    const fromAgic = (submission.metadata as any)?.source === 'AGIC';
+    // An applicant imported from AGIC may have the photo AGIC took at
+    // application, which is neither NIMC's nor one they uploaded themselves.
+    // Only when the import put it there: an existing account keeps its own.
+    const metadata = submission.metadata as any;
+    const fromAgic =
+      metadata?.source === 'AGIC' && metadata?.agicPhotoUsed === true;
     const applicantPhotoSource = ninPhoto
       ? 'NIN'
       : profileAvatar

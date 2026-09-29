@@ -8,6 +8,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { AppointmentStatus, Prisma, SubmissionStatus } from '@prisma/client';
 import { PrismaService } from '@providers/prisma/prisma.service';
@@ -50,6 +51,27 @@ export interface AgicImportResult {
     visaType: string | null;
   };
   warnings: string[];
+}
+
+/** How long a gate waits for another gate's reference number. */
+const SUBMIT_WAIT_ATTEMPTS = 10;
+const SUBMIT_WAIT_MS = 300;
+/** A submit stamped this long ago with no number has failed. */
+const STALE_SUBMIT_MS = 30_000;
+
+/** Every name the account has appears in AGIC's full name. */
+export function namesAgree(
+  agicName: string,
+  account: { firstName?: string | null; lastName?: string | null },
+): boolean {
+  const words = (value?: string | null) =>
+    (value || '')
+      .toUpperCase()
+      .split(/[^A-Z]+/)
+      .filter(Boolean);
+  const agic = new Set(words(agicName));
+  const theirs = [...words(account.firstName), ...words(account.lastName)];
+  return theirs.length > 0 && theirs.every((word) => agic.has(word));
 }
 
 const PHOTO_ERROR =
@@ -99,6 +121,12 @@ export class AgicImportService {
 
     const config = this.configOrFail();
     const record = await this.fetchRecord(appointmentNumber);
+    // Stored and looked up by this number, so it must be the one scanned.
+    if (record.appointmentNumber.trim().toUpperCase() !== appointmentNumber) {
+      throw new BadGatewayException(
+        `AGIC answered for ${record.appointmentNumber} when asked for ${appointmentNumber}`,
+      );
+    }
 
     const agicStatus = record.biometricAppointment?.status || '';
     if (/cancel/i.test(agicStatus)) {
@@ -111,24 +139,25 @@ export class AgicImportService {
     const warnings = [...targets.warnings];
     const photo = await this.fetchPhotoDataUri(record, warnings);
 
-    let submissionId: string;
-    let clientId: string;
-    try {
-      ({ submissionId, clientId } = await this.prisma.$transaction(
+    const create = () =>
+      this.prisma.$transaction(
         (tx) => this.createRecords(tx, record, targets, photo, staffId),
         { timeout: 20_000 },
-      ));
+      );
+    let created: { submissionId: string; clientId: string; photoUsed: boolean };
+    try {
+      created = await create();
     } catch (error: any) {
-      // Two gates scanning the same slip at once: the other one won.
-      if (
-        error?.code === 'P2002' &&
-        `${error?.meta?.target}`.includes('appointmentNumber')
-      ) {
-        const raced = await this.existingImport(appointmentNumber);
-        if (raced) return raced;
-      }
-      throw error;
+      if (error?.code !== 'P2002') throw error;
+      // Another gate scanned this slip, or this person's other slip, at the
+      // same moment and committed first - on the import itself, or on the
+      // new account's email or phone. Its import is ours; failing that, the
+      // account now exists and a second attempt finds it.
+      const raced = await this.existingImport(appointmentNumber);
+      if (raced) return raced;
+      created = await create();
     }
+    const { submissionId, clientId } = created;
 
     // Outside the transaction: the client-added email reads the new link
     // back, and the reference number is generated from committed rows.
@@ -165,19 +194,23 @@ export class AgicImportService {
       select: {
         submissionId: true,
         clientId: true,
+        agencyId: true,
         agicData: true,
         submission: { select: { referenceNumber: true } },
       },
     });
     if (!existing) return null;
+    const record = existing.agicData as unknown as AgicApplicantRecord;
 
-    // A previous import may have committed but failed to get a reference
-    // number; finish it rather than leaving the applicant stuck.
+    // A previous import may have committed and then failed to link the
+    // agency or get a reference number; finish it rather than leaving the
+    // applicant stuck. Both steps are safe to repeat.
+    await this.linkToAgency(existing.agencyId, existing.clientId, record);
     const referenceNumber =
       existing.submission.referenceNumber ||
       (await this.submit(existing.submissionId));
     return this.result(
-      existing.agicData as unknown as AgicApplicantRecord,
+      record,
       {
         referenceNumber,
         submissionId: existing.submissionId,
@@ -268,7 +301,11 @@ export class AgicImportService {
     photo: string | null,
     staffId: string,
   ) {
-    const clientId = await this.findOrCreateClient(tx, record, photo);
+    const { clientId, photoUsed } = await this.findOrCreateClient(
+      tx,
+      record,
+      photo,
+    );
     await this.upsertPassport(tx, clientId, record, staffId);
 
     const submission = await tx.formSubmission.create({
@@ -284,6 +321,8 @@ export class AgicImportService {
           source: 'AGIC',
           agicAppointmentNumber: record.appointmentNumber,
           agicApplicationNumber: record.application.applicationNumber,
+          // Whether the account photo is AGIC's, for labelling it at the gate.
+          agicPhotoUsed: photoUsed,
         },
       },
       select: { id: true },
@@ -321,19 +360,21 @@ export class AgicImportService {
       },
     });
 
-    return { submissionId: submission.id, clientId };
+    return { submissionId: submission.id, clientId, photoUsed };
   }
 
   /**
    * The ASFAAR account for this applicant. Matched on NIN first, then email;
-   * a match that contradicts AGIC's identity details is refused rather than
-   * attaching one person's application to another person's account.
+   * a match that contradicts AGIC's identity details, or that nothing but the
+   * NIN or email ties to this person, is refused rather than attaching one
+   * person's application - and later their fingerprints - to another's
+   * account. AGIC's NIN is typed in by the applicant, not verified.
    */
   private async findOrCreateClient(
     tx: Prisma.TransactionClient,
     record: AgicApplicantRecord,
     photo: string | null,
-  ): Promise<string> {
+  ): Promise<{ clientId: string; photoUsed: boolean }> {
     const { applicant } = record;
     const nin = normaliseNin(applicant.nin);
     const email = normaliseEmail(applicant.email);
@@ -344,6 +385,8 @@ export class AgicImportService {
       roles: true,
       dateOfBirth: true,
       avatar: true,
+      firstName: true,
+      lastName: true,
     };
 
     const byNin = nin
@@ -354,9 +397,11 @@ export class AgicImportService {
       (email ? await tx.user.findUnique({ where: { email }, select }) : null);
 
     if (match) {
-      if (match.roles.includes(Roles.AGENCY)) {
+      // Only an applicant account can take an application; a staff or agency
+      // account must never be turned into one.
+      if (match.roles.some((role) => role !== Roles.APPLICANT)) {
         throw new ConflictException(
-          'This applicant’s NIN or email belongs to a travel agency account on ASFAAR',
+          'This applicant’s NIN or email belongs to a staff or agency account on ASFAAR',
         );
       }
       if (nin && match.nin && match.nin !== nin) {
@@ -374,14 +419,22 @@ export class AgicImportService {
           'The ASFAAR account with this NIN has a different date of birth from the AGIC record',
         );
       }
+      // Without a date of birth on both sides, the name has to agree.
+      const dobConfirmed = !!(dateOfBirth && match.dateOfBirth);
+      if (!dobConfirmed && !namesAgree(applicant.applicantName, match)) {
+        throw new ConflictException(
+          'An ASFAAR account shares this applicant’s NIN or email but not their name. Check the applicant’s identity before registering them.',
+        );
+      }
       // Fill gaps only; what the person or NIMC already gave ASFAAR stands.
+      // A NIN is only added when no account has it (byNin found none).
       const fill: Prisma.UserUpdateInput = {};
       if (!match.avatar && photo) fill.avatar = photo;
-      if (!match.nin && nin) fill.nin = nin;
+      if (!match.nin && nin && !byNin) fill.nin = nin;
       if (Object.keys(fill).length) {
         await tx.user.update({ where: { id: match.id }, data: fill });
       }
-      return match.id;
+      return { clientId: match.id, photoUsed: !!fill.avatar };
     }
 
     // A phone number is unique on ASFAAR; one already in use is left off
@@ -404,16 +457,16 @@ export class AgicImportService {
         dateOfBirth,
         gender: agicGender(applicant.gender),
         avatar: photo,
-        // Hashed by the create-user middleware. Nobody knows it; the applicant
-        // resets it if they ever want to sign in.
-        password: randomBytes(32).toString('base64url'),
+        // Nobody knows it; the applicant resets it if they ever want to sign
+        // in. Hashed here: no middleware hashes passwords on create.
+        password: await bcrypt.hash(randomBytes(32).toString('base64url'), 10),
         roles: [Roles.APPLICANT],
         isVerified: false,
         isActive: true,
       },
       select: { id: true },
     });
-    return created.id;
+    return { clientId: created.id, photoUsed: !!photo };
   }
 
   private async upsertPassport(
@@ -475,17 +528,45 @@ export class AgicImportService {
   /**
    * Marks the application submitted, which is what gives it a reference
    * number (see reference-number.middleware), and returns that number.
+   *
+   * Two gates can get here for the same application at once. Each generating
+   * a number would use up two and leave one gate showing the number that was
+   * overwritten, so the first to stamp submittedAt generates it and the other
+   * waits for it. A stamp older than STALE_SUBMIT_MS without a number means
+   * that attempt failed, and it is taken over.
    */
   private async submit(submissionId: string): Promise<string> {
-    await this.prisma.formSubmission.update({
-      where: { id: submissionId },
-      data: { status: SubmissionStatus.SUBMITTED, submittedAt: new Date() },
+    const now = new Date();
+    const claimed = await this.prisma.formSubmission.updateMany({
+      where: {
+        id: submissionId,
+        referenceNumber: null,
+        OR: [
+          { submittedAt: null },
+          { submittedAt: { lt: new Date(now.getTime() - STALE_SUBMIT_MS) } },
+        ],
+      },
+      data: { submittedAt: now },
     });
-    const { referenceNumber } =
-      await this.prisma.formSubmission.findUniqueOrThrow({
+    if (claimed.count === 1) {
+      // A plain update: the reference middleware only acts on update.
+      await this.prisma.formSubmission.update({
         where: { id: submissionId },
-        select: { referenceNumber: true },
+        data: { status: SubmissionStatus.SUBMITTED },
       });
+    }
+
+    let referenceNumber: string | null = null;
+    for (let attempt = 0; attempt < SUBMIT_WAIT_ATTEMPTS; attempt++) {
+      ({ referenceNumber } = await this.prisma.formSubmission.findUniqueOrThrow(
+        {
+          where: { id: submissionId },
+          select: { referenceNumber: true },
+        },
+      ));
+      if (referenceNumber || claimed.count === 1) break;
+      await new Promise((resolve) => setTimeout(resolve, SUBMIT_WAIT_MS));
+    }
     if (!referenceNumber) {
       throw new InternalServerErrorException(
         'The AGIC application was saved but no reference number could be generated. Scan the slip again.',

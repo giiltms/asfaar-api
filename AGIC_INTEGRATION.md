@@ -17,8 +17,10 @@ biometrics back to AGIC.
    - fetches the applicant from AGIC (`GET /api/v1/biometrics/appointments/{no}`)
      and their photo;
    - finds their ASFAAR account by NIN, then email, or creates one (APPLICANT,
-     AGIC photo as avatar, not NIN-verified). An account whose NIN or date of
-     birth contradicts AGIC is refused (409);
+     AGIC photo as avatar, not NIN-verified). Refused (409): a staff or agency
+     account; an account whose NIN or date of birth contradicts AGIC; and,
+     when there is no date of birth on both sides to compare, one whose name
+     does not appear in AGIC's;
    - makes them a client of the AGIC travel agency account (`AGIC_AGENCY_EMAIL`);
    - files an application under that agency, with `paymentRequired: false`
      (paid on AGIC), and records the passport;
