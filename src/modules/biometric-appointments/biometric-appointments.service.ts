@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Optional,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -8,6 +9,7 @@ import {
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { BiometricCentersService } from '@modules/biometric-centers/biometric-centers.service';
+import { AgicBiometricSyncService } from '@modules/agic/agic-biometric-sync.service';
 
 import {
   Prisma,
@@ -38,6 +40,8 @@ export class BiometricAppointmentsService {
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
     private readonly biometricCentersService: BiometricCentersService,
+    @Optional()
+    private readonly agicBiometricSync?: AgicBiometricSyncService,
   ) {}
 
   /**
@@ -812,6 +816,11 @@ export class BiometricAppointmentsService {
       this.logger.log(
         `Completed biometric capture for appointment ${id} by ${capturedBy}`,
       );
+
+      // Applicants who came from AGIC have their biometrics sent back there.
+      if (appointment.submissionId) {
+        this.agicBiometricSync?.onCaptureCompleted(appointment.submissionId);
+      }
 
       return result;
     } catch (error) {

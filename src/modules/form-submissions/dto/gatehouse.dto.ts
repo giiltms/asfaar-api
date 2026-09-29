@@ -28,11 +28,12 @@ export class GatehouseApplicantDto {
   @ApiPropertyOptional({
     description:
       'Where the photo came from. NIN is verified evidence of identity; ' +
+      'AGIC is the photo AGIC holds for an applicant imported from it; ' +
       'PROFILE is an avatar the applicant uploaded themselves and is not.',
-    enum: ['NIN', 'PROFILE'],
+    enum: ['NIN', 'AGIC', 'PROFILE'],
     example: 'NIN',
   })
-  photoSource?: 'NIN' | 'PROFILE' | null;
+  photoSource?: 'NIN' | 'AGIC' | 'PROFILE' | null;
 
   @ApiPropertyOptional({
     description: 'NIN (National Identity Number)',

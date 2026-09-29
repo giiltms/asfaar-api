@@ -2661,10 +2661,15 @@ export class FormSubmissionsService {
     const ninPhoto = ninVerification?.photo || null;
     const profileAvatar = submission.user.avatar || null;
     const applicantPhoto = ninPhoto || profileAvatar;
+    // An applicant imported from AGIC has the photo AGIC took at application,
+    // which is neither NIMC's nor one they uploaded themselves.
+    const fromAgic = (submission.metadata as any)?.source === 'AGIC';
     const applicantPhotoSource = ninPhoto
       ? 'NIN'
       : profileAvatar
-      ? 'PROFILE'
+      ? fromAgic
+        ? 'AGIC'
+        : 'PROFILE'
       : null;
 
     // Calculate appointment time validation if appointment exists
@@ -2727,7 +2732,7 @@ export class FormSubmissionsService {
         email: submission.user.email,
         phone: submission.user.phone,
         photo: applicantPhoto,
-        /** 'NIN' when verified, 'PROFILE' when self-uploaded, null when absent. */
+        /** 'NIN' when verified, 'AGIC' when from AGIC, 'PROFILE' when self-uploaded, null when absent. */
         photoSource: applicantPhotoSource,
         nin: ninVerification?.nin || submission.user.nin || null,
         ninVerified: submission.user.ninVerified,

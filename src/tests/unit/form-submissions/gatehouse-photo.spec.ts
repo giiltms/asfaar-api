@@ -11,7 +11,7 @@ import { FormSubmissionsService } from '@modules/form-submissions/services/form-
  * is not evidence of identity, and gate staff must not mistake one for the
  * other.
  */
-const buildService = (user: any) => {
+const buildService = (user: any, metadata: any = null) => {
   const prisma: any = {
     formSubmission: {
       findUnique: jest.fn().mockResolvedValue({
@@ -26,6 +26,7 @@ const buildService = (user: any) => {
           country: { id: 'c-1', name: 'Morocco', isoCode2: 'MA' },
         },
         appointment: null,
+        metadata,
       }),
     },
   };
@@ -92,5 +93,16 @@ describe('gatehouse applicant photo', () => {
 
     expect(applicant.photo).toBeNull();
     expect(applicant.photoSource).toBeNull();
+  });
+
+  it('labels an AGIC-supplied photo as from AGIC, not self-uploaded', async () => {
+    const applicant = (
+      await buildService(
+        { ...baseUser, avatar: 'data:image/jpeg;base64,agic' },
+        { source: 'AGIC' },
+      ).getApplicantInfoByReference('MA00126000007')
+    ).applicant;
+    expect(applicant.photo).toBe('data:image/jpeg;base64,agic');
+    expect(applicant.photoSource).toBe('AGIC');
   });
 });
