@@ -33,6 +33,7 @@ import { DashboardBiometricModule } from '../dashboard-biometric/dashboard-biome
 import { DashboardAuthorityModule } from '../dashboard-authority/dashboard-authority.module';
 import { TravelAgentModule } from '../travel-agent/travel-agent.module';
 import { TravelAgentUpgradeModule } from '../travel-agent-upgrade/travel-agent-upgrade.module';
+import { AgicModule } from '../agic/agic.module';
 import { SchedulersModule } from '../../schedulers/schedulers.module';
 import { NotificationsModule } from '../../notifications/notifications.module';
 
@@ -78,6 +79,7 @@ import { NotificationsModule } from '../../notifications/notifications.module';
     FinanceModule,
     DepartmentsModule,
     PassportsModule,
+    AgicModule,
     // HealthModule, // Add HealthModule when it exists
   ],
   controllers: [AppController],

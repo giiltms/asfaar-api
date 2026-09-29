@@ -853,6 +853,9 @@ model FormSubmission {
   // Flags raised against this submission
   flags Flag[]
 
+  // Set when the application was imported from the AGIC platform
+  agicImport AgicImport?
+
   @@map("form_submissions")
 }
 
@@ -2072,4 +2075,46 @@ model FingerprintData {
   @@index([biometricDataId, isAcceptable])
   @@index([capturedAt])
   @@map("fingerprint_data")
+}
+
+// AGIC integration
+//
+// AGIC collects the application and payment; applicants come to an ASFAAR
+// center only for biometrics. One row per AGIC appointment ties the imported
+// application to its AGIC references and tracks sending the captured
+// biometrics back.
+enum AgicBiometricSyncStatus {
+  PENDING // Waiting for capture, or captured and not yet sent
+  SENDING // Claimed by a sender
+  SENT // Accepted by AGIC
+  FAILED // Last attempt failed; retried at nextAttemptAt, or never when null
+}
+
+model AgicImport {
+  id                String         @id @default(uuid())
+  appointmentNumber String         @unique // e.g. AGIC-BIO-260929-62ACF5
+  applicationNumber String
+  agicApplicationId Int?
+  submissionId      String         @unique
+  submission        FormSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  clientId          String
+  agencyId          String
+  importedBy        String
+  // The AGIC record as fetched, photo excluded
+  agicData          Json
+
+  syncStatus    AgicBiometricSyncStatus @default(PENDING)
+  syncAttempts  Int                     @default(0)
+  nextAttemptAt DateTime?
+  lastAttemptAt DateTime?
+  lastSyncError String?
+  lastRequestId String?
+  syncedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationNumber])
+  @@index([syncStatus, nextAttemptAt])
+  @@map("agic_imports")
 }
