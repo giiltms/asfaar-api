@@ -29,6 +29,13 @@ biometrics back to AGIC.
      account; an account whose NIN or date of birth contradicts AGIC; and,
      when there is no date of birth on both sides to compare, one whose name
      does not appear in AGIC's;
+   - files AGIC's passport number as the application's `passport-number`
+     answer, which is where the Windows biometric app and the application
+     screens read it from (the passport itself is also kept on the account).
+     Imports made before this get it when the API next starts (logged as
+     "AGIC passport repair") or when the slip is scanned again. Where the form
+     has no passport number field, the biometric app's lookup falls back to
+     the passport on the account;
    - makes them a client of the AGIC travel agency account (`AGIC_AGENCY_EMAIL`);
    - files an application under that agency, with `paymentRequired: false`
      (paid on AGIC), and records the passport;
@@ -45,7 +52,11 @@ biometrics back to AGIC.
    the new number; earlier numbers are kept in `agicData`. The response
    carries the ASFAAR `referenceNumber`, which the page then looks up and
    checks in as usual.
-3. **Check-in, queue, capture** — unchanged.
+3. **Check-in, queue, capture** — unchanged. Anywhere an ASFAAR reference
+   number is looked up or searched for (the biometric app's booking search,
+   the gatehouse, front desk check-in and the application lists), the AGIC
+   appointment number (current, or one from before a rebooking, for exact
+   lookups) and the AGIC application number work too.
 4. **Send back.** Completing capture queues the biometrics for AGIC. A job
    every minute sends whatever is due, retrying failures with backoff
    (1, 2, 4 … minutes, at most 6 hours, `AGIC_BIOMETRIC_PUSH_MAX_ATTEMPTS`

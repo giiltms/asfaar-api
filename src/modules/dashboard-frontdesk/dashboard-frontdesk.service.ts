@@ -10,6 +10,10 @@ import { SubmissionStatus } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
 import { resolveAccessibleCenters } from '@common/access/privileged-scope';
 import { formatAppointmentDate } from '@common/utils/appointment-date.util';
+import {
+  referenceSearchConditions,
+  submissionByReferenceWhere,
+} from '@common/utils/reference-lookup.util';
 import { CENTER_FIELDS } from '@common/access/center-fields';
 import {
   FrontDeskDashboardStatsDto,
@@ -418,11 +422,7 @@ export class DashboardFrontdeskService {
       Object.assign(where, privacyWhere);
 
       if (filters.search) {
-        where.OR = [
-          {
-            referenceNumber: { contains: filters.search, mode: 'insensitive' },
-          },
-        ];
+        where.OR = referenceSearchConditions(filters.search);
       }
 
       if (filters.dateFrom || filters.dateTo) {
@@ -855,7 +855,7 @@ export class DashboardFrontdeskService {
     try {
       // Get appointment by reference number through form submission
       const submission = await this.prisma.formSubmission.findFirst({
-        where: { referenceNumber },
+        where: submissionByReferenceWhere(referenceNumber),
         include: {
           appointment: {
             include: {
@@ -940,7 +940,7 @@ export class DashboardFrontdeskService {
     try {
       // Get appointment by reference number through form submission
       const submission = await this.prisma.formSubmission.findFirst({
-        where: { referenceNumber },
+        where: submissionByReferenceWhere(referenceNumber),
         include: {
           appointment: {
             include: {

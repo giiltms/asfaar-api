@@ -88,12 +88,23 @@ function build(
     fileAsAnswer: jest.fn().mockResolvedValue(undefined),
     ensureOnFile: jest.fn().mockResolvedValue(null),
   };
+  const passports: any = {
+    fileAsAnswer: jest.fn().mockResolvedValue(true),
+    ensureOnFile: jest.fn().mockResolvedValue(true),
+  };
   return {
-    service: new AgicImportService(prisma, agic, targetsService, photos),
+    service: new AgicImportService(
+      prisma,
+      agic,
+      targetsService,
+      photos,
+      passports,
+    ),
     prisma,
     agic,
     targetsService,
     photos,
+    passports,
   };
 }
 
@@ -580,5 +591,33 @@ describe('AgicImportService photo on file', () => {
       expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
     );
     expect(result.warnings).toEqual(['could not save']);
+  });
+
+  it('files the AGIC passport number as the passport-number answer', async () => {
+    const { service, passports } = build();
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(passports.fileAsAnswer).toHaveBeenCalledWith(
+      expect.anything(),
+      'sub-1',
+      'form-1',
+      expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
+    );
+  });
+
+  it('files a missing passport number when an earlier import is scanned again', async () => {
+    const { service, passports } = build({
+      existingImport: {
+        submissionId: 'sub-9',
+        clientId: 'client-9',
+        agencyId: 'agency-1',
+        agicData: sampleAgicRecord(),
+        submission: { referenceNumber: 'SA00126000009' },
+      },
+    });
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(passports.ensureOnFile).toHaveBeenCalledWith(
+      'sub-9',
+      expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
+    );
   });
 });
