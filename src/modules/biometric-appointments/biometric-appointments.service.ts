@@ -462,6 +462,8 @@ export class BiometricAppointmentsService {
 
     const found = await this.prisma.biometricAppointment.findFirst({
       where,
+      // Should two applications ever share an AGIC number, the newest.
+      orderBy: { createdAt: 'desc' },
       include: {
         user: {
           select: {
@@ -482,6 +484,7 @@ export class BiometricAppointmentsService {
             id: true,
             status: true,
             referenceNumber: true,
+            agicImport: { select: { id: true } },
             payment: {
               select: {
                 id: true,

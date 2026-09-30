@@ -856,6 +856,7 @@ export class DashboardFrontdeskService {
       // Get appointment by reference number through form submission
       const submission = await this.prisma.formSubmission.findFirst({
         where: submissionByReferenceWhere(referenceNumber),
+        orderBy: { createdAt: 'desc' },
         include: {
           appointment: {
             include: {
@@ -941,6 +942,7 @@ export class DashboardFrontdeskService {
       // Get appointment by reference number through form submission
       const submission = await this.prisma.formSubmission.findFirst({
         where: submissionByReferenceWhere(referenceNumber),
+        orderBy: { createdAt: 'desc' },
         include: {
           appointment: {
             include: {

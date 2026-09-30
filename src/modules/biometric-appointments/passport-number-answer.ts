@@ -16,21 +16,24 @@ interface AppointmentWithPassports {
   } | null;
   submission?: {
     responses?: PassportResponse[];
+    agicImport?: { id: string } | null;
     [key: string]: unknown;
   } | null;
 }
 
 /**
- * The appointment with a passport-number answer when the application has
- * none but the applicant's account holds a passport - as for an applicant
- * imported from AGIC onto a form without a passport-number field. The
- * account's passports themselves are left out of the result.
+ * The appointment with a passport-number answer when an application
+ * imported from AGIC has none - its form has no passport-number field - and
+ * the applicant's account holds the passport AGIC gave. Other applications
+ * keep only what the applicant declared. The account's passports and the
+ * AGIC link are left out of the result.
  */
 export function withPassportNumberAnswer<T extends AppointmentWithPassports>(
   appointment: T,
 ): T {
   const { internationalPassports, ...user } = appointment.user ?? {};
   const passportNumber = internationalPassports?.[0]?.passportNumber;
+  const { agicImport, ...submission } = appointment.submission ?? {};
   const responses = appointment.submission?.responses ?? [];
   const hasAnswer = responses.some(
     (r) => r.fieldName === PASSPORT_NUMBER_FIELD && !!r.value,
@@ -39,14 +42,15 @@ export function withPassportNumberAnswer<T extends AppointmentWithPassports>(
   const result = {
     ...appointment,
     user: appointment.user ? user : appointment.user,
+    submission: appointment.submission ? submission : appointment.submission,
   };
-  if (hasAnswer || !passportNumber || !appointment.submission) {
+  if (hasAnswer || !passportNumber || !agicImport) {
     return result as T;
   }
   return {
     ...result,
     submission: {
-      ...appointment.submission,
+      ...submission,
       responses: [
         ...responses.filter((r) => r.fieldName !== PASSPORT_NUMBER_FIELD),
         {
