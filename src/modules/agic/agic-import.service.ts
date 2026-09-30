@@ -29,6 +29,12 @@ import {
 import { AgicApiError, AgicClientService } from './agic-client.service';
 import { AgicScanError, parseAgicScan } from './agic-scan';
 import {
+  AgicPhotoService,
+  PASSPORT_PHOTO_FIELD,
+  PhotoField,
+  StoredAgicPhoto,
+} from './agic-photo.service';
+import {
   AgicCenterAccessError,
   AgicSetupError,
   AgicTargets,
@@ -111,6 +117,7 @@ export class AgicImportService {
     private readonly prisma: PrismaService,
     private readonly agic: AgicClientService,
     private readonly targets: AgicTargetsService,
+    private readonly photos: AgicPhotoService,
   ) {}
 
   async importFromScan(
@@ -153,11 +160,18 @@ export class AgicImportService {
     if (rebooked) return rebooked;
 
     const warnings = [...targets.warnings];
-    const photo = await this.fetchPhotoDataUri(record, warnings);
+    const photo = await this.fetchPhoto(record, warnings);
+    const photoField = await this.photos.photoField(targets.form.id);
+    if (photo && !photoField) {
+      warnings.push(
+        `The form "${targets.form.name}" has no ${PASSPORT_PHOTO_FIELD} field, so the AGIC photo will not appear on printouts or at the booth`,
+      );
+    }
 
     const create = () =>
       this.prisma.$transaction(
-        (tx) => this.createRecords(tx, record, targets, photo, staffId),
+        (tx) =>
+          this.createRecords(tx, record, targets, photo, photoField, staffId),
         { timeout: 20_000 },
       );
     let created: { submissionId: string; clientId: string; photoUsed: boolean };
@@ -222,6 +236,10 @@ export class AgicImportService {
     // agency or get a reference number; finish it rather than leaving the
     // applicant stuck. Both steps are safe to repeat.
     await this.linkToAgency(existing.agencyId, existing.clientId, record);
+    const photoWarning = await this.photos.ensureOnFile(
+      existing.submissionId,
+      record,
+    );
     const referenceNumber =
       existing.submission.referenceNumber ||
       (await this.submit(existing.submissionId));
@@ -233,7 +251,7 @@ export class AgicImportService {
         clientId: existing.clientId,
       },
       true,
-      [],
+      photoWarning ? [photoWarning] : [],
     );
   }
 
@@ -316,6 +334,11 @@ export class AgicImportService {
     );
 
     await this.linkToAgency(previous.agencyId, previous.clientId, record);
+    const photoWarning = await this.photos.ensureOnFile(
+      previous.submissionId,
+      record,
+    );
+    if (photoWarning) warnings.push(photoWarning);
     const referenceNumber = await this.submit(previous.submissionId);
     return this.result(
       record,
@@ -394,15 +417,13 @@ export class AgicImportService {
     }
   }
 
-  /** The photo as a data URI, stored like the NIMC photo. Never fatal. */
-  private async fetchPhotoDataUri(
+  /** The AGIC photo, downloaded and saved. Never fatal. */
+  private async fetchPhoto(
     record: AgicApplicantRecord,
     warnings: string[],
-  ) {
-    if (!record.photo?.hasPhoto || !record.photo.photoUrl) return null;
+  ): Promise<StoredAgicPhoto | null> {
     try {
-      const photo = await this.agic.getPhoto(record.photo.photoUrl);
-      return `data:${photo.mimeType};base64,${photo.data.toString('base64')}`;
+      return await this.photos.download(record);
     } catch (error: any) {
       this.logger.warn(`${PHOTO_ERROR}: ${error.message}`);
       warnings.push(PHOTO_ERROR);
@@ -414,13 +435,14 @@ export class AgicImportService {
     tx: Prisma.TransactionClient,
     record: AgicApplicantRecord,
     targets: AgicTargets,
-    photo: string | null,
+    photo: StoredAgicPhoto | null,
+    photoField: PhotoField | null,
     staffId: string,
   ) {
     const { clientId, photoUsed } = await this.findOrCreateClient(
       tx,
       record,
-      photo,
+      photo?.dataUri ?? null,
     );
     await this.upsertPassport(tx, clientId, record, staffId);
 
@@ -475,6 +497,16 @@ export class AgicImportService {
         agicData: agicRecordForStorage(record),
       },
     });
+
+    // Where the printouts and the booth app look for the applicant's photo.
+    if (photo && photoField) {
+      await this.photos.fileAsAnswer(
+        tx,
+        submission.id,
+        photoField,
+        photo.fileUrl,
+      );
+    }
 
     return { submissionId: submission.id, clientId, photoUsed };
   }

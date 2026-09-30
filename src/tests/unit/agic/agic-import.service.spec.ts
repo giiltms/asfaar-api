@@ -71,11 +71,29 @@ function build(
       .mockResolvedValue({ mimeType: 'image/jpeg', data: Buffer.from('jpg') }),
   };
   const targetsService: any = { resolve: jest.fn().mockResolvedValue(targets) };
+  // The photo store, over the AGIC client above, without touching the disk.
+  const photos: any = {
+    download: jest.fn(async (record: any) => {
+      const photo = await agic.getPhoto(record.photo.photoUrl);
+      return {
+        dataUri: `data:${photo.mimeType};base64,${photo.data.toString(
+          'base64',
+        )}`,
+        fileUrl: '/uploads/agic-photos/AGIC-BIO-260929-62ACF5-abc.jpg',
+      };
+    }),
+    photoField: jest
+      .fn()
+      .mockResolvedValue({ id: 'field-photo', name: 'passport-photo' }),
+    fileAsAnswer: jest.fn().mockResolvedValue(undefined),
+    ensureOnFile: jest.fn().mockResolvedValue(null),
+  };
   return {
-    service: new AgicImportService(prisma, agic, targetsService),
+    service: new AgicImportService(prisma, agic, targetsService, photos),
     prisma,
     agic,
     targetsService,
+    photos,
   };
 }
 
@@ -521,5 +539,46 @@ describe('AgicImportService center access', () => {
       status: 403,
       message: 'not your center',
     });
+  });
+});
+
+describe('AgicImportService photo on file', () => {
+  it('files the downloaded photo as the passport-photo answer', async () => {
+    const { service, photos } = build();
+    await service.importFromScan(SLIP, 'gate-1');
+    expect(photos.photoField).toHaveBeenCalledWith('form-1');
+    expect(photos.fileAsAnswer).toHaveBeenCalledWith(
+      expect.anything(),
+      'sub-1',
+      { id: 'field-photo', name: 'passport-photo' },
+      '/uploads/agic-photos/AGIC-BIO-260929-62ACF5-abc.jpg',
+    );
+  });
+
+  it('warns when the form has nowhere to file it', async () => {
+    const { service, photos } = build();
+    photos.photoField.mockResolvedValue(null);
+    const result = await service.importFromScan(SLIP, 'gate-1');
+    expect(photos.fileAsAnswer).not.toHaveBeenCalled();
+    expect(result.warnings[0]).toMatch(/no passport-photo field/);
+  });
+
+  it('files a missing photo when an earlier import is scanned again', async () => {
+    const { service, photos } = build({
+      existingImport: {
+        submissionId: 'sub-9',
+        clientId: 'client-9',
+        agencyId: 'agency-1',
+        agicData: sampleAgicRecord(),
+        submission: { referenceNumber: 'SA00126000009' },
+      },
+    });
+    photos.ensureOnFile.mockResolvedValue('could not save');
+    const result = await service.importFromScan(SLIP, 'gate-1');
+    expect(photos.ensureOnFile).toHaveBeenCalledWith(
+      'sub-9',
+      expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
+    );
+    expect(result.warnings).toEqual(['could not save']);
   });
 });

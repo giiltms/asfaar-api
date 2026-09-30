@@ -15,7 +15,15 @@ biometrics back to AGIC.
 2. **Import** — `POST /api/v1/agic/gatehouse/import { "scan": "<qr or number>" }`
    (GATEHOUSE, RECEPTIONIST, CENTER_MANAGER, ADMIN, SUPER_ADMIN):
    - fetches the applicant from AGIC (`GET /api/v1/biometrics/appointments/{no}`)
-     and their photo;
+     and their photo. The photo is saved under `uploads/agic-photos/` and filed
+     as the application's `passport-photo` answer, which is where the
+     printouts and the Windows biometric app read it from; the avatar keeps a
+     data URI copy for the screens that render the avatar directly. A form
+     without a `passport-photo` file field gets a warning at the gate.
+     Imports made before this get their photo filed when the API next
+     starts (logged as "AGIC photo repair"), or when the slip is scanned
+     again. `scripts/backfill-agic-photos.js` does the same from a checkout
+     (dry run; `--apply` to write);
    - finds their ASFAAR account by NIN, then email, or creates one (APPLICANT,
      AGIC photo as avatar, not NIN-verified). Refused (409): a staff or agency
      account; an account whose NIN or date of birth contradicts AGIC; and,
