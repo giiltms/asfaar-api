@@ -39,6 +39,10 @@ import {
 } from '@common/constants/errors.constants';
 import { PaginationQueryDto } from '@common/dtos/pagination.dto';
 import { formatAppointmentDate } from '@common/utils/appointment-date.util';
+import {
+  referenceSearchConditions,
+  submissionByReferenceWhere,
+} from '@common/utils/reference-lookup.util';
 
 @Injectable()
 export class FormSubmissionsService {
@@ -1051,7 +1055,7 @@ export class FormSubmissionsService {
         ...existingAnd,
         {
           OR: [
-            { referenceNumber: { contains: search, mode: 'insensitive' } },
+            ...referenceSearchConditions(search),
             { form: { name: { contains: search, mode: 'insensitive' } } },
             {
               form: {
@@ -1137,8 +1141,8 @@ export class FormSubmissionsService {
     userId: string,
     referenceNumber: string,
   ): Promise<FormSubmissionDto> {
-    const submission = await this.prisma.formSubmission.findUnique({
-      where: { referenceNumber },
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: submissionByReferenceWhere(referenceNumber),
       include: this.getSubmissionInclude(),
     });
 
@@ -1490,7 +1494,7 @@ export class FormSubmissionsService {
       ...(status && { status }),
       ...(search && {
         OR: [
-          { referenceNumber: { contains: search, mode: 'insensitive' } },
+          ...referenceSearchConditions(search),
           { form: { name: { contains: search, mode: 'insensitive' } } },
           { form: { description: { contains: search, mode: 'insensitive' } } },
           { user: { email: { contains: search, mode: 'insensitive' } } },
@@ -1576,7 +1580,7 @@ export class FormSubmissionsService {
       ...(isCancelled !== undefined && { isCancelled }), // Allow admin to filter by cancellation status
       ...(search && {
         OR: [
-          { referenceNumber: { contains: search, mode: 'insensitive' } },
+          ...referenceSearchConditions(search),
           { form: { name: { contains: search, mode: 'insensitive' } } },
           { form: { description: { contains: search, mode: 'insensitive' } } },
           { user: { email: { contains: search, mode: 'insensitive' } } },
@@ -2585,8 +2589,8 @@ export class FormSubmissionsService {
    * Get applicant information by reference number for gatehouse verification
    */
   async getApplicantInfoByReference(referenceNumber: string): Promise<any> {
-    const submission = await this.prisma.formSubmission.findUnique({
-      where: { referenceNumber },
+    const submission = await this.prisma.formSubmission.findFirst({
+      where: submissionByReferenceWhere(referenceNumber),
       include: {
         user: {
           include: {

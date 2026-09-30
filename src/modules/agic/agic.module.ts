@@ -8,6 +8,7 @@ import { AgicImportService } from './agic-import.service';
 import { AgicTargetsService } from './agic-targets.service';
 import { AgicBiometricSyncService } from './agic-biometric-sync.service';
 import { AgicPhotoService } from './agic-photo.service';
+import { AgicPassportService } from './agic-passport.service';
 
 /**
  * Integration with AGIC (African Gulf Investment Consult), which takes visa
@@ -23,6 +24,7 @@ import { AgicPhotoService } from './agic-photo.service';
     { provide: AgicClientService, useFactory: () => new AgicClientService() },
     AgicTargetsService,
     AgicPhotoService,
+    AgicPassportService,
     AgicImportService,
     AgicBiometricSyncService,
   ],

@@ -6,6 +6,7 @@ import {
   TravelAgentApplicationType,
 } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
+import { referenceSearchConditions } from '@common/utils/reference-lookup.util';
 import {
   AuthorityApplicationListDto,
   AuthorityApplicationDetailDto,
@@ -77,7 +78,7 @@ export class DashboardAuthorityService {
 
     if (filters.search) {
       where.OR = [
-        { referenceNumber: { contains: filters.search, mode: 'insensitive' } },
+        ...referenceSearchConditions(filters.search),
         {
           user: {
             firstName: { contains: filters.search, mode: 'insensitive' },

@@ -27,6 +27,8 @@ import {
 } from './dto/biometric-appointment.dto';
 import { PaginationQueryDto } from '@common/dtos';
 import { PaginationUtils } from '@common/utils/pagination.utils';
+import { submissionByReferenceWhere } from '@common/utils/reference-lookup.util';
+import { withPassportNumberAnswer } from './passport-number-answer';
 
 /**
  * Service for managing biometric appointments
@@ -282,9 +284,7 @@ export class BiometricAppointmentsService {
     }
 
     if (referenceNumber) {
-      where.submission = {
-        referenceNumber: referenceNumber,
-      };
+      where.submission = submissionByReferenceWhere(referenceNumber);
     }
 
     if (fromDate || toDate) {
@@ -453,16 +453,14 @@ export class BiometricAppointmentsService {
     userId?: string,
   ): Promise<BiometricAppointment> {
     const where: Prisma.BiometricAppointmentWhereInput = {
-      submission: {
-        referenceNumber: referenceNumber,
-      },
+      submission: submissionByReferenceWhere(referenceNumber),
     };
 
     if (userId) {
       where.userId = userId;
     }
 
-    const appointment = await this.prisma.biometricAppointment.findFirst({
+    const found = await this.prisma.biometricAppointment.findFirst({
       where,
       include: {
         user: {
@@ -472,6 +470,11 @@ export class BiometricAppointmentsService {
             lastName: true,
             email: true,
             nin: true,
+            internationalPassports: {
+              select: { passportNumber: true },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
           },
         },
         submission: {
@@ -558,11 +561,12 @@ export class BiometricAppointmentsService {
       },
     });
 
-    if (!appointment) {
+    if (!found) {
       throw new NotFoundException(
         `Appointment with reference number "${referenceNumber}" not found`,
       );
     }
+    const appointment = withPassportNumberAnswer(found);
 
     // Add computed status fields for better API response
     const appointmentWithStatus = {

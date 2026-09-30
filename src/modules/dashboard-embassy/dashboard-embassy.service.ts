@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { referenceSearchConditions } from '@common/utils/reference-lookup.util';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { DashboardVerificationService } from '@modules/dashboard-verification/dashboard-verification.service';
 import {
@@ -98,7 +99,7 @@ export class DashboardEmbassyService {
       // Add search filter
       if (search) {
         whereClause.OR = [
-          { referenceNumber: { contains: search, mode: 'insensitive' } },
+          ...referenceSearchConditions(search),
           {
             user: {
               OR: [

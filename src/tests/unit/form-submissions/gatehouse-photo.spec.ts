@@ -14,7 +14,7 @@ import { FormSubmissionsService } from '@modules/form-submissions/services/form-
 const buildService = (user: any, metadata: any = null) => {
   const prisma: any = {
     formSubmission: {
-      findUnique: jest.fn().mockResolvedValue({
+      findFirst: jest.fn().mockResolvedValue({
         id: 'sub-1',
         referenceNumber: 'MA00126000007',
         status: 'SUBMITTED',
