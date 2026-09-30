@@ -53,6 +53,19 @@ export class AgicPassportService implements OnApplicationBootstrap {
       where: {
         submission: {
           responses: { none: { fieldName: PASSPORT_NUMBER_FIELD } },
+          // Only forms it can be filed on, so imports that can never be
+          // repaired do not fill every batch.
+          form: {
+            sections: {
+              some: {
+                groups: {
+                  some: {
+                    fields: { some: { name: PASSPORT_NUMBER_FIELD } },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       select: {
@@ -107,36 +120,19 @@ export class AgicPassportService implements OnApplicationBootstrap {
   }
 
   /**
-   * The form's passport-number field: named exactly that where the form has
-   * one, else a non-file field named or labelled as a passport number.
+   * The form's passport-number field. Only the field named exactly that: a
+   * looser match could file the applicant's passport into, say, a spouse's
+   * or a previous passport's field.
    */
   async passportNumberField(
     formId: string,
     client: Prisma.TransactionClient = this.prisma,
   ): Promise<PassportNumberField | null> {
-    const inForm = {
-      group: { section: { formId } },
-      type: { not: FieldType.FILE },
-    };
-    const exact = await client.formField.findFirst({
-      where: { ...inForm, name: PASSPORT_NUMBER_FIELD },
-      select: { id: true, name: true },
-    });
-    if (exact) return exact;
     return client.formField.findFirst({
       where: {
-        ...inForm,
-        OR: [
-          {
-            AND: [
-              { name: { contains: 'passport', mode: 'insensitive' } },
-              { name: { contains: 'number', mode: 'insensitive' } },
-            ],
-          },
-          { label: { equals: 'Passport Number', mode: 'insensitive' } },
-          { label: { equals: 'Passport No', mode: 'insensitive' } },
-          { label: { equals: 'Passport No.', mode: 'insensitive' } },
-        ],
+        group: { section: { formId } },
+        type: { not: FieldType.FILE },
+        name: PASSPORT_NUMBER_FIELD,
       },
       select: { id: true, name: true },
     });

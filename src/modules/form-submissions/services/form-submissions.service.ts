@@ -1143,6 +1143,7 @@ export class FormSubmissionsService {
   ): Promise<FormSubmissionDto> {
     const submission = await this.prisma.formSubmission.findFirst({
       where: submissionByReferenceWhere(referenceNumber),
+      orderBy: { createdAt: 'desc' },
       include: this.getSubmissionInclude(),
     });
 
@@ -2591,6 +2592,7 @@ export class FormSubmissionsService {
   async getApplicantInfoByReference(referenceNumber: string): Promise<any> {
     const submission = await this.prisma.formSubmission.findFirst({
       where: submissionByReferenceWhere(referenceNumber),
+      orderBy: { createdAt: 'desc' },
       include: {
         user: {
           include: {

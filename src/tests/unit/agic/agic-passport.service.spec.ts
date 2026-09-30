@@ -100,10 +100,22 @@ describe('AgicPassportService', () => {
 });
 
 describe('withPassportNumberAnswer', () => {
-  const appointment = (responses: any[], passports: any[]) => ({
+  const appointment = (
+    responses: any[],
+    passports: any[],
+    agicImport: any = { id: 'imp-1' },
+  ) => ({
     id: 'appt-1',
     user: { id: 'u-1', internationalPassports: passports },
-    submission: { id: 'sub-1', responses },
+    submission: { id: 'sub-1', responses, agicImport },
+  });
+
+  it('leaves an application not from AGIC with only what was declared', () => {
+    const result: any = withPassportNumberAnswer(
+      appointment([], [{ passportNumber: 'B02518467' }], null),
+    );
+    expect(result.submission.responses).toEqual([]);
+    expect(result.submission.agicImport).toBeUndefined();
   });
 
   it('adds the account passport number when the application has none', () => {
