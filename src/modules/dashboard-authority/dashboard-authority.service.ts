@@ -6,6 +6,7 @@ import {
   TravelAgentApplicationType,
 } from '@prisma/client';
 import { PrivacyService } from '@common/services/privacy.service';
+import { agicDisplayResponses } from '@modules/agic/agic-answers';
 import { referenceSearchConditions } from '@common/utils/reference-lookup.util';
 import {
   AuthorityApplicationListDto,
@@ -277,6 +278,7 @@ export class DashboardAuthorityService {
             },
           },
         },
+        agicImport: { select: { agicData: true } },
         responses: {
           include: {
             field: {
@@ -377,7 +379,9 @@ export class DashboardAuthorityService {
         capturedAt: submission.biometricData?.capturedAt?.toISOString() || null,
         verified: submission.biometricData?.isVerified || false,
       },
-      formResponses: this.transformFormResponses(submission.responses || []),
+      formResponses: this.transformFormResponses(
+        this.withAgicDetails(submission),
+      ),
       ninVerification: ninVerification
         ? {
             id: ninVerification.id,
@@ -714,6 +718,18 @@ export class DashboardAuthorityService {
           ? Math.round((rejectedApplications / totalApplications) * 100)
           : 0,
     };
+  }
+
+  /**
+   * The application's answers, plus AGIC's details for any the form left
+   * unanswered, for an application imported from AGIC. See agic-answers.ts.
+   */
+  private withAgicDetails(submission: any): any[] {
+    const responses = submission.responses || [];
+    return [
+      ...responses,
+      ...agicDisplayResponses(submission.agicImport?.agicData, responses),
+    ];
   }
 
   /**

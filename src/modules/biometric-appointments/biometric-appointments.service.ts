@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { isPaymentSettled } from '@common/utils/payment-settled.util';
 import { PaymentsService } from '@modules/payments/payments.service';
 import { BiometricCentersService } from '@modules/biometric-centers/biometric-centers.service';
 import { AgicBiometricSyncService } from '@modules/agic/agic-biometric-sync.service';
@@ -92,14 +93,14 @@ export class BiometricAppointmentsService {
         );
       }
 
-      // 3. Validate payment exists and is completed
-      if (!submission.payment) {
+      // 3. Validate payment is completed, unless none is due (paid on AGIC)
+      if (!isPaymentSettled(submission) && !submission.payment) {
         throw new BadRequestException(
           'Payment must be created before booking an appointment',
         );
       }
 
-      if (submission.payment.status !== PaymentStatus.COMPLETED) {
+      if (!isPaymentSettled(submission)) {
         throw new BadRequestException(
           `Payment must be completed before booking an appointment. Current status: ${submission.payment.status}`,
         );

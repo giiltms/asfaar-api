@@ -6,6 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { isPaymentSettled } from '@common/utils/payment-settled.util';
 import { BoothsService } from '@modules/booths/booths.service';
 import {
   QueueEntry,
@@ -680,10 +681,7 @@ export class QueueService {
       throw new BadRequestException('Cannot join queue at inactive center');
     }
 
-    if (
-      !appointment.submission?.payment ||
-      appointment.submission.payment.status !== 'COMPLETED'
-    ) {
+    if (!isPaymentSettled(appointment.submission)) {
       throw new BadRequestException(
         'Payment must be completed before joining queue',
       );
