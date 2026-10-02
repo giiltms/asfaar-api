@@ -29,13 +29,18 @@ biometrics back to AGIC.
      account; an account whose NIN or date of birth contradicts AGIC; and,
      when there is no date of birth on both sides to compare, one whose name
      does not appear in AGIC's;
-   - files AGIC's passport number as the application's `passport-number`
-     answer, which is where the Windows biometric app and the application
-     screens read it from (the passport itself is also kept on the account).
-     Imports made before this get it when the API next starts (logged as
-     "AGIC passport repair") or when the slip is scanned again. Where the form
-     has no passport number field, the biometric app's lookup falls back to
-     the passport on the account;
+   - files what AGIC gives about the applicant - name, date of birth,
+     gender, email, phone, nationality, NIN, passport number and dates - as
+     the application's form answers, on whichever of those fields the form
+     has (`agic-answers.ts` lists the field names). That is where the
+     application details screens (authorities, embassy, liaison), the PDF and
+     the Windows biometric app read them from; an AGIC application is never
+     filled in otherwise. Choice fields get the option matching AGIC's value
+     or nothing; existing answers are never overwritten. Imports made before
+     this get their answers when the API next starts (logged as "AGIC answers
+     repair") or when the slip is scanned again. Where the form has no
+     passport number field, the biometric app's lookup falls back to the
+     passport on the account;
    - makes them a client of the AGIC travel agency account (`AGIC_AGENCY_EMAIL`);
    - files an application under that agency, with `paymentRequired: false`
      (paid on AGIC), and records the passport;
