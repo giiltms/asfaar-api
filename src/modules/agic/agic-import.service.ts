@@ -34,7 +34,7 @@ import {
   PhotoField,
   StoredAgicPhoto,
 } from './agic-photo.service';
-import { AgicPassportService } from './agic-passport.service';
+import { AgicAnswersService } from './agic-answers.service';
 import {
   AgicCenterAccessError,
   AgicSetupError,
@@ -119,7 +119,7 @@ export class AgicImportService {
     private readonly agic: AgicClientService,
     private readonly targets: AgicTargetsService,
     private readonly photos: AgicPhotoService,
-    private readonly passports: AgicPassportService,
+    private readonly answers: AgicAnswersService,
   ) {}
 
   async importFromScan(
@@ -242,7 +242,7 @@ export class AgicImportService {
       existing.submissionId,
       record,
     );
-    await this.passports.ensureOnFile(existing.submissionId, record);
+    await this.answers.ensureOnFile(existing.submissionId, record);
     const referenceNumber =
       existing.submission.referenceNumber ||
       (await this.submit(existing.submissionId));
@@ -341,7 +341,7 @@ export class AgicImportService {
       previous.submissionId,
       record,
     );
-    await this.passports.ensureOnFile(previous.submissionId, record);
+    await this.answers.ensureOnFile(previous.submissionId, record);
     if (photoWarning) warnings.push(photoWarning);
     const referenceNumber = await this.submit(previous.submissionId);
     return this.result(
@@ -511,13 +511,9 @@ export class AgicImportService {
         photo.fileUrl,
       );
     }
-    // Where the booth app and the screens look for the passport number.
-    await this.passports.fileAsAnswer(
-      tx,
-      submission.id,
-      targets.form.id,
-      record,
-    );
+    // Where the screens, printouts and booth app look for the applicant's
+    // name, date of birth, passport and the rest.
+    await this.answers.fileAsAnswers(tx, submission.id, record);
 
     return { submissionId: submission.id, clientId, photoUsed };
   }

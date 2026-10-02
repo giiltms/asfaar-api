@@ -88,9 +88,9 @@ function build(
     fileAsAnswer: jest.fn().mockResolvedValue(undefined),
     ensureOnFile: jest.fn().mockResolvedValue(null),
   };
-  const passports: any = {
-    fileAsAnswer: jest.fn().mockResolvedValue(true),
-    ensureOnFile: jest.fn().mockResolvedValue(true),
+  const answers: any = {
+    fileAsAnswers: jest.fn().mockResolvedValue(3),
+    ensureOnFile: jest.fn().mockResolvedValue(3),
   };
   return {
     service: new AgicImportService(
@@ -98,13 +98,13 @@ function build(
       agic,
       targetsService,
       photos,
-      passports,
+      answers,
     ),
     prisma,
     agic,
     targetsService,
     photos,
-    passports,
+    answers,
   };
 }
 
@@ -593,19 +593,18 @@ describe('AgicImportService photo on file', () => {
     expect(result.warnings).toEqual(['could not save']);
   });
 
-  it('files the AGIC passport number as the passport-number answer', async () => {
-    const { service, passports } = build();
+  it('files the AGIC details as the application answers', async () => {
+    const { service, answers } = build();
     await service.importFromScan(SLIP, 'gate-1');
-    expect(passports.fileAsAnswer).toHaveBeenCalledWith(
+    expect(answers.fileAsAnswers).toHaveBeenCalledWith(
       expect.anything(),
       'sub-1',
-      'form-1',
       expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
     );
   });
 
-  it('files a missing passport number when an earlier import is scanned again', async () => {
-    const { service, passports } = build({
+  it('files missing details when an earlier import is scanned again', async () => {
+    const { service, answers } = build({
       existingImport: {
         submissionId: 'sub-9',
         clientId: 'client-9',
@@ -615,7 +614,7 @@ describe('AgicImportService photo on file', () => {
       },
     });
     await service.importFromScan(SLIP, 'gate-1');
-    expect(passports.ensureOnFile).toHaveBeenCalledWith(
+    expect(answers.ensureOnFile).toHaveBeenCalledWith(
       'sub-9',
       expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
     );
