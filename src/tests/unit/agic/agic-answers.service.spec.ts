@@ -88,21 +88,35 @@ describe('answersToFile', () => {
     expect(answers).toEqual([]);
   });
 
+  it('does not try a detail on its next name when its field is answered', () => {
+    const answers = answersToFile(
+      sampleAgicRecord(),
+      [field('phone-number'), field('phoneNumber')],
+      new Set(['f-phone-number']),
+    );
+    expect(answers).toEqual([]);
+  });
+
+  it('files nothing on a name the form uses for two fields', () => {
+    const answers = answersToFile(sampleAgicRecord(), [
+      { ...field('email'), id: 'f-email-1' },
+      { ...field('email'), id: 'f-email-2' },
+    ]);
+    expect(answers).toEqual([]);
+  });
+
   it('reads no passport number from a record without one', () => {
     expect(agicPassportNumber({} as any)).toBeNull();
   });
 });
 
 describe('AgicAnswersService', () => {
-  const build = ({ metadata = {} as any, imports = [] as any[] } = {}) => {
+  const build = ({ due = [] as any[] } = {}) => {
     const prisma: any = {
       formSubmission: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({
-          formId: 'form-1',
-          metadata,
-          responses: [],
-        }),
-        update: jest.fn().mockResolvedValue({}),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ formId: 'form-1', responses: [] }),
       },
       formField: {
         findMany: jest
@@ -110,16 +124,17 @@ describe('AgicAnswersService', () => {
           .mockResolvedValue([field('passport-number'), field('gender')]),
       },
       fieldResponse: { createMany: jest.fn().mockResolvedValue({ count: 2 }) },
-      agicImport: { findMany: jest.fn().mockResolvedValue(imports) },
+      $queryRaw: jest.fn().mockResolvedValue(due),
+      $executeRaw: jest.fn().mockResolvedValue(1),
     };
-    prisma.$transaction = jest.fn((fn: any) => fn(prisma));
     return { service: new AgicAnswersService(prisma), prisma };
   };
+  const sqlOf = (call: any[]) => (call[0] as string[]).join('?');
 
   it('files the answers, never overwriting, and marks the application done', async () => {
-    const { service, prisma } = build({ metadata: { source: 'AGIC' } });
+    const { service, prisma } = build();
     await expect(
-      service.fileAsAnswers(prisma, 'sub-1', sampleAgicRecord()),
+      service.fileAsAnswers('sub-1', sampleAgicRecord()),
     ).resolves.toBe(2);
     expect(prisma.fieldResponse.createMany).toHaveBeenCalledWith({
       data: [
@@ -131,42 +146,32 @@ describe('AgicAnswersService', () => {
       ],
       skipDuplicates: true,
     });
-    expect(prisma.formSubmission.update).toHaveBeenCalledWith({
-      where: { id: 'sub-1' },
-      data: { metadata: { source: 'AGIC', agicAnswersVersion: 1 } },
-    });
+    // One statement merging into the metadata, leaving updatedAt alone.
+    const [call] = prisma.$executeRaw.mock.calls;
+    expect(sqlOf(call)).toMatch(/SET metadata = COALESCE\(metadata/);
+    expect(sqlOf(call)).not.toMatch(/updatedAt/);
   });
 
-  it('never throws when filing for an earlier import fails', async () => {
+  it('never throws when filing fails, and counts the failure', async () => {
     const { service, prisma } = build();
     prisma.fieldResponse.createMany.mockRejectedValue(new Error('db down'));
     await expect(
       service.ensureOnFile('sub-1', sampleAgicRecord()),
     ).resolves.toBe(0);
+    expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
-  it('repairs only imports not yet given their details', async () => {
+  it('repairs the imports the database says are due', async () => {
     const { service, prisma } = build({
-      imports: [
-        {
-          agicData: sampleAgicRecord(),
-          submission: { id: 'sub-1', formId: 'form-1', metadata: {} },
-        },
-        {
-          agicData: sampleAgicRecord(),
-          submission: {
-            id: 'sub-2',
-            formId: 'form-1',
-            metadata: { agicAnswersVersion: 1 },
-          },
-        },
-      ],
+      due: [{ submissionId: 'sub-1', agicData: sampleAgicRecord() }],
     });
     await expect(service.repairMissing()).resolves.toEqual({
       checked: 1,
       filed: 2,
     });
-    expect(prisma.formSubmission.findUniqueOrThrow).toHaveBeenCalledTimes(1);
+    const sql = sqlOf(prisma.$queryRaw.mock.calls[0]);
+    expect(sql).toMatch(/IS DISTINCT FROM/);
+    expect(sql).toMatch(/LIMIT/);
   });
 });
 

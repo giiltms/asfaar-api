@@ -11,9 +11,12 @@ import { AGIC_ANSWER_FIELD_NAMES, answersToFile } from './agic-answers';
  */
 export const AGIC_ANSWERS_VERSION = 1;
 const VERSION_KEY = 'agicAnswersVersion';
+const ATTEMPTS_KEY = 'agicAnswersAttempts';
 
 /** Cap on the start-up repair, so a backlog cannot delay anything. */
 const MAX_REPAIRS_PER_START = 200;
+/** Attempts after which a repair that keeps failing is no longer tried. */
+const MAX_REPAIR_ATTEMPTS = 3;
 
 /**
  * Files what AGIC tells us about an applicant - name, date of birth, gender,
@@ -39,28 +42,32 @@ export class AgicAnswersService implements OnApplicationBootstrap {
     });
   }
 
-  /** Files the details for AGIC imports not yet given them. Safe to repeat. */
+  /**
+   * Files the details for AGIC imports not yet given them. Safe to repeat,
+   * and on several instances at once. Picks only the imports still due -
+   * not marked done, and not given up on after repeated failures - so ones
+   * that keep failing cannot take every place in the batch.
+   */
   async repairMissing(): Promise<{ checked: number; filed: number }> {
-    const imports = await this.prisma.agicImport.findMany({
-      select: {
-        agicData: true,
-        submission: { select: { id: true, formId: true, metadata: true } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-    const due = imports
-      .filter(
-        (row) =>
-          (row.submission.metadata as any)?.[VERSION_KEY] !==
-          AGIC_ANSWERS_VERSION,
-      )
-      .slice(0, MAX_REPAIRS_PER_START);
+    const due = await this.prisma.$queryRaw<
+      { submissionId: string; agicData: unknown }[]
+    >`
+      SELECT a."submissionId", a."agicData"
+      FROM agic_imports a
+      JOIN form_submissions s ON s.id = a."submissionId"
+      WHERE (s.metadata ->> ${VERSION_KEY}) IS DISTINCT FROM ${String(
+      AGIC_ANSWERS_VERSION,
+    )}
+        AND COALESCE((s.metadata ->> ${ATTEMPTS_KEY})::int, 0) < ${MAX_REPAIR_ATTEMPTS}
+      ORDER BY a."createdAt" ASC
+      LIMIT ${MAX_REPAIRS_PER_START}
+    `;
 
     let filed = 0;
     for (const row of due) {
       filed += await this.ensureOnFile(
-        row.submission.id,
-        row.agicData as unknown as AgicApplicantRecord,
+        row.submissionId,
+        row.agicData as AgicApplicantRecord,
       );
     }
     if (due.length) {
@@ -72,22 +79,24 @@ export class AgicAnswersService implements OnApplicationBootstrap {
   }
 
   /**
-   * Files the details for an application imported without them. Never
-   * throws: the applicant at the gate matters more than the paperwork.
-   * Returns how many answers were filed.
+   * Files the details for an application. Never throws: the applicant at
+   * the gate matters more than the paperwork. A failure is counted, so the
+   * repair gives up on one that keeps failing. Returns how many answers
+   * were filed.
    */
   async ensureOnFile(
     submissionId: string,
     record: AgicApplicantRecord,
   ): Promise<number> {
     try {
-      return await this.prisma.$transaction((tx) =>
-        this.fileAsAnswers(tx, submissionId, record),
-      );
+      return await this.fileAsAnswers(submissionId, record);
     } catch (error: any) {
       this.logger.warn(
         `Could not file the AGIC details for submission ${submissionId}: ${error.message}`,
       );
+      await this.mark(submissionId, {
+        [ATTEMPTS_KEY]: Prisma.sql`COALESCE((metadata ->> ${ATTEMPTS_KEY})::int, 0) + 1`,
+      }).catch(() => undefined);
       return 0;
     }
   }
@@ -98,19 +107,14 @@ export class AgicAnswersService implements OnApplicationBootstrap {
    * answers were filed.
    */
   async fileAsAnswers(
-    client: Prisma.TransactionClient,
     submissionId: string,
     record: AgicApplicantRecord,
   ): Promise<number> {
-    const submission = await client.formSubmission.findUniqueOrThrow({
+    const submission = await this.prisma.formSubmission.findUniqueOrThrow({
       where: { id: submissionId },
-      select: {
-        formId: true,
-        metadata: true,
-        responses: { select: { fieldId: true } },
-      },
+      select: { formId: true, responses: { select: { fieldId: true } } },
     });
-    const fields = await client.formField.findMany({
+    const fields = await this.prisma.formField.findMany({
       where: {
         group: { section: { formId: submission.formId } },
         type: { not: FieldType.FILE },
@@ -130,7 +134,7 @@ export class AgicAnswersService implements OnApplicationBootstrap {
     );
 
     if (answers.length) {
-      await client.fieldResponse.createMany({
+      await this.prisma.fieldResponse.createMany({
         data: answers.map((answer) => ({
           submissionId,
           fieldId: answer.fieldId,
@@ -142,15 +146,26 @@ export class AgicAnswersService implements OnApplicationBootstrap {
         skipDuplicates: true,
       });
     }
-    await client.formSubmission.update({
-      where: { id: submissionId },
-      data: {
-        metadata: {
-          ...((submission.metadata as Prisma.JsonObject) ?? {}),
-          [VERSION_KEY]: AGIC_ANSWERS_VERSION,
-        },
-      },
+    await this.mark(submissionId, {
+      [VERSION_KEY]: Prisma.sql`${AGIC_ANSWERS_VERSION}::int`,
     });
     return answers.length;
+  }
+
+  /**
+   * Sets keys in the application's metadata in one statement, so a change
+   * made to it meanwhile is not overwritten, and without touching updatedAt,
+   * so a repair does not make applications look freshly changed.
+   */
+  private mark(submissionId: string, values: Record<string, Prisma.Sql>) {
+    const pairs = Object.entries(values).map(
+      ([key, value]) => Prisma.sql`${key}::text, ${value}`,
+    );
+    return this.prisma.$executeRaw`
+      UPDATE form_submissions
+      SET metadata = COALESCE(metadata, '{}'::jsonb)
+        || jsonb_build_object(${Prisma.join(pairs)})
+      WHERE id = ${submissionId}
+    `;
   }
 }

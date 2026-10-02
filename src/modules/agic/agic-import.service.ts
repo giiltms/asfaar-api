@@ -191,6 +191,12 @@ export class AgicImportService {
     }
     const { submissionId, clientId } = created;
 
+    // Where the screens, printouts and booth app look for the applicant's
+    // name, date of birth, passport and the rest. After the commit, so a
+    // problem with the paperwork never turns the applicant away; the
+    // start-up repair files anything missed.
+    await this.answers.ensureOnFile(submissionId, record);
+
     // Outside the transaction: the client-added email reads the new link
     // back, and the reference number is generated from committed rows.
     await this.linkToAgency(targets.agency.id, clientId, record);
@@ -511,9 +517,6 @@ export class AgicImportService {
         photo.fileUrl,
       );
     }
-    // Where the screens, printouts and booth app look for the applicant's
-    // name, date of birth, passport and the rest.
-    await this.answers.fileAsAnswers(tx, submission.id, record);
 
     return { submissionId: submission.id, clientId, photoUsed };
   }

@@ -596,8 +596,7 @@ describe('AgicImportService photo on file', () => {
   it('files the AGIC details as the application answers', async () => {
     const { service, answers } = build();
     await service.importFromScan(SLIP, 'gate-1');
-    expect(answers.fileAsAnswers).toHaveBeenCalledWith(
-      expect.anything(),
+    expect(answers.ensureOnFile).toHaveBeenCalledWith(
       'sub-1',
       expect.objectContaining({ appointmentNumber: 'AGIC-BIO-260929-62ACF5' }),
     );
