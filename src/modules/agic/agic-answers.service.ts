@@ -3,13 +3,14 @@ import { FieldType, Prisma } from '@prisma/client';
 import { PrismaService } from '@providers/prisma/prisma.service';
 import { AgicApplicantRecord } from './agic-applicant';
 import { AGIC_ANSWER_FIELD_NAMES, answersToFile } from './agic-answers';
+import { markAgicVerified } from './agic-verified';
 
 /**
  * Marks an application whose AGIC details have been filed as answers, in its
  * metadata. Raise it when AGIC_DETAILS gains a detail, and the start-up
  * repair files the new one for earlier imports.
  */
-export const AGIC_ANSWERS_VERSION = 1;
+export const AGIC_ANSWERS_VERSION = 2; // 2: the applicant is marked verified
 const VERSION_KEY = 'agicAnswersVersion';
 const ATTEMPTS_KEY = 'agicAnswersAttempts';
 
@@ -112,7 +113,11 @@ export class AgicAnswersService implements OnApplicationBootstrap {
   ): Promise<number> {
     const submission = await this.prisma.formSubmission.findUniqueOrThrow({
       where: { id: submissionId },
-      select: { formId: true, responses: { select: { fieldId: true } } },
+      select: {
+        formId: true,
+        userId: true,
+        responses: { select: { fieldId: true } },
+      },
     });
     const fields = await this.prisma.formField.findMany({
       where: {
@@ -146,6 +151,8 @@ export class AgicAnswersService implements OnApplicationBootstrap {
         skipDuplicates: true,
       });
     }
+    // AGIC has verified its applicants; see agic-verified.ts.
+    await markAgicVerified(this.prisma, submission.userId, record);
     await this.mark(submissionId, {
       [VERSION_KEY]: Prisma.sql`${AGIC_ANSWERS_VERSION}::int`,
     });
