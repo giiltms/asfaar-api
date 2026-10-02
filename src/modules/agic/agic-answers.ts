@@ -91,7 +91,7 @@ const AGIC_DETAILS: {
     read: (r) => normaliseEmail(r?.applicant?.email),
   },
   {
-    names: ['phone-number', 'phoneNumber', 'phone'],
+    names: ['phone-number', 'phoneNumber'],
     read: (r) => text(r?.applicant?.phoneNumber),
   },
   {
@@ -104,11 +104,11 @@ const AGIC_DETAILS: {
   },
   { names: ['passport-number', 'passportNumber'], read: agicPassportNumber },
   {
-    names: ['passport-issue-date', 'passportIssueDate', 'date-of-issue'],
+    names: ['passport-issue-date', 'passportIssueDate'],
     read: (r) => isoDate(r?.passport?.dateOfIssue),
   },
   {
-    names: ['passport-expiry-date', 'passportExpiryDate', 'date-of-expiry'],
+    names: ['passport-expiry-date', 'passportExpiryDate'],
     read: (r) => isoDate(r?.passport?.dateOfExpiration),
   },
 ];
@@ -142,26 +142,28 @@ function valueFor(field: AnswerField, value: string): string | null {
 }
 
 /**
- * The answers to file: each detail on the first of its fields the form has,
- * one detail per field, and never a field already answered.
+ * The answers to file: each detail on the first of its field names the form
+ * has. A detail whose field is already answered, or whose name the form uses
+ * for more than one field, is left alone rather than tried on its next name:
+ * a later name may be someone else's (a sponsor's phone) or ambiguous.
  */
 export function answersToFile(
   record: AgicApplicantRecord,
   fields: AnswerField[],
   answeredFieldIds: Set<string> = new Set(),
 ): FiledAnswer[] {
-  const byName = new Map(
-    fields
-      .filter((f) => ANSWERABLE_TYPES.includes(f.type))
-      .map((f) => [f.name, f] as const),
-  );
+  const byName = new Map<string, AnswerField[]>();
+  for (const field of fields) {
+    if (!ANSWERABLE_TYPES.includes(field.type)) continue;
+    byName.set(field.name, [...(byName.get(field.name) ?? []), field]);
+  }
   const used = new Set(answeredFieldIds);
   const filed: FiledAnswer[] = [];
   for (const answer of agicAnswers(record)) {
-    const field = answer.names
-      .map((name) => byName.get(name))
-      .find((f) => f && !used.has(f.id));
-    if (!field) continue;
+    const name = answer.names.find((n) => byName.has(n));
+    const matches = name ? byName.get(name)! : [];
+    if (matches.length !== 1 || used.has(matches[0].id)) continue;
+    const [field] = matches;
     const value = valueFor(field, answer.value);
     if (value === null) continue;
     used.add(field.id);
