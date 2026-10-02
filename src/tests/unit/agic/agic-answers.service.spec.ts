@@ -116,9 +116,22 @@ describe('AgicAnswersService', () => {
   const build = ({ due = [] as any[] } = {}) => {
     const prisma: any = {
       formSubmission: {
-        findUniqueOrThrow: jest
-          .fn()
-          .mockResolvedValue({ formId: 'form-1', responses: [] }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          formId: 'form-1',
+          userId: 'client-1',
+          responses: [],
+        }),
+      },
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          nin: '86463406817',
+          ninVerified: false,
+          isVerified: false,
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      ninVerification: {
+        createMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       formField: {
         findMany: jest
@@ -152,6 +165,41 @@ describe('AgicAnswersService', () => {
     const [call] = prisma.$executeRaw.mock.calls;
     expect(sqlOf(call)).toMatch(/SET metadata = COALESCE\(metadata/);
     expect(sqlOf(call)).not.toMatch(/updatedAt/);
+  });
+
+  it('marks the applicant and their NIN verified, as AGIC verified them', async () => {
+    const { service, prisma } = build();
+    await service.fileAsAnswers('sub-1', sampleAgicRecord());
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'client-1' },
+      data: { isVerified: true, ninVerified: true },
+    });
+    const { data, skipDuplicates } =
+      prisma.ninVerification.createMany.mock.calls[0][0];
+    expect(skipDuplicates).toBe(true);
+    expect(data[0]).toMatchObject({
+      nin: '86463406817',
+      firstName: 'HAFSATU',
+      lastName: 'SALISU',
+      gender: 'FEMALE',
+      verificationStatus: 'VERIFIED',
+      verificationMethod: 'MANUAL',
+      userId: 'client-1',
+      metadata: { source: 'AGIC' },
+    });
+    expect(data[0].photo).toBeUndefined();
+  });
+
+  it('leaves an account whose NIN is not AGIC’s with its NIN unverified', async () => {
+    const { service, prisma } = build();
+    prisma.user.findUnique.mockResolvedValue({
+      nin: '11111111111',
+      ninVerified: false,
+      isVerified: true,
+    });
+    await service.fileAsAnswers('sub-1', sampleAgicRecord());
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.ninVerification.createMany).not.toHaveBeenCalled();
   });
 
   it('never throws when filing fails, and counts the failure', async () => {

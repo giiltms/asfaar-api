@@ -25,7 +25,13 @@ biometrics back to AGIC.
      again. `scripts/backfill-agic-photos.js` does the same from a checkout
      (dry run; `--apply` to write);
    - finds their ASFAAR account by NIN, then email, or creates one (APPLICANT,
-     AGIC photo as avatar, not NIN-verified). Refused (409): a staff or agency
+     AGIC photo as avatar, verified). AGIC has verified
+     its applicants, so ASFAAR treats AGIC's details as verified: the account
+     is marked verified, and NIN-verified when its NIN is AGIC's, with a
+     VERIFIED NIN record built from AGIC's details (method MANUAL,
+     `metadata.source` AGIC, no photo, so the gate still labels the photo
+     as AGIC's) unless ASFAAR already holds a check of that NIN. Earlier
+     imports are brought up to date by the start-up repair). Refused (409): a staff or agency
      account; an account whose NIN or date of birth contradicts AGIC; and,
      when there is no date of birth on both sides to compare, one whose name
      does not appear in AGIC's;

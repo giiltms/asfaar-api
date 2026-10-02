@@ -118,7 +118,9 @@ describe('AgicImportService.importFromScan', () => {
     expect(prisma.user.create.mock.calls[0][0].data).toMatchObject({
       email: 'muhammadadamu9090@gmail.com',
       nin: '86463406817',
-      ninVerified: false,
+      // AGIC has verified its applicants.
+      ninVerified: true,
+      isVerified: true,
       firstName: 'HAFSATU',
       lastName: 'SALISU',
       gender: 'FEMALE',

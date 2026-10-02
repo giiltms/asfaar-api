@@ -611,7 +611,8 @@ export class AgicImportService {
         phone: phoneTaken ? null : phone,
         ...splitAgicName(applicant.applicantName),
         nin,
-        ninVerified: false,
+        // AGIC has verified its applicants; see agic-verified.ts.
+        ninVerified: !!nin,
         dateOfBirth,
         gender: agicGender(applicant.gender),
         avatar: photo,
@@ -619,7 +620,7 @@ export class AgicImportService {
         // in. Hashed here: no middleware hashes passwords on create.
         password: await bcrypt.hash(randomBytes(32).toString('base64url'), 10),
         roles: [Roles.APPLICANT],
-        isVerified: false,
+        isVerified: true,
         isActive: true,
       },
       select: { id: true },
