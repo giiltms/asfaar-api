@@ -1,7 +1,9 @@
 import { FieldType } from '@prisma/client';
 import { AgicAnswersService } from '@modules/agic/agic-answers.service';
 import {
+  AGIC_DETAILS_SECTION,
   AnswerField,
+  agicDisplayResponses,
   agicPassportNumber,
   answersToFile,
 } from '@modules/agic/agic-answers';
@@ -241,5 +243,44 @@ describe('withPassportNumberAnswer', () => {
   it('changes nothing when the account has no passport', () => {
     const result: any = withPassportNumberAnswer(appointment([], []));
     expect(result.submission.responses).toEqual([]);
+  });
+});
+
+describe('agicDisplayResponses', () => {
+  it('shows every AGIC detail the form left unanswered, under its own section', () => {
+    const shown = agicDisplayResponses(sampleAgicRecord(), [
+      { fieldName: 'passport-photo', fileUrls: ['/p.jpg'] },
+    ]);
+    expect(
+      Object.fromEntries(shown.map((r) => [r.field.label, r.value])),
+    ).toEqual({
+      'First Name': 'HAFSATU',
+      'Last Name': 'SALISU',
+      'Date of Birth': '1995-12-30',
+      Gender: 'Female',
+      Email: 'muhammadadamu9090@gmail.com',
+      'Phone Number': '08032309762',
+      Nationality: 'Nigeria',
+      NIN: '86463406817',
+      'Passport Number': 'B02518467',
+      'Passport Issue Date': '2024-01-26',
+      'Passport Expiry Date': '2029-01-25',
+    });
+    expect(shown[0].field.group.section.title).toBe(AGIC_DETAILS_SECTION);
+  });
+
+  it('leaves out a detail the form already answered, under any of its names', () => {
+    const shown = agicDisplayResponses(sampleAgicRecord(), [
+      { fieldName: 'firstName', value: 'Hafsat' },
+      { fieldName: 'passportNumber', value: 'A1' },
+    ]);
+    const names = shown.map((r) => r.fieldName);
+    expect(names).not.toContain('first-name');
+    expect(names).not.toContain('passport-number');
+    expect(names).toContain('last-name');
+  });
+
+  it('shows nothing for an application not from AGIC', () => {
+    expect(agicDisplayResponses(null, [])).toEqual([]);
   });
 });

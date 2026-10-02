@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@providers/prisma/prisma.service';
+import { agicDisplayResponses } from '@modules/agic/agic-answers';
 import { SubmissionStatus } from '@prisma/client';
 import {
   MailService,
@@ -35,6 +36,18 @@ export class DashboardVerificationService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
   ) {}
+
+  /**
+   * The application's answers, plus AGIC's details for any the form left
+   * unanswered, for an application imported from AGIC. See agic-answers.ts.
+   */
+  private withAgicDetails(submission: any): any[] {
+    const responses = submission.responses || [];
+    return [
+      ...responses,
+      ...agicDisplayResponses(submission.agicImport?.agicData, responses),
+    ];
+  }
 
   /**
    * Transform flat form responses into hierarchical structure for frontend
@@ -323,6 +336,7 @@ export class DashboardVerificationService {
               },
             },
           },
+          agicImport: { select: { agicData: true } },
           responses: {
             include: {
               field: {
@@ -414,7 +428,7 @@ export class DashboardVerificationService {
               : null,
           },
           formResponses: this.transformFormResponses(
-            submission.responses || [],
+            this.withAgicDetails(submission),
           ),
           ninVerification: ninVerification
             ? {
@@ -542,6 +556,7 @@ export class DashboardVerificationService {
             },
           },
         },
+        agicImport: { select: { agicData: true } },
         responses: {
           include: {
             field: {
@@ -641,7 +656,9 @@ export class DashboardVerificationService {
             }
           : null,
       },
-      formResponses: this.transformFormResponses(submission.responses || []),
+      formResponses: this.transformFormResponses(
+        this.withAgicDetails(submission),
+      ),
       ninVerification: ninVerification
         ? {
             id: ninVerification.id,
